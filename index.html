@@ -172,6 +172,18 @@
   .player .name { font-weight: 700; font-size: 15px; letter-spacing: 0.5px; }
   .player .rank { font-size: 12px; margin-top: 3px; font-weight: 600; letter-spacing: 0.5px; }
   .player .hero { font-size: 12px; color: var(--accent-2); margin-top: 3px; font-weight: 600; letter-spacing: 0.5px; }
+  .player .hero {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .hero-icon {
+    width: 20px;
+    height: 20px;
+    border-radius: 4px;
+    border: 1px solid var(--border);
+    object-fit: cover;
+  }
   .player .remove {
     position: absolute;
     top: 4px; right: 8px;
@@ -234,13 +246,13 @@
   .slot.winner { background: rgba(122,59,255,0.2); color: var(--accent-2); }
   .slot.winner::after { content: '✓'; margin-left: auto; color: var(--accent-2); font-weight: 900; }
   .slot .tbd { color: var(--text-dim); font-style: italic; }
-  .slot-hero {
+  .slot-hero-icon {
     margin-left: auto;
-    font-size: 11px;
-    color: var(--accent-2);
-    font-weight: 600;
-    white-space: nowrap;
-    opacity: 0.8;
+    width: 26px;
+    height: 26px;
+    border-radius: 4px;
+    border: 1px solid var(--border);
+    object-fit: cover;
   }
   .divider { height: 1px; background: var(--border); }
   .score-box {
@@ -418,134 +430,134 @@
       <div style="margin-bottom:10px;">
         <label class="label">Мейн персонаж (необязательно)</label>
         <select id="p-hero">
-          <option value="">— Не выбран —</option>
-          <option value="Abaddon">Abaddon / Абаддон</option>
-          <option value="Alchemist">Alchemist / Алхимик</option>
-          <option value="Ancient Apparition">Ancient Apparition / Древний Дух</option>
-          <option value="Anti-Mage">Anti-Mage / Антимаг</option>
-          <option value="Arc Warden">Arc Warden / Хранитель</option>
-          <option value="Axe">Axe / Аксель</option>
-          <option value="Bane">Bane / Бэйн</option>
-          <option value="Batrider">Batrider / Бэтрайдер</option>
-          <option value="Beastmaster">Beastmaster / Повелитель Зверей</option>
-          <option value="Bloodseeker">Bloodseeker / Кровопийца</option>
-          <option value="Bounty Hunter">Bounty Hunter / Охотник за Головами</option>
-          <option value="Brewmaster">Brewmaster / Пивовар</option>
-          <option value="Bristleback">Bristleback / Бристлбэк</option>
-          <option value="Broodmother">Broodmother / Матка Пауков</option>
-          <option value="Centaur Warrunner">Centaur Warrunner / Кентавр</option>
-          <option value="Chaos Knight">Chaos Knight / Рыцарь Хаоса</option>
-          <option value="Chen">Chen / Чен</option>
-          <option value="Clinkz">Clinkz / Клинкз</option>
-          <option value="Clockwerk">Clockwerk / Часовой</option>
-          <option value="Crystal Maiden">Crystal Maiden / Хрустальная Дева</option>
-          <option value="Dark Seer">Dark Seer / Тёмный Провидец</option>
-          <option value="Dark Willow">Dark Willow / Тёмная Ива</option>
-          <option value="Dawnbreaker">Dawnbreaker / Рассветница</option>
-          <option value="Dazzle">Dazzle / Дазл</option>
-          <option value="Death Prophet">Death Prophet / Пророчица Смерти</option>
-          <option value="Disruptor">Disruptor / Разрушитель</option>
-          <option value="Doom">Doom / Дум</option>
-          <option value="Dragon Knight">Dragon Knight / Рыцарь Дракона</option>
-          <option value="Drow Ranger">Drow Ranger / Тёмная Лучница</option>
-          <option value="Earth Spirit">Earth Spirit / Дух Земли</option>
-          <option value="Earthshaker">Earthshaker / Землетряс</option>
-          <option value="Elder Titan">Elder Titan / Древний Титан</option>
-          <option value="Ember Spirit">Ember Spirit / Дух Огня</option>
-          <option value="Enchantress">Enchantress / Чародейка</option>
-          <option value="Enigma">Enigma / Энигма</option>
-          <option value="Faceless Void">Faceless Void / Безликий</option>
-          <option value="Grimstroke">Grimstroke / Гримстроук</option>
-          <option value="Gyrocopter">Gyrocopter / Гиррокоптер</option>
-          <option value="Hoodwink">Hoodwink / Худвинк</option>
-          <option value="Huskar">Huskar / Хускар</option>
-          <option value="Invoker">Invoker / Инвокер</option>
-          <option value="Io">Io / Ио</option>
-          <option value="Jakiro">Jakiro / Джакиро</option>
-          <option value="Juggernaut">Juggernaut / Джаггернаут</option>
-          <option value="Kez">Kez / Кез</option>
-          <option value="Keeper of the Light">Keeper of the Light / Хранитель Света</option>
-          <option value="Kunkka">Kunkka / Кунка</option>
-          <option value="Legion Commander">Legion Commander / Командир Легиона</option>
-          <option value="Leshrac">Leshrac / Лешрак</option>
-          <option value="Lich">Lich / Лич</option>
-          <option value="Lifestealer">Lifestealer / Пожиратель</option>
-          <option value="Lina">Lina / Лина</option>
-          <option value="Lion">Lion / Лион</option>
-          <option value="Lone Druid">Lone Druid / Одинокий Друид</option>
-          <option value="Luna">Luna / Луна</option>
-          <option value="Lycan">Lycan / Ликан</option>
-          <option value="Magnus">Magnus / Магнус</option>
-          <option value="Marci">Marci / Марси</option>
-          <option value="Mars">Mars / Марс</option>
-          <option value="Medusa">Medusa / Медуза</option>
-          <option value="Meepo">Meepo / Мипо</option>
-          <option value="Mirana">Mirana / Мирана</option>
-          <option value="Monkey King">Monkey King / Царь Обезьян</option>
-          <option value="Morphling">Morphling / Морфлинг</option>
-          <option value="Muerta">Muerta / Муэрта</option>
-          <option value="Naga Siren">Naga Siren / Нага Сирена</option>
-          <option value="Nature's Prophet">Nature's Prophet / Пророк Природы</option>
-          <option value="Necrophos">Necrophos / Некрофос</option>
-          <option value="Night Stalker">Night Stalker / Ночной Охотник</option>
-          <option value="Nyx Assassin">Nyx Assassin / Нюкс Ассасин</option>
-          <option value="Ogre Magi">Ogre Magi / Огр Маг</option>
-          <option value="Omniknight">Omniknight / Всезнающий</option>
-          <option value="Oracle">Oracle / Оракул</option>
-          <option value="Outworld Destroyer">Outworld Destroyer / Разрушитель</option>
-          <option value="Pangolier">Pangolier / Панголир</option>
-          <option value="Phantom Assassin">Phantom Assassin / Фантомка</option>
-          <option value="Phantom Lancer">Phantom Lancer / Фантомный Лансер</option>
-          <option value="Phoenix">Phoenix / Феникс</option>
-          <option value="Primal Beast">Primal Beast / Первобытный Зверь</option>
-          <option value="Puck">Puck / Пак</option>
-          <option value="Pudge">Pudge / Пудж</option>
-          <option value="Pugna">Pugna / Пугна</option>
-          <option value="Queen of Pain">Queen of Pain / Королева Боли</option>
-          <option value="Razor">Razor / Рейзор</option>
-          <option value="Riki">Riki / Рики</option>
-          <option value="Ringmaster">Ringmaster / Шпрехшталмейстер</option>
-          <option value="Rubick">Rubick / Рубик</option>
-          <option value="Sand King">Sand King / Король Песков</option>
-          <option value="Shadow Demon">Shadow Demon / Демон Тени</option>
-          <option value="Shadow Fiend">Shadow Fiend / Демон Тени</option>
-          <option value="Shadow Shaman">Shadow Shaman / Шаман Тени</option>
-          <option value="Silencer">Silencer / Молчун</option>
-          <option value="Skywrath Mage">Skywrath Mage / Маг Небес</option>
-          <option value="Slardar">Slardar / Слардар</option>
-          <option value="Slark">Slark / Сларк</option>
-          <option value="Snapfire">Snapfire / Снапфайр</option>
-          <option value="Sniper">Sniper / Снайпер</option>
-          <option value="Spectre">Spectre / Спектра</option>
-          <option value="Spirit Breaker">Spirit Breaker / Сокрушитель Духов</option>
-          <option value="Storm Spirit">Storm Spirit / Дух Бури</option>
-          <option value="Sven">Sven / Свен</option>
-          <option value="Techies">Techies / Мины</option>
-          <option value="Templar Assassin">Templar Assassin / Тамплиерка</option>
-          <option value="Terrorblade">Terrorblade / Террорблейд</option>
-          <option value="Tidehunter">Tidehunter / Охотник Приливов</option>
-          <option value="Timbersaw">Timbersaw / Лесоруб</option>
-          <option value="Tinker">Tinker / Тинкер</option>
-          <option value="Tiny">Tiny / Тини</option>
-          <option value="Treant Protector">Treant Protector / Защитник Древа</option>
-          <option value="Troll Warlord">Troll Warlord / Тролль</option>
-          <option value="Tusk">Tusk / Туск</option>
-          <option value="Underlord">Underlord / Владыка Бездны</option>
-          <option value="Undying">Undying / Неумирающий</option>
-          <option value="Ursa">Ursa / Урса</option>
-          <option value="Vengeful Spirit">Vengeful Spirit / Дух Мщения</option>
-          <option value="Venomancer">Venomancer / Веномансер</option>
-          <option value="Viper">Viper / Випер</option>
-          <option value="Visage">Visage / Визаж</option>
-          <option value="Void Spirit">Void Spirit / Дух Пустоты</option>
-          <option value="Warlock">Warlock / Чернокнижник</option>
-          <option value="Weaver">Weaver / Ткач</option>
-          <option value="Windranger">Windranger / Ветряная</option>
-          <option value="Winter Wyvern">Winter Wyvern / Зимний Виверн</option>
-          <option value="Witch Doctor">Witch Doctor / Знахарь</option>
-          <option value="Wraith King">Wraith King / Король-Призрак</option>
-          <option value="Zeus">Zeus / Зевс</option>
-        </select>
+  <option value="">— Не выбран —</option>
+  <option value="abaddon">Abaddon / Абаддон</option>
+  <option value="alchemist">Alchemist / Алхимик</option>
+  <option value="ancient_apparition">Ancient Apparition / Древний Дух</option>
+  <option value="antimage">Anti-Mage / Антимаг</option>
+  <option value="arc_warden">Arc Warden / Хранитель</option>
+  <option value="axe">Axe / Аксель</option>
+  <option value="bane">Bane / Бэйн</option>
+  <option value="batrider">Batrider / Бэтрайдер</option>
+  <option value="beastmaster">Beastmaster / Повелитель Зверей</option>
+  <option value="bloodseeker">Bloodseeker / Кровопийца</option>
+  <option value="bounty_hunter">Bounty Hunter / Охотник за Головами</option>
+  <option value="brewmaster">Brewmaster / Пивовар</option>
+  <option value="bristleback">Bristleback / Бристлбэк</option>
+  <option value="broodmother">Broodmother / Матка Пауков</option>
+  <option value="centaur">Centaur Warrunner / Кентавр</option>
+  <option value="chaos_knight">Chaos Knight / Рыцарь Хаоса</option>
+  <option value="chen">Chen / Чен</option>
+  <option value="clinkz">Clinkz / Клинкз</option>
+  <option value="rattletrap">Clockwerk / Часовой</option>
+  <option value="crystal_maiden">Crystal Maiden / Хрустальная Дева</option>
+  <option value="dark_seer">Dark Seer / Тёмный Провидец</option>
+  <option value="dark_willow">Dark Willow / Тёмная Ива</option>
+  <option value="dawnbreaker">Dawnbreaker / Рассветница</option>
+  <option value="dazzle">Dazzle / Дазл</option>
+  <option value="death_prophet">Death Prophet / Пророчица Смерти</option>
+  <option value="disruptor">Disruptor / Разрушитель</option>
+  <option value="doom_bringer">Doom / Дум</option>
+  <option value="dragon_knight">Dragon Knight / Рыцарь Дракона</option>
+  <option value="drow_ranger">Drow Ranger / Тёмная Лучница</option>
+  <option value="earth_spirit">Earth Spirit / Дух Земли</option>
+  <option value="earthshaker">Earthshaker / Землетряс</option>
+  <option value="elder_titan">Elder Titan / Древний Титан</option>
+  <option value="ember_spirit">Ember Spirit / Дух Огня</option>
+  <option value="enchantress">Enchantress / Чародейка</option>
+  <option value="enigma">Enigma / Энигма</option>
+  <option value="faceless_void">Faceless Void / Безликий</option>
+  <option value="grimstroke">Grimstroke / Гримстроук</option>
+  <option value="gyrocopter">Gyrocopter / Гиррокоптер</option>
+  <option value="hoodwink">Hoodwink / Худвинк</option>
+  <option value="huskar">Huskar / Хускар</option>
+  <option value="invoker">Invoker / Инвокер</option>
+  <option value="wisp">Io / Ио</option>
+  <option value="jakiro">Jakiro / Джакиро</option>
+  <option value="juggernaut">Juggernaut / Джаггернаут</option>
+  <option value="kez">Kez / Кез</option>
+  <option value="keeper_of_the_light">Keeper of the Light / Хранитель Света</option>
+  <option value="kunkka">Kunkka / Кунка</option>
+  <option value="legion_commander">Legion Commander / Командир Легиона</option>
+  <option value="leshrac">Leshrac / Лешрак</option>
+  <option value="lich">Lich / Лич</option>
+  <option value="life_stealer">Lifestealer / Пожиратель</option>
+  <option value="lina">Lina / Лина</option>
+  <option value="lion">Lion / Лион</option>
+  <option value="lone_druid">Lone Druid / Одинокий Друид</option>
+  <option value="luna">Luna / Луна</option>
+  <option value="lycan">Lycan / Ликан</option>
+  <option value="magnataur">Magnus / Магнус</option>
+  <option value="marci">Marci / Марси</option>
+  <option value="mars">Mars / Марс</option>
+  <option value="medusa">Medusa / Медуза</option>
+  <option value="meepo">Meepo / Мипо</option>
+  <option value="mirana">Mirana / Мирана</option>
+  <option value="monkey_king">Monkey King / Царь Обезьян</option>
+  <option value="morphling">Morphling / Морфлинг</option>
+  <option value="muerta">Muerta / Муэрта</option>
+  <option value="naga_siren">Naga Siren / Нага Сирена</option>
+  <option value="furion">Nature's Prophet / Пророк Природы</option>
+  <option value="necrolyte">Necrophos / Некрофос</option>
+  <option value="night_stalker">Night Stalker / Ночной Охотник</option>
+  <option value="nyx_assassin">Nyx Assassin / Нюкс Ассасин</option>
+  <option value="ogre_magi">Ogre Magi / Огр Маг</option>
+  <option value="omniknight">Omniknight / Всезнающий</option>
+  <option value="oracle">Oracle / Оракул</option>
+  <option value="obsidian_destroyer">Outworld Destroyer / Разрушитель</option>
+  <option value="pangolier">Pangolier / Панголир</option>
+  <option value="phantom_assassin">Phantom Assassin / Фантомка</option>
+  <option value="phantom_lancer">Phantom Lancer / Фантомный Лансер</option>
+  <option value="phoenix">Phoenix / Феникс</option>
+  <option value="primal_beast">Primal Beast / Первобытный Зверь</option>
+  <option value="puck">Puck / Пак</option>
+  <option value="pudge">Pudge / Пудж</option>
+  <option value="pugna">Pugna / Пугна</option>
+  <option value="queenofpain">Queen of Pain / Королева Боли</option>
+  <option value="razor">Razor / Рейзор</option>
+  <option value="riki">Riki / Рики</option>
+  <option value="ringmaster">Ringmaster / Шпрехшталмейстер</option>
+  <option value="rubick">Rubick / Рубик</option>
+  <option value="sand_king">Sand King / Король Песков</option>
+  <option value="shadow_demon">Shadow Demon / Демон Тени</option>
+  <option value="nevermore">Shadow Fiend / Демон Тени</option>
+  <option value="shadow_shaman">Shadow Shaman / Шаман Тени</option>
+  <option value="silencer">Silencer / Молчун</option>
+  <option value="skywrath_mage">Skywrath Mage / Маг Небес</option>
+  <option value="slardar">Slardar / Слардар</option>
+  <option value="slark">Slark / Сларк</option>
+  <option value="snapfire">Snapfire / Снапфайр</option>
+  <option value="sniper">Sniper / Снайпер</option>
+  <option value="spectre">Spectre / Спектра</option>
+  <option value="spirit_breaker">Spirit Breaker / Сокрушитель Духов</option>
+  <option value="storm_spirit">Storm Spirit / Дух Бури</option>
+  <option value="sven">Sven / Свен</option>
+  <option value="techies">Techies / Мины</option>
+  <option value="templar_assassin">Templar Assassin / Тамплиерка</option>
+  <option value="terrorblade">Terrorblade / Террорблейд</option>
+  <option value="tidehunter">Tidehunter / Охотник Приливов</option>
+  <option value="shredder">Timbersaw / Лесоруб</option>
+  <option value="tinker">Tinker / Тинкер</option>
+  <option value="tiny">Tiny / Тини</option>
+  <option value="treant">Treant Protector / Защитник Древа</option>
+  <option value="troll_warlord">Troll Warlord / Тролль</option>
+  <option value="tusk">Tusk / Туск</option>
+  <option value="abyssal_underlord">Underlord / Владыка Бездны</option>
+  <option value="undying">Undying / Неумирающий</option>
+  <option value="ursa">Ursa / Урса</option>
+  <option value="vengefulspirit">Vengeful Spirit / Дух Мщения</option>
+  <option value="venomancer">Venomancer / Веномансер</option>
+  <option value="viper">Viper / Випер</option>
+  <option value="visage">Visage / Визаж</option>
+  <option value="void_spirit">Void Spirit / Дух Пустоты</option>
+  <option value="warlock">Warlock / Чернокнижник</option>
+  <option value="weaver">Weaver / Ткач</option>
+  <option value="windrunner">Windranger / Ветряная</option>
+  <option value="winter_wyvern">Winter Wyvern / Зимний Виверн</option>
+  <option value="witch_doctor">Witch Doctor / Знахарь</option>
+  <option value="skeleton_king">Wraith King / Король-Призрак</option>
+  <option value="zuus">Zeus / Зевс</option>
+</select>
       </div>
 
       <div style="margin-bottom:10px;">
@@ -653,7 +665,12 @@ function parseRank(rankTier) {
 function playerCardHTML(p, removeFn) {
   const rank = parseRank(p.rank_tier);
   const removeBtn = isAdmin() ? '<button class="remove" onclick="' + removeFn + '">×</button>' : '';
-  const heroLine = p.hero ? '<div class="hero">⚔ ' + escapeHtml(p.hero) + '</div>' : '';
+  const heroIcon = p.hero
+    ? '<img class="hero-icon" src="https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/heroes/' + p.hero + '.png" onerror="this.style.display=\'none\'">'
+    : '';
+  const heroLine = p.hero
+    ? '<div class="hero">' + heroIcon + '<span>' + escapeHtml(p.hero) + '</span></div>'
+    : '';
   return '<div class="player">' +
     '<img src="' + p.avatar + '" alt="" onerror="this.style.display=\'none\'">' +
     '<div>' +
@@ -818,11 +835,13 @@ function matchHTML(match) {
 function slotHTML(player, isWinner) {
   if (!player) return '<div class="slot"><span class="tbd">TBD</span></div>';
   const cls = isWinner ? 'winner' : '';
-  const hero = player.hero ? '<span class="slot-hero">' + escapeHtml(player.hero) + '</span>' : '';
+  const heroIcon = player.hero
+    ? '<img class="slot-hero-icon" src="https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/heroes/' + player.hero + '.png" onerror="this.style.display=\'none\'">'
+    : '';
   return '<div class="slot ' + cls + '">' +
     (player.avatar ? '<img src="' + player.avatar + '" onerror="this.style.display=\'none\'">' : '') +
     '<span>' + escapeHtml(player.name) + '</span>' +
-    hero +
+    heroIcon +
   '</div>';
 }
 
