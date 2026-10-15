@@ -207,6 +207,7 @@
     width: 48px; height: 48px;
     border-radius: 6px;
     border: 1px solid var(--border);
+    object-fit: cover;
   }
   .player .name {
     font-weight: 700;
@@ -283,7 +284,7 @@
   }
   .slot:hover:not(:disabled) { background: rgba(122,59,255,0.1); }
   .slot:disabled { cursor: default; }
-  .slot img { width: 24px; height: 24px; border-radius: 4px; }
+  .slot img { width: 24px; height: 24px; border-radius: 4px; object-fit: cover; }
   .slot.winner {
     background: rgba(122,59,255,0.2);
     color: var(--accent-2);
@@ -332,6 +333,7 @@
     margin-top: 8px;
     letter-spacing: 0.5px;
   }
+  .hint a { color: var(--accent-2); }
   .hint code {
     background: #0F0F14;
     padding: 2px 6px;
@@ -400,12 +402,68 @@
 
     <div class="card">
       <h2>Добавить игрока</h2>
-      <div class="row">
-        <input id="player-input" placeholder="Steam ID / ссылка на steamcommunity / ник" />
-        <button class="btn" id="add-player-btn">Добавить</button>
+      <div class="hint" style="margin-bottom:12px; margin-top:0;">
+        Открой профиль на <a href="https://www.opendota.com" target="_blank">opendota.com</a>,
+        скопируй ник и ссылку на аватарку. Ранг выбери из списка.
       </div>
-      <div class="hint">
-        Пример: <code>76561198024540358</code> или <code>https://steamcommunity.com/id/dendi</code>
+
+      <div class="row" style="margin-bottom:10px;">
+        <div style="flex:2">
+          <label class="label">Ник игрока</label>
+          <input id="p-name" placeholder="Например: Dendi" />
+        </div>
+        <div style="flex:1">
+          <label class="label">Ранг</label>
+          <select id="p-rank">
+            <option value="0">Без калибровки</option>
+            <option value="11">Herald 1</option>
+            <option value="12">Herald 2</option>
+            <option value="13">Herald 3</option>
+            <option value="14">Herald 4</option>
+            <option value="15">Herald 5</option>
+            <option value="21">Guardian 1</option>
+            <option value="22">Guardian 2</option>
+            <option value="23">Guardian 3</option>
+            <option value="24">Guardian 4</option>
+            <option value="25">Guardian 5</option>
+            <option value="31">Crusader 1</option>
+            <option value="32">Crusader 2</option>
+            <option value="33">Crusader 3</option>
+            <option value="34">Crusader 4</option>
+            <option value="35">Crusader 5</option>
+            <option value="41">Archon 1</option>
+            <option value="42">Archon 2</option>
+            <option value="43">Archon 3</option>
+            <option value="44">Archon 4</option>
+            <option value="45">Archon 5</option>
+            <option value="51">Legend 1</option>
+            <option value="52">Legend 2</option>
+            <option value="53">Legend 3</option>
+            <option value="54">Legend 4</option>
+            <option value="55">Legend 5</option>
+            <option value="61">Ancient 1</option>
+            <option value="62">Ancient 2</option>
+            <option value="63">Ancient 3</option>
+            <option value="64">Ancient 4</option>
+            <option value="65">Ancient 5</option>
+            <option value="71">Divine 1</option>
+            <option value="72">Divine 2</option>
+            <option value="73">Divine 3</option>
+            <option value="74">Divine 4</option>
+            <option value="75">Divine 5</option>
+            <option value="80">Immortal</option>
+          </select>
+        </div>
+      </div>
+
+      <div style="margin-bottom:10px;">
+        <label class="label">Ссылка на аватарку (необязательно)</label>
+        <input id="p-avatar" placeholder="https://..." />
+      </div>
+
+      <div class="row">
+        <input id="player-input" placeholder="Steam ID (только для защиты от дублей)" />
+        <button class="btn" id="add-player-btn">Добавить</button>
       </div>
       <div id="input-msg"></div>
     </div>
@@ -480,70 +538,40 @@ function loadState() {
 }
 
 /* =========================================================
-   2. OPENDOTA API ЧЕРЕЗ CORS-ПРОКСИ
+   2. РУЧНОЕ ДОБАВЛЕНИЕ ИГРОКА
    ========================================================= */
-const PROXY = 'https://api.cors.lol/?url=';
-const OPENDOTA = 'https://api.opendota.com/api';
+async function fetchPlayer(steamIdInput) {
+  const name = document.getElementById('p-name').value.trim();
+  const avatar = document.getElementById('p-avatar').value.trim();
+  const rankTier = parseInt(document.getElementById('p-rank').value) || 0;
 
-function proxied(url) {
-  return PROXY + encodeURIComponent(url);
-}
+  if (!name) throw new Error('Введи ник игрока');
 
-async function fetchJSON(url) {
-  const r = await fetch(proxied(url));
-  if (!r.ok) throw new Error(`Сервер ответил ${r.status}`);
-  return await r.json();
-}
-
-async function fetchPlayer(input) {
-  input = input.trim();
-  if (!input) throw new Error('Введи ID или ссылку');
-
-  let steamId64 = null;
-
-  let m = input.match(/steamcommunity\.com\/profiles\/(\d+)/);
-  if (m) steamId64 = m[1];
-
-  if (!steamId64) {
-    m = input.match(/steamcommunity\.com\/id\/([^\/\s]+)/);
-    if (m) {
-      const results = await fetchJSON(`${OPENDOTA}/search?q=` + encodeURIComponent(m[1]));
-      if (!results.length) throw new Error('Игрок не найден по нику. Вставь числовой Steam ID.');
-      return await fetchByAccountId(results[0].account_id);
-    }
+  let accountId = steamIdInput.trim();
+  if (!accountId) {
+    accountId = 'manual_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8);
   }
 
-  if (!steamId64 && /^\d+$/.test(input)) steamId64 = input;
+  // Заглушка-аватарка: генерируем букву из ника
+  const fallbackAvatar = 'data:image/svg+xml;utf8,' + encodeURIComponent(
+    `<svg xmlns="http://www.w3.org/2000/svg" width="96" height="96">
+      <rect width="96" height="96" fill="#2A2A33"/>
+      <text x="48" y="60" font-family="Arial" font-size="40" fill="#7A3BFF"
+            text-anchor="middle" font-weight="bold">${name.charAt(0).toUpperCase()}</text>
+    </svg>`
+  );
 
-  if (!steamId64) {
-    const results = await fetchJSON(`${OPENDOTA}/search?q=` + encodeURIComponent(input));
-    if (!results.length) throw new Error('Игрок не найден. Попробуй числовой Steam ID.');
-    return await fetchByAccountId(results[0].account_id);
-  }
-
-  let accountId = steamId64;
-  if (steamId64.length === 17 && steamId64.startsWith('7656119')) {
-    accountId = (BigInt(steamId64) - 76561197960265728n).toString();
-  }
-  return await fetchByAccountId(accountId);
-}
-
-async function fetchByAccountId(accountId) {
-  const data = await fetchJSON(`${OPENDOTA}/players/` + accountId);
-  if (data.error || !data.profile) {
-    throw new Error('Профиль не найден в OpenDota. Игрок мог не играть публичные матчи.');
-  }
   return {
-    account_id: data.profile.account_id,
-    name: data.profile.personaname,
-    avatar: data.profile.avatarfull,
-    rank_tier: data.rank_tier,
-    leaderboard_rank: data.leaderboard_rank,
+    account_id: accountId,
+    name: name,
+    avatar: avatar || fallbackAvatar,
+    rank_tier: rankTier,
+    leaderboard_rank: null,
   };
 }
 
 /* =========================================================
-   3. РАНГ
+   3. РАНГ (EN / RU)
    ========================================================= */
 const MEDALS_EN = {1:'Herald',2:'Guardian',3:'Crusader',4:'Archon',5:'Legend',6:'Ancient',7:'Divine',8:'Immortal'};
 const MEDALS_RU = {1:'Геральд',2:'Страж',3:'Крестоносец',4:'Архонт',5:'Легенда',6:'Древний',7:'Божество',8:'Титан'};
@@ -554,9 +582,7 @@ function parseRank(rankTier, lbRank) {
   const star = rankTier % 10;
 
   if (medal === 8) {
-    const en = lbRank ? `Immortal #${lbRank}` : 'Immortal';
-    const ru = lbRank ? `Титан #${lbRank}` : 'Титан';
-    return { name: `${en} / ${ru}`, color: '#ef4444', icon: '👑' };
+    return { name: 'Immortal / Титан', color: '#ef4444', icon: '👑' };
   }
 
   const colors = {1:'#a1a1aa',2:'#a3a3a3',3:'#84cc16',4:'#22c55e',5:'#14b8a6',6:'#3b82f6',7:'#8b5cf6'};
@@ -573,7 +599,7 @@ function playerCardHTML(p, removeFn) {
   const removeBtn = isAdmin() ? `<button class="remove" onclick="${removeFn}">×</button>` : '';
   return `
     <div class="player">
-      <img src="${p.avatar}" alt="">
+      <img src="${p.avatar}" alt="" onerror="this.style.display='none'">
       <div>
         <div class="name">${escapeHtml(p.name)}</div>
         <div class="rank" style="color:${rank.color}">${rank.icon} ${rank.name}</div>
@@ -598,7 +624,7 @@ function renderSolo() {
   }
   empty.classList.add('hidden');
   list.innerHTML = state.soloPlayers
-    .map(p => playerCardHTML(p, `removeSolo(${p.account_id})`))
+    .map(p => playerCardHTML(p, `removeSolo('${p.account_id}')`))
     .join('');
 }
 
@@ -619,14 +645,8 @@ function renderTeams() {
         ${isAdm ? `<button class="btn danger" onclick="removeTeam('${t.id}')">Удалить</button>` : ''}
       </div>
       <div class="grid">
-        ${t.players.map(p => playerCardHTML(p, `removePlayerFromTeam('${t.id}', ${p.account_id})`)).join('')}
+        ${t.players.map(p => playerCardHTML(p, `removePlayerFromTeam('${t.id}', '${p.account_id}')`)).join('')}
       </div>
-      ${isAdm && t.players.length < 5 ? `
-        <div class="row" style="margin-top:10px;">
-          <input placeholder="Steam ID игрока для этой команды" id="team-input-${t.id}" />
-          <button class="btn" onclick="addPlayerToTeam('${t.id}')">Добавить</button>
-        </div>
-      ` : ''}
     </div>
   `).join('');
 }
@@ -640,7 +660,6 @@ async function handleAddPlayer() {
   const msg = document.getElementById('input-msg');
   const btn = document.getElementById('add-player-btn');
   const val = input.value.trim();
-  if (!val) return;
 
   btn.disabled = true;
   btn.textContent = 'Загрузка...';
@@ -670,7 +689,12 @@ async function handleAddPlayer() {
       }
       renderTeams();
     }
+
     input.value = '';
+    document.getElementById('p-name').value = '';
+    document.getElementById('p-avatar').value = '';
+    document.getElementById('p-rank').value = '0';
+
     msg.innerHTML = `<div class="msg success">✓ ${escapeHtml(player.name)} добавлен</div>`;
     saveState();
   } catch (e) {
@@ -700,23 +724,6 @@ function removePlayerFromTeam(teamId, accId) {
   if (!isAdmin()) return;
   const t = state.teams.find(t => t.id === teamId);
   if (t) { t.players = t.players.filter(p => p.account_id !== accId); renderTeams(); saveState(); }
-}
-async function addPlayerToTeam(teamId) {
-  if (!isAdmin()) return;
-  const input = document.getElementById('team-input-' + teamId);
-  const val = input.value.trim();
-  if (!val) return;
-  try {
-    const player = await fetchPlayer(val);
-    const t = state.teams.find(t => t.id === teamId);
-    if (!t) return;
-    if (t.players.length >= 5) return alert('В команде уже 5 игроков');
-    if (t.players.find(p => p.account_id === player.account_id)) return alert('Уже в команде');
-    t.players.push(player);
-    renderTeams(); saveState();
-  } catch (e) {
-    alert(e.message);
-  }
 }
 
 /* =========================================================
@@ -828,181 +835,4 @@ function matchHTML(match) {
   const canPlay = isAdmin() && match.p1 && match.p2;
   return `
     <div class="match">
-      ${slotHTML(match.p1, match.winner, match.p1 && match.winner?.id === match.p1.id, canPlay, `setWinner('${match.id}', 1)`)}
-      <div class="divider"></div>
-      ${slotHTML(match.p2, match.winner, match.p2 && match.winner?.id === match.p2.id, canPlay, `setWinner('${match.id}', 2)`)}
-    </div>
-  `;
-}
-
-function slotHTML(player, winner, isWinner, canPlay, onClick) {
-  if (!player) {
-    return `<div class="slot"><span class="tbd">TBD</span></div>`;
-  }
-  return `
-    <button class="slot ${isWinner ? 'winner' : ''}"
-            ${canPlay ? `onclick="${onClick}"` : 'disabled'}>
-      ${player.avatar ? `<img src="${player.avatar}">` : ''}
-      <span>${escapeHtml(player.name)}</span>
-    </button>
-  `;
-}
-
-function setWinner(matchId, slot) {
-  if (!isAdmin()) return;
-  const rounds = state.bracket.rounds;
-
-  let match = null, rIdx = -1, mIdx = -1;
-  rounds.forEach((r, ri) => r.forEach((m, mi) => {
-    if (m.id === matchId) { match = m; rIdx = ri; mIdx = mi; }
-  }));
-  if (!match) return;
-
-  const winner = slot === 1 ? match.p1 : match.p2;
-   if (!winner || !loser) return;
-
-  // Если меняем победителя — убираем старого из следующего раунда
-  if (match.winner && match.winner.id !== winner.id && rIdx + 1 < rounds.length) {
-    const nextMatch = rounds[rIdx + 1][Math.floor(mIdx / 2)];
-    const slotKey = (mIdx % 2 === 0) ? 'p1' : 'p2';
-    if (nextMatch && nextMatch[slotKey]?.id === match.winner.id) {
-      nextMatch[slotKey] = null;
-      nextMatch.winner = null;
-    }
-  }
-
-  match.winner = winner;
-
-  if (rIdx + 1 < rounds.length) {
-    const nextMatch = rounds[rIdx + 1][Math.floor(mIdx / 2)];
-    const slotKey = (mIdx % 2 === 0) ? 'p1' : 'p2';
-    nextMatch[slotKey] = winner;
-    nextMatch.winner = null;
-  } else {
-    setTimeout(() => alert('🏆 Победитель турнира: ' + winner.name), 150);
-  }
-
-  saveState();
-  renderBracket();
-}
-
-/* =========================================================
-   8. ПЕРЕКЛЮЧЕНИЕ ВКЛАДОК
-   ========================================================= */
-function switchTab(tab) {
-  document.querySelectorAll('nav button').forEach(b => {
-    b.classList.toggle('active', b.dataset.tab === tab);
-  });
-  const adminSection = document.getElementById('tab-admin');
-  const bracketSection = document.getElementById('tab-bracket');
-  if (adminSection) adminSection.classList.toggle('hidden', tab !== 'admin');
-  if (bracketSection) bracketSection.classList.toggle('hidden', tab !== 'bracket');
-  if (tab === 'bracket') renderBracket();
-}
-
-function switchSubTab(sub) {
-  document.querySelectorAll('[data-sub]').forEach(b => {
-    b.classList.toggle('active', b.dataset.sub === sub);
-  });
-  const solo = document.getElementById('sub-solo');
-  const teams = document.getElementById('sub-teams');
-  if (solo) solo.classList.toggle('hidden', sub !== 'solo');
-  if (teams) teams.classList.toggle('hidden', sub !== 'teams');
-}
-
-function genId() {
-  return 't' + Math.random().toString(36).slice(2, 10);
-}
-/* =========================================================
-   9. ИНИЦИАЛИЗАЦИЯ
-   ========================================================= */
-function init() {
-  document.querySelectorAll('nav button').forEach(b => {
-    b.onclick = () => switchTab(b.dataset.tab);
-  });
-  document.querySelectorAll('[data-sub]').forEach(b => {
-    b.onclick = () => switchSubTab(b.dataset.sub);
-  });
-
-  const modeSel = document.getElementById('mode');
-  const typeSel = document.getElementById('bracket-type');
-  const maxSel = document.getElementById('max-participants');
-
-  if (modeSel) {
-    modeSel.value = state.mode;
-    modeSel.onchange = e => { state.mode = e.target.value; saveState(); renderAll(); };
-  }
-  if (typeSel) {
-    typeSel.value = state.bracketType;
-    typeSel.onchange = e => { state.bracketType = e.target.value; saveState(); };
-  }
-  if (maxSel) {
-    maxSel.value = state.maxParticipants;
-    maxSel.onchange = e => { state.maxParticipants = +e.target.value; saveState(); };
-  }
-
-  const addBtn = document.getElementById('add-player-btn');
-  const playerInput = document.getElementById('player-input');
-  if (addBtn) addBtn.onclick = handleAddPlayer;
-  if (playerInput) playerInput.addEventListener('keydown', e => {
-    if (e.key === 'Enter') handleAddPlayer();
-  });
-
-  const addTeamBtn = document.getElementById('add-team-btn');
-  const genBtn = document.getElementById('generate-bracket');
-  const resetBtn = document.getElementById('reset-all');
-
-  if (addTeamBtn) addTeamBtn.onclick = () => {
-    if (!isAdmin()) return;
-    state.teams.push({ id: genId(), name: `Team ${state.teams.length + 1}`, players: [] });
-    renderTeams(); saveState();
-  };
-  if (genBtn) genBtn.onclick = generateBracket;
-  if (resetBtn) resetBtn.onclick = () => {
-    if (!isAdmin()) return;
-    if (!confirm('Удалить весь турнир?')) return;
-    state.soloPlayers = [];
-    state.teams = [];
-    state.bracket = null;
-    saveState();
-    renderAll();
-    switchTab('admin');
-    alert('Готово');
-  };
-
-  checkAdminAccess();
-  renderAll();
-}
-
-/* =========================================================
-   10. ПРОВЕРКА АДМИН-КЛЮЧА
-   ========================================================= */
-function checkAdminAccess() {
-  const params = new URLSearchParams(window.location.search);
-  if (params.get('admin') === ADMIN_KEY) {
-    const btn = document.getElementById('admin-tab-btn');
-    if (btn) btn.style.display = 'inline-block';
-    switchTab('admin');
-  } else {
-    switchTab('bracket');
-  }
-}
-
-function renderAll() {
-  renderSolo();
-  renderTeams();
-  renderBracket();
-}
-
-// Экспорт в window для onclick из HTML
-window.removeSolo = removeSolo;
-window.removeTeam = removeTeam;
-window.renameTeam = renameTeam;
-window.removePlayerFromTeam = removePlayerFromTeam;
-window.addPlayerToTeam = addPlayerToTeam;
-window.setWinner = setWinner;
-
-init();
-</script>
-</body>
-</html>
+      ${slotHTML(match.p1, match.winner, match.p1 && match.winner?.id === match.p1.id, canPlay
