@@ -835,4 +835,180 @@ function matchHTML(match) {
   const canPlay = isAdmin() && match.p1 && match.p2;
   return `
     <div class="match">
-      ${slotHTML(match.p1, match.winner, match.p1 && match.winner?.id === match.p1.id, canPlay
+      ${slotHTML(match.p1, match.winner, match.p1 && match.winner?.id === match.p1.id, canPlay, `setWinner('${match.id}', 1)`)}
+      <div class="divider"></div>
+      ${slotHTML(match.p2, match.winner, match.p2 && match.winner?.id === match.p2.id, canPlay, `setWinner('${match.id}', 2)`)}
+    </div>
+  `;
+}
+
+function slotHTML(player, winner, isWinner, canPlay, onClick) {
+  if (!player) {
+    return `<div class="slot"><span class="tbd">TBD</span></div>`;
+  }
+  return `
+    <button class="slot ${isWinner ? 'winner' : ''}"
+            ${canPlay ? `onclick="${onClick}"` : 'disabled'}>
+      ${player.avatar ? `<img src="${player.avatar}" onerror="this.style.display='none'">` : ''}
+      <span>${escapeHtml(player.name)}</span>
+    </button>
+  `;
+}
+
+function setWinner(matchId, slot) {
+  if (!isAdmin()) return;
+  const rounds = state.bracket.rounds;
+
+  let match = null, rIdx = -1, mIdx = -1;
+  rounds.forEach((r, ri) => r.forEach((m, mi) => {
+    if (m.id === matchId) { match = m; rIdx = ri; mIdx = mi; }
+  }));
+  if (!match) return;
+
+  const winner = slot === 1 ? match.p1 : match.p2;
+  const loser = slot === 1 ? match.p2 : match.p1;
+  if (!winner || !loser) return;
+
+  if (match.winner && match.winner.id !== winner.id && rIdx + 1 < rounds.length) {
+    const nextMatch = rounds[rIdx + 1][Math.floor(mIdx / 2)];
+    const slotKey = (mIdx % 2 === 0) ? 'p1' : 'p2';
+    if (nextMatch && nextMatch[slotKey]?.id === match.winner.id) {
+      nextMatch[slotKey] = null;
+      nextMatch.winner = null;
+    }
+  }
+
+  match.winner = winner;
+
+  if (rIdx + 1 < rounds.length) {
+    const nextMatch = rounds[rIdx + 1][Math.floor(mIdx / 2)];
+    const slotKey = (mIdx % 2 === 0) ? 'p1' : 'p2';
+    nextMatch[slotKey] = winner;
+    nextMatch.winner = null;
+  } else {
+    setTimeout(() => alert('🏆 Победитель турнира: ' + winner.name), 150);
+  }
+
+  saveState();
+  renderBracket();
+}
+
+/* =========================================================
+   8. ПЕРЕКЛЮЧЕНИЕ ВКЛАДОК
+   ========================================================= */
+function switchTab(tab) {
+  document.querySelectorAll('nav button').forEach(b => {
+    b.classList.toggle('active', b.dataset.tab === tab);
+  });
+  const adminSection = document.getElementById('tab-admin');
+  const bracketSection = document.getElementById('tab-bracket');
+  if (adminSection) adminSection.classList.toggle('hidden', tab !== 'admin');
+  if (bracketSection) bracketSection.classList.toggle('hidden', tab !== 'bracket');
+  if (tab === 'bracket') renderBracket();
+}
+
+function switchSubTab(sub) {
+  document.querySelectorAll('[data-sub]').forEach(b => {
+    b.classList.toggle('active', b.dataset.sub === sub);
+  });
+  const solo = document.getElementById('sub-solo');
+  const teams = document.getElementById('sub-teams');
+  if (solo) solo.classList.toggle('hidden', sub !== 'solo');
+  if (teams) teams.classList.toggle('hidden', sub !== 'teams');
+}
+
+function genId() {
+  return 't' + Math.random().toString(36).slice(2, 10);
+}
+
+/* =========================================================
+   9. ИНИЦИАЛИЗАЦИЯ
+   ========================================================= */
+function init() {
+  document.querySelectorAll('nav button').forEach(b => {
+    b.onclick = () => switchTab(b.dataset.tab);
+  });
+  document.querySelectorAll('[data-sub]').forEach(b => {
+    b.onclick = () => switchSubTab(b.dataset.sub);
+  });
+
+  const modeSel = document.getElementById('mode');
+  const typeSel = document.getElementById('bracket-type');
+  const maxSel = document.getElementById('max-participants');
+
+  if (modeSel) {
+    modeSel.value = state.mode;
+    modeSel.onchange = e => { state.mode = e.target.value; saveState(); renderAll(); };
+  }
+  if (typeSel) {
+    typeSel.value = state.bracketType;
+    typeSel.onchange = e => { state.bracketType = e.target.value; saveState(); };
+  }
+  if (maxSel) {
+    maxSel.value = state.maxParticipants;
+    maxSel.onchange = e => { state.maxParticipants = +e.target.value; saveState(); };
+  }
+
+  const addBtn = document.getElementById('add-player-btn');
+  const playerInput = document.getElementById('player-input');
+  if (addBtn) addBtn.onclick = handleAddPlayer;
+  if (playerInput) playerInput.addEventListener('keydown', e => {
+    if (e.key === 'Enter') handleAddPlayer();
+  });
+
+  const addTeamBtn = document.getElementById('add-team-btn');
+  const genBtn = document.getElementById('generate-bracket');
+  const resetBtn = document.getElementById('reset-all');
+
+  if (addTeamBtn) addTeamBtn.onclick = () => {
+    if (!isAdmin()) return;
+    state.teams.push({ id: genId(), name: `Team ${state.teams.length + 1}`, players: [] });
+    renderTeams(); saveState();
+  };
+  if (genBtn) genBtn.onclick = generateBracket;
+  if (resetBtn) resetBtn.onclick = () => {
+    if (!isAdmin()) return;
+    if (!confirm('Удалить весь турнир?')) return;
+    state.soloPlayers = [];
+    state.teams = [];
+    state.bracket = null;
+    saveState();
+    renderAll();
+    switchTab('admin');
+    alert('Готово');
+  };
+
+  checkAdminAccess();
+  renderAll();
+}
+
+/* =========================================================
+   10. ПРОВЕРКА АДМИН-КЛЮЧА
+   ========================================================= */
+function checkAdminAccess() {
+  const params = new URLSearchParams(window.location.search);
+  if (params.get('admin') === ADMIN_KEY) {
+    const btn = document.getElementById('admin-tab-btn');
+    if (btn) btn.style.display = 'inline-block';
+    switchTab('admin');
+  } else {
+    switchTab('bracket');
+  }
+}
+
+function renderAll() {
+  renderSolo();
+  renderTeams();
+  renderBracket();
+}
+
+window.removeSolo = removeSolo;
+window.removeTeam = removeTeam;
+window.renameTeam = renameTeam;
+window.removePlayerFromTeam = removePlayerFromTeam;
+window.setWinner = setWinner;
+
+init();
+</script>
+</body>
+</html>
