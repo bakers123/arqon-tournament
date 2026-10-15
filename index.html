@@ -604,7 +604,73 @@ function shuffle(arr) {
   }
   return a;
 }
-  function slotHTML(player, isWinner) {
+  function generateBracket() {
+  if (!isAdmin()) return;
+  let participants;
+  if (state.mode === '1x1') {
+    participants = state.soloPlayers.map(p => ({ id: 'p' + p.account_id, name: p.name, avatar: p.avatar }));
+  } else {
+    participants = state.teams.filter(t => t.players.length > 0).map(t => ({
+      id: t.id, name: t.name, avatar: t.players[0] ? t.players[0].avatar : ''
+    }));
+  }
+  if (participants.length < 2) { alert('Нужно минимум 2 участника'); return; }
+  if (participants.length > state.maxParticipants) participants = participants.slice(0, state.maxParticipants);
+  const size = Math.pow(2, Math.ceil(Math.log2(participants.length)));
+  const slots = shuffle(participants);
+  while (slots.length < size) slots.push(null);
+  const rounds = [];
+  let current = [];
+  for (let i = 0; i < slots.length; i += 2) {
+    current.push({ id: 'r1-' + (i / 2), round: 0, p1: slots[i], p2: slots[i + 1], winner: null, score: null });
+  }
+  rounds.push(current);
+  let rIdx = 1;
+  while (current.length > 1) {
+    const next = [];
+    for (let i = 0; i < current.length; i += 2) {
+      next.push({ id: 'r' + (rIdx + 1) + '-' + (i / 2), round: rIdx, p1: null, p2: null, winner: null, score: null });
+    }
+    rounds.push(next);
+    current = next; rIdx++;
+  }
+  state.bracket = { rounds, type: 'single', mode: state.mode };
+  saveState();
+  switchTab('bracket');
+  renderBracket();
+}
+
+function countParticipants() {
+  const r1 = state.bracket.rounds[0];
+  let total = 0;
+  for (const m of r1) { if (m.p1) total++; if (m.p2) total++; }
+  return total;
+}
+
+function matchHTML(match) {
+  const canPlay = isAdmin() && match.p1 && match.p2;
+  const p1W = match.p1 && match.winner && match.winner.id === match.p1.id;
+  const p2W = match.p2 && match.winner && match.winner.id === match.p2.id;
+  const score = match.score || { p1: '', p2: '' };
+  let html = '<div class="match">';
+  html += slotHTML(match.p1, p1W);
+  html += '<div class="divider"></div>';
+  html += slotHTML(match.p2, p2W);
+  if (canPlay) {
+    html += '<div class="score-box">';
+    html += '<input type="number" min="0" max="2" class="score-input" id="score-' + match.id + '-1" value="' + (score.p1 !== '' ? score.p1 : '') + '" placeholder="0" />';
+    html += '<span class="score-sep">:</span>';
+    html += '<input type="number" min="0" max="2" class="score-input" id="score-' + match.id + '-2" value="' + (score.p2 !== '' ? score.p2 : '') + '" placeholder="0" />';
+    html += '<button class="btn score-save" onclick="setScore(\'' + match.id + '\')">OK</button>';
+    html += '</div>';
+  } else if (match.winner && match.score) {
+    html += '<div class="score-display">' + match.score.p1 + ' : ' + match.score.p2 + '</div>';
+  }
+  html += '</div>';
+  return html;
+}
+
+function slotHTML(player, isWinner) {
   if (!player) return '<div class="slot"><span class="tbd">TBD</span></div>';
   const cls = isWinner ? 'winner' : '';
   return '<div class="slot ' + cls + '">' +
@@ -644,19 +710,15 @@ function setScore(matchId) {
     if (m.id === matchId) { match = m; rIdx = ri; mIdx = mi; }
   }));
   if (!match) return;
-
   const s1 = parseInt(document.getElementById('score-' + matchId + '-1').value) || 0;
   const s2 = parseInt(document.getElementById('score-' + matchId + '-2').value) || 0;
-
   if (s1 > 2 || s2 > 2) { alert('Максимум 2 карты в Bo3'); return; }
   if (s1 < 0 || s2 < 0) { alert('Счёт не может быть отрицательным'); return; }
-  if (s1 === s2) { alert('Ничья невозможна в Bo3. Кто-то должен выиграть 2 карты.'); return; }
+  if (s1 === s2) { alert('Ничья невозможна в Bo3.'); return; }
   if (s1 !== 2 && s2 !== 2) { alert('Победитель должен набрать ровно 2 карты (Bo3).'); return; }
-
   match.score = { p1: s1, p2: s2 };
   const winner = s1 === 2 ? match.p1 : match.p2;
   const oldWinner = match.winner;
-
   if (oldWinner && oldWinner.id !== winner.id && rIdx + 1 < rounds.length) {
     const nextMatch = rounds[rIdx + 1][Math.floor(mIdx / 2)];
     const slotKey = (mIdx % 2 === 0) ? 'p1' : 'p2';
@@ -666,9 +728,7 @@ function setScore(matchId) {
       nextMatch.score = null;
     }
   }
-
   match.winner = winner;
-
   if (rIdx + 1 < rounds.length) {
     const nextMatch = rounds[rIdx + 1][Math.floor(mIdx / 2)];
     const slotKey = (mIdx % 2 === 0) ? 'p1' : 'p2';
@@ -678,7 +738,6 @@ function setScore(matchId) {
   } else {
     setTimeout(() => alert('🏆 Победитель турнира: ' + winner.name + ' (' + s1 + ':' + s2 + ')'), 150);
   }
-
   saveState();
   renderBracket();
 }
