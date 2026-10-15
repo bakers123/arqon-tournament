@@ -209,7 +209,7 @@
     background: var(--panel);
     border: 1px solid var(--border);
     border-radius: 8px;
-    width: 230px;
+    width: 250px;
     overflow: hidden;
     transition: .2s;
   }
@@ -219,10 +219,8 @@
     display: flex;
     align-items: center;
     gap: 10px;
-    cursor: pointer;
     font-size: 13px;
     font-weight: 600;
-    transition: .15s;
     background: transparent;
     border: none;
     color: inherit;
@@ -231,13 +229,49 @@
     font-family: 'Rajdhani', sans-serif;
     letter-spacing: 0.5px;
   }
-  .slot:hover:not(:disabled) { background: rgba(122,59,255,0.1); }
-  .slot:disabled { cursor: default; }
   .slot img { width: 24px; height: 24px; border-radius: 4px; object-fit: cover; }
   .slot.winner { background: rgba(122,59,255,0.2); color: var(--accent-2); }
   .slot.winner::after { content: '✓'; margin-left: auto; color: var(--accent-2); font-weight: 900; }
   .slot .tbd { color: var(--text-dim); font-style: italic; }
   .divider { height: 1px; background: var(--border); }
+  .score-box {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 10px;
+    background: rgba(122,59,255,0.08);
+    border-top: 1px solid var(--border);
+  }
+  .score-input {
+    width: 42px;
+    padding: 5px 6px;
+    text-align: center;
+    font-size: 13px;
+    font-weight: 700;
+    background: #0F0F14;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    color: var(--text);
+  }
+  .score-input:focus { border-color: var(--accent); outline: none; }
+  .score-sep { color: var(--text-dim); font-weight: 900; }
+  .score-save {
+    padding: 5px 10px;
+    font-size: 11px;
+    letter-spacing: 1px;
+    margin-left: auto;
+    box-shadow: none;
+  }
+  .score-display {
+    text-align: center;
+    padding: 6px;
+    font-weight: 700;
+    font-size: 13px;
+    letter-spacing: 2px;
+    color: var(--text-dim);
+    border-top: 1px solid var(--border);
+    background: rgba(122,59,255,0.05);
+  }
   .empty {
     text-align: center;
     color: var(--text-dim);
@@ -434,77 +468,56 @@ function isAdmin() {
 }
 
 const STATE_KEY = 'arqon_tournament_state';
-
 let state = loadState() || {
-  mode: '5x5',
-  bracketType: 'single',
-  maxParticipants: 8,
-  soloPlayers: [],
-  teams: [],
-  bracket: null,
+  mode: '5x5', bracketType: 'single', maxParticipants: 8,
+  soloPlayers: [], teams: [], bracket: null,
 };
 
 function saveState() { localStorage.setItem(STATE_KEY, JSON.stringify(state)); }
 function loadState() {
-  try { return JSON.parse(localStorage.getItem(STATE_KEY)); }
-  catch { return null; }
-}
-
-async function fetchPlayer(steamIdInput) {
-  const name = document.getElementById('p-name').value.trim();
-  const avatar = document.getElementById('p-avatar').value.trim();
-  const rankTier = parseInt(document.getElementById('p-rank').value) || 0;
-
-  if (!name) throw new Error('Введи ник игрока');
-
-  let accountId = steamIdInput.trim();
-  if (!accountId) {
-    accountId = 'manual_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8);
-  }
-
-  const fallbackAvatar = 'https://ui-avatars.com/api/?name=' +
-    encodeURIComponent(name.charAt(0)) +
-    '&background=7A3BFF&color=F2F2F2&size=96&bold=true';
-
-  return {
-    account_id: accountId,
-    name: name,
-    avatar: avatar || fallbackAvatar,
-    rank_tier: rankTier,
-    leaderboard_rank: null,
-  };
-}
-
-const MEDALS_EN = {1:'Herald',2:'Guardian',3:'Crusader',4:'Archon',5:'Legend',6:'Ancient',7:'Divine',8:'Immortal'};
-const MEDALS_RU = {1:'Геральд',2:'Страж',3:'Крестоносец',4:'Архонт',5:'Легенда',6:'Древний',7:'Божество',8:'Титан'};
-
-function parseRank(rankTier, lbRank) {
-  if (!rankTier) return { name: 'Uncalibrated / Без калибровки', color: '#8A8A96', icon: '❔' };
-  const medal = Math.floor(rankTier / 10);
-  const star = rankTier % 10;
-  if (medal === 8) {
-    return { name: 'Immortal / Титан', color: '#ef4444', icon: '👑' };
-  }
-  const colors = {1:'#a1a1aa',2:'#a3a3a3',3:'#84cc16',4:'#22c55e',5:'#14b8a6',6:'#3b82f6',7:'#8b5cf6'};
-  const en = MEDALS_EN[medal] ? MEDALS_EN[medal] + ' ' + star : '? ' + star;
-  const ru = MEDALS_RU[medal] ? MEDALS_RU[medal] + ' ' + star : '? ' + star;
-  return { name: en + ' / ' + ru, color: colors[medal] || '#8A8A96', icon: '⭐' };
+  try { return JSON.parse(localStorage.getItem(STATE_KEY)); } catch { return null; }
 }
 
 function escapeHtml(s) {
   return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
 
+async function fetchPlayer(steamIdInput) {
+  const name = document.getElementById('p-name').value.trim();
+  const avatar = document.getElementById('p-avatar').value.trim();
+  const rankTier = parseInt(document.getElementById('p-rank').value) || 0;
+  if (!name) throw new Error('Введи ник игрока');
+  let accountId = steamIdInput.trim();
+  if (!accountId) accountId = 'manual_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8);
+  const fallbackAvatar = 'https://ui-avatars.com/api/?name=' +
+    encodeURIComponent(name.charAt(0)) +
+    '&background=7A3BFF&color=F2F2F2&size=96&bold=true';
+  return { account_id: accountId, name: name, avatar: avatar || fallbackAvatar, rank_tier: rankTier, leaderboard_rank: null };
+}
+
+const MEDALS_EN = {1:'Herald',2:'Guardian',3:'Crusader',4:'Archon',5:'Legend',6:'Ancient',7:'Divine',8:'Immortal'};
+const MEDALS_RU = {1:'Геральд',2:'Страж',3:'Крестоносец',4:'Архонт',5:'Легенда',6:'Древний',7:'Божество',8:'Титан'};
+
+function parseRank(rankTier) {
+  if (!rankTier) return { name: 'Uncalibrated / Без калибровки', color: '#8A8A96', icon: '❔' };
+  const medal = Math.floor(rankTier / 10);
+  const star = rankTier % 10;
+  if (medal === 8) return { name: 'Immortal / Титан', color: '#ef4444', icon: '👑' };
+  const colors = {1:'#a1a1aa',2:'#a3a3a3',3:'#84cc16',4:'#22c55e',5:'#14b8a6',6:'#3b82f6',7:'#8b5cf6'};
+  const en = MEDALS_EN[medal] ? MEDALS_EN[medal] + ' ' + star : '? ' + star;
+  const ru = MEDALS_RU[medal] ? MEDALS_RU[medal] + ' ' + star : '? ' + star;
+  return { name: en + ' / ' + ru, color: colors[medal] || '#8A8A96', icon: '⭐' };
+}
+
 function playerCardHTML(p, removeFn) {
-  const rank = parseRank(p.rank_tier, p.leaderboard_rank);
+  const rank = parseRank(p.rank_tier);
   const removeBtn = isAdmin() ? '<button class="remove" onclick="' + removeFn + '">×</button>' : '';
   return '<div class="player">' +
     '<img src="' + p.avatar + '" alt="" onerror="this.style.display=\'none\'">' +
     '<div>' +
       '<div class="name">' + escapeHtml(p.name) + '</div>' +
       '<div class="rank" style="color:' + rank.color + '">' + rank.icon + ' ' + rank.name + '</div>' +
-    '</div>' +
-    removeBtn +
+    '</div>' + removeBtn +
   '</div>';
 }
 
@@ -512,11 +525,7 @@ function renderSolo() {
   const list = document.getElementById('solo-list');
   const empty = document.getElementById('solo-empty');
   if (!list || !empty) return;
-  if (!state.soloPlayers.length) {
-    list.innerHTML = '';
-    empty.classList.remove('hidden');
-    return;
-  }
+  if (!state.soloPlayers.length) { list.innerHTML = ''; empty.classList.remove('hidden'); return; }
   empty.classList.add('hidden');
   list.innerHTML = state.soloPlayers.map(p => playerCardHTML(p, "removeSolo('" + p.account_id + "')")).join('');
 }
@@ -524,22 +533,17 @@ function renderSolo() {
 function renderTeams() {
   const list = document.getElementById('teams-list');
   if (!list) return;
-  if (!state.teams.length) {
-    list.innerHTML = '<div class="empty">Команд пока нет</div>';
-    return;
-  }
+  if (!state.teams.length) { list.innerHTML = '<div class="empty">Команд пока нет</div>'; return; }
   const isAdm = isAdmin();
   list.innerHTML = state.teams.map(t => {
     const players = t.players.map(p => playerCardHTML(p, "removePlayerFromTeam('" + t.id + "','" + p.account_id + "')")).join('');
-    const removeTeamBtn = isAdm ? '<button class="btn danger" onclick="removeTeam(\'' + t.id + '\')">Удалить</button>' : '';
+    const rmTeam = isAdm ? '<button class="btn danger" onclick="removeTeam(\'' + t.id + '\')">Удалить</button>' : '';
     const nameInput = isAdm
       ? '<input value="' + escapeHtml(t.name) + '" onchange="renameTeam(\'' + t.id + '\', this.value)" style="flex:1; font-weight:700; letter-spacing:1px;" />'
       : '<input value="' + escapeHtml(t.name) + '" disabled style="flex:1; font-weight:700; letter-spacing:1px;" />';
     return '<div class="card" style="margin-bottom:12px;">' +
       '<div class="row" style="align-items:center; margin-bottom:10px;">' +
-        nameInput +
-        '<span class="hint" style="margin:0;">' + t.players.length + '/5</span>' +
-        removeTeamBtn +
+        nameInput + '<span class="hint" style="margin:0;">' + t.players.length + '/5</span>' + rmTeam +
       '</div>' +
       '<div class="grid">' + players + '</div>' +
     '</div>';
@@ -552,28 +556,20 @@ async function handleAddPlayer() {
   const msg = document.getElementById('input-msg');
   const btn = document.getElementById('add-player-btn');
   const val = input.value.trim();
-  btn.disabled = true;
-  btn.textContent = 'Загрузка...';
-  msg.innerHTML = '';
+  btn.disabled = true; btn.textContent = 'Загрузка...'; msg.innerHTML = '';
   try {
     const player = await fetchPlayer(val);
     if (state.mode === '1x1') {
-      if (state.soloPlayers.find(p => p.account_id === player.account_id)) {
-        throw new Error('Этот игрок уже добавлен');
-      }
+      if (state.soloPlayers.find(p => p.account_id === player.account_id)) throw new Error('Этот игрок уже добавлен');
       state.soloPlayers.push(player);
       renderSolo();
     } else {
-      if (!state.teams.length) {
-        state.teams.push({ id: genId(), name: 'Team 1', players: [] });
-      }
+      if (!state.teams.length) state.teams.push({ id: genId(), name: 'Team 1', players: [] });
       const team = state.teams[state.teams.length - 1];
       if (team.players.length >= 5) {
         state.teams.push({ id: genId(), name: 'Team ' + (state.teams.length + 1), players: [player] });
       } else {
-        if (team.players.find(p => p.account_id === player.account_id)) {
-          throw new Error('Этот игрок уже в команде');
-        }
+        if (team.players.find(p => p.account_id === player.account_id)) throw new Error('Этот игрок уже в команде');
         team.players.push(player);
       }
       renderTeams();
@@ -587,26 +583,13 @@ async function handleAddPlayer() {
   } catch (e) {
     msg.innerHTML = '<div class="msg error">✕ ' + escapeHtml(e.message) + '</div>';
   } finally {
-    btn.disabled = false;
-    btn.textContent = 'Добавить';
+    btn.disabled = false; btn.textContent = 'Добавить';
   }
 }
 
-function removeSolo(accId) {
-  if (!isAdmin()) return;
-  state.soloPlayers = state.soloPlayers.filter(p => p.account_id !== accId);
-  renderSolo(); saveState();
-}
-function removeTeam(id) {
-  if (!isAdmin()) return;
-  state.teams = state.teams.filter(t => t.id !== id);
-  renderTeams(); saveState();
-}
-function renameTeam(id, name) {
-  if (!isAdmin()) return;
-  const t = state.teams.find(t => t.id === id);
-  if (t) { t.name = name; saveState(); }
-}
+function removeSolo(accId) { if (!isAdmin()) return; state.soloPlayers = state.soloPlayers.filter(p => p.account_id !== accId); renderSolo(); saveState(); }
+function removeTeam(id) { if (!isAdmin()) return; state.teams = state.teams.filter(t => t.id !== id); renderTeams(); saveState(); }
+function renameTeam(id, name) { if (!isAdmin()) return; const t = state.teams.find(t => t.id === id); if (t) { t.name = name; saveState(); } }
 function removePlayerFromTeam(teamId, accId) {
   if (!isAdmin()) return;
   const t = state.teams.find(t => t.id === teamId);
@@ -621,77 +604,13 @@ function shuffle(arr) {
   }
   return a;
 }
-
-function generateBracket() {
-  if (!isAdmin()) return;
-  let participants;
-  if (state.mode === '1x1') {
-    participants = state.soloPlayers.map(p => ({ id: 'p' + p.account_id, name: p.name, avatar: p.avatar }));
-  } else {
-    participants = state.teams.filter(t => t.players.length > 0).map(t => ({
-      id: t.id, name: t.name, avatar: t.players[0] ? t.players[0].avatar : ''
-    }));
-  }
-  if (participants.length < 2) { alert('Нужно минимум 2 участника'); return; }
-  if (participants.length > state.maxParticipants) participants = participants.slice(0, state.maxParticipants);
-
-  const size = Math.pow(2, Math.ceil(Math.log2(participants.length)));
-  const slots = shuffle(participants);
-  while (slots.length < size) slots.push(null);
-
-  const rounds = [];
-  let current = [];
-  for (let i = 0; i < slots.length; i += 2) {
-    current.push({ id: 'r1-' + (i / 2), round: 0, p1: slots[i], p2: slots[i + 1], winner: null });
-  }
-  rounds.push(current);
-  let rIdx = 1;
-  while (current.length > 1) {
-    const next = [];
-    for (let i = 0; i < current.length; i += 2) {
-      next.push({ id: 'r' + (rIdx + 1) + '-' + (i / 2), round: rIdx, p1: null, p2: null, winner: null });
-    }
-    rounds.push(next);
-    current = next;
-    rIdx++;
-  }
-  state.bracket = { rounds, type: 'single', mode: state.mode };
-  saveState();
-  switchTab('bracket');
-  renderBracket();
-}
-
-function countParticipants() {
-  const r1 = state.bracket.rounds[0];
-  let total = 0;
-  for (const m of r1) {
-    if (m.p1) total++;
-    if (m.p2) total++;
-  }
-  return total;
-}
-
-function matchHTML(match) {
-  const canPlay = isAdmin() && match.p1 && match.p2;
-  const p1Winner = match.p1 && match.winner && match.winner.id === match.p1.id;
-  const p2Winner = match.p2 && match.winner && match.winner.id === match.p2.id;
-  return '<div class="match">' +
-    slotHTML(match.p1, p1Winner, canPlay, "setWinner('" + match.id + "', 1)") +
-    '<div class="divider"></div>' +
-    slotHTML(match.p2, p2Winner, canPlay, "setWinner('" + match.id + "', 2)") +
-  '</div>';
-}
-
-function slotHTML(player, isWinner, canPlay, onClick) {
-  if (!player) {
-    return '<div class="slot"><span class="tbd">TBD</span></div>';
-  }
+  function slotHTML(player, isWinner) {
+  if (!player) return '<div class="slot"><span class="tbd">TBD</span></div>';
   const cls = isWinner ? 'winner' : '';
-  const clickAttr = canPlay ? ' onclick="' + onClick + '"' : ' disabled';
-  return '<button class="slot ' + cls + '"' + clickAttr + '>' +
+  return '<div class="slot ' + cls + '">' +
     (player.avatar ? '<img src="' + player.avatar + '" onerror="this.style.display=\'none\'">' : '') +
     '<span>' + escapeHtml(player.name) + '</span>' +
-  '</button>';
+  '</div>';
 }
 
 function renderBracket() {
@@ -707,7 +626,7 @@ function renderBracket() {
   }
   empty.classList.add('hidden');
   const rounds = state.bracket.rounds;
-  info.innerHTML = 'Формат: <b style="color:var(--accent-2)">' + state.bracket.mode + '</b> · Тип: <b style="color:var(--accent-2)">Single Elimination</b> · Участников: <b style="color:var(--accent-2)">' + countParticipants() + '</b>';
+  info.innerHTML = 'Формат: <b style="color:var(--accent-2)">' + state.bracket.mode + '</b> · Тип: <b style="color:var(--accent-2)">Single Elimination (Bo3)</b> · Участников: <b style="color:var(--accent-2)">' + countParticipants() + '</b>';
   wrap.innerHTML = rounds.map((round, ri) => {
     const title = ri === rounds.length - 1 ? '🏆 Финал' : 'Раунд ' + (ri + 1);
     return '<div class="round">' +
@@ -717,7 +636,7 @@ function renderBracket() {
   }).join('');
 }
 
-function setWinner(matchId, slot) {
+function setScore(matchId) {
   if (!isAdmin()) return;
   const rounds = state.bracket.rounds;
   let match = null, rIdx = -1, mIdx = -1;
@@ -725,26 +644,41 @@ function setWinner(matchId, slot) {
     if (m.id === matchId) { match = m; rIdx = ri; mIdx = mi; }
   }));
   if (!match) return;
-  const winner = slot === 1 ? match.p1 : match.p2;
-  const loser = slot === 1 ? match.p2 : match.p1;
-  if (!winner || !loser) return;
-  if (match.winner && match.winner.id !== winner.id && rIdx + 1 < rounds.length) {
+
+  const s1 = parseInt(document.getElementById('score-' + matchId + '-1').value) || 0;
+  const s2 = parseInt(document.getElementById('score-' + matchId + '-2').value) || 0;
+
+  if (s1 > 2 || s2 > 2) { alert('Максимум 2 карты в Bo3'); return; }
+  if (s1 < 0 || s2 < 0) { alert('Счёт не может быть отрицательным'); return; }
+  if (s1 === s2) { alert('Ничья невозможна в Bo3. Кто-то должен выиграть 2 карты.'); return; }
+  if (s1 !== 2 && s2 !== 2) { alert('Победитель должен набрать ровно 2 карты (Bo3).'); return; }
+
+  match.score = { p1: s1, p2: s2 };
+  const winner = s1 === 2 ? match.p1 : match.p2;
+  const oldWinner = match.winner;
+
+  if (oldWinner && oldWinner.id !== winner.id && rIdx + 1 < rounds.length) {
     const nextMatch = rounds[rIdx + 1][Math.floor(mIdx / 2)];
     const slotKey = (mIdx % 2 === 0) ? 'p1' : 'p2';
-    if (nextMatch && nextMatch[slotKey] && nextMatch[slotKey].id === match.winner.id) {
+    if (nextMatch && nextMatch[slotKey] && nextMatch[slotKey].id === oldWinner.id) {
       nextMatch[slotKey] = null;
       nextMatch.winner = null;
+      nextMatch.score = null;
     }
   }
+
   match.winner = winner;
+
   if (rIdx + 1 < rounds.length) {
     const nextMatch = rounds[rIdx + 1][Math.floor(mIdx / 2)];
     const slotKey = (mIdx % 2 === 0) ? 'p1' : 'p2';
     nextMatch[slotKey] = winner;
     nextMatch.winner = null;
+    nextMatch.score = null;
   } else {
-    setTimeout(() => alert('🏆 Победитель турнира: ' + winner.name), 150);
+    setTimeout(() => alert('🏆 Победитель турнира: ' + winner.name + ' (' + s1 + ':' + s2 + ')'), 150);
   }
+
   saveState();
   renderBracket();
 }
@@ -847,9 +781,9 @@ window.removeSolo = removeSolo;
 window.removeTeam = removeTeam;
 window.renameTeam = renameTeam;
 window.removePlayerFromTeam = removePlayerFromTeam;
-window.setWinner = setWinner;
+window.setScore = setScore;
 
 init();
 </script>
 </body>
-</html> 
+</html>
