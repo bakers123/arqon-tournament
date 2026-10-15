@@ -31,7 +31,6 @@
       radial-gradient(ellipse at bottom right, rgba(122,59,255,0.05), transparent 50%);
   }
 
-  /* ============ ШАПКА ============ */
   header {
     background: rgba(11,11,13,0.95);
     border-bottom: 1px solid var(--border);
@@ -89,7 +88,6 @@
 
   main { max-width: 1080px; margin: 0 auto; padding: 28px; }
 
-  /* ============ КАРТОЧКИ ============ */
   .card {
     background: linear-gradient(180deg, var(--panel) 0%, var(--panel-2) 100%);
     border: 1px solid var(--border);
@@ -118,7 +116,6 @@
     color: var(--text);
   }
 
-  /* ============ ФОРМЫ ============ */
   input, select {
     background: #0F0F14;
     border: 1px solid var(--border);
@@ -138,7 +135,6 @@
   }
   select { cursor: pointer; }
 
-  /* ============ КНОПКИ ============ */
   button.btn {
     background: var(--accent);
     color: white;
@@ -182,7 +178,6 @@
     color: var(--text);
   }
 
-  /* ============ РАЗМЕТКА ============ */
   .row { display: flex; gap: 10px; }
   .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 12px; }
 
@@ -196,7 +191,6 @@
     font-weight: 600;
   }
 
-  /* ============ КАРТОЧКА ИГРОКА ============ */
   .player {
     display: flex;
     align-items: center;
@@ -237,7 +231,6 @@
   }
   .player .remove:hover { color: var(--danger); }
 
-  /* ============ СООБЩЕНИЯ ============ */
   .msg {
     padding: 10px 14px;
     border-radius: 6px;
@@ -249,7 +242,6 @@
   .msg.error { background: rgba(220,38,38,0.12); color: #F87171; border: 1px solid rgba(220,38,38,0.3); }
   .msg.success { background: rgba(122,59,255,0.12); color: var(--accent-2); border: 1px solid rgba(122,59,255,0.3); }
 
-  /* ============ СЕТКА ============ */
   .bracket-wrap { overflow-x: auto; padding: 20px 0; }
   .bracket { display: flex; gap: 40px; min-width: max-content; }
   .round { display: flex; flex-direction: column; justify-content: space-around; gap: 14px; }
@@ -305,7 +297,6 @@
   .slot .tbd { color: var(--text-dim); font-style: italic; }
   .divider { height: 1px; background: var(--border); }
 
-  /* ============ ПРОЧЕЕ ============ */
   .empty {
     text-align: center;
     color: var(--text-dim);
@@ -379,7 +370,6 @@
 </header>
 
 <main>
-  <!-- АДМИН ПАНЕЛЬ -->
   <section id="tab-admin" class="hidden">
     <div class="card">
       <h2>Настройки турнира</h2>
@@ -445,7 +435,6 @@
     </div>
   </section>
 
-  <!-- СЕТКА (ПУБЛИЧНАЯ) -->
   <section id="tab-bracket">
     <div class="card">
       <div id="bracket-info" class="hint"></div>
@@ -461,9 +450,9 @@
 
 <script>
 /* =========================================================
-   0. НАСТРОЙКА ДОСТУПА
+   0. ДОСТУП
    ========================================================= */
-const ADMIN_KEY = 'ARQON2026123123123123123'; // 🔑 поменяй на свой длинный ключ
+const ADMIN_KEY = 'ARQON2026123123123123123';
 
 function isAdmin() {
   const params = new URLSearchParams(window.location.search);
@@ -491,8 +480,21 @@ function loadState() {
 }
 
 /* =========================================================
-   2. OPENDOTA API
+   2. OPENDOTA API ЧЕРЕЗ CORS-ПРОКСИ
    ========================================================= */
+const PROXY = 'https://corsproxy.io/?url=';
+const OPENDOTA = 'https://api.opendota.com/api';
+
+function proxied(url) {
+  return PROXY + encodeURIComponent(url);
+}
+
+async function fetchJSON(url) {
+  const r = await fetch(proxied(url));
+  if (!r.ok) throw new Error(`Сервер ответил ${r.status}`);
+  return await r.json();
+}
+
 async function fetchPlayer(input) {
   input = input.trim();
   if (!input) throw new Error('Введи ID или ссылку');
@@ -505,8 +507,7 @@ async function fetchPlayer(input) {
   if (!steamId64) {
     m = input.match(/steamcommunity\.com\/id\/([^\/\s]+)/);
     if (m) {
-      const r = await fetch('https://api.opendota.com/api/search?q=' + encodeURIComponent(m[1]));
-      const results = await r.json();
+      const results = await fetchJSON(`${OPENDOTA}/search?q=` + encodeURIComponent(m[1]));
       if (!results.length) throw new Error('Игрок не найден по нику. Вставь числовой Steam ID.');
       return await fetchByAccountId(results[0].account_id);
     }
@@ -515,8 +516,7 @@ async function fetchPlayer(input) {
   if (!steamId64 && /^\d+$/.test(input)) steamId64 = input;
 
   if (!steamId64) {
-    const r = await fetch('https://api.opendota.com/api/search?q=' + encodeURIComponent(input));
-    const results = await r.json();
+    const results = await fetchJSON(`${OPENDOTA}/search?q=` + encodeURIComponent(input));
     if (!results.length) throw new Error('Игрок не найден. Попробуй числовой Steam ID.');
     return await fetchByAccountId(results[0].account_id);
   }
@@ -529,9 +529,7 @@ async function fetchPlayer(input) {
 }
 
 async function fetchByAccountId(accountId) {
-  const r = await fetch('https://api.opendota.com/api/players/' + accountId);
-  if (!r.ok) throw new Error('Ошибка OpenDota API');
-  const data = await r.json();
+  const data = await fetchJSON(`${OPENDOTA}/players/` + accountId);
   if (data.error || !data.profile) {
     throw new Error('Профиль не найден в OpenDota. Игрок мог не играть публичные матчи.');
   }
@@ -545,7 +543,7 @@ async function fetchByAccountId(accountId) {
 }
 
 /* =========================================================
-   3. РАНГ (EN / RU)
+   3. РАНГ
    ========================================================= */
 const MEDALS_EN = {1:'Herald',2:'Guardian',3:'Crusader',4:'Archon',5:'Legend',6:'Ancient',7:'Divine',8:'Immortal'};
 const MEDALS_RU = {1:'Геральд',2:'Страж',3:'Крестоносец',4:'Архонт',5:'Легенда',6:'Древний',7:'Божество',8:'Титан'};
@@ -795,7 +793,7 @@ function generateBracket() {
 }
 
 /* =========================================================
-   7. РЕНДЕР СЕТКИ
+   7. СЕТКА
    ========================================================= */
 function renderBracket() {
   const wrap = document.getElementById('bracket');
@@ -843,16 +841,13 @@ function slotHTML(player, winner, isWinner, canPlay, onClick) {
   }
   return `
     <button class="slot ${isWinner ? 'winner' : ''}"
-                        ${canPlay ? `onclick="${onClick}"` : 'disabled'}>
+            ${canPlay ? `onclick="${onClick}"` : 'disabled'}>
       ${player.avatar ? `<img src="${player.avatar}">` : ''}
       <span>${escapeHtml(player.name)}</span>
     </button>
   `;
 }
 
-/* =========================================================
-   8. ПРОДВИЖЕНИЕ ПОБЕДИТЕЛЯ
-   ========================================================= */
 function setWinner(matchId, slot) {
   if (!isAdmin()) return;
   const rounds = state.bracket.rounds;
@@ -864,8 +859,7 @@ function setWinner(matchId, slot) {
   if (!match) return;
 
   const winner = slot === 1 ? match.p1 : match.p2;
-  const loser = slot === 1 ? match.p2 : match.p1;
-  if (!winner || !loser) return;
+   if (!winner || !loser) return;
 
   // Если меняем победителя — убираем старого из следующего раунда
   if (match.winner && match.winner.id !== winner.id && rIdx + 1 < rounds.length) {
@@ -893,7 +887,7 @@ function setWinner(matchId, slot) {
 }
 
 /* =========================================================
-   9. ПЕРЕКЛЮЧЕНИЕ ВКЛАДОК
+   8. ПЕРЕКЛЮЧЕНИЕ ВКЛАДОК
    ========================================================= */
 function switchTab(tab) {
   document.querySelectorAll('nav button').forEach(b => {
@@ -919,12 +913,10 @@ function switchSubTab(sub) {
 function genId() {
   return 't' + Math.random().toString(36).slice(2, 10);
 }
-
 /* =========================================================
-   10. ИНИЦИАЛИЗАЦИЯ
+   9. ИНИЦИАЛИЗАЦИЯ
    ========================================================= */
 function init() {
-  // Вкладки
   document.querySelectorAll('nav button').forEach(b => {
     b.onclick = () => switchTab(b.dataset.tab);
   });
@@ -932,7 +924,6 @@ function init() {
     b.onclick = () => switchSubTab(b.dataset.sub);
   });
 
-  // Настройки
   const modeSel = document.getElementById('mode');
   const typeSel = document.getElementById('bracket-type');
   const maxSel = document.getElementById('max-participants');
@@ -950,7 +941,6 @@ function init() {
     maxSel.onchange = e => { state.maxParticipants = +e.target.value; saveState(); };
   }
 
-  // Добавление игрока
   const addBtn = document.getElementById('add-player-btn');
   const playerInput = document.getElementById('player-input');
   if (addBtn) addBtn.onclick = handleAddPlayer;
@@ -958,7 +948,6 @@ function init() {
     if (e.key === 'Enter') handleAddPlayer();
   });
 
-  // Кнопки
   const addTeamBtn = document.getElementById('add-team-btn');
   const genBtn = document.getElementById('generate-bracket');
   const resetBtn = document.getElementById('reset-all');
@@ -981,14 +970,12 @@ function init() {
     alert('Готово');
   };
 
-  // Проверка админ-доступа
   checkAdminAccess();
-
   renderAll();
 }
 
 /* =========================================================
-   11. ПРОВЕРКА АДМИН-КЛЮЧА
+   10. ПРОВЕРКА АДМИН-КЛЮЧА
    ========================================================= */
 function checkAdminAccess() {
   const params = new URLSearchParams(window.location.search);
@@ -1007,7 +994,7 @@ function renderAll() {
   renderBracket();
 }
 
-// Экспортируем функции в window для onclick из HTML
+// Экспорт в window для onclick из HTML
 window.removeSolo = removeSolo;
 window.removeTeam = removeTeam;
 window.renameTeam = renameTeam;
