@@ -255,13 +255,7 @@
   }
   .score-input:focus { border-color: var(--accent); outline: none; }
   .score-sep { color: var(--text-dim); font-weight: 900; }
-  .score-save {
-    padding: 5px 10px;
-    font-size: 11px;
-    letter-spacing: 1px;
-    margin-left: auto;
-    box-shadow: none;
-  }
+  .score-save { padding: 5px 10px; font-size: 11px; letter-spacing: 1px; margin-left: auto; box-shadow: none; }
   .score-display {
     text-align: center;
     padding: 6px;
@@ -299,7 +293,6 @@
   .tabs-inner button.active { background: var(--accent); border-color: var(--accent); color: white; }
   .hint { font-size: 12px; color: var(--text-dim); margin-top: 8px; letter-spacing: 0.5px; }
   .hint a { color: var(--accent-2); }
-  .hint code { background: #0F0F14; padding: 2px 6px; border-radius: 4px; color: var(--accent-2); font-size: 11px; }
   .hidden { display: none; }
 </style>
 </head>
@@ -362,8 +355,7 @@
     <div class="card">
       <h2>Добавить игрока</h2>
       <div class="hint" style="margin-bottom:12px; margin-top:0;">
-        Открой профиль на <a href="https://www.opendota.com" target="_blank">opendota.com</a>,
-        скопируй ник и ссылку на аватарку. Ранг выбери из списка.
+        Введи ник, ранг выбери из списка. Аватарка — необязательно.
       </div>
       <div class="row" style="margin-bottom:10px;">
         <div style="flex:2">
@@ -459,6 +451,7 @@
     </div>
   </section>
 </main>
+
 <script>
 const ADMIN_KEY = 'ARQON2026123123123123123';
 
@@ -480,6 +473,10 @@ function loadState() {
 
 function escapeHtml(s) {
   return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+function genId() {
+  return 't' + Math.random().toString(36).slice(2, 10);
 }
 
 async function fetchPlayer(steamIdInput) {
@@ -604,7 +601,8 @@ function shuffle(arr) {
   }
   return a;
 }
-  function generateBracket() {
+
+function generateBracket() {
   if (!isAdmin()) return;
   let participants;
   if (state.mode === '1x1') {
@@ -761,10 +759,6 @@ function switchSubTab(sub) {
   const teams = document.getElementById('sub-teams');
   if (solo) solo.classList.toggle('hidden', sub !== 'solo');
   if (teams) teams.classList.toggle('hidden', sub !== 'teams');
-}
-
-function genId() {
-  return 't' + Math.random().toString(36).slice(2, 10);
 }
 
 function checkAdminAccess() {
