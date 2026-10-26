@@ -715,22 +715,14 @@ function playerCardHTML(p, removeFn) {
   const removeBtn = isAdmin() ? '<button class="remove" onclick="' + removeFn + '">×</button>' : '';
   const codeBtn = isAdmin() ? '<button class="btn ghost" style="padding:2px 8px; font-size:10px; margin-top:5px;" onclick="generateAccessCode(\'' + escapeHtml(p.name) + '\')">🔑 Выдать код</button>' : '';
   
-  // Вот новая кнопка (вместо модалки)
-  const uidStatus = p.auth_uid ? '<span style="font-size:10px; color:green;">✅ UID привязан</span>' : '<span style="font-size:10px; color:red;">❌ Нет UID</span>';
-  const uidInput = isAdmin() ? `
-    <div style="margin-top: 5px; display: flex; gap: 4px;">
-      <input id="uid-input-${p.account_id}" type="text" placeholder="Вставь UID..." value="${p.auth_uid || ''}" style="padding: 2px 6px; font-size: 10px; height: 22px; width: 120px;" />
-      <button type="button" class="btn" style="padding: 2px 6px; font-size: 10px; height: 22px;" onclick="saveUidDirect('${p.account_id}')">OK</button>
-    </div>
-    <div style="margin-top: 4px;">${uidStatus}</div>
-  ` : '';
+  const uidStatus = p.auth_uid ? '<span style="font-size:10px; color:green; margin-left:5px;">✅ Готов</span>' : '<span style="font-size:10px; color:orange; margin-left:5px;">⚠️ Ждет входа</span>';
 
   return '<div class="player">' +
     '<img src="' + p.avatar + '" alt="" onerror="this.style.display=\'none\'">' +
     '<div>' +
-      '<div class="name">' + escapeHtml(p.name) + '</div>' +
+      '<div class="name">' + escapeHtml(p.name) + ' ' + uidStatus + '</div>' +
       '<div class="rank" style="color:' + rank.color + '">' + rank.icon + ' ' + rank.name + '</div>' +
-      codeBtn + uidInput +
+      codeBtn +
     '</div>' + removeBtn +
   '</div>';
 }
@@ -1099,7 +1091,7 @@ function renderPlayerDraft(myUid) {
       btn.style.display = 'inline-block';
       btn.onclick = async () => {
         const winner = Math.random() < 0.5 ? 'p1' : 'p2';
-        // ДОБАВЛЯЕМ turn: winner, чтобы первый игрок сразу получил право бана
+        // Вот эта строчка (turn: winner) передает ход!
         const newDraft = { ...draftState, first_turn: winner, phase: 'ban', turn: winner };
         await supabaseClient.from('drafts').upsert({ id: 1, data: newDraft });
       };
@@ -1215,18 +1207,35 @@ window.banHero = banHero;
 window.pickHero = pickHero;
   async function startDraft() {
   if (!isAdmin()) return;
-  // Для теста берем первых двух соло игроков, у которых есть UID
-  const withUid = state.soloPlayers.filter(p => p.auth_uid);
-  if (withUid.length < 2) { alert('Нужно минимум 2 игрока с привязанными UID'); return; }
   
-  const p1 = withUid[0];
-  const p2 = withUid[1];
+  // Берем первых двух соло игроков
+  if (state.soloPlayers.length < 2) { alert('Нужно минимум 2 игрока в списке'); return; }
+  const p1 = state.soloPlayers[0];
+  const p2 = state.soloPlayers[1];
+
+  // Идем в базу и ищем их UID по НИКУ
+  const { data: dbPlayers, error } = await supabaseClient.from('players').select('*');
+  
+  if (error || !dbPlayers) { alert('Ошибка базы данных'); return; }
+
+  // Ищем первого
+  const dbP1 = dbPlayers.find(p => p.name === p1.name);
+  // Ищем второго
+  const dbP2 = dbPlayers.find(p => p.name === p2.name);
+
+  if (!dbP1) { alert('Игрок ' + p1.name + ' еще не заходил на сайт по коду!'); return; }
+  if (!dbP2) { alert('Игрок ' + p2.name + ' еще не заходил на сайт по коду!'); return; }
+
+  // Записываем найденные UID в стейт
+  p1.auth_uid = dbP1.uid;
+  p2.auth_uid = dbP2.uid;
+  saveState();
 
   const newDraftState = {
     phase: 'coinflip',
     first_turn: null,
     turn: null,
-    pool: [...ALL_HEROES].sort(() => 0.5 - Math.random()).slice(0, 20), // 20 рандомных
+    pool: [...ALL_HEROES].sort(() => 0.5 - Math.random()).slice(0, 20),
     bans: { p1: [], p2: [] },
     picks: { p1: null, p2: null },
     p1_uid: p1.auth_uid,
