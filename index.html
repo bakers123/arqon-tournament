@@ -1099,7 +1099,8 @@ function renderPlayerDraft(myUid) {
       btn.style.display = 'inline-block';
       btn.onclick = async () => {
         const winner = Math.random() < 0.5 ? 'p1' : 'p2';
-        const newDraft = { ...draftState, first_turn: winner, phase: 'ban' };
+        // ДОБАВЛЯЕМ turn: winner, чтобы первый игрок сразу получил право бана
+        const newDraft = { ...draftState, first_turn: winner, phase: 'ban', turn: winner };
         await supabaseClient.from('drafts').upsert({ id: 1, data: newDraft });
       };
     }
