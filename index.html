@@ -1143,8 +1143,7 @@ function renderPlayerDraft(myUid) {
     return;
   }
 
-  // === ФАЗА 3: ПИКИ ===
- // === ФАЗА 3: ПИКИ ===
+   // === ФАЗА 3: ПИКИ ===
   if (draftState.phase === 'pick') {
     const availableHeroes = draftState.pool.filter(id => !draftState.bans.p1.includes(id) && !draftState.bans.p2.includes(id));
     const myPick = draftState.picks[myRole];
@@ -1165,29 +1164,29 @@ function renderPlayerDraft(myUid) {
     }
 
     // Если пики еще закрыты
-    statusEl.innerHTML = 'Баны завершены! Выбери своего героя из оставшихся 10.';
-    btn.textContent = 'Подтвердить героя';
-    btn.style.display = 'inline-block';
+    if (myPick) {
+      statusEl.innerHTML = `Ты выбрал героя. Ожидай соперника...`;
+      btn.style.display = 'none'; // Прячем кнопку "Подтвердить"
+    } else {
+      statusEl.innerHTML = 'Баны завершены! Кликни на своего героя.';
+      btn.style.display = 'none'; // Кнопка не нужна
+    }
 
-    btn.onclick = async () => {
-      if (!draftState.picks[myRole]) { alert('Сначала выбери героя'); return; }
+    // Отрисовка героев (клик сразу сохраняет)
+    poolEl.innerHTML = availableHeroes.map(id => {
+      const isSelected = myPick === id;
+      const style = `cursor: pointer; border-radius: 8px; overflow: hidden; border: 2px solid ${isSelected ? 'var(--accent)' : 'transparent'}; box-shadow: ${isSelected ? '0 0 10px var(--accent)' : 'none'};`;
       
-      const oldState = JSON.parse(JSON.stringify(draftState));
-      const newPicks = { ...draftState.picks };
-      newPicks[myRole] = draftState.picks[myRole]; // Берем текущий выбор
+      // Если герой уже выбран или пики открыты — не даем кликать
+      const clickAction = (!myPick && !draftState.is_open) ? `onclick="pickHero('${id}','${myRole}')"` : '';
       
-      // Отправляем в базу
-      const { error } = await supabaseClient.from('drafts').upsert({ 
-        id: 1, 
-        data: { ...oldState, picks: newPicks } 
-      });
-      
-      if (error) {
-        alert('Ошибка сохранения: ' + error.message);
-      } else {
-        alert('Твой герой сохранен! Ожидайте, пока админ откроет пики.');
-      }
-    };
+      return `<div style="${style}" ${clickAction}>
+        <img src="https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/heroes/${id}.png" style="width: 100%; display: block;">
+      </div>`;
+    }).join('');
+    
+    return;
+  }
 
     poolEl.innerHTML = availableHeroes.map(id => {
       const isSelected = myPick === id;
@@ -1232,19 +1231,16 @@ async function banHero(heroId, myRole) {
   async function pickHero(heroId, myRole) {
   if (!draftState) return;
   
-  // 1. МГНОВЕННО обновляем экран
   const newPicks = { ...draftState.picks };
   newPicks[myRole] = heroId;
   
   const oldState = JSON.parse(JSON.stringify(draftState));
   draftState.picks = newPicks;
-  renderPlayerDraft(currentUser.id); // Перерисовываем сразу
+  renderPlayerDraft(currentUser.id); // Перерисовываем экран мгновенно
   
-  // 2. В ФОНЕ сохраняем в базу
-  const { error } = await supabaseClient.from('drafts').upsert({ 
-    id: 1, 
-    data: { ...oldState, picks: newPicks } 
-  });
+  // Отправляем в базу
+  await supabaseClient.from('drafts').upsert({ id: 1, data: { ...oldState, picks: newPicks } });
+}
   
   if (error) {
     console.error("Ошибка выбора героя:", error);
