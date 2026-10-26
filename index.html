@@ -1227,8 +1227,45 @@ async function banHero(heroId, myRole) {
     alert("Ошибка соединения. Попробуй еще раз.");
   }
 }
-window.banHero = banHero;
-window.pickHero = pickHero;
+window.banHero = async function(heroId, myRole) {
+  if (!draftState) return;
+  if (draftState.turn !== myRole) return;
+  
+  const newBans = JSON.parse(JSON.stringify(draftState.bans));
+  if (newBans[myRole].length >= 5) return;
+  if (newBans[myRole].includes(heroId)) return;
+  
+  newBans[myRole].push(heroId);
+  
+  const oldState = JSON.parse(JSON.stringify(draftState));
+  draftState.bans = newBans;
+  renderPlayerDraft(currentUser.id);
+  
+  const { error } = await supabaseClient.from('drafts').upsert({ id: 1, data: { ...oldState, bans: newBans } });
+  if (error) {
+    draftState = oldState;
+    renderPlayerDraft(currentUser.id);
+    alert("Ошибка соединения.");
+  }
+};
+
+window.pickHero = async function(heroId, myRole) {
+  if (!draftState) return;
+  
+  const newPicks = { ...draftState.picks };
+  newPicks[myRole] = heroId;
+  
+  const oldState = JSON.parse(JSON.stringify(draftState));
+  draftState.picks = newPicks;
+  renderPlayerDraft(currentUser.id);
+  
+  const { error } = await supabaseClient.from('drafts').upsert({ id: 1, data: { ...oldState, picks: newPicks } });
+  if (error) {
+    draftState = oldState;
+    renderPlayerDraft(currentUser.id);
+    alert("Ошибка соединения.");
+  }
+};
   async function startDraft() {
   if (!isAdmin()) return;
   
