@@ -490,17 +490,7 @@
     </div>
   </section>
 </main>
-<div id="uid-modal" class="modal hidden">
-  <div class="modal-content">
-    <h2>Привязать аккаунт</h2>
-    <p class="hint" style="margin-bottom:15px;">Введи код/UID, который игрок получил при входе.</p>
-    <input id="edit-uid" placeholder="UID игрока (например, 550e8400...)" style="margin-bottom:15px;" />
-    <div class="row">
-      <button type="button" class="btn" onclick="saveUid()">Сохранить</button>
-      <button type="button" class="btn ghost" onclick="closeUidModal()">Отмена</button>
-    </div>
-  </div>
-</div>
+
 <script>
 // ==========================================
 // НАСТРОЙКА SUPABASE
@@ -690,27 +680,27 @@ function closeUidModal() {
   editingUidId = null;
 }
 
-function saveUid() {
-  if (!isAdmin() || !editingUidId) return;
-  const newUid = document.getElementById('edit-uid').value.trim();
+function saveUidDirect(accountId) {
+  if (!isAdmin()) return;
+  const input = document.getElementById('uid-input-' + accountId);
+  if (!input) return;
+  const newUid = input.value.trim();
   
-  const update = (p) => { p.auth_uid = newUid; };
-  
-  let found = state.soloPlayers.find(p => String(p.account_id) === String(editingUidId));
-  if (found) update(found);
-  else {
+  let found = state.soloPlayers.find(p => String(p.account_id) === String(accountId));
+  if (found) {
+    found.auth_uid = newUid;
+  } else {
     for (const team of state.teams) {
-      const p = team.players.find(p => String(p.account_id) === String(editingUidId));
-      if (p) { update(p); break; }
+      const p = team.players.find(p => String(p.account_id) === String(accountId));
+      if (p) { p.auth_uid = newUid; break; }
     }
   }
+  
   saveState();
   renderAll();
-  closeUidModal();
+  alert('UID сохранен!');
 }
-window.openUidModal = openUidModal;
-window.closeUidModal = closeUidModal;
-window.saveUid = saveUid;
+window.saveUidDirect = saveUidDirect;
 
 // ==========================================
 // РЕНДЕР ИГРОКОВ И АДМИНКИ (Обновлено)
@@ -718,22 +708,27 @@ window.saveUid = saveUid;
 function playerCardHTML(p, removeFn) {
   const rank = parseRank(p.rank_tier);
   const removeBtn = isAdmin() ? '<button class="remove" onclick="' + removeFn + '">×</button>' : '';
-  
   const codeBtn = isAdmin() ? '<button class="btn ghost" style="padding:2px 8px; font-size:10px; margin-top:5px;" onclick="generateAccessCode(\'' + escapeHtml(p.name) + '\')">🔑 Выдать код</button>' : '';
   
-  // ВОТ ЗДЕСЬ МЫ ДОБАВИЛИ КНОПКУ UID В HTML
-  const uidBtn = isAdmin() ? '<button class="btn ghost" style="padding:2px 8px; font-size:10px; margin-top:5px; margin-left:5px;" onclick="openUidModal(\'' + p.account_id + '\')">🔗 UID</button>' : '';
+  // Вот новая кнопка (вместо модалки)
+  const uidStatus = p.auth_uid ? '<span style="font-size:10px; color:green;">✅ UID привязан</span>' : '<span style="font-size:10px; color:red;">❌ Нет UID</span>';
+  const uidInput = isAdmin() ? `
+    <div style="margin-top: 5px; display: flex; gap: 4px;">
+      <input id="uid-input-${p.account_id}" type="text" placeholder="Вставь UID..." value="${p.auth_uid || ''}" style="padding: 2px 6px; font-size: 10px; height: 22px; width: 120px;" />
+      <button type="button" class="btn" style="padding: 2px 6px; font-size: 10px; height: 22px;" onclick="saveUidDirect('${p.account_id}')">OK</button>
+    </div>
+    <div style="margin-top: 4px;">${uidStatus}</div>
+  ` : '';
 
   return '<div class="player">' +
     '<img src="' + p.avatar + '" alt="" onerror="this.style.display=\'none\'">' +
     '<div>' +
       '<div class="name">' + escapeHtml(p.name) + '</div>' +
       '<div class="rank" style="color:' + rank.color + '">' + rank.icon + ' ' + rank.name + '</div>' +
-      codeBtn + uidBtn +  /* <--- ВСТАВИЛИ uidBtn */
+      codeBtn + uidInput +
     '</div>' + removeBtn +
   '</div>';
 }
-
 async function generateAccessCode(playerName) {
   const code = Math.random().toString(36).substring(2, 8).toUpperCase();
   const { error } = await supabaseClient.from('access_codes').insert({ code: code, player_name: playerName });
