@@ -1148,7 +1148,6 @@ function renderPlayerDraft(myUid) {
     const availableHeroes = draftState.pool.filter(id => !draftState.bans.p1.includes(id) && !draftState.bans.p2.includes(id));
     const myPick = draftState.picks[myRole];
 
-    // Если пики уже открыты админом
     if (draftState.is_open) {
       statusEl.innerHTML = `Пики открыты!<br>Твой герой: <b>${getHeroName(draftState.picks[myRole])}</b><br>Герой соперника: <b>${getHeroName(draftState.picks[enemyRole])}</b>`;
       poolEl.innerHTML = availableHeroes.map(id => {
@@ -1163,7 +1162,6 @@ function renderPlayerDraft(myUid) {
       return;
     }
 
-    // Если пики еще закрыты
     if (myPick) {
       statusEl.innerHTML = `Ты выбрал героя. Ожидай соперника...`;
       btn.style.display = 'none'; 
@@ -1172,20 +1170,18 @@ function renderPlayerDraft(myUid) {
       btn.style.display = 'none'; 
     }
 
-    // Отрисовка героев (клик сразу сохраняет)
     poolEl.innerHTML = availableHeroes.map(id => {
       const isSelected = myPick === id;
       const style = `cursor: pointer; border-radius: 8px; overflow: hidden; border: 2px solid ${isSelected ? 'var(--accent)' : 'transparent'}; box-shadow: ${isSelected ? '0 0 10px var(--accent)' : 'none'};`;
-      
       const clickAction = (!myPick && !draftState.is_open) ? `onclick="pickHero('${id}','${myRole}')"` : '';
-      
       return `<div style="${style}" ${clickAction}>
         <img src="https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/heroes/${id}.png" style="width: 100%; display: block;">
       </div>`;
     }).join('');
-    
     return;
   }
+} // <--- ВОТ ЭТА СКОБКА ЗАКРЫВАЕТ renderPlayerDraft
+
 async function banHero(heroId, myRole) {
   if (!draftState) return;
   if (draftState.turn !== myRole) return;
