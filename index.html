@@ -1202,57 +1202,6 @@ async function banHero(heroId, myRole) {
   if (!draftState) return;
   if (draftState.turn !== myRole) return;
   
-  // 1. МГНОВЕННО обновляем экран (Оптимистичный UI)
-  const newBans = JSON.parse(JSON.stringify(draftState.bans));
-  if (newBans[myRole].length >= 5) return;
-  if (newBans[myRole].includes(heroId)) return; // Защита от дублей
-  
-  newBans[myRole].push(heroId);
-  
-  // Временно подменяем локальное состояние, чтобы экран перерисовался без задержки
-  const oldState = JSON.parse(JSON.stringify(draftState));
-  draftState.bans = newBans;
-  renderPlayerDraft(currentUser.id); // Перерисовываем экран сразу
-  
-  // 2. В ФОНЕ отправляем в базу
-  const { error } = await supabaseClient.from('drafts').upsert({ 
-    id: 1, 
-    data: { ...oldState, bans: newBans } 
-  });
-  
-  // Если база выдала ошибку — возвращаем всё как было
-  if (error) {
-    console.error("Ошибка бана:", error);
-    draftState = oldState;
-    renderPlayerDraft(currentUser.id);
-    alert("Ошибка соединения. Попробуй еще раз.");
-  }
-}
-  async function pickHero(heroId, myRole) {
-  if (!draftState) return;
-  
-  const newPicks = { ...draftState.picks };
-  newPicks[myRole] = heroId;
-  
-  const oldState = JSON.parse(JSON.stringify(draftState));
-  draftState.picks = newPicks;
-  renderPlayerDraft(currentUser.id); // Перерисовываем экран мгновенно
-  
-  // Отправляем в базу
-  await supabaseClient.from('drafts').upsert({ id: 1, data: { ...oldState, picks: newPicks } });
-}
-  
-  if (error) {
-    console.error("Ошибка выбора героя:", error);
-    draftState = oldState;
-    renderPlayerDraft(currentUser.id);
-    alert("Ошибка соединения. Попробуй еще раз.");
-  }
-}
-window.banHero = async function(heroId, myRole) {
-  if (!draftState) return;
-  if (draftState.turn !== myRole) return;
-  
   const newBans = JSON.parse(JSON.stringify(draftState.bans));
   if (newBans[myRole].length >= 5) return;
   if (newBans[myRole].includes(heroId)) return;
@@ -1269,9 +1218,9 @@ window.banHero = async function(heroId, myRole) {
     renderPlayerDraft(currentUser.id);
     alert("Ошибка соединения.");
   }
-};
+}
 
-window.pickHero = async function(heroId, myRole) {
+async function pickHero(heroId, myRole) {
   if (!draftState) return;
   
   const newPicks = { ...draftState.picks };
@@ -1287,8 +1236,12 @@ window.pickHero = async function(heroId, myRole) {
     renderPlayerDraft(currentUser.id);
     alert("Ошибка соединения.");
   }
-};
-  async function startDraft() {
+}
+
+window.banHero = banHero;
+window.pickHero = pickHero;
+
+async function startDraft() {
   if (!isAdmin()) return;
   
   if (state.soloPlayers.length < 2) { alert('Нужно минимум 2 игрока в списке'); return; }
