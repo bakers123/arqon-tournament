@@ -362,10 +362,6 @@
 
   </div>
 </div>
-  <!-- ЧАТ АДМИНА (скрыт по умолчанию) -->
-<div id="admin-chat-container" class="card hidden" style="max-width: 1080px; margin: 20px auto; padding: 20px;">
-  <h2 style="font-size: 14px; margin-bottom: 10px; color: var(--accent);">💬 Чат текущего матча (Админ)</h2>
-  <div id="admin-chat-messages" style="height: 200px; overflow-y: auto; background: #0F0F14; border: 1px solid var(--border); border-radius: 6px; padding: 10px; margin-bottom: 10px;">
   </div>
   <div class="row">
     <input id="admin-chat-input" placeholder="Написать от имени Админа..." />
@@ -514,6 +510,16 @@
       <button class="btn" onclick="startDraft()" style="margin-left:10px; background: #22c55e;">▶️ Запустить Драфт</button>
       <button class="btn" onclick="openPicks()" style="margin-left:10px; background: #f59e0b;">👁 Открыть пики</button>
       <button class="btn danger" id="reset-all" style="margin-left:10px;">Сбросить всё</button>
+    </div>
+    <!-- ЧАТ АДМИНА -->
+    <div id="admin-chat-container" class="card hidden">
+      <h2 style="font-size: 14px; margin-bottom: 10px; color: var(--accent);">💬 Чат текущего матча (Админ)</h2>
+      <div id="admin-chat-messages" style="height: 200px; overflow-y: auto; background: #0F0F14; border: 1px solid var(--border); border-radius: 6px; padding: 10px; margin-bottom: 10px;">
+      </div>
+      <div class="row">
+        <input id="admin-chat-input" placeholder="Написать от имени Админа..." />
+        <button class="btn" onclick="sendAdminMessage()">Отправить</button>
+      </div>
     </div>
   </section>
 
