@@ -1117,7 +1117,7 @@ function renderPlayerDraft(myUid) {
       btn.style.display = 'inline-block';
       btn.textContent = 'Закончить баны';
       btn.onclick = async () => {
-        if (draftState.bans[myRole].length < 5) { alert('Забань ровно 5 героев'); return; }
+       if (new Set(draftState.bans[myRole]).size < 5) { alert('Забань ровно 5 героев'); return; }
         // Передаем ход
         const nextTurn = turnRole === 'p1' ? 'p2' : 'p1';
         const nextPhase = (draftState.bans[nextTurn].length >= 5) ? 'pick' : 'ban';
@@ -1182,16 +1182,20 @@ function renderPlayerDraft(myUid) {
 }
 
 async function banHero(heroId, myRole) {
-  const newBans = { ...draftState.bans };
+  if (!draftState) return;
+  if (draftState.turn !== myRole) return;
+  
+  const newBans = JSON.parse(JSON.stringify(draftState.bans));
   if (newBans[myRole].length >= 5) return;
+  
+  // ПРОВЕРКА: если этот герой уже есть в банах, не добавляем его
+  if (newBans[myRole].includes(heroId)) {
+    alert('Ты уже забанил этого героя!');
+    return; 
+  }
+  
   newBans[myRole].push(heroId);
   await supabaseClient.from('drafts').upsert({ id: 1, data: { ...draftState, bans: newBans } });
-}
-
-async function pickHero(heroId, myRole) {
-  const newPicks = { ...draftState.picks };
-  newPicks[myRole] = heroId;
-  await supabaseClient.from('drafts').upsert({ id: 1, data: { ...draftState, picks: newPicks } });
 }
 
 window.banHero = banHero;
