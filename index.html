@@ -1270,25 +1270,19 @@ window.pickHero = async function(heroId, myRole) {
   async function startDraft() {
   if (!isAdmin()) return;
   
-  // Берем первых двух соло игроков
   if (state.soloPlayers.length < 2) { alert('Нужно минимум 2 игрока в списке'); return; }
   const p1 = state.soloPlayers[0];
   const p2 = state.soloPlayers[1];
 
-  // Идем в базу и ищем их UID по НИКУ
   const { data: dbPlayers, error } = await supabaseClient.from('players').select('*');
-  
   if (error || !dbPlayers) { alert('Ошибка базы данных'); return; }
 
-  // Ищем первого
   const dbP1 = dbPlayers.find(p => p.name === p1.name);
-  // Ищем второго
   const dbP2 = dbPlayers.find(p => p.name === p2.name);
 
   if (!dbP1) { alert('Игрок ' + p1.name + ' еще не заходил на сайт по коду!'); return; }
   if (!dbP2) { alert('Игрок ' + p2.name + ' еще не заходил на сайт по коду!'); return; }
 
-  // Записываем найденные UID в стейт
   p1.auth_uid = dbP1.uid;
   p2.auth_uid = dbP2.uid;
   saveState();
@@ -1306,10 +1300,15 @@ window.pickHero = async function(heroId, myRole) {
     p2_name: p2.name,
     is_open: false
   };
-    async function openPicks() {
+
+  await supabaseClient.from('drafts').upsert({ id: 1, data: newDraftState });
+  alert('Драфт запущен! Игроки могут заходить.');
+}
+window.startDraft = startDraft;
+
+async function openPicks() {
   if (!isAdmin()) return;
   
-  // Читаем текущий драфт из базы
   const { data } = await supabaseClient.from('drafts').select('*').eq('id', 1).single();
   
   if (!data || !data.data) {
@@ -1319,25 +1318,16 @@ window.pickHero = async function(heroId, myRole) {
   
   const draft = data.data;
   
-  // Проверяем, что оба игрока выбрали героев
   if (!draft.picks.p1 || !draft.picks.p2) {
     alert('Нельзя открыть пики! Один или оба игрока еще не выбрали героя.');
     return;
   }
   
-  // Меняем флаг is_open на true
   draft.is_open = true;
-  
-  // Сохраняем обратно в базу
   await supabaseClient.from('drafts').upsert({ id: 1, data: draft });
   alert('Пики открыты! Игроки теперь видят героев друг друга.');
 }
-
-  await supabaseClient.from('drafts').upsert({ id: 1, data: newDraftState });
-  alert('Драфт запущен! Игроки могут заходить.');
-}
-
-window.startDraft = startDraft;
+window.openPicks = openPicks;
 
 init();
 </script>
