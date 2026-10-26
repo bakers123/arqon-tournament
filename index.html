@@ -6,6 +6,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <style>
   :root {
     --bg:       #0B0B0D;
@@ -171,19 +172,6 @@
   .player img { width: 48px; height: 48px; border-radius: 6px; border: 1px solid var(--border); object-fit: cover; }
   .player .name { font-weight: 700; font-size: 15px; letter-spacing: 0.5px; }
   .player .rank { font-size: 12px; margin-top: 3px; font-weight: 600; letter-spacing: 0.5px; }
-  .player .hero { font-size: 12px; color: var(--accent-2); margin-top: 3px; font-weight: 600; letter-spacing: 0.5px; }
-  .player .hero {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-  }
-  .hero-icon {
-    width: 20px;
-    height: 20px;
-    border-radius: 4px;
-    border: 1px solid var(--border);
-    object-fit: cover;
-  }
   .player .remove {
     position: absolute;
     top: 4px; right: 8px;
@@ -315,9 +303,37 @@
   .hint { font-size: 12px; color: var(--text-dim); margin-top: 8px; letter-spacing: 0.5px; }
   .hint a { color: var(--accent-2); }
   .hidden { display: none; }
+  .modal {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.7); backdrop-filter: blur(4px);
+    display: flex; align-items: center; justify-content: center; z-index: 100;
+  }
+  .modal-content {
+    background: var(--panel); border: 1px solid var(--accent); border-radius: 12px;
+    padding: 24px; max-width: 500px; width: 90%; box-shadow: 0 0 40px rgba(122,59,255,0.4);
+  }
 </style>
 </head>
 <body>
+
+<!-- ЭКРАН ВХОДА -->
+<div id="auth-screen" class="modal" style="display: none; align-items: center; justify-content: center;">
+  <div class="modal-content" style="text-align: center; max-width: 400px;">
+    <h2 style="margin-bottom: 20px;">Вход для игрока</h2>
+    <div class="hint" style="margin-bottom: 15px;">Введи код доступа, который выдал админ</div>
+    <input id="auth-code" placeholder="Например: A7X9K2" style="text-align: center; font-size: 24px; letter-spacing: 5px; margin-bottom: 15px; text-transform: uppercase;" />
+    <button class="btn" onclick="loginWithCode()" style="width: 100%;">Войти</button>
+    <div id="auth-error" class="msg error hidden" style="margin-top: 15px;"></div>
+  </div>
+</div>
+
+<!-- ЭКРАН ИГРОКА -->
+<div id="player-screen" class="hidden" style="max-width: 1000px; margin: 40px auto; padding: 20px;">
+  <div class="card" style="text-align: center;">
+    <h2>Добро пожаловать, <span id="player-display-name" style="color: var(--accent);">Игрок</span>!</h2>
+    <p class="hint" style="margin-top: 10px;">Твой профиль Dota привязан. Ожидай начала матча или указаний от админа.</p>
+    <button class="btn ghost" onclick="logoutPlayer()" style="margin-top: 20px;">Выйти</button>
+  </div>
+</div>
 
 <header>
   <div class="brand">
@@ -344,7 +360,7 @@
   </nav>
 </header>
 
-<main>
+<main style="display: none;">
   <section id="tab-admin" class="hidden">
     <div class="card">
       <h2>Настройки турнира</h2>
@@ -376,7 +392,7 @@
     <div class="card">
       <h2>Добавить игрока</h2>
       <div class="hint" style="margin-bottom:12px; margin-top:0;">
-        Введи ник, выбери ранг и мейн-героя. Аватарка — необязательно.
+        Введи ник, выбери ранг. Аватарка — необязательно.
       </div>
       <div class="row" style="margin-bottom:10px;">
         <div style="flex:2">
@@ -428,139 +444,6 @@
       </div>
 
       <div style="margin-bottom:10px;">
-        <label class="label">Мейн персонаж (необязательно)</label>
-        <select id="p-hero">
-  <option value="">— Не выбран —</option>
-  <option value="abaddon">Abaddon / Абаддон</option>
-  <option value="alchemist">Alchemist / Алхимик</option>
-  <option value="ancient_apparition">Ancient Apparition / Древний Дух</option>
-  <option value="antimage">Anti-Mage / Антимаг</option>
-  <option value="arc_warden">Arc Warden / Хранитель</option>
-  <option value="axe">Axe / Аксель</option>
-  <option value="bane">Bane / Бэйн</option>
-  <option value="batrider">Batrider / Бэтрайдер</option>
-  <option value="beastmaster">Beastmaster / Повелитель Зверей</option>
-  <option value="bloodseeker">Bloodseeker / Кровопийца</option>
-  <option value="bounty_hunter">Bounty Hunter / Охотник за Головами</option>
-  <option value="brewmaster">Brewmaster / Пивовар</option>
-  <option value="bristleback">Bristleback / Бристлбэк</option>
-  <option value="broodmother">Broodmother / Матка Пауков</option>
-  <option value="centaur">Centaur Warrunner / Кентавр</option>
-  <option value="chaos_knight">Chaos Knight / Рыцарь Хаоса</option>
-  <option value="chen">Chen / Чен</option>
-  <option value="clinkz">Clinkz / Клинкз</option>
-  <option value="rattletrap">Clockwerk / Часовой</option>
-  <option value="crystal_maiden">Crystal Maiden / Хрустальная Дева</option>
-  <option value="dark_seer">Dark Seer / Тёмный Провидец</option>
-  <option value="dark_willow">Dark Willow / Тёмная Ива</option>
-  <option value="dawnbreaker">Dawnbreaker / Рассветница</option>
-  <option value="dazzle">Dazzle / Дазл</option>
-  <option value="death_prophet">Death Prophet / Пророчица Смерти</option>
-  <option value="disruptor">Disruptor / Разрушитель</option>
-  <option value="doom_bringer">Doom / Дум</option>
-  <option value="dragon_knight">Dragon Knight / Рыцарь Дракона</option>
-  <option value="drow_ranger">Drow Ranger / Тёмная Лучница</option>
-  <option value="earth_spirit">Earth Spirit / Дух Земли</option>
-  <option value="earthshaker">Earthshaker / Землетряс</option>
-  <option value="elder_titan">Elder Titan / Древний Титан</option>
-  <option value="ember_spirit">Ember Spirit / Дух Огня</option>
-  <option value="enchantress">Enchantress / Чародейка</option>
-  <option value="enigma">Enigma / Энигма</option>
-  <option value="faceless_void">Faceless Void / Безликий</option>
-  <option value="grimstroke">Grimstroke / Гримстроук</option>
-  <option value="gyrocopter">Gyrocopter / Гиррокоптер</option>
-  <option value="hoodwink">Hoodwink / Худвинк</option>
-  <option value="huskar">Huskar / Хускар</option>
-  <option value="invoker">Invoker / Инвокер</option>
-  <option value="wisp">Io / Ио</option>
-  <option value="jakiro">Jakiro / Джакиро</option>
-  <option value="juggernaut">Juggernaut / Джаггернаут</option>
-  <option value="kez">Kez / Кез</option>
-  <option value="keeper_of_the_light">Keeper of the Light / Хранитель Света</option>
-  <option value="kunkka">Kunkka / Кунка</option>
-  <option value="legion_commander">Legion Commander / Командир Легиона</option>
-  <option value="leshrac">Leshrac / Лешрак</option>
-  <option value="lich">Lich / Лич</option>
-  <option value="life_stealer">Lifestealer / Пожиратель</option>
-  <option value="lina">Lina / Лина</option>
-  <option value="lion">Lion / Лион</option>
-  <option value="lone_druid">Lone Druid / Одинокий Друид</option>
-  <option value="luna">Luna / Луна</option>
-  <option value="lycan">Lycan / Ликан</option>
-  <option value="magnataur">Magnus / Магнус</option>
-  <option value="marci">Marci / Марси</option>
-  <option value="mars">Mars / Марс</option>
-  <option value="medusa">Medusa / Медуза</option>
-  <option value="meepo">Meepo / Мипо</option>
-  <option value="mirana">Mirana / Мирана</option>
-  <option value="monkey_king">Monkey King / Царь Обезьян</option>
-  <option value="morphling">Morphling / Морфлинг</option>
-  <option value="muerta">Muerta / Муэрта</option>
-  <option value="naga_siren">Naga Siren / Нага Сирена</option>
-  <option value="furion">Nature's Prophet / Пророк Природы</option>
-  <option value="necrolyte">Necrophos / Некрофос</option>
-  <option value="night_stalker">Night Stalker / Ночной Охотник</option>
-  <option value="nyx_assassin">Nyx Assassin / Нюкс Ассасин</option>
-  <option value="ogre_magi">Ogre Magi / Огр Маг</option>
-  <option value="omniknight">Omniknight / Всезнающий</option>
-  <option value="oracle">Oracle / Оракул</option>
-  <option value="obsidian_destroyer">Outworld Destroyer / Разрушитель</option>
-  <option value="pangolier">Pangolier / Панголир</option>
-  <option value="phantom_assassin">Phantom Assassin / Фантомка</option>
-  <option value="phantom_lancer">Phantom Lancer / Фантомный Лансер</option>
-  <option value="phoenix">Phoenix / Феникс</option>
-  <option value="primal_beast">Primal Beast / Первобытный Зверь</option>
-  <option value="puck">Puck / Пак</option>
-  <option value="pudge">Pudge / Пудж</option>
-  <option value="pugna">Pugna / Пугна</option>
-  <option value="queenofpain">Queen of Pain / Королева Боли</option>
-  <option value="razor">Razor / Рейзор</option>
-  <option value="riki">Riki / Рики</option>
-  <option value="ringmaster">Ringmaster / Шпрехшталмейстер</option>
-  <option value="rubick">Rubick / Рубик</option>
-  <option value="sand_king">Sand King / Король Песков</option>
-  <option value="shadow_demon">Shadow Demon / Демон Тени</option>
-  <option value="nevermore">Shadow Fiend / Демон Тени</option>
-  <option value="shadow_shaman">Shadow Shaman / Шаман Тени</option>
-  <option value="silencer">Silencer / Молчун</option>
-  <option value="skywrath_mage">Skywrath Mage / Маг Небес</option>
-  <option value="slardar">Slardar / Слардар</option>
-  <option value="slark">Slark / Сларк</option>
-  <option value="snapfire">Snapfire / Снапфайр</option>
-  <option value="sniper">Sniper / Снайпер</option>
-  <option value="spectre">Spectre / Спектра</option>
-  <option value="spirit_breaker">Spirit Breaker / Сокрушитель Духов</option>
-  <option value="storm_spirit">Storm Spirit / Дух Бури</option>
-  <option value="sven">Sven / Свен</option>
-  <option value="techies">Techies / Мины</option>
-  <option value="templar_assassin">Templar Assassin / Тамплиерка</option>
-  <option value="terrorblade">Terrorblade / Террорблейд</option>
-  <option value="tidehunter">Tidehunter / Охотник Приливов</option>
-  <option value="shredder">Timbersaw / Лесоруб</option>
-  <option value="tinker">Tinker / Тинкер</option>
-  <option value="tiny">Tiny / Тини</option>
-  <option value="treant">Treant Protector / Защитник Древа</option>
-  <option value="troll_warlord">Troll Warlord / Тролль</option>
-  <option value="tusk">Tusk / Туск</option>
-  <option value="abyssal_underlord">Underlord / Владыка Бездны</option>
-  <option value="undying">Undying / Неумирающий</option>
-  <option value="ursa">Ursa / Урса</option>
-  <option value="vengefulspirit">Vengeful Spirit / Дух Мщения</option>
-  <option value="venomancer">Venomancer / Веномансер</option>
-  <option value="viper">Viper / Випер</option>
-  <option value="visage">Visage / Визаж</option>
-  <option value="void_spirit">Void Spirit / Дух Пустоты</option>
-  <option value="warlock">Warlock / Чернокнижник</option>
-  <option value="weaver">Weaver / Ткач</option>
-  <option value="windrunner">Windranger / Ветряная</option>
-  <option value="winter_wyvern">Winter Wyvern / Зимний Виверн</option>
-  <option value="witch_doctor">Witch Doctor / Знахарь</option>
-  <option value="skeleton_king">Wraith King / Король-Призрак</option>
-  <option value="zuus">Zeus / Зевс</option>
-</select>
-      </div>
-
-      <div style="margin-bottom:10px;">
         <label class="label">Ссылка на аватарку (необязательно)</label>
         <input id="p-avatar" placeholder="https://..." />
       </div>
@@ -608,45 +491,146 @@
 </main>
 
 <script>
+// ==========================================
+// НАСТРОЙКА SUPABASE
+// ==========================================
+const SUPABASE_URL = 'https://uscnaqcvuwjrmkjyuklp.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_oE2Bc1wPAcDt6HE8bOUj3Q_0-2FfIxB';
+const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
 const ADMIN_KEY = 'ARQON2026123123123123123';
+let currentUser = null;
+let isRealtimeActive = false;
+
+// Состояние турнира (по умолчанию)
+let state = { mode: '5x5', bracketType: 'single', maxParticipants: 8, soloPlayers: [], teams: [], bracket: null };
 
 function isAdmin() {
   const params = new URLSearchParams(window.location.search);
   return params.get('admin') === ADMIN_KEY;
 }
 
-const STATE_KEY = 'arqon_tournament_state';
-let state = loadState() || {
-  mode: '5x5', bracketType: 'single', maxParticipants: 8,
-  soloPlayers: [], teams: [], bracket: null,
-};
+// ==========================================
+// АВТОРИЗАЦИЯ
+// ==========================================
+supabaseClient.auth.onAuthStateChange((event, session) => {
+  if (session) {
+    currentUser = session.user;
+    checkUserRole(session.user.id);
+  } else {
+    currentUser = null;
+    handleNoAuth();
+  }
+});
 
-function saveState() { localStorage.setItem(STATE_KEY, JSON.stringify(state)); }
-function loadState() {
-  try { return JSON.parse(localStorage.getItem(STATE_KEY)); } catch { return null; }
+// Проверка сессии при загрузке
+supabaseClient.auth.getSession().then(({ data: { session } }) => {
+  if (session) {
+    currentUser = session.user;
+    checkUserRole(session.user.id);
+  } else {
+    handleNoAuth();
+  }
+});
+
+function handleNoAuth() {
+  if (isAdmin()) {
+    document.getElementById('auth-screen').style.display = 'none';
+    document.querySelector('main').style.display = 'block';
+    initSupabaseSync();
+  } else {
+    document.getElementById('auth-screen').style.display = 'flex';
+    document.getElementById('player-screen').classList.add('hidden');
+    document.querySelector('main').style.display = 'none';
+  }
 }
 
+async function checkUserRole(uid) {
+  if (isAdmin()) {
+    document.getElementById('auth-screen').style.display = 'none';
+    document.querySelector('main').style.display = 'block';
+    initSupabaseSync();
+    return;
+  }
+  
+  const { data, error } = await supabaseClient.from('players').select('*').eq('uid', uid).single();
+  
+  if (data) {
+    document.getElementById('auth-screen').style.display = 'none';
+    document.getElementById('player-screen').classList.remove('hidden');
+    document.getElementById('player-display-name').textContent = data.name;
+    document.querySelector('main').style.display = 'none';
+  } else {
+    handleNoAuth();
+  }
+}
+
+async function loginWithCode() {
+  const code = document.getElementById('auth-code').value.trim().toUpperCase();
+  if (!code) return;
+  
+  const { data: codeData } = await supabaseClient.from('access_codes').select('*').eq('code', code).single();
+  
+  if (!codeData) {
+    document.getElementById('auth-error').textContent = 'Неверный код доступа';
+    document.getElementById('auth-error').classList.remove('hidden');
+    return;
+  }
+
+  const { data: authData, error: authError } = await supabaseClient.auth.signInAnonymously();
+  
+  if (authError) {
+    alert('Ошибка входа: ' + authError.message);
+    return;
+  }
+
+  await supabaseClient.from('players').insert({ uid: authData.user.id, name: codeData.player_name });
+  await supabaseClient.from('access_codes').delete().eq('code', code);
+  
+  window.location.reload();
+}
+
+function logoutPlayer() {
+  supabaseClient.auth.signOut().then(() => window.location.reload());
+}
+
+// ==========================================
+// СИНХРОНИЗАЦИЯ ТУРНИРА
+// ==========================================
+async function initSupabaseSync() {
+  if (isRealtimeActive) return;
+  isRealtimeActive = true;
+  
+  const { data } = await supabaseClient.from('tournament').select('data').eq('id', 1).single();
+  if (data && data.data) {
+    state = data.data;
+    renderAll();
+  }
+  
+  supabaseClient.channel('public:tournament')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'tournament' }, payload => {
+      if (payload.new && payload.new.data) {
+        state = payload.new.data;
+        renderAll();
+      }
+    })
+    .subscribe();
+}
+
+function saveState() {
+  supabaseClient.from('tournament').upsert({ id: 1, data: state }).then(({ error }) => {
+    if (error) console.error('Ошибка сохранения:', error);
+  });
+}
+
+// ==========================================
+// ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
+// ==========================================
 function escapeHtml(s) {
   return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
 
-function genId() {
-  return 't' + Math.random().toString(36).slice(2, 10);
-}
-
-async function fetchPlayer(steamIdInput) {
-  const name = document.getElementById('p-name').value.trim();
-  const avatar = document.getElementById('p-avatar').value.trim();
-  const rankTier = parseInt(document.getElementById('p-rank').value) || 0;
-  const hero = document.getElementById('p-hero').value;
-  if (!name) throw new Error('Введи ник игрока');
-  let accountId = steamIdInput.trim();
-  if (!accountId) accountId = 'manual_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8);
-  const fallbackAvatar = 'https://ui-avatars.com/api/?name=' +
-    encodeURIComponent(name.charAt(0)) +
-    '&background=7A3BFF&color=F2F2F2&size=96&bold=true';
-  return { account_id: accountId, name: name, avatar: avatar || fallbackAvatar, rank_tier: rankTier, leaderboard_rank: null, hero: hero };
-}
+function genId() { return 't' + Math.random().toString(36).slice(2, 10); }
 
 const MEDALS_EN = {1:'Herald',2:'Guardian',3:'Crusader',4:'Archon',5:'Legend',6:'Ancient',7:'Divine',8:'Immortal'};
 const MEDALS_RU = {1:'Геральд',2:'Страж',3:'Крестоносец',4:'Архонт',5:'Легенда',6:'Древний',7:'Божество',8:'Титан'};
@@ -662,23 +646,42 @@ function parseRank(rankTier) {
   return { name: en + ' / ' + ru, color: colors[medal] || '#8A8A96', icon: '⭐' };
 }
 
+// ==========================================
+// РЕНДЕР ИГРОКОВ И АДМИНКИ (Обновлено)
+// ==========================================
 function playerCardHTML(p, removeFn) {
   const rank = parseRank(p.rank_tier);
   const removeBtn = isAdmin() ? '<button class="remove" onclick="' + removeFn + '">×</button>' : '';
-  const heroIcon = p.hero
-    ? '<img class="hero-icon" src="https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/heroes/' + p.hero + '.png" onerror="this.style.display=\'none\'">'
-    : '';
-  const heroLine = p.hero
-    ? '<div class="hero">' + heroIcon + '<span>' + escapeHtml(p.hero) + '</span></div>'
-    : '';
+  const codeBtn = isAdmin() ? '<button class="btn ghost" style="padding:2px 8px; font-size:10px; margin-top:5px;" onclick="generateAccessCode(\'' + escapeHtml(p.name) + '\')">🔑 Выдать код</button>' : '';
   return '<div class="player">' +
     '<img src="' + p.avatar + '" alt="" onerror="this.style.display=\'none\'">' +
     '<div>' +
       '<div class="name">' + escapeHtml(p.name) + '</div>' +
       '<div class="rank" style="color:' + rank.color + '">' + rank.icon + ' ' + rank.name + '</div>' +
-      heroLine +
+      codeBtn +
     '</div>' + removeBtn +
   '</div>';
+}
+
+async function generateAccessCode(playerName) {
+  const code = Math.random().toString(36).substring(2, 8).toUpperCase();
+  const { error } = await supabaseClient.from('access_codes').insert({ code: code, player_name: playerName });
+  if (error) {
+    alert('Ошибка создания кода: ' + error.message);
+  } else {
+    alert('Код для игрока ' + playerName + ':\n\n' + code + '\n\nПередайте его игроку.');
+  }
+}
+
+async function fetchPlayer(steamIdInput) {
+  const name = document.getElementById('p-name').value.trim();
+  const avatar = document.getElementById('p-avatar').value.trim();
+  const rankTier = parseInt(document.getElementById('p-rank').value) || 0;
+  if (!name) throw new Error('Введи ник игрока');
+  let accountId = steamIdInput.trim();
+  if (!accountId) accountId = 'manual_' + Date.now();
+  const fallbackAvatar = 'https://ui-avatars.com/api/?name=' + encodeURIComponent(name.charAt(0)) + '&background=7A3BFF&color=F2F2F2&size=96&bold=true';
+  return { account_id: accountId, name: name, avatar: avatar || fallbackAvatar, rank_tier: rankTier };
 }
 
 function renderSolo() {
@@ -734,11 +737,7 @@ async function handleAddPlayer() {
       }
       renderTeams();
     }
-    input.value = '';
-    document.getElementById('p-name').value = '';
-    document.getElementById('p-avatar').value = '';
-    document.getElementById('p-rank').value = '0';
-    document.getElementById('p-hero').value = '';
+    input.value = ''; document.getElementById('p-name').value = ''; document.getElementById('p-avatar').value = ''; document.getElementById('p-rank').value = '0';
     msg.innerHTML = '<div class="msg success">✓ ' + escapeHtml(player.name) + ' добавлен</div>';
     saveState();
   } catch (e) {
@@ -751,12 +750,11 @@ async function handleAddPlayer() {
 function removeSolo(accId) { if (!isAdmin()) return; state.soloPlayers = state.soloPlayers.filter(p => p.account_id !== accId); renderSolo(); saveState(); }
 function removeTeam(id) { if (!isAdmin()) return; state.teams = state.teams.filter(t => t.id !== id); renderTeams(); saveState(); }
 function renameTeam(id, name) { if (!isAdmin()) return; const t = state.teams.find(t => t.id === id); if (t) { t.name = name; saveState(); } }
-function removePlayerFromTeam(teamId, accId) {
-  if (!isAdmin()) return;
-  const t = state.teams.find(t => t.id === teamId);
-  if (t) { t.players = t.players.filter(p => p.account_id !== accId); renderTeams(); saveState(); }
-}
+function removePlayerFromTeam(teamId, accId) { if (!isAdmin()) return; const t = state.teams.find(t => t.id === teamId); if (t) { t.players = t.players.filter(p => p.account_id !== accId); renderTeams(); saveState(); } }
 
+// ==========================================
+// СЕТКА (БЕЗ ИЗМЕНЕНИЙ)
+// ==========================================
 function shuffle(arr) {
   const a = arr.slice();
   for (let i = a.length - 1; i > 0; i--) {
@@ -770,11 +768,9 @@ function generateBracket() {
   if (!isAdmin()) return;
   let participants;
   if (state.mode === '1x1') {
-    participants = state.soloPlayers.map(p => ({ id: 'p' + p.account_id, name: p.name, avatar: p.avatar, hero: p.hero }));
+    participants = state.soloPlayers.map(p => ({ id: 'p' + p.account_id, name: p.name, avatar: p.avatar }));
   } else {
-    participants = state.teams.filter(t => t.players.length > 0).map(t => ({
-      id: t.id, name: t.name, avatar: t.players[0] ? t.players[0].avatar : '', hero: ''
-    }));
+    participants = state.teams.filter(t => t.players.length > 0).map(t => ({ id: t.id, name: t.name, avatar: t.players[0] ? t.players[0].avatar : '' }));
   }
   if (participants.length < 2) { alert('Нужно минимум 2 участника'); return; }
   if (participants.length > state.maxParticipants) participants = participants.slice(0, state.maxParticipants);
@@ -793,13 +789,10 @@ function generateBracket() {
     for (let i = 0; i < current.length; i += 2) {
       next.push({ id: 'r' + (rIdx + 1) + '-' + (i / 2), round: rIdx, p1: null, p2: null, winner: null, score: null });
     }
-    rounds.push(next);
-    current = next; rIdx++;
+    rounds.push(next); current = next; rIdx++;
   }
   state.bracket = { rounds, type: 'single', mode: state.mode };
-  saveState();
-  switchTab('bracket');
-  renderBracket();
+  saveState(); switchTab('bracket'); renderBracket();
 }
 
 function countParticipants() {
@@ -814,10 +807,7 @@ function matchHTML(match) {
   const p1W = match.p1 && match.winner && match.winner.id === match.p1.id;
   const p2W = match.p2 && match.winner && match.winner.id === match.p2.id;
   const score = match.score || { p1: '', p2: '' };
-  let html = '<div class="match">';
-  html += slotHTML(match.p1, p1W);
-  html += '<div class="divider"></div>';
-  html += slotHTML(match.p2, p2W);
+  let html = '<div class="match">' + slotHTML(match.p1, p1W) + '<div class="divider"></div>' + slotHTML(match.p2, p2W);
   if (canPlay) {
     html += '<div class="score-box">';
     html += '<input type="number" min="0" max="2" class="score-input" id="score-' + match.id + '-1" value="' + (score.p1 !== '' ? score.p1 : '') + '" placeholder="0" />';
@@ -834,14 +824,9 @@ function matchHTML(match) {
 
 function slotHTML(player, isWinner) {
   if (!player) return '<div class="slot"><span class="tbd">TBD</span></div>';
-  const cls = isWinner ? 'winner' : '';
-  const heroIcon = player.hero
-    ? '<img class="slot-hero-icon" src="https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/heroes/' + player.hero + '.png" onerror="this.style.display=\'none\'">'
-    : '';
-  return '<div class="slot ' + cls + '">' +
+  return '<div class="slot ' + (isWinner ? 'winner' : '') + '">' +
     (player.avatar ? '<img src="' + player.avatar + '" onerror="this.style.display=\'none\'">' : '') +
     '<span>' + escapeHtml(player.name) + '</span>' +
-    heroIcon +
   '</div>';
 }
 
@@ -850,21 +835,13 @@ function renderBracket() {
   const empty = document.getElementById('bracket-empty');
   const info = document.getElementById('bracket-info');
   if (!wrap) return;
-  if (!state.bracket) {
-    wrap.innerHTML = '';
-    empty.classList.remove('hidden');
-    info.innerHTML = '';
-    return;
-  }
+  if (!state.bracket) { wrap.innerHTML = ''; empty.classList.remove('hidden'); info.innerHTML = ''; return; }
   empty.classList.add('hidden');
   const rounds = state.bracket.rounds;
-  info.innerHTML = 'Формат: <b style="color:var(--accent-2)">' + state.bracket.mode + '</b> · Тип: <b style="color:var(--accent-2)">Single Elimination (Bo3)</b> · Участников: <b style="color:var(--accent-2)">' + countParticipants() + '</b>';
+  info.innerHTML = 'Формат: <b>' + state.bracket.mode + '</b> · Тип: <b>Single Elimination (Bo3)</b> · Участников: <b>' + countParticipants() + '</b>';
   wrap.innerHTML = rounds.map((round, ri) => {
     const title = ri === rounds.length - 1 ? '🏆 Финал' : 'Раунд ' + (ri + 1);
-    return '<div class="round">' +
-      '<div class="round-title">' + title + '</div>' +
-      round.map(m => matchHTML(m)).join('') +
-    '</div>';
+    return '<div class="round"><div class="round-title">' + title + '</div>' + round.map(m => matchHTML(m)).join('') + '</div>';
   }).join('');
 }
 
@@ -872,9 +849,7 @@ function setScore(matchId) {
   if (!isAdmin()) return;
   const rounds = state.bracket.rounds;
   let match = null, rIdx = -1, mIdx = -1;
-  rounds.forEach((r, ri) => r.forEach((m, mi) => {
-    if (m.id === matchId) { match = m; rIdx = ri; mIdx = mi; }
-  }));
+  rounds.forEach((r, ri) => r.forEach((m, mi) => { if (m.id === matchId) { match = m; rIdx = ri; mIdx = mi; } }));
   if (!match) return;
   const s1 = parseInt(document.getElementById('score-' + matchId + '-1').value) || 0;
   const s2 = parseInt(document.getElementById('score-' + matchId + '-2').value) || 0;
@@ -888,30 +863,21 @@ function setScore(matchId) {
   if (oldWinner && oldWinner.id !== winner.id && rIdx + 1 < rounds.length) {
     const nextMatch = rounds[rIdx + 1][Math.floor(mIdx / 2)];
     const slotKey = (mIdx % 2 === 0) ? 'p1' : 'p2';
-    if (nextMatch && nextMatch[slotKey] && nextMatch[slotKey].id === oldWinner.id) {
-      nextMatch[slotKey] = null;
-      nextMatch.winner = null;
-      nextMatch.score = null;
-    }
+    if (nextMatch && nextMatch[slotKey] && nextMatch[slotKey].id === oldWinner.id) { nextMatch[slotKey] = null; nextMatch.winner = null; nextMatch.score = null; }
   }
   match.winner = winner;
   if (rIdx + 1 < rounds.length) {
     const nextMatch = rounds[rIdx + 1][Math.floor(mIdx / 2)];
     const slotKey = (mIdx % 2 === 0) ? 'p1' : 'p2';
-    nextMatch[slotKey] = winner;
-    nextMatch.winner = null;
-    nextMatch.score = null;
+    nextMatch[slotKey] = winner; nextMatch.winner = null; nextMatch.score = null;
   } else {
     setTimeout(() => alert('🏆 Победитель турнира: ' + winner.name + ' (' + s1 + ':' + s2 + ')'), 150);
   }
-  saveState();
-  renderBracket();
+  saveState(); renderBracket();
 }
 
 function switchTab(tab) {
-  document.querySelectorAll('nav button').forEach(b => {
-    b.classList.toggle('active', b.dataset.tab === tab);
-  });
+  document.querySelectorAll('nav button').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
   const adminSection = document.getElementById('tab-admin');
   const bracketSection = document.getElementById('tab-bracket');
   if (adminSection) adminSection.classList.toggle('hidden', tab !== 'admin');
@@ -920,24 +886,11 @@ function switchTab(tab) {
 }
 
 function switchSubTab(sub) {
-  document.querySelectorAll('[data-sub]').forEach(b => {
-    b.classList.toggle('active', b.dataset.sub === sub);
-  });
+  document.querySelectorAll('[data-sub]').forEach(b => b.classList.toggle('active', b.dataset.sub === sub));
   const solo = document.getElementById('sub-solo');
   const teams = document.getElementById('sub-teams');
   if (solo) solo.classList.toggle('hidden', sub !== 'solo');
   if (teams) teams.classList.toggle('hidden', sub !== 'teams');
-}
-
-function checkAdminAccess() {
-  const params = new URLSearchParams(window.location.search);
-  if (params.get('admin') === ADMIN_KEY) {
-    const btn = document.getElementById('admin-tab-btn');
-    if (btn) btn.style.display = 'inline-block';
-    switchTab('admin');
-  } else {
-    switchTab('bracket');
-  }
 }
 
 function renderAll() {
@@ -947,54 +900,39 @@ function renderAll() {
 }
 
 function init() {
-  document.querySelectorAll('nav button').forEach(b => {
-    b.onclick = () => switchTab(b.dataset.tab);
-  });
-  document.querySelectorAll('[data-sub]').forEach(b => {
-    b.onclick = () => switchSubTab(b.dataset.sub);
-  });
+  document.querySelectorAll('nav button').forEach(b => b.onclick = () => switchTab(b.dataset.tab));
+  document.querySelectorAll('[data-sub]').forEach(b => b.onclick = () => switchSubTab(b.dataset.sub));
+  
   const modeSel = document.getElementById('mode');
   const typeSel = document.getElementById('bracket-type');
   const maxSel = document.getElementById('max-participants');
-  if (modeSel) {
-    modeSel.value = state.mode;
-    modeSel.onchange = e => { state.mode = e.target.value; saveState(); renderAll(); };
-  }
-  if (typeSel) {
-    typeSel.value = state.bracketType;
-    typeSel.onchange = e => { state.bracketType = e.target.value; saveState(); };
-  }
-  if (maxSel) {
-    maxSel.value = state.maxParticipants;
-    maxSel.onchange = e => { state.maxParticipants = +e.target.value; saveState(); };
-  }
+  if (modeSel) { modeSel.value = state.mode; modeSel.onchange = e => { state.mode = e.target.value; saveState(); renderAll(); }; }
+  if (typeSel) { typeSel.value = state.bracketType; typeSel.onchange = e => { state.bracketType = e.target.value; saveState(); }; }
+  if (maxSel) { maxSel.value = state.maxParticipants; maxSel.onchange = e => { state.maxParticipants = +e.target.value; saveState(); }; }
+  
   const addBtn = document.getElementById('add-player-btn');
   const playerInput = document.getElementById('player-input');
   if (addBtn) addBtn.onclick = handleAddPlayer;
-  if (playerInput) playerInput.addEventListener('keydown', e => {
-    if (e.key === 'Enter') handleAddPlayer();
-  });
+  if (playerInput) playerInput.addEventListener('keydown', e => { if (e.key === 'Enter') handleAddPlayer(); });
+  
   const addTeamBtn = document.getElementById('add-team-btn');
   const genBtn = document.getElementById('generate-bracket');
   const resetBtn = document.getElementById('reset-all');
-  if (addTeamBtn) addTeamBtn.onclick = () => {
-    if (!isAdmin()) return;
-    state.teams.push({ id: genId(), name: 'Team ' + (state.teams.length + 1), players: [] });
-    renderTeams(); saveState();
-  };
+  
+  if (addTeamBtn) addTeamBtn.onclick = () => { if (!isAdmin()) return; state.teams.push({ id: genId(), name: 'Team ' + (state.teams.length + 1), players: [] }); renderTeams(); saveState(); };
   if (genBtn) genBtn.onclick = generateBracket;
   if (resetBtn) resetBtn.onclick = () => {
     if (!isAdmin()) return;
     if (!confirm('Удалить весь турнир?')) return;
-    state.soloPlayers = [];
-    state.teams = [];
-    state.bracket = null;
-    saveState();
-    renderAll();
-    switchTab('admin');
-    alert('Готово');
+    state.soloPlayers = []; state.teams = []; state.bracket = null;
+    saveState(); renderAll(); switchTab('admin'); alert('Готово');
   };
-  checkAdminAccess();
+  
+  // Проверка на админа (прячем кнопку)
+  if (isAdmin()) {
+    document.getElementById('admin-tab-btn').style.display = 'inline-block';
+  }
+  
   renderAll();
 }
 
@@ -1003,8 +941,12 @@ window.removeTeam = removeTeam;
 window.renameTeam = renameTeam;
 window.removePlayerFromTeam = removePlayerFromTeam;
 window.setScore = setScore;
+window.loginWithCode = loginWithCode;
+window.logoutPlayer = logoutPlayer;
+window.generateAccessCode = generateAccessCode;
 
 init();
+
 </script>
 </body>
 </html>
