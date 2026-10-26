@@ -1159,8 +1159,31 @@ window.pickHero = pickHero;
   // Для теста берем первых двух соло игроков, у которых есть UID
   const withUid = state.soloPlayers.filter(p => p.auth_uid);
   if (withUid.length < 2) { alert('Нужно минимум 2 игрока с привязанными UID'); return; }
-init();
+  
+  const p1 = withUid[0];
+  const p2 = withUid[1];
 
+  const newDraftState = {
+    phase: 'coinflip',
+    first_turn: null,
+    turn: null,
+    pool: [...ALL_HEROES].sort(() => 0.5 - Math.random()).slice(0, 20), // 20 рандомных
+    bans: { p1: [], p2: [] },
+    picks: { p1: null, p2: null },
+    p1_uid: p1.auth_uid,
+    p1_name: p1.name,
+    p2_uid: p2.auth_uid,
+    p2_name: p2.name,
+    is_open: false
+  };
+
+  await supabaseClient.from('drafts').upsert({ id: 1, data: newDraftState });
+  alert('Драфт запущен! Игроки могут заходить.');
+}
+
+window.startDraft = startDraft;
+
+init();
 </script>
 </body>
 </html>
