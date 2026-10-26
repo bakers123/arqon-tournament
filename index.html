@@ -326,6 +326,7 @@
   </div>
 </div>
 
+
 <!-- ЭКРАН ИГРОКА -->
 <div id="player-screen" class="hidden" style="max-width: 1000px; margin: 40px auto; padding: 20px;">
   <div class="card">
@@ -346,18 +347,21 @@
     <div style="margin-top: 20px; text-align: center;">
       <button class="btn" id="draft-action-btn" style="display: none;">Действие</button>
     </div>
-  </div>
-</div>
-  <div id="chat-container" class="hidden" style="margin-top: 30px; border-top: 1px solid var(--border); padding-top: 20px;">
+
+    <!-- ЧАТ (ТУТ) -->
+    <div id="chat-container" class="hidden" style="margin-top: 30px; border-top: 1px solid var(--border); padding-top: 20px;">
       <h2 style="font-size: 14px; margin-bottom: 10px;">💬 Чат матча</h2>
       <div id="chat-messages" style="height: 200px; overflow-y: auto; background: #0F0F14; border: 1px solid var(--border); border-radius: 6px; padding: 10px; margin-bottom: 10px;">
-        <!-- Сюда будут падать сообщения -->
       </div>
       <div class="row">
         <input id="chat-input" placeholder="Написать сообщение..." />
         <button class="btn" onclick="sendMessage()">Отправить</button>
       </div>
     </div>
+    <!-- КОНЕЦ ЧАТА -->
+
+  </div>
+</div>
 
 <header>
   <div class="brand">
