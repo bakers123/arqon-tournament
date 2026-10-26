@@ -473,6 +473,7 @@
 
     <div class="card">
       <button class="btn" id="generate-bracket">🎲 Сгенерировать сетку</button>
+      <button class="btn" onclick="startDraft()" style="margin-left:10px; background: #22c55e;">▶️ Запустить Драфт</button>
       <button class="btn danger" id="reset-all" style="margin-left:10px;">Сбросить всё</button>
     </div>
   </section>
@@ -489,7 +490,17 @@
     </div>
   </section>
 </main>
-
+<div id="uid-modal" class="modal hidden">
+  <div class="modal-content">
+    <h2>Привязать аккаунт</h2>
+    <p class="hint" style="margin-bottom:15px;">Введи код/UID, который игрок получил при входе.</p>
+    <input id="edit-uid" placeholder="UID игрока (например, 550e8400...)" style="margin-bottom:15px;" />
+    <div class="row">
+      <button class="btn" onclick="saveUid()">Сохранить</button>
+      <button class="btn ghost" onclick="closeUidModal()">Отмена</button>
+    </div>
+  </div>
+</div>
 <script>
 // ==========================================
 // НАСТРОЙКА SUPABASE
@@ -560,6 +571,7 @@ async function checkUserRole(uid) {
     document.getElementById('player-screen').classList.remove('hidden');
     document.getElementById('player-display-name').textContent = data.name;
     document.querySelector('main').style.display = 'none';
+        startDraftListener(uid);
   } else {
     handleNoAuth();
   }
@@ -645,11 +657,49 @@ function parseRank(rankTier) {
   const ru = MEDALS_RU[medal] ? MEDALS_RU[medal] + ' ' + star : '? ' + star;
   return { name: en + ' / ' + ru, color: colors[medal] || '#8A8A96', icon: '⭐' };
 }
+  let editingUidId = null;
+
+function openUidModal(accountId) {
+  const p = state.soloPlayers.find(p => String(p.account_id) === String(accountId)) || 
+            state.teams.flatMap(t => t.players).find(p => String(p.account_id) === String(accountId));
+  if (!p) return;
+  editingUidId = accountId;
+  document.getElementById('edit-uid').value = p.auth_uid || '';
+  document.getElementById('uid-modal').classList.remove('hidden');
+}
+
+function closeUidModal() {
+  document.getElementById('uid-modal').classList.add('hidden');
+  editingUidId = null;
+}
+
+function saveUid() {
+  if (!isAdmin() || !editingUidId) return;
+  const newUid = document.getElementById('edit-uid').value.trim();
+  
+  const update = (p) => { p.auth_uid = newUid; };
+  
+  let found = state.soloPlayers.find(p => String(p.account_id) === String(editingUidId));
+  if (found) update(found);
+  else {
+    for (const team of state.teams) {
+      const p = team.players.find(p => String(p.account_id) === String(editingUidId));
+      if (p) { update(p); break; }
+    }
+  }
+  saveState();
+  renderAll();
+  closeUidModal();
+}
+window.openUidModal = openUidModal;
+window.closeUidModal = closeUidModal;
+window.saveUid = saveUid;
 
 // ==========================================
 // РЕНДЕР ИГРОКОВ И АДМИНКИ (Обновлено)
 // ==========================================
 function playerCardHTML(p, removeFn) {
+  const uidBtn = isAdmin() ? '<button class="btn ghost" style="padding:2px 8px; font-size:10px; margin-top:5px; margin-left:5px;" onclick="openUidModal(\'' + p.account_id + '\')">🔗 UID</button>' : '';
   const rank = parseRank(p.rank_tier);
   const removeBtn = isAdmin() ? '<button class="remove" onclick="' + removeFn + '">×</button>' : '';
   const codeBtn = isAdmin() ? '<button class="btn ghost" style="padding:2px 8px; font-size:10px; margin-top:5px;" onclick="generateAccessCode(\'' + escapeHtml(p.name) + '\')">🔑 Выдать код</button>' : '';
@@ -945,6 +995,170 @@ window.loginWithCode = loginWithCode;
 window.logoutPlayer = logoutPlayer;
 window.generateAccessCode = generateAccessCode;
 
+  let draftState = null;
+let draftSubscription = null;
+
+// 1. Подписка на драфт для ИГРОКА
+function startDraftListener(myUid) {
+  if (draftSubscription) supabaseClient.removeChannel(draftSubscription);
+  
+  draftSubscription = supabaseClient.channel('public:drafts')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'drafts' }, async payload => {
+      if (payload.new && payload.new.data) {
+        draftState = payload.new.data;
+        renderPlayerDraft(myUid);
+      }
+    }).subscribe();
+    
+  // Первичная загрузка
+  supabaseClient.from('drafts').select('*').eq('id', 1).single().then(({data}) => {
+    if (data && data.data) { draftState = data.data; renderPlayerDraft(myUid); }
+  });
+}
+
+// 2. Отрисовка экрана драфта для игрока
+function renderPlayerDraft(myUid) {
+  const screen = document.getElementById('player-screen');
+  const nameEl = document.getElementById('player-display-name');
+  const statusEl = document.getElementById('draft-status');
+  const poolEl = document.getElementById('hero-pool');
+  const btn = document.getElementById('draft-action-btn');
+
+  if (!draftState) return;
+
+  // Проверяем, участвует ли этот игрок в текущем матче
+  const isP1 = draftState.p1_uid === myUid;
+  const isP2 = draftState.p2_uid === myUid;
+
+  if (!isP1 && !isP2) {
+    statusEl.textContent = "Ожидание твоего матча...";
+    poolEl.innerHTML = '';
+    btn.style.display = 'none';
+    return;
+  }
+
+  const myRole = isP1 ? 'p1' : 'p2';
+  const enemyRole = isP1 ? 'p2' : 'p1';
+  const myName = isP1 ? draftState.p1_name : draftState.p2_name;
+  const enemyName = isP1 ? draftState.p2_name : draftState.p1_name;
+
+  nameEl.textContent = myName;
+  statusEl.textContent = `Играешь против: ${enemyName}`;
+
+  // === ФАЗА 1: МОНЕТКА ===
+  if (draftState.phase === 'coinflip') {
+    if (draftState.first_turn) {
+      const winnerName = draftState.first_turn === 'p1' ? draftState.p1_name : draftState.p2_name;
+      statusEl.innerHTML = `Монетка брошена! Первым банит: <b style="color:var(--accent);">${winnerName}</b>. Ожидание начала банов...`;
+      poolEl.innerHTML = '';
+      btn.style.display = 'none';
+    } else {
+      statusEl.innerHTML = 'Монетка!';
+      btn.textContent = 'Бросить монетку';
+      btn.style.display = 'inline-block';
+      btn.onclick = async () => {
+        const winner = Math.random() < 0.5 ? 'p1' : 'p2';
+        const newDraft = { ...draftState, first_turn: winner, phase: 'ban' };
+        await supabaseClient.from('drafts').upsert({ id: 1, data: newDraft });
+      };
+    }
+    return;
+  }
+
+  // === ФАЗА 2: БАНЫ ===
+  if (draftState.phase === 'ban') {
+    const turnRole = draftState.turn; // 'p1' или 'p2'
+    const amIOnTurn = (myRole === turnRole);
+    
+    if (amIOnTurn) {
+      statusEl.innerHTML = 'Твой ход! Забань героя (осталось банов: ' + (5 - draftState.bans[myRole].length) + ')';
+      btn.style.display = 'inline-block';
+      btn.textContent = 'Закончить баны';
+      btn.onclick = async () => {
+        if (draftState.bans[myRole].length < 5) { alert('Забань ровно 5 героев'); return; }
+        // Передаем ход
+        const nextTurn = turnRole === 'p1' ? 'p2' : 'p1';
+        const nextPhase = (draftState.bans[nextTurn].length >= 5) ? 'pick' : 'ban';
+        await supabaseClient.from('drafts').upsert({ id: 1, data: { ...draftState, turn: nextTurn, phase: nextPhase } });
+      };
+    } else {
+      statusEl.innerHTML = `Ход соперника (${enemyName}). Он банит героев...`;
+      btn.style.display = 'none';
+    }
+
+    // Отрисовка героев
+    poolEl.innerHTML = draftState.pool.map(id => {
+      const isBannedByMe = draftState.bans[myRole].includes(id);
+      const isBannedByEnemy = draftState.bans[enemyRole].includes(id);
+      const isBanned = isBannedByMe || isBannedByEnemy;
+      
+      let style = 'cursor: pointer; border-radius: 8px; overflow: hidden; border: 2px solid transparent;';
+      let overlay = '';
+      
+      if (isBannedByMe) { style += 'opacity: 0.2; filter: grayscale(100%);'; overlay = '❌'; }
+      if (isBannedByEnemy) { style += 'opacity: 0.4; border-color: red;'; overlay = '🚫'; }
+      if (!isBanned && amIOnTurn && draftState.bans[myRole].length < 5) { style += 'cursor: pointer;'; } 
+      else { style += 'cursor: not-allowed;'; }
+
+      return `<div style="${style} position:relative;" onclick="${(!isBanned && amIOnTurn && draftState.bans[myRole].length < 5) ? `banHero('${id}','${myRole}')` : ''}">
+        <img src="https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/heroes/${id}.png" style="width: 100%; display: block;">
+        <div style="position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:32px;">${overlay}</div>
+      </div>`;
+    }).join('');
+    return;
+  }
+
+  // === ФАЗА 3: ПИКИ ===
+  if (draftState.phase === 'pick') {
+    statusEl.innerHTML = 'Баны завершены! Выбери своего героя из оставшихся 10.';
+    btn.textContent = 'Подтвердить героя';
+    btn.style.display = 'inline-block';
+
+    const availableHeroes = draftState.pool.filter(id => !draftState.bans.p1.includes(id) && !draftState.bans.p2.includes(id));
+    const myPick = draftState.picks[myRole];
+
+    btn.onclick = async () => {
+      if (!myPick) { alert('Сначала выбери героя'); return; }
+      alert('Твой герой сохранен! Ожидайте, пока админ откроет пики.');
+    };
+
+    poolEl.innerHTML = availableHeroes.map(id => {
+      const isSelected = myPick === id;
+      const style = `cursor: pointer; border-radius: 8px; overflow: hidden; border: 2px solid ${isSelected ? 'var(--accent)' : 'transparent'}; box-shadow: ${isSelected ? '0 0 10px var(--accent)' : 'none'};`;
+      return `<div style="${style}" onclick="pickHero('${id}','${myRole}')">
+        <img src="https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/heroes/${id}.png" style="width: 100%; display: block;">
+      </div>`;
+    }).join('');
+    
+    // Если пики уже открыты админом
+    if (draftState.is_open) {
+      statusEl.innerHTML = `Пики открыты!<br>Твой герой: <b>${getHeroName(draftState.picks[myRole])}</b><br>Герой соперника: <b>${getHeroName(draftState.picks[enemyRole])}</b>`;
+      btn.style.display = 'none';
+    }
+    return;
+  }
+}
+
+async function banHero(heroId, myRole) {
+  const newBans = { ...draftState.bans };
+  if (newBans[myRole].length >= 5) return;
+  newBans[myRole].push(heroId);
+  await supabaseClient.from('drafts').upsert({ id: 1, data: { ...draftState, bans: newBans } });
+}
+
+async function pickHero(heroId, myRole) {
+  const newPicks = { ...draftState.picks };
+  newPicks[myRole] = heroId;
+  await supabaseClient.from('drafts').upsert({ id: 1, data: { ...draftState, picks: newPicks } });
+}
+
+window.banHero = banHero;
+window.pickHero = pickHero;
+  async function startDraft() {
+  if (!isAdmin()) return;
+  // Для теста берем первых двух соло игроков, у которых есть UID
+  const withUid = state.soloPlayers.filter(p => p.auth_uid);
+  if (withUid.length < 2) { alert('Нужно минимум 2 игрока с привязанными UID'); return; }
 init();
 
 </script>
