@@ -1207,18 +1207,17 @@ async function banHero(heroId, myRole) {
 async function pickHero(heroId, myRole) {
   if (!draftState) return;
   
-  const newPicks = { ...draftState.picks };
-  newPicks[myRole] = heroId;
-  
-  const oldState = JSON.parse(JSON.stringify(draftState));
-  draftState.picks = newPicks;
+  draftState.picks[myRole] = heroId;
   renderPlayerDraft(currentUser.id);
   
-  const { error } = await supabaseClient.from('drafts').upsert({ id: 1, data: { ...oldState, picks: newPicks } });
+  const { error } = await supabaseClient.from('drafts').upsert({ 
+    id: 1, 
+    data: draftState 
+  });
+  
   if (error) {
-    draftState = oldState;
-    renderPlayerDraft(currentUser.id);
-    alert("Ошибка соединения.");
+    console.error("Ошибка выбора героя:", error);
+    alert("Ошибка соединения. Попробуй еще раз.");
   }
 }
 
