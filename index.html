@@ -488,6 +488,7 @@
     <div class="card">
       <button class="btn" id="generate-bracket">🎲 Сгенерировать сетку</button>
       <button class="btn" onclick="startDraft()" style="margin-left:10px; background: #22c55e;">▶️ Запустить Драфт</button>
+      <button class="btn" onclick="openPicks()" style="margin-left:10px; background: #f59e0b;">👁 Открыть пики</button>
       <button class="btn danger" id="reset-all" style="margin-left:10px;">Сбросить всё</button>
     </div>
   </section>
@@ -1305,6 +1306,32 @@ window.pickHero = async function(heroId, myRole) {
     p2_name: p2.name,
     is_open: false
   };
+    async function openPicks() {
+  if (!isAdmin()) return;
+  
+  // Читаем текущий драфт из базы
+  const { data } = await supabaseClient.from('drafts').select('*').eq('id', 1).single();
+  
+  if (!data || !data.data) {
+    alert('Драфт еще не запущен!');
+    return;
+  }
+  
+  const draft = data.data;
+  
+  // Проверяем, что оба игрока выбрали героев
+  if (!draft.picks.p1 || !draft.picks.p2) {
+    alert('Нельзя открыть пики! Один или оба игрока еще не выбрали героя.');
+    return;
+  }
+  
+  // Меняем флаг is_open на true
+  draft.is_open = true;
+  
+  // Сохраняем обратно в базу
+  await supabaseClient.from('drafts').upsert({ id: 1, data: draft });
+  alert('Пики открыты! Игроки теперь видят героев друг друга.');
+}
 
   await supabaseClient.from('drafts').upsert({ id: 1, data: newDraftState });
   alert('Драфт запущен! Игроки могут заходить.');
