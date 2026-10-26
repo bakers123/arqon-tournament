@@ -1144,17 +1144,49 @@ function renderPlayerDraft(myUid) {
   }
 
   // === ФАЗА 3: ПИКИ ===
+ // === ФАЗА 3: ПИКИ ===
   if (draftState.phase === 'pick') {
+    const availableHeroes = draftState.pool.filter(id => !draftState.bans.p1.includes(id) && !draftState.bans.p2.includes(id));
+    const myPick = draftState.picks[myRole];
+
+    // Если пики уже открыты админом
+    if (draftState.is_open) {
+      statusEl.innerHTML = `Пики открыты!<br>Твой герой: <b>${getHeroName(draftState.picks[myRole])}</b><br>Герой соперника: <b>${getHeroName(draftState.picks[enemyRole])}</b>`;
+      poolEl.innerHTML = availableHeroes.map(id => {
+        const isMe = draftState.picks[myRole] === id;
+        const isEnemy = draftState.picks[enemyRole] === id;
+        const border = isMe ? 'var(--accent)' : (isEnemy ? 'red' : 'transparent');
+        return `<div style="border-radius: 8px; overflow: hidden; border: 2px solid ${border};">
+          <img src="https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/heroes/${id}.png" style="width: 100%; display: block;">
+        </div>`;
+      }).join('');
+      btn.style.display = 'none';
+      return;
+    }
+
+    // Если пики еще закрыты
     statusEl.innerHTML = 'Баны завершены! Выбери своего героя из оставшихся 10.';
     btn.textContent = 'Подтвердить героя';
     btn.style.display = 'inline-block';
 
-    const availableHeroes = draftState.pool.filter(id => !draftState.bans.p1.includes(id) && !draftState.bans.p2.includes(id));
-    const myPick = draftState.picks[myRole];
-
     btn.onclick = async () => {
-      if (!myPick) { alert('Сначала выбери героя'); return; }
-      alert('Твой герой сохранен! Ожидайте, пока админ откроет пики.');
+      if (!draftState.picks[myRole]) { alert('Сначала выбери героя'); return; }
+      
+      const oldState = JSON.parse(JSON.stringify(draftState));
+      const newPicks = { ...draftState.picks };
+      newPicks[myRole] = draftState.picks[myRole]; // Берем текущий выбор
+      
+      // Отправляем в базу
+      const { error } = await supabaseClient.from('drafts').upsert({ 
+        id: 1, 
+        data: { ...oldState, picks: newPicks } 
+      });
+      
+      if (error) {
+        alert('Ошибка сохранения: ' + error.message);
+      } else {
+        alert('Твой герой сохранен! Ожидайте, пока админ откроет пики.');
+      }
     };
 
     poolEl.innerHTML = availableHeroes.map(id => {
@@ -1165,15 +1197,8 @@ function renderPlayerDraft(myUid) {
       </div>`;
     }).join('');
     
-    // Если пики уже открыты админом
-    if (draftState.is_open) {
-      statusEl.innerHTML = `Пики открыты!<br>Твой герой: <b>${getHeroName(draftState.picks[myRole])}</b><br>Герой соперника: <b>${getHeroName(draftState.picks[enemyRole])}</b>`;
-      btn.style.display = 'none';
-    }
     return;
   }
-}
-
 async function banHero(heroId, myRole) {
   if (!draftState) return;
   if (draftState.turn !== myRole) return;
@@ -1310,11 +1335,7 @@ async function openPicks() {
   if (!isAdmin()) return;
   
   const { data } = await supabaseClient.from('drafts').select('*').eq('id', 1).single();
-  
-  if (!data || !data.data) {
-    alert('Драфт еще не запущен!');
-    return;
-  }
+  if (!data || !data.data) { alert('Драфт еще не запущен!'); return; }
   
   const draft = data.data;
   
