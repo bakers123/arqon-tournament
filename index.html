@@ -328,10 +328,24 @@
 
 <!-- ЭКРАН ИГРОКА -->
 <div id="player-screen" class="hidden" style="max-width: 1000px; margin: 40px auto; padding: 20px;">
-  <div class="card" style="text-align: center;">
-    <h2>Добро пожаловать, <span id="player-display-name" style="color: var(--accent);">Игрок</span>!</h2>
-    <p class="hint" style="margin-top: 10px;">Твой профиль Dota привязан. Ожидай начала матча или указаний от админа.</p>
-    <button class="btn ghost" onclick="logoutPlayer()" style="margin-top: 20px;">Выйти</button>
+  <div class="card">
+    <div class="row" style="justify-content: space-between; align-items: center; margin-bottom: 20px;">
+      <h2 style="margin:0;">Драфт: <span id="player-display-name" style="color: var(--accent);">Игрок</span></h2>
+      <button class="btn ghost" onclick="logoutPlayer()">Выйти</button>
+    </div>
+
+    <div id="draft-status" class="hint" style="text-align: center; font-size: 16px; margin-bottom: 20px;">
+      Ожидание начала драфта...
+    </div>
+
+    <!-- Сетка героев -->
+    <div id="hero-pool" class="grid" style="grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));">
+      <!-- Сюда скрипт вставит иконки героев -->
+    </div>
+
+    <div style="margin-top: 20px; text-align: center;">
+      <button class="btn" id="draft-action-btn" style="display: none;">Действие</button>
+    </div>
   </div>
 </div>
 
@@ -541,15 +555,6 @@ supabaseClient.auth.onAuthStateChange((event, session) => {
   }
 });
 
-// Проверка сессии при загрузке
-supabaseClient.auth.getSession().then(({ data: { session } }) => {
-  if (session) {
-    currentUser = session.user;
-    checkUserRole(session.user.id);
-  } else {
-    handleNoAuth();
-  }
-});
 
 function handleNoAuth() {
   if (isAdmin()) {
