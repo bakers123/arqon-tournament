@@ -1203,6 +1203,30 @@ async function banHero(heroId, myRole) {
     alert("Ошибка соединения. Попробуй еще раз.");
   }
 }
+  async function pickHero(heroId, myRole) {
+  if (!draftState) return;
+  
+  // 1. МГНОВЕННО обновляем экран
+  const newPicks = { ...draftState.picks };
+  newPicks[myRole] = heroId;
+  
+  const oldState = JSON.parse(JSON.stringify(draftState));
+  draftState.picks = newPicks;
+  renderPlayerDraft(currentUser.id); // Перерисовываем сразу
+  
+  // 2. В ФОНЕ сохраняем в базу
+  const { error } = await supabaseClient.from('drafts').upsert({ 
+    id: 1, 
+    data: { ...oldState, picks: newPicks } 
+  });
+  
+  if (error) {
+    console.error("Ошибка выбора героя:", error);
+    draftState = oldState;
+    renderPlayerDraft(currentUser.id);
+    alert("Ошибка соединения. Попробуй еще раз.");
+  }
+}
 window.banHero = banHero;
 window.pickHero = pickHero;
   async function startDraft() {
