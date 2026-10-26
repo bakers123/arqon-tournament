@@ -524,7 +524,24 @@ function isAdmin() {
 // ==========================================
 // АВТОРИЗАЦИЯ
 // ==========================================
+// Проверка сессии при загрузке
+supabaseClient.auth.getSession().then(({ data: { session } }) => {
+  if (isAdmin()) {
+    document.getElementById('auth-screen').style.display = 'none';
+    document.querySelector('main').style.display = 'block';
+    initSupabaseSync();
+  } else if (session) {
+    currentUser = session.user;
+    checkUserRole(session.user.id);
+  } else {
+    handleNoAuth();
+  }
+});
+
+// Слушатель изменений (вход/выход)
 supabaseClient.auth.onAuthStateChange((event, session) => {
+  if (isAdmin()) return; // Если админ — вообще игнорируем входы игроков
+  
   if (session) {
     currentUser = session.user;
     checkUserRole(session.user.id);
@@ -699,16 +716,20 @@ window.saveUid = saveUid;
 // РЕНДЕР ИГРОКОВ И АДМИНКИ (Обновлено)
 // ==========================================
 function playerCardHTML(p, removeFn) {
-  const uidBtn = isAdmin() ? '<button class="btn ghost" style="padding:2px 8px; font-size:10px; margin-top:5px; margin-left:5px;" onclick="openUidModal(\'' + p.account_id + '\')">🔗 UID</button>' : '';
   const rank = parseRank(p.rank_tier);
   const removeBtn = isAdmin() ? '<button class="remove" onclick="' + removeFn + '">×</button>' : '';
+  
   const codeBtn = isAdmin() ? '<button class="btn ghost" style="padding:2px 8px; font-size:10px; margin-top:5px;" onclick="generateAccessCode(\'' + escapeHtml(p.name) + '\')">🔑 Выдать код</button>' : '';
+  
+  // ВОТ ЗДЕСЬ МЫ ДОБАВИЛИ КНОПКУ UID В HTML
+  const uidBtn = isAdmin() ? '<button class="btn ghost" style="padding:2px 8px; font-size:10px; margin-top:5px; margin-left:5px;" onclick="openUidModal(\'' + p.account_id + '\')">🔗 UID</button>' : '';
+
   return '<div class="player">' +
     '<img src="' + p.avatar + '" alt="" onerror="this.style.display=\'none\'">' +
     '<div>' +
       '<div class="name">' + escapeHtml(p.name) + '</div>' +
       '<div class="rank" style="color:' + rank.color + '">' + rank.icon + ' ' + rank.name + '</div>' +
-      codeBtn +
+      codeBtn + uidBtn +  /* <--- ВСТАВИЛИ uidBtn */
     '</div>' + removeBtn +
   '</div>';
 }
@@ -996,6 +1017,26 @@ window.logoutPlayer = logoutPlayer;
 window.generateAccessCode = generateAccessCode;
 
   let draftState = null;
+ const ALL_HEROES = [
+  "abaddon", "alchemist", "ancient_apparition", "antimage", "arc_warden", "axe", "bane", "batrider", "beastmaster", "bloodseeker",
+  "bounty_hunter", "brewmaster", "bristleback", "broodmother", "centaur", "chaos_knight", "chen", "clinkz", "rattletrap", "crystal_maiden",
+  "dark_seer", "dark_willow", "dawnbreaker", "dazzle", "death_prophet", "disruptor", "doom_bringer", "dragon_knight", "drow_ranger", "earth_spirit",
+  "earthshaker", "elder_titan", "ember_spirit", "enchantress", "enigma", "faceless_void", "grimstroke", "gyrocopter", "hoodwink", "huskar",
+  "invoker", "wisp", "jakiro", "juggernaut", "kez", "keeper_of_the_light", "kunkka", "legion_commander", "leshrac", "lich",
+  "life_stealer", "lina", "lion", "lone_druid", "luna", "lycan", "magnataur", "marci", "mars", "medusa",
+  "meepo", "mirana", "monkey_king", "morphling", "muerta", "naga_siren", "furion", "necrolyte", "night_stalker", "nyx_assassin",
+  "ogre_magi", "omniknight", "oracle", "obsidian_destroyer", "pangolier", "phantom_assassin", "phantom_lancer", "phoenix", "primal_beast", "puck",
+  "pudge", "pugna", "queenofpain", "razor", "riki", "ringmaster", "rubick", "sand_king", "shadow_demon", "nevermore",
+  "shadow_shaman", "silencer", "skywrath_mage", "slardar", "slark", "snapfire", "sniper", "spectre", "spirit_breaker", "storm_spirit",
+  "sven", "techies", "templar_assassin", "terrorblade", "tidehunter", "shredder", "tinker", "tiny", "treant", "troll_warlord",
+  "tusk", "abyssal_underlord", "undying", "ursa", "vengefulspirit", "venomancer", "viper", "visage", "void_spirit", "warlock",
+  "weaver", "windrunner", "winter_wyvern", "witch_doctor", "skeleton_king", "zuus"
+];
+
+function getHeroName(id) {
+  const el = document.querySelector(`#p-hero option[value="${id}"]`);
+  return el ? el.textContent.split('/')[0].trim() : id;
+}
 let draftSubscription = null;
 
 // 1. Подписка на драфт для ИГРОКА
