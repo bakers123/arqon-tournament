@@ -362,6 +362,16 @@
 
   </div>
 </div>
+  <!-- ЧАТ АДМИНА (скрыт по умолчанию) -->
+<div id="admin-chat-container" class="card hidden" style="max-width: 1080px; margin: 20px auto; padding: 20px;">
+  <h2 style="font-size: 14px; margin-bottom: 10px; color: var(--accent);">💬 Чат текущего матча (Админ)</h2>
+  <div id="admin-chat-messages" style="height: 200px; overflow-y: auto; background: #0F0F14; border: 1px solid var(--border); border-radius: 6px; padding: 10px; margin-bottom: 10px;">
+  </div>
+  <div class="row">
+    <input id="admin-chat-input" placeholder="Написать от имени Админа..." />
+    <button class="btn" onclick="sendAdminMessage()">Отправить</button>
+  </div>
+</div>
 
 <header>
   <div class="brand">
@@ -1293,6 +1303,7 @@ async function openPicks() {
   
   draft.is_open = true;
   await supabaseClient.from('drafts').upsert({ id: 1, data: draft });
+  initAdminChat();
   alert('Пики открыты! Игроки теперь видят героев друг друга.');
 }
 window.openPicks = openPicks;
@@ -1300,21 +1311,35 @@ window.openPicks = openPicks;
   // ==========================================
 // ЧАТ
 // ==========================================
+let chatSubscription = null;
+
 function initChat(myName) {
   const chatContainer = document.getElementById('chat-container');
   if (chatContainer) chatContainer.classList.remove('hidden');
 
   const chatBox = document.getElementById('chat-messages');
   
-  // Подписка на новые сообщения в базе
-  supabaseClient.channel('public:messages')
+  // Отписываемся от старого канала, если он был
+  if (chatSubscription) {
+    supabaseClient.removeChannel(chatSubscription);
+  }
+
+  // Создаем новый канал с уникальным именем, чтобы он точно обновлялся
+  chatSubscription = supabaseClient.channel('chat_room_' + Date.now())
     .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, payload => {
       const msg = payload.new;
+      
+      // Если сообщение уже есть на экране (для отправителя) - пропускаем
+      if (document.getElementById('msg-' + msg.id)) return;
+
       const div = document.createElement('div');
+      div.id = 'msg-' + msg.id;
       div.style.marginBottom = '5px';
       div.innerHTML = `<b style="color: var(--accent);">${escapeHtml(msg.sender)}:</b> <span>${escapeHtml(msg.text)}</span>`;
       chatBox.appendChild(div);
-      chatBox.scrollTop = chatBox.scrollHeight; // Скролл вниз
+      
+      // Скролл вниз
+      setTimeout(() => { chatBox.scrollTop = chatBox.scrollHeight; }, 50);
     })
     .subscribe();
 }
@@ -1339,6 +1364,51 @@ async function sendMessage() {
   }
 }
 window.sendMessage = sendMessage;
+  let adminChatSubscription = null;
+
+function initAdminChat() {
+  const chatContainer = document.getElementById('admin-chat-container');
+  if (chatContainer) chatContainer.classList.remove('hidden');
+
+  const chatBox = document.getElementById('admin-chat-messages');
+  
+  if (adminChatSubscription) {
+    supabaseClient.removeChannel(adminChatSubscription);
+  }
+
+  adminChatSubscription = supabaseClient.channel('admin_chat_room')
+    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, payload => {
+      const msg = payload.new;
+      if (document.getElementById('admin-msg-' + msg.id)) return;
+
+      const div = document.createElement('div');
+      div.id = 'admin-msg-' + msg.id;
+      div.style.marginBottom = '5px';
+      div.innerHTML = `<b style="color: var(--accent);">${escapeHtml(msg.sender)}:</b> <span>${escapeHtml(msg.text)}</span>`;
+      chatBox.appendChild(div);
+      
+      setTimeout(() => { chatBox.scrollTop = chatBox.scrollHeight; }, 50);
+    })
+    .subscribe();
+}
+
+async function sendAdminMessage() {
+  const input = document.getElementById('admin-chat-input');
+  const text = input.value.trim();
+  if (!text) return;
+
+  const { error } = await supabaseClient.from('messages').insert({
+    sender: '👑 Админ',
+    text: text
+  });
+
+  if (error) {
+    alert('Ошибка отправки: ' + error.message);
+  } else {
+    input.value = '';
+  }
+}
+window.sendAdminMessage = sendAdminMessage;
 init();
 </script>
 </body>
