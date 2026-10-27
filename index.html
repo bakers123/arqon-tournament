@@ -1245,13 +1245,11 @@ async function banHero(heroId, myRole) {
 async function pickHero(heroId, myRole) {
   if (!draftState) return;
   
-  // 1. Меняем выбор в текущем состоянии
+  // 1. Обновляем экран
   draftState.picks[myRole] = heroId;
-  
-  // 2. Мгновенно перерисовываем экран
   renderPlayerDraft(currentUser.id);
   
-  // 3. Отправляем в базу актуальное состояние
+  // 2. Пытаемся сохранить в базу
   const { error } = await supabaseClient.from('drafts').upsert({ 
     id: 1, 
     data: draftState 
@@ -1259,7 +1257,9 @@ async function pickHero(heroId, myRole) {
   
   if (error) {
     console.error("Ошибка выбора героя:", error);
-    alert("Ошибка сохранения. Попробуй еще раз.");
+    alert("Ошибка сохранения в базу! Выбор не записан.\n" + error.message);
+  } else {
+    console.log("Герой " + heroId + " успешно сохранен в базу для " + myRole);
   }
 }
 
