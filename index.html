@@ -500,7 +500,6 @@
 
     <div class="card">
       <button class="btn" id="generate-bracket">🎲 Сгенерировать сетку</button>
-      <button class="btn" onclick="startDraft()" style="margin-left:10px; background: #22c55e;">▶️ Запустить Драфт</button>
       <button class="btn" onclick="openPicks()" style="margin-left:10px; background: #f59e0b;">👁 Открыть пики</button>
       <button class="btn danger" id="reset-all" style="margin-left:10px;">Сбросить всё</button>
     </div>
@@ -908,7 +907,9 @@ function matchHTML(match) {
   const p1W = match.p1 && match.winner && match.winner.id === match.p1.id;
   const p2W = match.p2 && match.winner && match.winner.id === match.p2.id;
   const score = match.score || { p1: '', p2: '' };
+  
   let html = '<div class="match">' + slotHTML(match.p1, p1W) + '<div class="divider"></div>' + slotHTML(match.p2, p2W);
+  
   if (canPlay) {
     html += '<div class="score-box">';
     html += '<input type="number" min="0" max="2" class="score-input" id="score-' + match.id + '-1" value="' + (score.p1 !== '' ? score.p1 : '') + '" placeholder="0" />';
@@ -916,6 +917,11 @@ function matchHTML(match) {
     html += '<input type="number" min="0" max="2" class="score-input" id="score-' + match.id + '-2" value="' + (score.p2 !== '' ? score.p2 : '') + '" placeholder="0" />';
     html += '<button class="btn score-save" onclick="setScore(\'' + match.id + '\')">OK</button>';
     html += '</div>';
+    
+    // Кнопка Драфт для админа (только если оба игрока есть)
+    if (isAdmin()) {
+        html += '<button class="btn" style="width: 100%; background: #22c55e; border-radius: 0; font-size: 11px; padding: 5px;" onclick="startDraftForMatch(\'' + match.id + '\')">▶️ Драфт</button>';
+    }
   } else if (match.winner && match.score) {
     html += '<div class="score-display">' + match.score.p1 + ' : ' + match.score.p2 + '</div>';
   }
@@ -1266,13 +1272,22 @@ async function pickHero(heroId, myRole) {
 window.banHero = banHero;
 window.pickHero = pickHero;
 
-async function startDraft() {
+async function startDraftForMatch(matchId) {
   if (!isAdmin()) return;
   
-  if (state.soloPlayers.length < 2) { alert('Нужно минимум 2 игрока в списке'); return; }
-  const p1 = state.soloPlayers[0];
-  const p2 = state.soloPlayers[1];
+  // Находим матч в сетке
+  let match = null;
+  state.bracket.rounds.forEach(r => r.forEach(m => { if (m.id === matchId) match = m; }));
+  
+  if (!match || !match.p1 || !match.p2) {
+    alert('В этом матче еще нет двух игроков!');
+    return;
+  }
 
+  const p1 = match.p1;
+  const p2 = match.p2;
+
+  // Ищем их UID в базе (по никам)
   const { data: dbPlayers, error } = await supabaseClient.from('players').select('*');
   if (error || !dbPlayers) { alert('Ошибка базы данных'); return; }
 
@@ -1282,10 +1297,7 @@ async function startDraft() {
   if (!dbP1) { alert('Игрок ' + p1.name + ' еще не заходил на сайт по коду!'); return; }
   if (!dbP2) { alert('Игрок ' + p2.name + ' еще не заходил на сайт по коду!'); return; }
 
-  p1.auth_uid = dbP1.uid;
-  p2.auth_uid = dbP2.uid;
-  saveState();
-
+  // Запускаем драфт
   const newDraftState = {
     phase: 'coinflip',
     first_turn: null,
@@ -1293,16 +1305,18 @@ async function startDraft() {
     pool: [...ALL_HEROES].sort(() => 0.5 - Math.random()).slice(0, 20),
     bans: { p1: [], p2: [] },
     picks: { p1: null, p2: null },
-    p1_uid: p1.auth_uid,
+    p1_uid: dbP1.uid,
     p1_name: p1.name,
-    p2_uid: p2.auth_uid,
+    p2_uid: dbP2.uid,
     p2_name: p2.name,
+    match_id: matchId, // <--- ЗАПОМИНАЕМ, ДЛЯ КАКОГО ЭТО МАТЧА
     is_open: false
   };
 
   await supabaseClient.from('drafts').upsert({ id: 1, data: newDraftState });
-  alert('Драфт запущен! Игроки могут заходить.');
+  alert('Драфт для матча ' + p1.name + ' vs ' + p2.name + ' запущен!');
 }
+window.startDraftForMatch = startDraftForMatch;
 window.startDraft = startDraft;
 
 async function openPicks() {
