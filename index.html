@@ -1360,6 +1360,7 @@ function initChat(myName) {
 }
 
 function initAdminChat() {
+  if (!draftState) { console.log('Чат админа ждет загрузки драфта'); return; } // <--- ДОБАВИТЬ ЭТУ СТРОКУ
   const chatContainer = document.getElementById('admin-chat-container');
   if (chatContainer) chatContainer.classList.remove('hidden');
 
@@ -1422,8 +1423,10 @@ window.sendMessage = sendMessage;
 
 async function sendAdminMessage() {
   const input = document.getElementById('admin-chat-input');
+  if (!input || !draftState) return; // <--- ЭТА СТРОКА СПАСАЕТ ОТ ОШИБКИ
+
   const text = input.value.trim();
-  if (!text || !draftState) return;
+  if (!text) return;
 
   const roomName = [draftState.p1_name, draftState.p2_name].sort().join('_vs_');
 
