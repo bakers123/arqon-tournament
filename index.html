@@ -1357,15 +1357,12 @@ function initChat(myName) {
   
   if (chatSubscription) supabaseClient.removeChannel(chatSubscription);
 
-  // Комната для конкретного матча
   const roomName = [draftState.p1_name, draftState.p2_name].sort().join('_vs_');
 
-  // Загружаем историю
   supabaseClient.from('messages').select('*').eq('match_id', roomName).order('id', { ascending: true }).then(({data}) => {
     if (data) data.forEach(msg => addChatMessage(chatBox, msg));
   });
 
-  // Подписка на новые
   chatSubscription = supabaseClient.channel('chat_room_' + roomName)
     .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages', filter: `match_id=eq.${roomName}` }, payload => {
       addChatMessage(chatBox, payload.new);
@@ -1374,7 +1371,7 @@ function initChat(myName) {
 }
 
 function initAdminChat() {
-  if (!draftState) { console.log('Чат админа ждет загрузки драфта'); return; } // <--- ДОБАВИТЬ ЭТУ СТРОКУ
+  if (!draftState) return;
   const chatContainer = document.getElementById('admin-chat-container');
   if (chatContainer) chatContainer.classList.remove('hidden');
 
@@ -1437,7 +1434,7 @@ window.sendMessage = sendMessage;
 
 async function sendAdminMessage() {
   const input = document.getElementById('admin-chat-input');
-  if (!input || !draftState) return; // <--- ЭТА СТРОКА СПАСАЕТ ОТ ОШИБКИ
+  if (!input || !draftState) return;
 
   const text = input.value.trim();
   if (!text) return;
@@ -1452,135 +1449,6 @@ async function sendAdminMessage() {
 
   if (error) alert('Ошибка отправки: ' + error.message);
   else input.value = '';
-}
-window.sendAdminMessage = sendAdminMessage;
-  async function startDraftForMatch(matchId) {
-  if (!isAdmin()) return;
-  
-  let match = null;
-  state.bracket.rounds.forEach(r => r.forEach(m => { if (m.id === matchId) match = m; }));
-  
-  if (!match || !match.p1 || !match.p2) {
-    alert('В этом матче еще нет двух игроков!');
-    return;
-  }
-
-  const p1 = match.p1;
-  const p2 = match.p2;
-
-  const { data: dbPlayers, error } = await supabaseClient.from('players').select('*');
-  if (error || !dbPlayers) { alert('Ошибка базы данных'); return; }
-
-  const dbP1 = dbPlayers.find(p => p.name.trim() === p1.name.trim());
-  const dbP2 = dbPlayers.find(p => p.name.trim() === p2.name.trim());
-
-  if (!dbP1) { alert('Игрок ' + p1.name + ' еще не заходил на сайт по коду!'); return; }
-  if (!dbP2) { alert('Игрок ' + p2.name + ' еще не заходил на сайт по коду!'); return; }
-
-  const newDraftState = {
-    phase: 'coinflip',
-    first_turn: null,
-    turn: null,
-    pool: [...ALL_HEROES].sort(() => 0.5 - Math.random()).slice(0, 20),
-    bans: { p1: [], p2: [] },
-    picks: { p1: null, p2: null },
-    p1_uid: dbP1.uid,
-    p1_name: p1.name,
-    p2_uid: dbP2.uid,
-    p2_name: p2.name,
-    match_id: matchId,
-    is_open: false
-  };
-
-  await supabaseClient.from('drafts').upsert({ id: 1, data: newDraftState });
-  alert('Драфт для матча ' + p1.name + ' vs ' + p2.name + ' запущен!');
-}
-window.startDraftForMatch = startDraftForMatch;
-
-// === ЧАТ ===
-let chatSubscription = null;
-let adminChatSubscription = null;
-
-function initChat(myName) {
-  const chatContainer = document.getElementById('chat-container');
-  if (chatContainer) chatContainer.classList.remove('hidden');
-
-  const chatBox = document.getElementById('chat-messages');
-  chatBox.innerHTML = ''; 
-  
-  if (chatSubscription) supabaseClient.removeChannel(chatSubscription);
-  const roomName = [draftState.p1_name, draftState.p2_name].sort().join('_vs_');
-
-  supabaseClient.from('messages').select('*').eq('match_id', roomName).order('id', { ascending: true }).then(({data}) => {
-    if (data) data.forEach(msg => addChatMessage(chatBox, msg));
-  });
-
-  chatSubscription = supabaseClient.channel('chat_room_' + roomName)
-    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages', filter: `match_id=eq.${roomName}` }, payload => {
-      addChatMessage(chatBox, payload.new);
-    }).subscribe();
-}
-
-function initAdminChat() {
-  if (!draftState) return;
-  const chatContainer = document.getElementById('admin-chat-container');
-  if (chatContainer) chatContainer.classList.remove('hidden');
-
-  const chatBox = document.getElementById('admin-chat-messages');
-  chatBox.innerHTML = '';
-  
-  if (adminChatSubscription) supabaseClient.removeChannel(adminChatSubscription);
-  const roomName = [draftState.p1_name, draftState.p2_name].sort().join('_vs_');
-
-  supabaseClient.from('messages').select('*').eq('match_id', roomName).order('id', { ascending: true }).then(({data}) => {
-    if (data) data.forEach(msg => addAdminChatMessage(chatBox, msg));
-  });
-
-  adminChatSubscription = supabaseClient.channel('admin_chat_room_' + roomName)
-    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages', filter: `match_id=eq.${roomName}` }, payload => {
-      addAdminChatMessage(chatBox, payload.new);
-    }).subscribe();
-}
-
-function addChatMessage(chatBox, msg) {
-  if (document.getElementById('msg-' + msg.id)) return;
-  const div = document.createElement('div');
-  div.id = 'msg-' + msg.id;
-  div.style.marginBottom = '5px';
-  div.innerHTML = `<b style="color: var(--accent);">${escapeHtml(msg.sender)}:</b> <span>${escapeHtml(msg.text)}</span>`;
-  chatBox.appendChild(div);
-  setTimeout(() => { chatBox.scrollTop = chatBox.scrollHeight; }, 50);
-}
-
-function addAdminChatMessage(chatBox, msg) {
-  if (document.getElementById('admin-msg-' + msg.id)) return;
-  const div = document.createElement('div');
-  div.id = 'admin-msg-' + msg.id;
-  div.style.marginBottom = '5px';
-  div.innerHTML = `<b style="color: var(--accent);">${escapeHtml(msg.sender)}:</b> <span>${escapeHtml(msg.text)}</span>`;
-  chatBox.appendChild(div);
-  setTimeout(() => { chatBox.scrollTop = chatBox.scrollHeight; }, 50);
-}
-
-async function sendMessage() {
-  const input = document.getElementById('chat-input');
-  const text = input.value.trim();
-  if (!text || !draftState) return;
-  const myName = document.getElementById('player-display-name').textContent;
-  const roomName = [draftState.p1_name, draftState.p2_name].sort().join('_vs_');
-  const { error } = await supabaseClient.from('messages').insert({ sender: myName, text: text, match_id: roomName });
-  if (error) alert('Ошибка отправки: ' + error.message); else input.value = '';
-}
-window.sendMessage = sendMessage;
-
-async function sendAdminMessage() {
-  const input = document.getElementById('admin-chat-input');
-  if (!input || !draftState) return;
-  const text = input.value.trim();
-  if (!text) return;
-  const roomName = [draftState.p1_name, draftState.p2_name].sort().join('_vs_');
-  const { error } = await supabaseClient.from('messages').insert({ sender: '👑 Админ', text: text, match_id: roomName });
-  if (error) alert('Ошибка отправки: ' + error.message); else input.value = '';
 }
 window.sendAdminMessage = sendAdminMessage;
 
