@@ -918,7 +918,7 @@ function matchHTML(match) {
     html += '<button class="btn score-save" onclick="setScore(\'' + match.id + '\')">OK</button>';
     html += '</div>';
     
-    // Кнопка Драфт для админа
+    // Кнопка Драфт ТОЛЬКО для админа
     if (isAdmin()) {
         html += '<button class="btn" style="width: 100%; background: #22c55e; border-radius: 0; font-size: 11px; padding: 5px;" onclick="startDraftForMatch(\'' + match.id + '\')">▶️ Драфт</button>';
     }
