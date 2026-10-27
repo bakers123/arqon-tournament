@@ -751,8 +751,22 @@ function playerCardHTML(p, removeFn) {
   '</div>';
 }
 async function generateAccessCode(playerName) {
-  const code = Math.random().toString(36).substring(2, 8).toUpperCase();
+  let code = "";
+  let isUnique = false;
+
+  // Генерируем код, пока не найдем уникальный
+  while (!isUnique) {
+    code = Math.random().toString(36).substring(2, 8).toUpperCase();
+    // Проверяем в базе, есть ли такой код
+    const { data } = await supabaseClient.from('access_codes').select('code').eq('code', code);
+    if (!data || data.length === 0) {
+      isUnique = true;
+    }
+  }
+
+  // Сохраняем уникальный код
   const { error } = await supabaseClient.from('access_codes').insert({ code: code, player_name: playerName });
+  
   if (error) {
     alert('Ошибка создания кода: ' + error.message);
   } else {
