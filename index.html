@@ -330,9 +330,12 @@
 <!-- ЭКРАН ИГРОКА -->
 <div id="player-screen" class="hidden" style="max-width: 1000px; margin: 40px auto; padding: 20px;">
   <div class="card">
-    <div class="row" style="justify-content: space-between; align-items: center; margin-bottom: 20px;">
+   <div class="row" style="justify-content: space-between; align-items: center; margin-bottom: 20px;">
       <h2 style="margin:0;">Драфт: <span id="player-display-name" style="color: var(--accent);">Игрок</span></h2>
-      <button class="btn ghost" onclick="logoutPlayer()">Выйти</button>
+      <div style="display: flex; gap: 10px;">
+        <button class="btn ghost" onclick="showPlayerBracket()">📊 Сетка</button>
+        <button class="btn ghost" onclick="logoutPlayer()">Выйти</button>
+      </div>
     </div>
 
     <div id="draft-status" class="hint" style="text-align: center; font-size: 16px; margin-bottom: 20px;">
@@ -383,6 +386,7 @@
   </div>
   <nav>
     <button data-tab="bracket" class="active">Сетка</button>
+    <button id="back-to-draft-btn" style="display:none; background: #22c55e; color: white;" onclick="backToDraft()">🔙 К драфту</button>
     <button data-tab="admin" id="admin-tab-btn" style="display:none;">Админ-панель</button>
   </nav>
 </header>
@@ -1080,7 +1084,29 @@ window.removePlayerFromTeam = removePlayerFromTeam;
 window.setScore = setScore;
 window.loginWithCode = loginWithCode;
 window.logoutPlayer = logoutPlayer;
+  function showPlayerBracket() {
+  document.getElementById('player-screen').classList.add('hidden');
+  document.querySelector('main').style.display = 'block';
+  document.getElementById('tab-bracket').style.display = 'block';
+  document.getElementById('tab-admin').classList.add('hidden');
+  
+  // Показываем кнопку возврата
+  document.getElementById('back-to-draft-btn').style.display = 'inline-block';
+
+  renderBracket();
+  document.querySelectorAll('nav button').forEach(b => {
+    b.classList.toggle('active', b.dataset.tab === 'bracket');
+  });
+}
+
+window.showPlayerBracket = showPlayerBracket;
 window.generateAccessCode = generateAccessCode;
+  function backToDraft() {
+  document.querySelector('main').style.display = 'none';
+  document.getElementById('player-screen').classList.remove('hidden');
+}
+
+window.backToDraft = backToDraft;
 
   let draftState = null;
  const ALL_HEROES = [
