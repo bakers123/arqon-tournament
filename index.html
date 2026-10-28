@@ -631,7 +631,17 @@ async function loginWithCode() {
     return;
   }
 
-  await supabaseClient.from('players').insert({ uid: authData.user.id, name: codeData.player_name });
+  // ПРОВЕРКА: есть ли уже игрок с таким ником в базе?
+  const { data: existingPlayers } = await supabaseClient.from('players').select('*').eq('name', codeData.player_name);
+  
+  if (existingPlayers && existingPlayers.length > 0) {
+    // Если есть — обновляем его UID на новый, чтобы старые матчи сбросились, а новый работал
+    await supabaseClient.from('players').update({ uid: authData.user.id }).eq('name', codeData.player_name);
+  } else {
+    // Если нет — создаем нового
+    await supabaseClient.from('players').insert({ uid: authData.user.id, name: codeData.player_name });
+  }
+
   await supabaseClient.from('access_codes').delete().eq('code', code);
   
   window.location.reload();
