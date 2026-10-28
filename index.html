@@ -1467,12 +1467,19 @@ window.sendMessage = sendMessage;
 
 async function sendAdminMessage() {
   const input = document.getElementById('admin-chat-input');
-  if (!input || !draftState) return;
+  if (!input) return;
 
   const text = input.value.trim();
   if (!text) return;
 
-  const roomName = [draftState.p1_name, draftState.p2_name].sort().join('_vs_');
+  // Берем данные драфта напрямую из базы, чтобы не зависеть от памяти браузера
+  const { data } = await supabaseClient.from('drafts').select('*').eq('id', 1).single();
+  if (!data || !data.data) {
+    alert('Ошибка: драфт не найден в базе!');
+    return;
+  }
+
+  const roomName = [data.data.p1_name, data.data.p2_name].sort().join('_vs_');
 
   const { error } = await supabaseClient.from('messages').insert({
     sender: '👑 Админ',
@@ -1480,8 +1487,17 @@ async function sendAdminMessage() {
     match_id: roomName
   });
 
-  if (error) alert('Ошибка отправки: ' + error.message);
-  else input.value = '';
+  if (error) {
+    alert('Ошибка отправки: ' + error.message);
+  } else {
+    input.value = '';
+    // Очищаем и перерисовываем чат, чтобы сообщение появилось моментально
+    const chatBox = document.getElementById('admin-chat-messages');
+    if (chatBox) {
+      chatBox.innerHTML += `<div style="margin-bottom: 5px;"><b style="color: var(--accent);">👑 Админ:</b> <span>${escapeHtml(text)}</span></div>`;
+      chatBox.scrollTop = chatBox.scrollHeight;
+    }
+  }
 }
 window.sendAdminMessage = sendAdminMessage;
 
