@@ -509,6 +509,19 @@
 
   <section id="tab-bracket">
     <div class="card">
+      <section id="tab-bracket">
+    <div class="card" style="display: flex; justify-content: space-between; align-items: center;">
+      <div id="bracket-info" class="hint" style="margin: 0;"></div>
+      <!-- Кнопка для входа игроков, если они просто зашли посмотреть -->
+      <button class="btn" id="show-auth-btn" onclick="openAuthScreen()" style="display: none;">🎮 Я игрок (Вход)</button>
+    </div>
+    <div class="bracket-wrap">
+      <div id="bracket" class="bracket"></div>
+    </div>
+    <div id="bracket-empty" class="empty">
+      Сетка пуста. Турнир ещё не сгенерирован.
+    </div>
+  </section>
       <div id="bracket-info" class="hint"></div>
     </div>
     <div class="bracket-wrap">
@@ -573,13 +586,30 @@ supabaseClient.auth.onAuthStateChange((event, session) => {
 
 function handleNoAuth() {
   if (isAdmin()) {
+    // Если это админ — показываем админку
     document.getElementById('auth-screen').style.display = 'none';
+    document.getElementById('player-screen').classList.add('hidden');
     document.querySelector('main').style.display = 'block';
+    document.getElementById('tab-bracket').classList.remove('hidden');
+    document.getElementById('tab-admin').classList.remove('hidden');
     initSupabaseSync();
   } else {
-    document.getElementById('auth-screen').style.display = 'flex';
+    // Если это обычный зритель — скрываем экран входа и показываем сетку
+    document.getElementById('auth-screen').style.display = 'none'; 
     document.getElementById('player-screen').classList.add('hidden');
-    document.querySelector('main').style.display = 'none';
+    document.querySelector('main').style.display = 'block';
+    
+    // Показываем только сетку, админку прячем
+    document.getElementById('tab-bracket').classList.remove('hidden');
+    document.getElementById('tab-admin').classList.add('hidden');
+    
+    // Загружаем сетку, чтобы зритель увидел результаты
+    supabaseClient.from('tournament').select('data').eq('id', 1).single().then(({data}) => {
+      if (data && data.data && data.data.bracket) {
+        state.bracket = data.data.bracket;
+        renderBracket();
+      }
+    });
   }
 }
 
@@ -1526,6 +1556,18 @@ async function sendAdminMessage() {
   }
 }
 window.sendAdminMessage = sendAdminMessage;
+  function openAuthScreen() {
+  document.getElementById('auth-screen').style.display = 'flex';
+}
+
+// Показываем кнопку входа только тем, кто не админ и не залогинен
+function showAuthButtonIfNeeded() {
+  if (!isAdmin() && !currentUser) {
+    const btn = document.getElementById('show-auth-btn');
+    if (btn) btn.style.display = 'inline-block';
+  }
+}
+window.openAuthScreen = openAuthScreen;
 
 init();
 </script>
