@@ -631,16 +631,17 @@ async function loginWithCode() {
     return;
   }
 
-  // ПРОВЕРКА: есть ли уже игрок с таким ником в базе?
+  // Сохраняем игрока в базу (обновляем, если такой ник уже есть)
   const { data: existingPlayers } = await supabaseClient.from('players').select('*').eq('name', codeData.player_name);
   
   if (existingPlayers && existingPlayers.length > 0) {
-    // Если есть — обновляем его UID на новый, чтобы старые матчи сбросились, а новый работал
     await supabaseClient.from('players').update({ uid: authData.user.id }).eq('name', codeData.player_name);
   } else {
-    // Если нет — создаем нового
     await supabaseClient.from('players').insert({ uid: authData.user.id, name: codeData.player_name });
   }
+
+  // ВАЖНО: сохраняем этот UID в локальное хранилище браузера, чтобы админка его видела
+  localStorage.setItem('last_login_uid_' + codeData.player_name, authData.user.id);
 
   await supabaseClient.from('access_codes').delete().eq('code', code);
   
@@ -779,23 +780,26 @@ async function generateAccessCode(playerName) {
   let code = "";
   let isUnique = false;
 
-  // Генерируем код, пока не найдем уникальный
   while (!isUnique) {
     code = Math.random().toString(36).substring(2, 8).toUpperCase();
-    // Проверяем в базе, есть ли такой код
     const { data } = await supabaseClient.from('access_codes').select('code').eq('code', code);
-    if (!data || data.length === 0) {
-      isUnique = true;
-    }
+    if (!data || data.length === 0) isUnique = true;
   }
 
-  // Сохраняем уникальный код
   const { error } = await supabaseClient.from('access_codes').insert({ code: code, player_name: playerName });
   
   if (error) {
     alert('Ошибка создания кода: ' + error.message);
   } else {
-    alert('Код для игрока ' + playerName + ':\n\n' + code + '\n\nПередайте его игроку.');
+    // Ищем, есть ли у этого игрока уже сохраненный UID
+    const { data: dbPlayer } = await supabaseClient.from('players').select('uid').eq('name', playerName).single();
+    
+    let msg = `Код для игрока ${playerName}:\n\n${code}\n\nПередайте его игроку.`;
+    if (dbPlayer && dbPlayer.uid) {
+      msg += `\n\n(Его текущий UID уже в базе: ${dbPlayer.uid})`;
+    }
+    
+    alert(msg);
   }
 }
 
