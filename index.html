@@ -1401,26 +1401,28 @@ function initChat(myName) {
 }
 
 function initAdminChat() {
-  if (!draftState) return;
-  const chatContainer = document.getElementById('admin-chat-container');
-  if (chatContainer) chatContainer.classList.remove('hidden');
-
   const chatBox = document.getElementById('admin-chat-messages');
-  chatBox.innerHTML = '';
+  if (!chatBox) return;
   
-  if (adminChatSubscription) supabaseClient.removeChannel(adminChatSubscription);
+  supabaseClient.from('drafts').select('*').eq('id', 1).single().then(({data}) => {
+    if (!data || !data.data) return;
+    
+    // Берем ники из базы
+    const roomName = [data.data.p1_name, data.data.p2_name].sort().join('_vs_');
+    
+    // Загружаем историю
+    supabaseClient.from('messages').select('*').eq('match_id', roomName).order('id').then(({data: msgs}) => {
+      chatBox.innerHTML = '';
+      if (msgs) msgs.forEach(msg => addAdminChatMessage(chatBox, msg));
+    });
 
-  const roomName = [draftState.p1_name, draftState.p2_name].sort().join('_vs_');
-
-  supabaseClient.from('messages').select('*').eq('match_id', roomName).order('id', { ascending: true }).then(({data}) => {
-    if (data) data.forEach(msg => addAdminChatMessage(chatBox, msg));
+    // Подписываемся на новые
+    if (adminChatSubscription) supabaseClient.removeChannel(adminChatSubscription);
+    adminChatSubscription = supabaseClient.channel('admin_chat_room_' + roomName)
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages', filter: `match_id=eq.${roomName}` }, payload => {
+        addAdminChatMessage(chatBox, payload.new);
+      }).subscribe();
   });
-
-  adminChatSubscription = supabaseClient.channel('admin_chat_room_' + roomName)
-    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages', filter: `match_id=eq.${roomName}` }, payload => {
-      addAdminChatMessage(chatBox, payload.new);
-    })
-    .subscribe();
 }
 
 function addChatMessage(chatBox, msg) {
