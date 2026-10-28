@@ -8,12 +8,12 @@
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <style>
-  :root {
-    --bg:       #0B0B0D;
-    --panel:    #1A1A1F;
-    --panel-2:  #14141A;
+    :root {
+    --bg:       #09090B;
+    --panel:    #15151A;
+    --panel-2:  #101014;
     --border:   #2A2A33;
-    --accent:   #7A3BFF;
+    --accent:   #8B3BFF;
     --accent-2: #9A6BFF;
     --text:     #F2F2F2;
     --text-dim: #8A8A96;
@@ -97,7 +97,7 @@
     border-radius: 10px 0 0 10px;
     opacity: 0.6;
   }
-  h2 {
+   h2 {
     font-family: 'Orbitron', sans-serif;
     font-size: 14px;
     font-weight: 700;
@@ -105,6 +105,8 @@
     text-transform: uppercase;
     margin-bottom: 16px;
     color: var(--text);
+    text-transform: uppercase; /* ДОБАВИТЬ */
+    letter-spacing: 3px;       /* ДОБАВИТЬ */
   }
   input, select {
     background: #0F0F14;
@@ -367,7 +369,7 @@
 
 <header>
   <div class="brand">
-    <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+    <img src="logo.png" alt="ARQON Logo" style="width: 45px; height: 45px; border-radius: 8px; filter: drop-shadow(0 0 10px rgba(122,59,255,0.8));">
       <defs>
         <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%">
           <stop offset="0%" stop-color="#F2F2F2"/>
