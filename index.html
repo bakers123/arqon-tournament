@@ -1559,10 +1559,12 @@ window.sendAdminMessage = sendAdminMessage;
 
 // Показываем кнопку входа только тем, кто не админ и не залогинен
 function showAuthButtonIfNeeded() {
-  if (!isAdmin() && !currentUser) {
-    const btn = document.getElementById('show-auth-btn');
-    if (btn) btn.style.display = 'inline-block';
+  if (isAdmin()) {
+    document.getElementById('admin-tab-btn').style.display = 'inline-block';
   }
+  
+  showAuthButtonIfNeeded(); // <--- ДОБАВИТЬ ЭТУ СТРОКУ
+  renderAll();
 }
 window.openAuthScreen = openAuthScreen;
 
