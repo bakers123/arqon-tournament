@@ -1364,12 +1364,21 @@ async function openPicks() {
     return;
   }
   
+  // 1. Сохраняем в базу, что пики открыты
   draft.is_open = true;
   await supabaseClient.from('drafts').upsert({ id: 1, data: draft });
-  initAdminChat();
+  
+  // 2. Принудительно показываем блок чата в админке
+  const chatContainer = document.getElementById('admin-chat-container');
+  if (chatContainer) chatContainer.classList.remove('hidden');
+  
+  // 3. Ждем полсекунды и запускаем логику чата
+  setTimeout(() => {
+    if (typeof initAdminChat === 'function') initAdminChat();
+  }, 500);
+
   alert('Пики открыты! Игроки теперь видят героев друг друга.');
 }
-window.openPicks = openPicks;
 
   // ==========================================
 // ЧАТ
