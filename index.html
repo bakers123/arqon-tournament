@@ -1084,16 +1084,28 @@ window.removePlayerFromTeam = removePlayerFromTeam;
 window.setScore = setScore;
 window.loginWithCode = loginWithCode;
 window.logoutPlayer = logoutPlayer;
-  function showPlayerBracket() {
+  async function showPlayerBracket() {
+  // Прячем экран драфта
   document.getElementById('player-screen').classList.add('hidden');
+  
+  // Показываем главную страницу
   document.querySelector('main').style.display = 'block';
-  document.getElementById('tab-bracket').style.display = 'block';
-  document.getElementById('tab-admin').classList.add('hidden');
+  document.getElementById('tab-bracket').classList.remove('hidden'); // Показываем вкладку сетки
+  document.getElementById('tab-admin').classList.add('hidden');     // Админку прячем
   
   // Показываем кнопку возврата
   document.getElementById('back-to-draft-btn').style.display = 'inline-block';
 
-  renderBracket();
+  // СКАЧИВАЕМ СЕТКУ ИЗ БАЗЫ ПЕРЕД ТЕМ, КАК ПОКАЗАТЬ
+  const { data } = await supabaseClient.from('tournament').select('data').eq('id', 1).single();
+  if (data && data.data && data.data.bracket) {
+    state.bracket = data.data.bracket; // Записываем в память игрока
+    renderBracket(); // Рисуем сетку
+  } else {
+    renderBracket(); // Если нет — покажем пустую
+  }
+
+  // Меняем активную кнопку в шапке
   document.querySelectorAll('nav button').forEach(b => {
     b.classList.toggle('active', b.dataset.tab === 'bracket');
   });
