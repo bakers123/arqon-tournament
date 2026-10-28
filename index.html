@@ -1351,33 +1351,25 @@ window.startDraftForMatch = startDraftForMatch;
 async function openPicks() {
   if (!isAdmin()) return;
   
-  const { data, error } = await supabaseClient.from('drafts').select('*').eq('id', 1).single();
-  if (error || !data || !data.data) { 
-    alert('Драфт еще не запущен или ошибка базы!'); 
-    return; 
-  }
-  
-  const draft = data.data;
-  
-  if (!draft.picks.p1 || !draft.picks.p2) {
-    alert('Нельзя открыть пики! Один или оба игрока еще не выбрали героя.\n\nP1: ' + draft.picks.p1 + '\nP2: ' + draft.picks.p2);
-    return;
-  }
-  
-  // 1. Сохраняем в базу, что пики открыты
-  draft.is_open = true;
-  await supabaseClient.from('drafts').upsert({ id: 1, data: draft });
-  
-  // 2. Принудительно показываем блок чата в админке
+  // 1. Открываем чат СРАЗУ, не дожидаясь базы
   const chatContainer = document.getElementById('admin-chat-container');
   if (chatContainer) chatContainer.classList.remove('hidden');
   
-  // 3. Ждем полсекунды и запускаем логику чата
-  setTimeout(() => {
+  // 2. Пытаемся обновить базу
+  const { data, error } = await supabaseClient.from('drafts').select('*').eq('id', 1).single();
+  
+  if (!error && data && data.data) {
+    const draft = data.data;
+    draft.is_open = true;
+    await supabaseClient.from('drafts').upsert({ id: 1, data: draft });
+    
+    // 3. Запускаем чат
     if (typeof initAdminChat === 'function') initAdminChat();
-  }, 500);
-
-  alert('Пики открыты! Игроки теперь видят героев друг друга.');
+    
+    alert('Пики открыты! Игроки теперь видят героев друг друга.');
+  } else {
+    alert('Чат открыт, но драфт не найден в базе. Возможно, он еще не запущен.');
+  }
 }
 
   // ==========================================
