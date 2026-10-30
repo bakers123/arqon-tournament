@@ -9,6 +9,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/brackets-manager@1.7.1/dist/brackets-manager.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/brackets-memory-db@1.0.4/dist/brackets-memory-db.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/brackets-viewer@1.7.1/dist/brackets-viewer.min.js"></script>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/brackets-viewer@1.7.1/dist/brackets-viewer.min.css">
 <style>
@@ -684,10 +685,17 @@ function handleNoAuth() {
     document.getElementById('tab-admin').classList.add('hidden');
     
     // Загружаем сетку, чтобы зритель увидел результаты
-    supabaseClient.from('tournament').select('data').eq('id', 1).single().then(({data}) => {
+   supabaseClient.from('tournament').select('data').eq('id', 1).single().then(async ({data}) => {
       if (data && data.data && data.data.bracket) {
         state.bracket = data.data.bracket;
-        renderBracket();
+        
+        // Восстанавливаем менеджер для дабл
+        if (state.bracket.type === 'double') {
+          await restoreDoubleBracket();
+          renderBracketsViewer();
+        } else {
+          renderBracket();
+        }
       }
     });
   }
@@ -795,9 +803,15 @@ async function initSupabaseSync() {
   if (isRealtimeActive) return;
   isRealtimeActive = true;
   
-  const { data } = await supabaseClient.from('tournament').select('data').eq('id', 1).single();
+ const { data } = await supabaseClient.from('tournament').select('data').eq('id', 1).single();
   if (data && data.data) {
     state = data.data;
+    
+    // ВОТ ЭТА СТРОЧКА — восстанавливаем менеджер дабл-элиминейшн
+    if (state.bracket && state.bracket.type === 'double') {
+      await restoreDoubleBracket();
+    }
+    
     renderAll();
   }
   
@@ -2061,53 +2075,145 @@ async function generateDoubleBracket() {
   
   let participants;
   if (state.mode === '1x1') {
-    participants = state.soloPlayers.map(p => ({ name: p.name, avatar: p.avatar, id: p.account_id }));
+    participants = state.soloPlayers.map(p => p.name);
   } else {
-    participants = state.teams.filter(t => t.players.length > 0).map(t => ({ name: t.name, avatar: t.players[0] ? t.players[0].avatar : '', id: t.id }));
+    participants = state.teams.filter(t => t.players.length > 0).map(t => t.name);
   }
 
   if (participants.length < 2) { alert('Нужно минимум 2 участника'); return; }
   if (participants.length > state.maxParticipants) participants = participants.slice(0, state.maxParticipants);
 
-  const manager = new bracketsManager.BracketsManager({
-    storage: {
-      setItem: async () => {},
-      getItem: async () => null,
-      removeItem: async () => {},
-      clear: async () => {},
-    }
-  });
+  const storage = new bracketsMemoryDb.InMemoryDatabase();
+  const manager = new bracketsManager.BracketsManager(storage);
 
-  await manager.reset();
-
-  const tournamentId = await manager.create.tournament({
+  const stageId = await manager.create.stage({
+    tournamentId: 0,
     name: 'ARQON Cup',
-    tournamentType: 'double_elimination'
+    type: 'double_elimination',
+    seeding: participants,
+    settings: { grandFinal: 'double' },
   });
 
-  const participantIds = [];
-  for (const p of participants) {
-    const pid = await manager.create.participant({
-      tournament_id: tournamentId,
-      name: p.name,
-    });
-    participantIds.push(pid);
-  }
-
-  await manager.create.rounds(tournamentId, participantIds);
-
-  const data = await manager.get.tournamentData(tournamentId);
+  const data = await manager.get.tournamentData(0);
+  
   state.bracket = { 
     type: 'double', 
     mode: state.mode, 
-    data: data, 
-    players: participants 
+    manager: manager,
+    stageId: stageId,
+    data: data,
+    players: participants,
+    seeding: participants,   // <-- сохраняем для восстановления
+    tournamentId: 0
   };
   
   saveState();
   switchTab('bracket');
   renderBracketsViewer();
 }
+async function restoreDoubleBracket() {
+  // Если сетки нет или она не дабл — выходим
+  if (!state.bracket || state.bracket.type !== 'double') return;
+  if (!state.bracket.seeding || !state.bracket.data) return;
+
+  console.log('Восстанавливаем дабл-элиминейшн...');
+
+  // Создаём новое хранилище и менеджер
+  const storage = new bracketsMemoryDb.InMemoryDatabase();
+  const manager = new bracketsManager.BracketsManager(storage);
+
+  // Заново создаём стадию с теми же участниками
+  const stageId = await manager.create.stage({
+    tournamentId: 0,
+    name: 'ARQON Cup',
+    type: 'double_elimination',
+    seeding: state.bracket.seeding,
+    settings: { grandFinal: 'double' },
+  });
+
+  // Теперь проходимся по всем матчам из сохранённых данных и «отыгрываем» их заново
+  const savedMatches = state.bracket.data.match || [];
+  
+  // Сортируем по id, чтобы восстановление шло в хронологическом порядке
+  const sortedMatches = savedMatches
+    .filter(m => m.status >= 4) // только завершённые матчи (status 4 = Completed)
+    .sort((a, b) => a.id - b.id);
+
+  for (const match of sortedMatches) {
+    // Берём сохранённый счёт
+    const score1 = match.opponent1?.score ?? 0;
+    const score2 = match.opponent2?.score ?? 0;
+    
+    if (score1 === 0 && score2 === 0) continue; // пропускаем пустые
+
+    let opponent1Result = 'loss';
+    let opponent2Result = 'win';
+    if (score1 > score2) {
+      opponent1Result = 'win';
+      opponent2Result = 'loss';
+    }
+
+    try {
+      await manager.update.match({
+        id: match.id,
+        opponent1: { score: score1, result: opponent1Result },
+        opponent2: { score: score2, result: opponent2Result },
+      });
+    } catch (e) {
+      console.warn('Не удалось восстановить матч', match.id, e);
+    }
+  }
+
+  // Обновляем состояние свежими данными
+  const newData = await manager.get.tournamentData(0);
+  
+  state.bracket.manager = manager;
+  state.bracket.stageId = stageId;
+  state.bracket.data = newData;
+  
+  saveState();
+  console.log('Дабл-элиминейшн восстановлен!');
+}
+window.restoreDoubleBracket = restoreDoubleBracket;
+  async function updateDoubleMatch(matchId, score1, score2) {
+  if (!isAdmin() || !state.bracket || !state.bracket.manager) {
+    alert('Сначала сгенерируй сетку!');
+    return;
+  }
+
+  const manager = state.bracket.manager;
+
+  let opponent1Result = 'loss';
+  let opponent2Result = 'win';
+  if (score1 > score2) {
+    opponent1Result = 'win';
+    opponent2Result = 'loss';
+  }
+
+  try {
+    // Вот тут происходит вся магия:
+    // менеджер сам знает, куда девать победителя и проигравшего
+    await manager.update.match({
+      id: matchId,
+      opponent1: { score: score1, result: opponent1Result },
+      opponent2: { score: score2, result: opponent2Result },
+    });
+
+    // Получаем свежие данные и перерисовываем
+    const newData = await manager.get.tournamentData(0);
+    state.bracket.data = newData;
+    saveState();
+    renderBracketsViewer();
+    
+    // Небольшое уведомление, чтобы админ понял, что всё ок
+    // (можно убрать, если мешает)
+    // alert('Результат сохранён!');
+  } catch (err) {
+    console.error('Ошибка обновления матча:', err);
+    alert('Ошибка: ' + err.message);
+  }
+}
+window.updateDoubleMatch = updateDoubleMatch;
 
 function renderBracketsViewer() {
   const wrap = document.getElementById('bracket');
@@ -2136,6 +2242,7 @@ function renderBracketsViewer() {
     name: p.name,
   }));
 
+  // Настройки рендера с обработчиком клика
   viewer.render({
     stages: state.bracket.data.stage,
     matches: state.bracket.data.match,
@@ -2147,6 +2254,41 @@ function renderBracketsViewer() {
     participantOriginPlacement: 'none',
     teamName: 'name',
     roundTitles: true,
+    // Вот здесь мы ловим клик по матчу (только для админа)
+    onMatchClick: (match) => {
+      if (!isAdmin()) return;
+      
+      // match здесь — это объект матча из данных
+      // Нам нужен его id и имена игроков для prompt
+      const p1 = match.opponent1?.name || 'TBD';
+      const p2 = match.opponent2?.name || 'TBD';
+      
+      if (p1 === 'TBD' || p2 === 'TBD') {
+        alert('Этот матч ещё не готов (нет одного из игроков).');
+        return;
+      }
+
+      // Спрашиваем счёт
+      const score1 = prompt(`Счёт для ${p1}:`, '');
+      if (score1 === null) return;
+      const score2 = prompt(`Счёт для ${p2}:`, '');
+      if (score2 === null) return;
+
+      const s1 = parseInt(score1);
+      const s2 = parseInt(score2);
+      
+      if (isNaN(s1) || isNaN(s2) || s1 < 0 || s2 < 0) {
+        alert('Введи корректный счёт (числа >= 0)');
+        return;
+      }
+      if (s1 === s2) {
+        alert('Ничья невозможна');
+        return;
+      }
+
+      // Вызываем обновление
+      updateDoubleMatch(match.id, s1, s2);
+    }
   });
 }
 
