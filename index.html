@@ -376,6 +376,7 @@
     <button data-tab="bracket" class="active">Сетка</button>
     <button data-tab="news">Новости</button> <!-- НОВАЯ КНОПКА -->
     <button data-tab="schedule">Расписание</button>
+    <button data-tab="results">🏆 Результаты</button>
     <button id="back-to-draft-btn" style="display:none; background: #22c55e; color: white;" onclick="backToDraft()">🔙 К драфту</button>
     <button data-tab="admin" id="admin-tab-btn" style="display:none;">Админ-панель</button>
     
@@ -538,6 +539,19 @@
       </div>
       <div id="sch-msg"></div>
     </div>
+    <!-- УПРАВЛЕНИЕ РЕЗУЛЬТАТАМИ -->
+    <div class="card">
+      <h2>🏆 Добавить результаты турнира</h2>
+      <div class="row" style="flex-direction: column; gap: 10px;">
+        <input id="res-tournament" placeholder="Название турнира (например: ARQON Cup #1)" />
+        <input id="res-prize" placeholder="Призовой фонд (например: 10 000 ₽)" />
+        <input id="res-p1" placeholder="1 место (Ник / Команда)" />
+        <input id="res-p2" placeholder="2 место (Ник / Команда)" />
+        <input id="res-p3" placeholder="3 место (Ник / Команда)" />
+        <button class="btn" onclick="addResult()">Сохранить результаты</button>
+      </div>
+      <div id="res-msg"></div>
+    </div>
   </section>
 
   <!-- ВКЛАДКА СЕТКА -->
@@ -557,6 +571,10 @@
   <!-- ВКЛАДКА НОВОСТИ -->
  <section id="tab-news" class="hidden"></section>
 <section id="tab-schedule" class="hidden"></section>
+    <!-- ВКЛАДКА РЕЗУЛЬТАТЫ -->
+  <section id="tab-results" class="hidden">
+    <!-- Сюда скрипт вставит результаты -->
+  </section>
 </main>
 <!-- УНИВЕРСАЛЬНОЕ ОКНО ДЛЯ ИНФОРМАЦИИ -->
 <div id="info-modal" class="modal" style="display: none; z-index: 1000;">
@@ -1077,7 +1095,9 @@ function switchTab(tab) {
   const bracketSection = document.getElementById('tab-bracket');
   const newsSection = document.getElementById('tab-news'); 
   const scheduleSection = document.getElementById('tab-schedule'); 
+  const resultsSection = document.getElementById('tab-results'); // <--- НОВОЕ
   
+  if (resultsSection) resultsSection.classList.toggle('hidden', tab !== 'results'); // <--- НОВО
   if (adminSection) adminSection.classList.toggle('hidden', tab !== 'admin');
   if (bracketSection) bracketSection.classList.toggle('hidden', tab !== 'bracket');
   if (newsSection) newsSection.classList.toggle('hidden', tab !== 'news'); 
@@ -1086,6 +1106,7 @@ function switchTab(tab) {
   if (tab === 'bracket') renderBracket();
   if (tab === 'news') loadNews();      // <--- ДОБАВИТЬ
   if (tab === 'schedule') loadSchedule(); // <--- ДОБАВИТЬ
+    if (tab === 'results') loadResults(); // <--- НОВОЕ
 }
 
 function switchSubTab(sub) {
@@ -1773,6 +1794,81 @@ async function loadSchedule() {
 
 window.addNews = addNews;
 window.addSchedule = addSchedule;
+  // ==========================================
+// РЕЗУЛЬТАТЫ И ПРИЗОВОЙ ФОНД
+// ==========================================
+async function addResult() {
+  const tournament_name = document.getElementById('res-tournament').value.trim();
+  const prize_pool = document.getElementById('res-prize').value.trim();
+  const place_1 = document.getElementById('res-p1').value.trim();
+  const place_2 = document.getElementById('res-p2').value.trim();
+  const place_3 = document.getElementById('res-p3').value.trim();
+  const msg = document.getElementById('res-msg');
+
+  if (!tournament_name || !place_1) {
+    msg.innerHTML = '<div class="msg error">Заполни хотя бы название и 1 место!</div>';
+    return;
+  }
+
+  const { error } = await supabaseClient.from('results').insert({
+    tournament_name, prize_pool, place_1, place_2, place_3
+  });
+
+  if (error) {
+    msg.innerHTML = `<div class="msg error">Ошибка: ${error.message}</div>`;
+  } else {
+    msg.innerHTML = '<div class="msg success">Результаты добавлены!</div>';
+    document.getElementById('res-tournament').value = '';
+    document.getElementById('res-prize').value = '';
+    document.getElementById('res-p1').value = '';
+    document.getElementById('res-p2').value = '';
+    document.getElementById('res-p3').value = '';
+    loadResults();
+  }
+}
+
+async function loadResults() {
+  const { data } = await supabaseClient.from('results').select('*').order('created_at', { ascending: false });
+  const container = document.getElementById('tab-results');
+  if (!container) return;
+
+  // Считаем общий призовой фонд (просто выводим текст первого турнира, либо можно сложить)
+  let totalPrize = '0 ₽';
+  if (data && data.length > 0 && data[0].prize_pool) {
+    totalPrize = data[0].prize_pool;
+  }
+
+  let html = `
+    <div class="card" style="text-align: center; background: linear-gradient(135deg, #1A1A1F 0%, #0B0B0D 100%); border-color: var(--accent);">
+      <h2 style="color: var(--accent); font-size: 20px;">💰 Призовой фонд</h2>
+      <div style="font-size: 36px; font-weight: 900; color: #fff; text-shadow: 0 0 20px rgba(122,59,255,0.8); margin: 10px 0;">${totalPrize}</div>
+      <p style="color: var(--text-dim); font-size: 13px;">Выплачено победителям</p>
+    </div>
+    <div class="card">
+      <h2 style="margin-bottom: 20px;">🏆 Зал славы</h2>
+  `;
+
+  if (!data || data.length === 0) {
+    html += '<p style="color: var(--text-dim);">Пока результатов нет.</p>';
+  } else {
+    data.forEach(item => {
+      html += `
+        <div style="border-bottom: 1px solid var(--border); padding-bottom: 15px; margin-bottom: 15px;">
+          <h3 style="font-size: 16px; color: var(--accent); margin-bottom: 10px;">${escapeHtml(item.tournament_name)}</h3>
+          <div style="display: flex; flex-direction: column; gap: 5px; font-size: 14px;">
+            <div style="color: #FFD700;">🥇 1 место: <b>${escapeHtml(item.place_1)}</b></div>
+            ${item.place_2 ? `<div style="color: #C0C0C0;">🥈 2 место: <b>${escapeHtml(item.place_2)}</b></div>` : ''}
+            ${item.place_3 ? `<div style="color: #CD7F32;">🥉 3 место: <b>${escapeHtml(item.place_3)}</b></div>` : ''}
+          </div>
+        </div>
+      `;
+    });
+  }
+  html += '</div>';
+  container.innerHTML = html;
+}
+
+window.addResult = addResult;
 init();
 </script>
 </body>
