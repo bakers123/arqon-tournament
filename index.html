@@ -374,8 +374,14 @@
   </div>
   <nav>
     <button data-tab="bracket" class="active">Сетка</button>
+    <button data-tab="news">Новости</button> <!-- НОВАЯ КНОПКА -->
     <button id="back-to-draft-btn" style="display:none; background: #22c55e; color: white;" onclick="backToDraft()">🔙 К драфту</button>
     <button data-tab="admin" id="admin-tab-btn" style="display:none;">Админ-панель</button>
+    
+    <!-- Кнопка Доната (если ты её уже вставил) -->
+    <a href="ТВОЯ_ССЫЛКА_НА_ДОНАТ" target="_blank" class="btn" style="text-decoration: none; background: #F59E0B; box-shadow: 0 0 15px rgba(245,158,11,0.4); display: flex; align-items: center; gap: 5px;">
+      💰 Поддержать
+    </a>
   </nav>
 </header>
 
@@ -518,6 +524,37 @@
     <div id="bracket-empty" class="empty">
       Сетка пуста. Турнир ещё не сгенерирован.
     </div>
+    <!-- СТРАНИЦА НОВОСТЕЙ -->
+  <section id="tab-news" class="hidden">
+    <div class="card">
+      <h2 style="margin-bottom: 20px;">📰 Новости и анонсы</h2>
+      
+      <!-- Карточка новости 1 -->
+      <div style="border-bottom: 1px solid var(--border); padding-bottom: 20px; margin-bottom: 20px;">
+        <div style="font-size: 12px; color: var(--text-dim); margin-bottom: 5px;">30 Октября 2026</div>
+        <h3 style="font-size: 18px; margin-bottom: 10px; color: var(--accent);">Запуск первого турнира ARQON!</h3>
+        <p style="color: #ccc; line-height: 1.5; margin-bottom: 10px;">Мы рады сообщить о старте регистрации на наш дебютный турнир по Dota 2. Призовой фонд составляет 10 000 рублей. Участие бесплатное, количество мест ограничено.</p>
+        <button class="btn ghost" style="font-size: 12px; padding: 5px 10px;">Читать далее</button>
+      </div>
+
+      <!-- Карточка новости 2 -->
+      <div style="border-bottom: 1px solid var(--border); padding-bottom: 20px; margin-bottom: 20px;">
+        <div style="font-size: 12px; color: var(--text-dim); margin-bottom: 5px;">25 Октября 2026</div>
+        <h3 style="font-size: 18px; margin-bottom: 10px; color: var(--accent);">Обновление системы драфта</h3>
+        <p style="color: #ccc; line-height: 1.5; margin-bottom: 10px;">Мы добавили живые баны и пики в реальном времени! Теперь участники могут видеть ход драфта соперника, а также общаться в скрытом чате во время матча.</p>
+        <button class="btn ghost" style="font-size: 12px; padding: 5px 10px;">Читать далее</button>
+      </div>
+
+      <!-- Карточка новости 3 -->
+      <div>
+        <div style="font-size: 12px; color: var(--text-dim); margin-bottom: 5px;">1 Октября 2026</div>
+        <h3 style="font-size: 18px; margin-bottom: 10px; color: var(--accent);">ARQON открывает набор в организацию</h3>
+        <p style="color: #ccc; line-height: 1.5; margin-bottom: 10px;">Мы ищем талантливых игроков и менеджеров для участия в будущих соревнованиях. Если ты хочешь стать частью нашей команды, свяжись с нами через раздел «Контакты».</p>
+        <button class="btn ghost" style="font-size: 12px; padding: 5px 10px;">Читать далее</button>
+      </div>
+      
+    </div>
+  </section>
    <!-- ПОДВАЛ САЙТА -->
   <footer style="border-top: 1px solid var(--border); margin-top: 40px; padding: 20px 0; text-align: center; color: var(--text-dim); font-size: 13px;">
     <div style="margin-bottom: 10px;">
@@ -1043,10 +1080,15 @@ function setScore(matchId) {
 
 function switchTab(tab) {
   document.querySelectorAll('nav button').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+  
   const adminSection = document.getElementById('tab-admin');
   const bracketSection = document.getElementById('tab-bracket');
+  const newsSection = document.getElementById('tab-news'); // <--- НОВОЕ
+  
   if (adminSection) adminSection.classList.toggle('hidden', tab !== 'admin');
   if (bracketSection) bracketSection.classList.toggle('hidden', tab !== 'bracket');
+  if (newsSection) newsSection.classList.toggle('hidden', tab !== 'news'); // <--- НОВОЕ
+  
   if (tab === 'bracket') renderBracket();
 }
 
@@ -1581,7 +1623,7 @@ const INFO_TEXTS = {
   about: {
     title: 'О турнирной платформе ARQON',
     text: `
-      <p><b>ARQON Esports Organization</b> — это платформа для проведения киберспортивных турниров по Dota 2.</p>
+      <p><b>ARQON Esports Organization</b> — это платформа для проведения киберспортивных турниров по дисциплинам - Dota 2, CS 2 и т.д.</p>
       <p>Наш сайт позволяет организаторам создавать турнирные сетки, проводить живые драфты (баны и пики) и общаться с участниками в реальном времени.</p>
       <p>Мы делаем турниры доступными и удобными для всех: от новичков до профессионалов. Присоединяйтесь к нашим событиям и следите за результатами!</p>
     `
@@ -1607,8 +1649,8 @@ const INFO_TEXTS = {
     text: `
       <p>По всем вопросам сотрудничества, проведения турниров или технических проблем обращайтесь:</p>
       <ul style="margin-left: 20px; margin-top: 10px;">
-        <li>Email: <b>contact@arqon.gg</b> (замени на свою почту)</li>
-        <li>Telegram: <b>@arqon_support</b> (замени на свой ник)</li>
+        <li>Email: <b>contact@arqon.gg</b></li>
+        <li>Telegram: <b>@arqon_support</b></li>
       </ul>
       <p style="margin-top: 15px;">Мы открыты к предложениям о партнерстве и спонсорстве!</p>
     `
