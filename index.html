@@ -530,7 +530,7 @@
   </footer>
 </main>
 <!-- УНИВЕРСАЛЬНОЕ ОКНО ДЛЯ ИНФОРМАЦИИ -->
-<div id="info-modal" class="modal hidden" style="z-index: 1000;">
+<div id="info-modal" class="modal" style="display: none; z-index: 1000;">
   <div class="modal-content" style="max-width: 700px; max-height: 80vh; overflow-y: auto; position: relative;">
     <button onclick="closeInfoModal()" style="position: absolute; top: 15px; right: 20px; background: none; border: none; color: var(--text-dim); font-size: 24px; cursor: pointer;">&times;</button>
     <h2 id="info-title" style="margin-bottom: 20px; color: var(--accent);">Заголовок</h2>
@@ -1621,11 +1621,11 @@ function openInfoModal(key) {
   
   document.getElementById('info-title').textContent = data.title;
   document.getElementById('info-content').innerHTML = data.text;
-  document.getElementById('info-modal').classList.remove('hidden');
+  document.getElementById('info-modal').style.display = 'flex'; // <--- ВАЖНО: показываем
 }
 
 function closeInfoModal() {
-  document.getElementById('info-modal').classList.add('hidden');
+  document.getElementById('info-modal').style.display = 'none'; // <--- ВАЖНО: скрываем
 }
 
 window.openInfoModal = openInfoModal;
