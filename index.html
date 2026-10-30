@@ -1164,7 +1164,13 @@ function switchTab(tab) {
   if (newsSection) newsSection.classList.toggle('hidden', tab !== 'news'); 
   if (scheduleSection) scheduleSection.classList.toggle('hidden', tab !== 'schedule'); 
   
-  if (tab === 'bracket') renderBracket();
+ if (tab === 'bracket') {
+  if (state.bracket && state.bracket.type === 'double') {
+    renderDoubleBracket();
+  } else {
+    renderBracket();
+  }
+}
   if (tab === 'news') loadNews();      // <--- ДОБАВИТЬ
   if (tab === 'schedule') loadSchedule(); // <--- ДОБАВИТЬ
     if (tab === 'results') loadResults(); // <--- НОВОЕ
@@ -1251,9 +1257,17 @@ window.logoutPlayer = logoutPlayer;
   const { data } = await supabaseClient.from('tournament').select('data').eq('id', 1).single();
   if (data && data.data && data.data.bracket) {
     state.bracket = data.data.bracket; // Записываем в память игрока
-    renderBracket(); // Рисуем сетку
+    if (data && data.data && data.data.bracket && data.data.bracket.type === 'double') {
+  renderDoubleBracket();
+} else {
+  renderBracket();
+}
   } else {
-    renderBracket(); // Если нет — покажем пустую
+    if (data && data.data && data.data.bracket && data.data.bracket.type === 'double') {
+  renderDoubleBracket();
+} else {
+  renderBracket();
+}
   }
 
   // Меняем активную кнопку в шапке
