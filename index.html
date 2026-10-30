@@ -375,6 +375,7 @@
   <nav>
     <button data-tab="bracket" class="active">Сетка</button>
     <button data-tab="news">Новости</button> <!-- НОВАЯ КНОПКА -->
+    <button data-tab="schedule">Расписание</button>
     <button id="back-to-draft-btn" style="display:none; background: #22c55e; color: white;" onclick="backToDraft()">🔙 К драфту</button>
     <button data-tab="admin" id="admin-tab-btn" style="display:none;">Админ-панель</button>
     
@@ -551,6 +552,47 @@
         <h3 style="font-size: 18px; margin-bottom: 10px; color: var(--accent);">Обновление системы драфта</h3>
         <p style="color: #ccc; line-height: 1.5; margin-bottom: 10px;">Мы добавили живые баны и пики в реальном времени! Теперь участники могут видеть ход драфта соперника, а также общаться в скрытом чате во время матча.</p>
         <button class="btn ghost" style="font-size: 12px; padding: 5px 10px;">Читать далее</button>
+      </div>
+    </div>
+  </section>
+   <!-- СТРАНИЦА РАСПИСАНИЯ -->
+  <section id="tab-schedule" class="hidden">
+    <div class="card">
+      <h2 style="margin-bottom: 20px;">📅 Расписание матчей</h2>
+      
+      <table style="width: 100%; border-collapse: collapse; color: #ccc;">
+        <thead>
+          <tr style="border-bottom: 1px solid var(--border); text-align: left;">
+            <th style="padding: 10px; color: var(--accent);">Время</th>
+            <th style="padding: 10px; color: var(--accent);">Турнир</th>
+            <th style="padding: 10px; color: var(--accent);">Матч</th>
+            <th style="padding: 10px; color: var(--accent);">Статус</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr style="border-bottom: 1px solid var(--border);">
+            <td style="padding: 10px;">Сегодня, 19:00</td>
+            <td style="padding: 10px;">ARQON Cup #1</td>
+            <td style="padding: 10px;">Team Spirit vs Team Liquid</td>
+            <td style="padding: 10px; color: #22c55e;">Скоро</td>
+          </tr>
+          <tr style="border-bottom: 1px solid var(--border);">
+            <td style="padding: 10px;">Сегодня, 21:00</td>
+            <td style="padding: 10px;">ARQON Cup #1</td>
+            <td style="padding: 10px;">Gaimin Gladiators vs BetBoom</td>
+            <td style="padding: 10px; color: var(--text-dim);">Ожидание</td>
+          </tr>
+          <tr>
+            <td style="padding: 10px;">Завтра, 18:00</td>
+            <td style="padding: 10px;">ARQON Cup #1</td>
+            <td style="padding: 10px;">Финал (TBD vs TBD)</td>
+            <td style="padding: 10px; color: var(--text-dim);">Ожидание</td>
+          </tr>
+        </tbody>
+      </table>
+      
+      <div class="hint" style="margin-top: 20px;">
+        * Время указано по МСК. Следите за обновлениями в разделе «Новости».
       </div>
     </div>
   </section>
@@ -1073,10 +1115,12 @@ function switchTab(tab) {
   const adminSection = document.getElementById('tab-admin');
   const bracketSection = document.getElementById('tab-bracket');
   const newsSection = document.getElementById('tab-news'); 
+  const scheduleSection = document.getElementById('tab-schedule'); // <--- НОВОЕ
   
   if (adminSection) adminSection.classList.toggle('hidden', tab !== 'admin');
   if (bracketSection) bracketSection.classList.toggle('hidden', tab !== 'bracket');
   if (newsSection) newsSection.classList.toggle('hidden', tab !== 'news'); 
+  if (scheduleSection) scheduleSection.classList.toggle('hidden', tab !== 'schedule'); // <--- НОВОЕ
   
   if (tab === 'bracket') renderBracket();
 }
