@@ -324,7 +324,7 @@
     <h2 style="margin-bottom: 20px;">Вход для игрока</h2>
     <div class="hint" style="margin-bottom: 15px;">Введи код доступа, который выдал админ</div>
     <input id="auth-code" placeholder="Например: A7X9K2" style="text-align: center; font-size: 24px; letter-spacing: 5px; margin-bottom: 15px; text-transform: uppercase;" />
-    <button class="btn" onclick="loginWithCode()" style="width: 100%;">Войти</button>
+    <button class="btn" id="login-btn" onclick="loginWithCode()" style="width: 100%;">Войти</button>
     <div id="auth-error" class="msg error hidden" style="margin-top: 15px;"></div>
   </div>
 </div>
@@ -691,36 +691,70 @@ async function loginWithCode() {
   const code = document.getElementById('auth-code').value.trim().toUpperCase();
   if (!code) return;
   
-  const { data: codeData } = await supabaseClient.from('access_codes').select('*').eq('code', code).single();
+  const btn = document.getElementById('login-btn');
+  const oldText = btn ? btn.textContent : 'Войти';
+  const errorDiv = document.getElementById('auth-error');
   
-  if (!codeData) {
-    document.getElementById('auth-error').textContent = 'Неверный код доступа';
-    document.getElementById('auth-error').classList.remove('hidden');
-    return;
+  if (btn) { btn.disabled = true; btn.textContent = 'Подключение...'; }
+  if (errorDiv) { errorDiv.classList.add('hidden'); errorDiv.textContent = ''; }
+
+  try {
+    // 1. Ищем код в базе
+    const { data: codeData, error: codeError } = await supabaseClient.from('access_codes').select('*').eq('code', code).single();
+    
+    if (codeError || !codeData) {
+      throw new Error('Неверный код доступа');
+    }
+
+    // 2. Проверяем, есть ли уже сессия (чтобы не плодить новых анонимных юзеров)
+    const { data: { session: existingSession } } = await supabaseClient.auth.getSession();
+    
+    let userId = null;
+
+    if (existingSession && existingSession.user) {
+      // Если сессия есть, используем её
+      userId = existingSession.user.id;
+    } else {
+      // Если нет — создаем нового анонимного пользователя (с таймаутом)
+      const authPromise = supabaseClient.auth.signInAnonymously();
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Сервер долго не отвечает. Попробуй еще раз.')), 15000)
+      );
+
+      const result = await Promise.race([authPromise, timeoutPromise]);
+      
+      if (result.error) throw new Error('Ошибка входа: ' + result.error.message);
+      userId = result.data.user.id;
+    }
+
+    // 3. Сохраняем/обновляем игрока в таблице players
+    const { data: existingPlayers } = await supabaseClient.from('players').select('*').eq('name', codeData.player_name);
+    
+    if (existingPlayers && existingPlayers.length > 0) {
+      await supabaseClient.from('players').update({ uid: userId }).eq('name', codeData.player_name);
+    } else {
+      await supabaseClient.from('players').insert({ uid: userId, name: codeData.player_name });
+    }
+
+    // 4. Запоминаем UID (для админки)
+    localStorage.setItem('last_login_uid_' + codeData.player_name, userId);
+
+    // 5. Удаляем использованный код
+    await supabaseClient.from('access_codes').delete().eq('code', code);
+    
+    // Перезагружаем страницу, чтобы применились права
+    window.location.reload();
+
+  } catch (err) {
+    // Если произошла любая ошибка (неверный код, таймаут, сбой базы)
+    if (errorDiv) {
+      errorDiv.textContent = err.message;
+      errorDiv.classList.remove('hidden');
+    } else {
+      alert(err.message);
+    }
+    if (btn) { btn.disabled = false; btn.textContent = oldText; }
   }
-
-  const { data: authData, error: authError } = await supabaseClient.auth.signInAnonymously();
-  
-  if (authError) {
-    alert('Ошибка входа: ' + authError.message);
-    return;
-  }
-
-  // Сохраняем игрока в базу (обновляем, если такой ник уже есть)
-  const { data: existingPlayers } = await supabaseClient.from('players').select('*').eq('name', codeData.player_name);
-  
-  if (existingPlayers && existingPlayers.length > 0) {
-    await supabaseClient.from('players').update({ uid: authData.user.id }).eq('name', codeData.player_name);
-  } else {
-    await supabaseClient.from('players').insert({ uid: authData.user.id, name: codeData.player_name });
-  }
-
-  // ВАЖНО: сохраняем этот UID в локальное хранилище браузера, чтобы админка его видела
-  localStorage.setItem('last_login_uid_' + codeData.player_name, authData.user.id);
-
-  await supabaseClient.from('access_codes').delete().eq('code', code);
-  
-  window.location.reload();
 }
 
 function logoutPlayer() {
