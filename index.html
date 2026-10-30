@@ -7,11 +7,6 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/brackets-manager@1.7.1/dist/brackets-manager.min.js"></script>
-  
-<script src="https://cdn.jsdelivr.net/npm/brackets-viewer@1.7.1/dist/brackets-viewer.min.js"></script>
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/brackets-viewer@1.7.1/dist/brackets-viewer.min.css">
 <style>
     :root {
     --bg:       #09090B;
@@ -2057,242 +2052,211 @@ switchTab = function(tab) {
 
 window.addSponsor = addSponsor;
 window.removeSponsor = removeSponsor;
-  // ==========================================
 // ==========================================
+// СВОЯ ЛОГИКА DOUBLE ELIMINATION
 // ==========================================
-// DOUBLE ELIMINATION (ЧЕРЕЗ БИБЛИОТЕКУ)
-// ==========================================
-async function generateDoubleBracket() {
+
+function generateDoubleBracket() {
   if (!isAdmin()) return;
   
   let participants;
   if (state.mode === '1x1') {
-    participants = state.soloPlayers.map(p => p.name);
+    participants = state.soloPlayers.map(p => ({ id: 'p' + p.account_id, name: p.name, avatar: p.avatar }));
   } else {
-    participants = state.teams.filter(t => t.players.length > 0).map(t => t.name);
+    participants = state.teams.filter(t => t.players.length > 0).map(t => ({ id: t.id, name: t.name, avatar: t.players[0] ? t.players[0].avatar : '' }));
   }
 
   if (participants.length < 2) { alert('Нужно минимум 2 участника'); return; }
   if (participants.length > state.maxParticipants) participants = participants.slice(0, state.maxParticipants);
-
-  // Простое хранилище в памяти (без внешней библиотеки)
-  const storage = {
-    data: {},
-    setItem: async (key, value) => { storage.data[key] = value; },
-    getItem: async (key) => storage.data[key] || null,
-    removeItem: async (key) => { delete storage.data[key]; },
-    clear: async () => { storage.data = {}; }
-  };
   
-  const manager = new bracketsManager.BracketsManager(storage);
+  const size = Math.pow(2, Math.ceil(Math.log2(participants.length)));
+  const slots = shuffle(participants);
+  while (slots.length < size) slots.push(null); // Заполняем пустыми слотами (bye)
 
-  const stageId = await manager.create.stage({
-    tournamentId: 0,
-    name: 'ARQON Cup',
-    type: 'double_elimination',
-    seeding: participants,
-    settings: { grandFinal: 'double' },
-  });
-
-  const data = await manager.get.tournamentData(0);
+  // --- 1. СТРОИМ ВЕРХНЮЮ СЕТКУ (WB) ---
+  const wbRounds = [];
+  let currentWB = [];
+  for (let i = 0; i < slots.length; i += 2) {
+    currentWB.push({ id: 'wb-r1-' + (i / 2), round: 0, p1: slots[i], p2: slots[i + 1], winner: null, loser: null, score: null });
+  }
+  wbRounds.push(currentWB);
   
+  let rIdx = 1;
+  while (currentWB.length > 1) {
+    const next = [];
+    for (let i = 0; i < currentWB.length; i += 2) {
+      next.push({ id: 'wb-r' + (rIdx + 1) + '-' + (i / 2), round: rIdx, p1: null, p2: null, winner: null, loser: null, score: null });
+    }
+    wbRounds.push(next); currentWB = next; rIdx++;
+  }
+
+  // --- 2. СТРОИМ НИЖНЮЮ СЕТКУ (LB) ---
+  // Количество раундов в LB обычно в 2 раза больше, чем в WB - 1
+  const lbRoundsCount = (wbRounds.length - 1) * 2;
+  const lbRounds = [];
+  
+  for (let i = 0; i < lbRoundsCount; i++) {
+    // В первом раунде LB матчей в 2 раза меньше, чем в первом раунде WB
+    let matchesCount = wbRounds[0].length / 2;
+    if (i > 0) {
+      // Дальше количество матчей зависит от того, четный раунд или нет
+      if (i % 2 === 1) matchesCount = matchesCount; // столько же
+      else matchesCount = matchesCount / 2; // в 2 раза меньше
+    }
+    
+    const roundMatches = [];
+    for (let j = 0; j < matchesCount; j++) {
+      roundMatches.push({ id: 'lb-r' + (i + 1) + '-' + j, round: i, p1: null, p2: null, winner: null, loser: null, score: null });
+    }
+    lbRounds.push(roundMatches);
+  }
+
+  // --- 3. ГРАНД-ФИНАЛ ---
+  const grandFinal = { id: 'gf-0', round: 0, p1: null, p2: null, winner: null, loser: null, score: null };
+
   state.bracket = { 
     type: 'double', 
     mode: state.mode, 
-    manager: manager,
-    stageId: stageId,
-    data: data,
-    players: participants,
-    seeding: participants,
-    tournamentId: 0
+    wb: wbRounds, 
+    lb: lbRounds, 
+    gf: grandFinal,
+    players: participants 
   };
   
-  saveState();
-  switchTab('bracket');
-  renderBracketsViewer();
+  saveState(); 
+  switchTab('bracket'); 
+  renderDoubleBracket();
 }
-async function restoreDoubleBracket() {
-  if (!state.bracket || state.bracket.type !== 'double') return;
-  if (!state.bracket.seeding || !state.bracket.data) return;
 
-  console.log('Восстанавливаем дабл-элиминейшн...');
-
-  const storage = {
-    data: {},
-    setItem: async (key, value) => { storage.data[key] = value; },
-    getItem: async (key) => storage.data[key] || null,
-    removeItem: async (key) => { delete storage.data[key]; },
-    clear: async () => { storage.data = {}; }
-  };
-  
-  const manager = new bracketsManager.BracketsManager(storage);
-
-  const stageId = await manager.create.stage({
-    tournamentId: 0,
-    name: 'ARQON Cup',
-    type: 'double_elimination',
-    seeding: state.bracket.seeding,
-    settings: { grandFinal: 'double' },
-  });
-
-  const savedMatches = state.bracket.data.match || [];
-  
-  const sortedMatches = savedMatches
-    .filter(m => m.status === 3)
-    .sort((a, b) => a.id - b.id);
-
-  for (const match of sortedMatches) {
-    const score1 = match.opponent1?.score ?? 0;
-    const score2 = match.opponent2?.score ?? 0;
-    
-    if (score1 === 0 && score2 === 0) continue;
-
-    let opponent1Result = 'loss';
-    let opponent2Result = 'win';
-    if (score1 > score2) {
-      opponent1Result = 'win';
-      opponent2Result = 'loss';
-    }
-
-    try {
-      await manager.update.match({
-        id: match.id,
-        opponent1: { score: score1, result: opponent1Result },
-        opponent2: { score: score2, result: opponent2Result },
-      });
-    } catch (e) {
-      console.warn('Не удалось восстановить матч', match.id, e);
-    }
-  }
-
-  const newData = await manager.get.tournamentData(0);
-  
-  state.bracket.manager = manager;
-  state.bracket.stageId = stageId;
-  state.bracket.data = newData;
-  
-  saveState();
-  console.log('Дабл-элиминейшн восстановлен!');
-}
-window.restoreDoubleBracket = restoreDoubleBracket;
-  async function updateDoubleMatch(matchId, score1, score2) {
-  if (!isAdmin() || !state.bracket || !state.bracket.manager) {
-    alert('Сначала сгенерируй сетку!');
-    return;
-  }
-
-  const manager = state.bracket.manager;
-
-  let opponent1Result = 'loss';
-  let opponent2Result = 'win';
-  if (score1 > score2) {
-    opponent1Result = 'win';
-    opponent2Result = 'loss';
-  }
-
-  try {
-    // Вот тут происходит вся магия:
-    // менеджер сам знает, куда девать победителя и проигравшего
-    await manager.update.match({
-      id: matchId,
-      opponent1: { score: score1, result: opponent1Result },
-      opponent2: { score: score2, result: opponent2Result },
-    });
-
-    // Получаем свежие данные и перерисовываем
-    const newData = await manager.get.tournamentData(0);
-    state.bracket.data = newData;
-    saveState();
-    renderBracketsViewer();
-    
-    // Небольшое уведомление, чтобы админ понял, что всё ок
-    // (можно убрать, если мешает)
-    // alert('Результат сохранён!');
-  } catch (err) {
-    console.error('Ошибка обновления матча:', err);
-    alert('Ошибка: ' + err.message);
-  }
-}
-window.updateDoubleMatch = updateDoubleMatch;
-
-function renderBracketsViewer() {
+// Отрисовка всей этой красоты
+function renderDoubleBracket() {
   const wrap = document.getElementById('bracket');
   const empty = document.getElementById('bracket-empty');
   const info = document.getElementById('bracket-info');
   
-  if (!wrap) return;
-
-  if (!state.bracket || state.bracket.type !== 'double') {
-    wrap.innerHTML = '';
-    empty.classList.remove('hidden');
-    info.innerHTML = '';
-    return;
-  }
-
+  if (!wrap || !state.bracket || state.bracket.type !== 'double') return;
+  
   empty.classList.add('hidden');
   info.innerHTML = `Формат: <b>${state.bracket.mode}</b> · Тип: <b>Double Elimination (Bo3)</b>`;
-  
-  wrap.innerHTML = '<div id="brackets-viewer"></div>';
-  wrap.style.overflowX = 'auto';
 
-  // Используем глобальный объект bracketsViewer (как в документации)
-  const viewer = new window.bracketsViewer.BracketsViewer();
-  
-  const participantsMap = state.bracket.data.participant.map(p => ({
-    id: p.id,
-    name: p.name,
-  }));
+  let html = '<div style="display: flex; flex-direction: column; gap: 40px; min-width: max-content;">';
 
-  viewer.render({
-    stages: state.bracket.data.stage,
-    matches: state.bracket.data.match,
-    matchGames: state.bracket.data.match_game,
-    participants: participantsMap,
-  }, {
-    selector: '#brackets-viewer',
-    clear: true,
-    participantOriginPlacement: 'none',
-    teamName: 'name',
-    roundTitles: true,
-    onMatchClick: (match) => {
-      if (!isAdmin()) return;
-
-      const findName = (opp) => {
-        if (!opp || !opp.id) return 'TBD';
-        const p = participantsMap.find(x => x.id === opp.id);
-        return p ? p.name : 'TBD';
-      };
-
-      const p1 = findName(match.opponent1);
-      const p2 = findName(match.opponent2);
-
-      if (p1 === 'TBD' || p2 === 'TBD') {
-        alert('Этот матч ещё не готов (нет одного из игроков).');
-        return;
-      }
-
-      const score1 = prompt(`Счёт для ${p1}:`, '');
-      if (score1 === null) return;
-      const score2 = prompt(`Счёт для ${p2}:`, '');
-      if (score2 === null) return;
-
-      const s1 = parseInt(score1);
-      const s2 = parseInt(score2);
-      
-      if (isNaN(s1) || isNaN(s2) || s1 < 0 || s2 < 0) {
-        alert('Введи корректный счёт (числа >= 0)');
-        return;
-      }
-      if (s1 === s2) {
-        alert('Ничья невозможна');
-        return;
-      }
-
-      updateDoubleMatch(match.id, s1, s2);
-    }
+  // --- РЕНДЕР ВЕРХНЕЙ СЕТКИ (WB) ---
+  html += '<div><h3 style="color: var(--accent); margin-bottom: 15px; text-align: center;">🏆 Верхняя сетка (Winner Bracket)</h3>';
+  html += '<div class="bracket">';
+  state.bracket.wb.forEach((round, ri) => {
+    const title = ri === state.bracket.wb.length - 1 ? 'Финал WB' : 'Раунд ' + (ri + 1);
+    html += '<div class="round"><div class="round-title">' + title + '</div>' + round.map(m => matchHTML(m)).join('') + '</div>';
   });
+  html += '</div></div>';
+
+  // --- РЕНДЕР НИЖНЕЙ СЕТКИ (LB) ---
+  html += '<div><h3 style="color: #F59E0B; margin-bottom: 15px; text-align: center;">🛡️ Нижняя сетка (Loser Bracket)</h3>';
+  html += '<div class="bracket">';
+  state.bracket.lb.forEach((round, ri) => {
+    html += '<div class="round"><div class="round-title" style="color: #F59E0B;">Раунд LB ' + (ri + 1) + '</div>' + round.map(m => matchHTML(m)).join('') + '</div>';
+  });
+  html += '</div></div>';
+
+  // --- РЕНДЕР ГРАНД-ФИНАЛА ---
+  html += '<div><h3 style="color: #FFD700; margin-bottom: 15px; text-align: center;">👑 Гранд-финал</h3>';
+  html += '<div class="bracket" style="justify-content: center;">';
+  html += '<div class="round"><div class="round-title" style="color: #FFD700;">Победитель турнира</div>' + matchHTML(state.bracket.gf) + '</div>';
+  html += '</div></div>';
+
+  html += '</div>';
+  wrap.innerHTML = html;
 }
 
+// Обработка клика по счёту (работает и для сингла, и для дабла)
+function setScoreDouble(matchId) {
+  if (!isAdmin()) return;
+  
+  let match = null;
+  let bracketType = '';
+  
+  // Ищем матч в WB
+  state.bracket.wb.forEach(r => r.forEach(m => { if (m.id === matchId) { match = m; bracketType = 'wb'; } }));
+  // Ищем в LB
+  state.bracket.lb.forEach(r => r.forEach(m => { if (m.id === matchId) { match = m; bracketType = 'lb'; } }));
+  // Ищем в GF
+  if (state.bracket.gf.id === matchId) { match = state.bracket.gf; bracketType = 'gf'; }
+  
+  if (!match) return;
+
+  const s1 = parseInt(document.getElementById('score-' + matchId + '-1').value) || 0;
+  const s2 = parseInt(document.getElementById('score-' + matchId + '-2').value) || 0;
+  
+  if (s1 === s2) { alert('Ничья невозможна в Bo3.'); return; }
+  if (s1 > 2 || s2 > 2) { alert('Максимум 2 карты в Bo3'); return; }
+
+  match.score = { p1: s1, p2: s2 };
+  const winner = s1 > s2 ? match.p1 : match.p2;
+  const loser = s1 > s2 ? match.p2 : match.p1;
+  
+  match.winner = winner;
+  match.loser = loser;
+
+  // --- ЛОГИКА ПРОДВИЖЕНИЯ ПО СЕТКЕ ---
+  if (bracketType === 'wb') {
+    const wb = state.bracket.wb;
+    const ri = match.round;
+    const mi = wb[ri].indexOf(match);
+
+    // Победитель идет в следующий раунд WB
+    if (ri + 1 < wb.length) {
+      const nextMatch = wb[ri + 1][Math.floor(mi / 2)];
+      const slot = (mi % 2 === 0) ? 'p1' : 'p2';
+      nextMatch[slot] = winner;
+    }
+
+    // Проигравший падает в LB
+    if (loser) {
+      const lb = state.bracket.lb;
+      // Определяем, в какой раунд LB он падает (формула для дабл-элиминейшн)
+      let lbRoundIdx = (ri * 2); 
+      if (ri === 0) lbRoundIdx = 0; // Из первого раунда падают в самое начало
+      
+      if (lbRoundIdx < lb.length) {
+        const lbMatchIdx = Math.floor(mi / 2); // В первом раунде LB матчей меньше
+        if (lb[lbRoundIdx] && lb[lbRoundIdx][lbMatchIdx]) {
+           lb[lbRoundIdx][lbMatchIdx].p2 = loser; // Кидаем его на вторую позицию
+        }
+      }
+    }
+  } 
+  else if (bracketType === 'lb') {
+    const lb = state.bracket.lb;
+    const ri = match.round;
+    const mi = lb[ri].indexOf(match);
+
+    // Победитель идет в следующий раунд LB
+    if (ri + 1 < lb.length) {
+      const nextMatch = lb[ri + 1][Math.floor(mi / 2)];
+      const slot = (mi % 2 === 0) ? 'p1' : 'p2';
+      // Если следующий раунд "перекрестный", меняем слот
+      if (ri % 2 === 1) {
+        nextMatch[(mi % 2 === 0) ? 'p2' : 'p1'] = winner;
+      } else {
+        nextMatch[slot] = winner;
+      }
+    } else {
+      // Победитель LB идет в Гранд-финал
+      state.bracket.gf.p2 = winner;
+    }
+  }
+  else if (bracketType === 'gf') {
+    setTimeout(() => alert('🏆 Победитель турнира: ' + winner.name + '!'), 150);
+  }
+
+  // Если финал WB определился, кидаем его победителя в Гранд-финал
+  if (bracketType === 'wb' && match.round === state.bracket.wb.length - 1) {
+    state.bracket.gf.p1 = winner;
+  }
+
+  saveState(); 
+  renderDoubleBracket();
+}
 init();
 </script>
 </body>
