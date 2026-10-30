@@ -2035,6 +2035,7 @@ switchTab = function(tab) {
 window.addSponsor = addSponsor;
 window.removeSponsor = removeSponsor;
   // ==========================================
+// ==========================================
 // DOUBLE ELIMINATION (ГЕНЕРАЦИЯ И ОТРИСОВКА)
 // ==========================================
 function generateDoubleBracket() {
@@ -2050,14 +2051,12 @@ function generateDoubleBracket() {
   if (participants.length < 2) { alert('Нужно минимум 2 участника'); return; }
   if (participants.length > state.maxParticipants) participants = participants.slice(0, state.maxParticipants);
 
-  // Округляем до степени двойки
   const size = Math.pow(2, Math.ceil(Math.log2(participants.length)));
   const shuffled = shuffle(participants);
   while (shuffled.length < size) shuffled.push(null);
 
-  // Создаем структуру
-  const ubRounds = []; // Upper Bracket
-  const lbRounds = []; // Lower Bracket
+  const ubRounds = []; 
+  const lbRounds = []; 
   const grandFinal = { id: 'gf', round: 'GF', p1: null, p2: null, winner: null, score: null };
 
   // === ВЕРХНЯЯ СЕТКА ===
@@ -2079,11 +2078,10 @@ function generateDoubleBracket() {
   }
 
   // === НИЖНЯЯ СЕТКА ===
-  // В нижней сетке матчей ровно 2 * (size - 1)
   let lbRIdx = 1;
   const numUbRounds = ubRounds.length;
   
-  // Раунд 1 нижней сетки (играют проигравшие 1-го раунда верхней)
+  // Раунд 1 нижней сетки
   let lbCurrent = [];
   const ubRound1 = ubRounds[0];
   for (let i = 0; i < ubRound1.length; i += 2) {
@@ -2091,25 +2089,25 @@ function generateDoubleBracket() {
   }
   lbRounds.push(lbCurrent);
 
-  // Генерируем остальные раунды нижней сетки
-  let ubRoundToDrop = 1; // Какой раунд верхней сетки падает в текущий раунд нижней
+  let ubRoundToDrop = 1; 
   let lbRoundSize = lbCurrent.length;
 
+  // ИСПРАВЛЕННЫЙ ЦИКЛ
   while (lbRoundSize > 0) {
-    // Четные раунды нижней сетки (играют между собой победители нижней)
     lbRIdx++;
     let lbNext = [];
     for (let i = 0; i < lbRoundSize; i += 2) {
       lbNext.push({ id: 'lb' + lbRIdx + '-' + (i / 2), round: lbRIdx, p1: null, p2: null, winner: null, score: null, loser: null });
     }
-    if (lbNext.length === 0 && lbRoundSize === 1) {
-       // Если остался 1 матч, он идет в гранд-финал
+    
+    // Если мы дошли до 1 матча (финал нижней)
+    if (lbNext.length === 1) {
+       lbRounds.push(lbNext);
        break;
     }
     lbRounds.push(lbNext);
     
-    // Нечетные раунды нижней сетки (падают проигравшие из верхней)
-    if (ubRoundToDrop < numUbRounds - 1) { // Последний раунд верхней не падает в нижнюю
+    if (ubRoundToDrop < numUbRounds - 1) { 
       lbRIdx++;
       let lbNext2 = [];
       for (let i = 0; i < lbNext.length; i++) {
@@ -2129,7 +2127,7 @@ function generateDoubleBracket() {
     ub: ubRounds,
     lb: lbRounds,
     grandFinal: grandFinal,
-    resetFinal: null // Для брекет-ресета
+    resetFinal: null
   };
 
   saveState();
@@ -2177,7 +2175,8 @@ function renderDoubleBracket() {
 
   wrap.innerHTML = html;
 }
-  // ==========================================
+
+// ==========================================
 // ЛОГИКА DOUBLE ELIMINATION
 // ==========================================
 function findMatchInDoubleBracket(matchId) {
@@ -2195,11 +2194,9 @@ function findMatchInDoubleBracket(matchId) {
 
 function getNextMatchDouble(matchId) {
   const b = state.bracket;
-  
-  // Если это Гранд-финал
   if (matchId === 'gf') return null;
 
-  // Ищем в верхней сетке
+  // Верхняя сетка
   for (let r = 0; r < b.ub.length; r++) {
     for (let m = 0; m < b.ub[r].length; m++) {
       if (b.ub[r][m].id === matchId) {
@@ -2207,33 +2204,28 @@ function getNextMatchDouble(matchId) {
            const next = b.ub[r + 1][Math.floor(m / 2)];
            return { match: next, slot: m % 2 === 0 ? 'p1' : 'p2' };
         } else {
-           // Победитель верхней идет в Гранд-финал
            return { match: b.grandFinal, slot: 'p1' };
         }
       }
     }
   }
 
-  // Ищем в нижней сетке
+  // Нижняя сетка
   for (let r = 0; r < b.lb.length; r++) {
     for (let m = 0; m < b.lb[r].length; m++) {
       if (b.lb[r][m].id === matchId) {
         if (r + 1 < b.lb.length) {
-           // Проверяем, есть ли матч дальше в этом же раунде (если раунд нечетный)
            const currentRoundSize = b.lb[r].length;
            const nextRoundSize = b.lb[r+1].length;
            
            if (nextRoundSize === currentRoundSize) {
-              // Это четный раунд, пары идут 1 к 1
               const next = b.lb[r+1][m];
               return { match: next, slot: 'p1' };
            } else {
-              // Это нечетный раунд, матчи сливаются попарно
               const next = b.lb[r+1][Math.floor(m / 2)];
               return { match: next, slot: m % 2 === 0 ? 'p1' : 'p2' };
            }
         } else {
-           // Победитель нижней идет в Гранд-финал
            return { match: b.grandFinal, slot: 'p2' };
         }
       }
@@ -2245,21 +2237,16 @@ function getNextMatchDouble(matchId) {
 function getLoserDropMatchDouble(matchId) {
   const b = state.bracket;
   
-  // Падение из верхней сетки в нижнюю
   for (let r = 0; r < b.ub.length; r++) {
     for (let m = 0; m < b.ub[r].length; m++) {
       if (b.ub[r][m].id === matchId) {
          if (r === 0) {
-            // Проигравшие первого раунда верхней падают в первый раунд нижней
             return { match: b.lb[0][Math.floor(m / 2)], slot: m % 2 === 0 ? 'p1' : 'p2' };
          } else {
-            // Проигравшие остальных раундов падают в специальные раунды нижней
-            // Ищем нужный раунд нижней сетки
             let targetLbRoundIdx = (r * 2) - 1;
             if (targetLbRoundIdx >= b.lb.length) return null;
             
             const targetRound = b.lb[targetLbRoundIdx];
-            // Находим свободный матч в этом раунде (или матч с наименьшим заполнением)
             for (let lm of targetRound) {
                if (lm.p1 === null) return { match: lm, slot: 'p1' };
                if (lm.p2 === null) return { match: lm, slot: 'p2' };
@@ -2291,13 +2278,9 @@ async function setScoreDouble(matchId) {
   
   if (!winner) return;
 
-  // Обработка сброса предыдущего победителя (если переигрываем)
-  // (Для простоты мы просто перезаписываем, но в идеале нужно чистить нижнюю сетку от старых проигравших)
   match.winner = winner;
 
-  // Если это Гранд-финал
   if (found.isGF) {
-     // Если победил тот, кто пришел из нижней (p2), назначаем ресет
      if (winner.id === match.p2?.id && match.p1) {
         b.resetFinal = { id: 'gf-reset', round: 'GF-R', p1: match.p1, p2: match.p2, winner: null, score: null };
         alert('Победитель из нижней сетки выиграл! Назначен второй Гранд-финал.');
@@ -2307,27 +2290,24 @@ async function setScoreDouble(matchId) {
      saveState(); renderDoubleBracket(); return;
   }
 
-  // Продвигаем победителя
   const next = getNextMatchDouble(matchId);
   if (next && next.match) {
      next.match[next.slot] = winner;
-     next.match.winner = null; // Сбрасываем результат следующего
+     next.match.winner = null; 
   }
 
-  // Отправляем проигравшего в нижнюю (если это не финал нижней и не гранд-финал)
   if (!found.isLB || (found.isLB && !matchId.startsWith('lb' + b.lb.length))) {
      const drop = getLoserDropMatchDouble(matchId);
      if (drop && drop.match) {
         drop.match[drop.slot] = loser;
         drop.match.winner = null;
      }
-  } else {
-     // Если это финал нижней сетки, проигравший просто вылетает
   }
 
   saveState();
   renderDoubleBracket();
 }
+
 init();
 </script>
 </body>
