@@ -518,8 +518,27 @@
     <div id="bracket-empty" class="empty">
       Сетка пуста. Турнир ещё не сгенерирован.
     </div>
+   <!-- ПОДВАЛ САЙТА -->
+  <footer style="border-top: 1px solid var(--border); margin-top: 40px; padding: 20px 0; text-align: center; color: var(--text-dim); font-size: 13px;">
+    <div style="margin-bottom: 10px;">
+      <a href="#" onclick="openInfoModal('about')" style="color: var(--text-dim); text-decoration: none; margin: 0 10px; transition: .2s;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text-dim)'">О нас</a>
+      <a href="#" onclick="openInfoModal('faq')" style="color: var(--text-dim); text-decoration: none; margin: 0 10px; transition: .2s;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text-dim)'">FAQ</a>
+      <a href="#" onclick="openInfoModal('privacy')" style="color: var(--text-dim); text-decoration: none; margin: 0 10px; transition: .2s;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text-dim)'">Политика конфиденциальности</a>
+      <a href="#" onclick="openInfoModal('contact')" style="color: var(--text-dim); text-decoration: none; margin: 0 10px; transition: .2s;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text-dim)'">Связаться с нами</a>
+    </div>
+    <div>&copy; 2026 ARQON Esports Organization. Все права защищены.</div>
+  </footer>
 </main>
-
+<!-- УНИВЕРСАЛЬНОЕ ОКНО ДЛЯ ИНФОРМАЦИИ -->
+<div id="info-modal" class="modal hidden" style="z-index: 1000;">
+  <div class="modal-content" style="max-width: 700px; max-height: 80vh; overflow-y: auto; position: relative;">
+    <button onclick="closeInfoModal()" style="position: absolute; top: 15px; right: 20px; background: none; border: none; color: var(--text-dim); font-size: 24px; cursor: pointer;">&times;</button>
+    <h2 id="info-title" style="margin-bottom: 20px; color: var(--accent);">Заголовок</h2>
+    <div id="info-content" style="line-height: 1.6; font-size: 15px; color: var(--text);">
+      Текст
+    </div>
+  </div>
+</div>
 <script>
 // ==========================================
 // НАСТРОЙКА SUPABASE
@@ -1555,6 +1574,62 @@ function showAuthButtonIfNeeded() {
   }
 }
 window.openAuthScreen = openAuthScreen;
+  // ==========================================
+// ИНФОРМАЦИОННЫЕ ОКНА
+// ==========================================
+const INFO_TEXTS = {
+  about: {
+    title: 'О турнирной платформе ARQON',
+    text: `
+      <p><b>ARQON Esports Organization</b> — это платформа для проведения киберспортивных турниров по Dota 2.</p>
+      <p>Наш сайт позволяет организаторам создавать турнирные сетки, проводить живые драфты (баны и пики) и общаться с участниками в реальном времени.</p>
+      <p>Мы делаем турниры доступными и удобными для всех: от новичков до профессионалов. Присоединяйтесь к нашим событиям и следите за результатами!</p>
+    `
+  },
+  faq: {
+    title: 'Часто задаваемые вопросы (FAQ)',
+    text: `
+      <p><b>Как зарегистрироваться на турнир?</b><br>Для участия необходимо получить код доступа у администратора турнира. Введите его в окне «Вход для игрока».</p>
+      <p><b>Как работает драфт?</b><br>Игроки по очереди банят героев, а затем выбирают своих персонажей. Все действия происходят в реальном времени.</p>
+      <p><b>Где посмотреть результаты?</b><br>Все результаты и сетки турнира доступны на главной странице в разделе «Сетка».</p>
+    `
+  },
+  privacy: {
+    title: 'Политика конфиденциальности',
+    text: `
+      <p>Мы уважаем вашу конфиденциальность. Сайт собирает минимальное количество данных, необходимых для проведения турниров (Steam ID, никнеймы).</p>
+      <p>Данные не передаются третьим лицам и используются исключительно для организации киберспортивных событий.</p>
+      <p>Используя наш сайт, вы соглашаетесь с условиями обработки данных.</p>
+    `
+  },
+  contact: {
+    title: 'Связаться с нами',
+    text: `
+      <p>По всем вопросам сотрудничества, проведения турниров или технических проблем обращайтесь:</p>
+      <ul style="margin-left: 20px; margin-top: 10px;">
+        <li>Email: <b>contact@arqon.gg</b> (замени на свою почту)</li>
+        <li>Telegram: <b>@arqon_support</b> (замени на свой ник)</li>
+      </ul>
+      <p style="margin-top: 15px;">Мы открыты к предложениям о партнерстве и спонсорстве!</p>
+    `
+  }
+};
+
+function openInfoModal(key) {
+  const data = INFO_TEXTS[key];
+  if (!data) return;
+  
+  document.getElementById('info-title').textContent = data.title;
+  document.getElementById('info-content').innerHTML = data.text;
+  document.getElementById('info-modal').classList.remove('hidden');
+}
+
+function closeInfoModal() {
+  document.getElementById('info-modal').classList.add('hidden');
+}
+
+window.openInfoModal = openInfoModal;
+window.closeInfoModal = closeInfoModal;
 init();
 </script>
 </body>
