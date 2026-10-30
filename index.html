@@ -1083,11 +1083,11 @@ function switchTab(tab) {
   
   const adminSection = document.getElementById('tab-admin');
   const bracketSection = document.getElementById('tab-bracket');
-  const newsSection = document.getElementById('tab-news'); // <--- НОВОЕ
+  const newsSection = document.getElementById('tab-news'); 
   
   if (adminSection) adminSection.classList.toggle('hidden', tab !== 'admin');
   if (bracketSection) bracketSection.classList.toggle('hidden', tab !== 'bracket');
-  if (newsSection) newsSection.classList.toggle('hidden', tab !== 'news'); // <--- НОВОЕ
+  if (newsSection) newsSection.classList.toggle('hidden', tab !== 'news'); 
   
   if (tab === 'bracket') renderBracket();
 }
