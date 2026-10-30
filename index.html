@@ -387,6 +387,7 @@
 </header>
 
 <main style="display: none;">
+  <!-- АДМИН ПАНЕЛЬ -->
   <section id="tab-admin" class="hidden">
     <div class="card">
       <h2>Настройки турнира</h2>
@@ -502,6 +503,7 @@
       <button class="btn" onclick="openPicks()" style="margin-left:10px; background: #f59e0b;">👁 Открыть пики</button>
       <button class="btn danger" id="reset-all" style="margin-left:10px;">Сбросить всё</button>
     </div>
+    
     <!-- ЧАТ АДМИНА -->
     <div id="admin-chat-container" class="card hidden">
       <h2 style="font-size: 14px; margin-bottom: 10px; color: var(--accent);">💬 Чат текущего матча (Админ)</h2>
@@ -514,7 +516,8 @@
     </div>
   </section>
 
- <section id="tab-bracket">
+  <!-- ВКЛАДКА СЕТКА -->
+  <section id="tab-bracket">
     <div class="card" style="display: flex; justify-content: space-between; align-items: center;">
       <div id="bracket-info" class="hint" style="margin: 0;"></div>
       <button class="btn" id="show-auth-btn" onclick="openAuthScreen()" style="display: none;">🎮 Я игрок (Вход)</button>
@@ -525,18 +528,10 @@
     <div id="bracket-empty" class="empty">
       Сетка пуста. Турнир ещё не сгенерирован.
     </div>
-    <!-- СТРАНИЦА НОВОСТЕЙ -->
-   <!-- ПОДВАЛ САЙТА -->
-  <footer style="border-top: 1px solid var(--border); margin-top: 40px; padding: 20px 0; text-align: center; color: var(--text-dim); font-size: 13px;">
-    <div style="margin-bottom: 10px;">
-      <a href="#" onclick="openInfoModal('about')" style="color: var(--text-dim); text-decoration: none; margin: 0 10px; transition: .2s;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text-dim)'">О нас</a>
-      <a href="#" onclick="openInfoModal('faq')" style="color: var(--text-dim); text-decoration: none; margin: 0 10px; transition: .2s;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text-dim)'">FAQ</a>
-      <a href="#" onclick="openInfoModal('privacy')" style="color: var(--text-dim); text-decoration: none; margin: 0 10px; transition: .2s;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text-dim)'">Политика конфиденциальности</a>
-      <a href="#" onclick="openInfoModal('contact')" style="color: var(--text-dim); text-decoration: none; margin: 0 10px; transition: .2s;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text-dim)'">Связаться с нами</a>
-    </div>
-    <div>&copy; 2026 ARQON Esports Organization. Все права защищены.</div>
-  </footer>
-    <section id="tab-news" class="hidden">
+  </section>
+
+  <!-- ВКЛАДКА НОВОСТИ -->
+  <section id="tab-news" class="hidden">
     <div class="card">
       <h2 style="margin-bottom: 20px;">📰 Новости и анонсы</h2>
       
@@ -555,7 +550,8 @@
       </div>
     </div>
   </section>
-   <!-- СТРАНИЦА РАСПИСАНИЯ -->
+
+  <!-- ВКЛАДКА РАСПИСАНИЕ -->
   <section id="tab-schedule" class="hidden">
     <div class="card">
       <h2 style="margin-bottom: 20px;">📅 Расписание матчей</h2>
