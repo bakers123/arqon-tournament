@@ -9,7 +9,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/brackets-manager@1.7.1/dist/brackets-manager.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/brackets-memory-db@1.0.4/dist/brackets-memory-db.min.js"></script>
+  
 <script src="https://cdn.jsdelivr.net/npm/brackets-viewer@1.7.1/dist/brackets-viewer.min.js"></script>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/brackets-viewer@1.7.1/dist/brackets-viewer.min.css">
 <style>
@@ -1076,6 +1076,7 @@ function generateBracket() {
 }
 
 function countParticipants() {
+  if (!state.bracket || !state.bracket.rounds) return 0; // защита для дабл
   const r1 = state.bracket.rounds[0];
   let total = 0;
   for (const m of r1) { if (m.p1) total++; if (m.p2) total++; }
@@ -2074,7 +2075,15 @@ async function generateDoubleBracket() {
   if (participants.length < 2) { alert('Нужно минимум 2 участника'); return; }
   if (participants.length > state.maxParticipants) participants = participants.slice(0, state.maxParticipants);
 
-  const storage = new bracketsMemoryDb.InMemoryDatabase();
+  // Простое хранилище в памяти (без внешней библиотеки)
+  const storage = {
+    data: {},
+    setItem: async (key, value) => { storage.data[key] = value; },
+    getItem: async (key) => storage.data[key] || null,
+    removeItem: async (key) => { delete storage.data[key]; },
+    clear: async () => { storage.data = {}; }
+  };
+  
   const manager = new bracketsManager.BracketsManager(storage);
 
   const stageId = await manager.create.stage({
@@ -2094,7 +2103,7 @@ async function generateDoubleBracket() {
     stageId: stageId,
     data: data,
     players: participants,
-    seeding: participants,   // <-- сохраняем для восстановления
+    seeding: participants,
     tournamentId: 0
   };
   
@@ -2108,7 +2117,14 @@ async function restoreDoubleBracket() {
 
   console.log('Восстанавливаем дабл-элиминейшн...');
 
-  const storage = new bracketsMemoryDb.InMemoryDatabase();
+  const storage = {
+    data: {},
+    setItem: async (key, value) => { storage.data[key] = value; },
+    getItem: async (key) => storage.data[key] || null,
+    removeItem: async (key) => { delete storage.data[key]; },
+    clear: async () => { storage.data = {}; }
+  };
+  
   const manager = new bracketsManager.BracketsManager(storage);
 
   const stageId = await manager.create.stage({
@@ -2121,7 +2137,6 @@ async function restoreDoubleBracket() {
 
   const savedMatches = state.bracket.data.match || [];
   
-  // Completed = 3 в brackets-manager
   const sortedMatches = savedMatches
     .filter(m => m.status === 3)
     .sort((a, b) => a.id - b.id);
@@ -2220,7 +2235,8 @@ function renderBracketsViewer() {
   wrap.innerHTML = '<div id="brackets-viewer"></div>';
   wrap.style.overflowX = 'auto';
 
-  const viewer = new bracketsViewer.BracketsViewer();
+  // Используем глобальный объект bracketsViewer (как в документации)
+  const viewer = new window.bracketsViewer.BracketsViewer();
   
   const participantsMap = state.bracket.data.participant.map(p => ({
     id: p.id,
