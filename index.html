@@ -8,6 +8,9 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/brackets-manager@1.7.1/dist/brackets-manager.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/brackets-viewer@1.7.1/dist/brackets-viewer.min.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/brackets-viewer@1.7.1/dist/brackets-viewer.min.css">
 <style>
     :root {
     --bg:       #09090B;
@@ -2050,109 +2053,67 @@ window.addSponsor = addSponsor;
 window.removeSponsor = removeSponsor;
   // ==========================================
 // ==========================================
-// DOUBLE ELIMINATION (ГЕНЕРАЦИЯ И ОТРИСОВКА)
 // ==========================================
-function generateDoubleBracket() {
+// DOUBLE ELIMINATION (ЧЕРЕЗ БИБЛИОТЕКУ)
+// ==========================================
+async function generateDoubleBracket() {
   if (!isAdmin()) return;
   
   let participants;
   if (state.mode === '1x1') {
-    participants = state.soloPlayers.map(p => ({ id: 'p' + p.account_id, name: p.name, avatar: p.avatar }));
+    participants = state.soloPlayers.map(p => ({ name: p.name, avatar: p.avatar, id: p.account_id }));
   } else {
-    participants = state.teams.filter(t => t.players.length > 0).map(t => ({ id: t.id, name: t.name, avatar: t.players[0] ? t.players[0].avatar : '' }));
+    participants = state.teams.filter(t => t.players.length > 0).map(t => ({ name: t.name, avatar: t.players[0] ? t.players[0].avatar : '', id: t.id }));
   }
 
   if (participants.length < 2) { alert('Нужно минимум 2 участника'); return; }
   if (participants.length > state.maxParticipants) participants = participants.slice(0, state.maxParticipants);
 
-  const size = Math.pow(2, Math.ceil(Math.log2(participants.length)));
-  const shuffled = shuffle(participants);
-  while (shuffled.length < size) shuffled.push(null);
-
-  const ubRounds = []; 
-  const lbRounds = []; 
-  const grandFinal = { id: 'gf', round: 'GF', p1: null, p2: null, winner: null, score: null };
-
-  // === ВЕРХНЯЯ СЕТКА ===
-  let ubCurrent = [];
-  for (let i = 0; i < shuffled.length; i += 2) {
-    ubCurrent.push({ id: 'ub1-' + (i / 2), round: 1, p1: shuffled[i], p2: shuffled[i + 1], winner: null, score: null, loser: null });
-  }
-  ubRounds.push(ubCurrent);
-
-  let ubRIdx = 2;
-  while (ubCurrent.length > 1) {
-    const next = [];
-    for (let i = 0; i < ubCurrent.length; i += 2) {
-      next.push({ id: 'ub' + ubRIdx + '-' + (i / 2), round: ubRIdx, p1: null, p2: null, winner: null, score: null, loser: null });
+  const manager = new bracketsManager.BracketsManager({
+    storage: {
+      setItem: async () => {},
+      getItem: async () => null,
+      removeItem: async () => {},
+      clear: async () => {},
     }
-    ubRounds.push(next);
-    ubCurrent = next;
-    ubRIdx++;
-  }
+  });
 
-  // === НИЖНЯЯ СЕТКА ===
-  let lbRIdx = 1;
-  const numUbRounds = ubRounds.length;
-  
-  // Раунд 1 нижней сетки
-  let lbCurrent = [];
-  const ubRound1 = ubRounds[0];
-  for (let i = 0; i < ubRound1.length; i += 2) {
-    lbCurrent.push({ id: 'lb1-' + (i / 2), round: 1, p1: null, p2: null, winner: null, score: null, loser: null });
-  }
-  lbRounds.push(lbCurrent);
+  await manager.reset();
 
-  let ubRoundToDrop = 1; 
-  let lbRoundSize = lbCurrent.length;
+  const tournamentId = await manager.create.tournament({
+    name: 'ARQON Cup',
+    tournamentType: 'double_elimination'
+  });
 
-  // ИСПРАВЛЕННЫЙ ЦИКЛ
-  while (lbRoundSize > 0) {
-    lbRIdx++;
-    let lbNext = [];
-    for (let i = 0; i < lbRoundSize; i += 2) {
-      lbNext.push({ id: 'lb' + lbRIdx + '-' + (i / 2), round: lbRIdx, p1: null, p2: null, winner: null, score: null, loser: null });
-    }
-    
-    // Если мы дошли до 1 матча (финал нижней)
-    if (lbNext.length === 1) {
-       lbRounds.push(lbNext);
-       break;
-    }
-    lbRounds.push(lbNext);
-    
-    if (ubRoundToDrop < numUbRounds - 1) { 
-      lbRIdx++;
-      let lbNext2 = [];
-      for (let i = 0; i < lbNext.length; i++) {
-        lbNext2.push({ id: 'lb' + lbRIdx + '-' + i, round: lbRIdx, p1: null, p2: null, winner: null, score: null, loser: null });
-      }
-      lbRounds.push(lbNext2);
-      lbRoundSize = lbNext2.length;
-      ubRoundToDrop++;
-    } else {
-      lbRoundSize = lbNext.length;
-    }
+  const participantIds = [];
+  for (const p of participants) {
+    const pid = await manager.create.participant({
+      tournament_id: tournamentId,
+      name: p.name,
+    });
+    participantIds.push(pid);
   }
 
-  state.bracket = {
-    type: 'double',
-    mode: state.mode,
-    ub: ubRounds,
-    lb: lbRounds,
-    grandFinal: grandFinal,
-    resetFinal: null
+  await manager.create.rounds(tournamentId, participantIds);
+
+  const data = await manager.get.tournamentData(tournamentId);
+  state.bracket = { 
+    type: 'double', 
+    mode: state.mode, 
+    data: data, 
+    players: participants 
   };
-
+  
   saveState();
   switchTab('bracket');
-  renderDoubleBracket();
+  renderBracketsViewer();
 }
 
-function renderDoubleBracket() {
+function renderBracketsViewer() {
   const wrap = document.getElementById('bracket');
   const empty = document.getElementById('bracket-empty');
   const info = document.getElementById('bracket-info');
+  
   if (!wrap) return;
 
   if (!state.bracket || state.bracket.type !== 'double') {
@@ -2161,165 +2122,32 @@ function renderDoubleBracket() {
     info.innerHTML = '';
     return;
   }
+
   empty.classList.add('hidden');
-
-  const ub = state.bracket.ub;
-  const lb = state.bracket.lb;
-  const gf = state.bracket.grandFinal;
-
   info.innerHTML = `Формат: <b>${state.bracket.mode}</b> · Тип: <b>Double Elimination (Bo3)</b>`;
-
-  let html = '<div style="margin-bottom: 40px;"><h3 style="color: var(--accent); margin-bottom: 15px; font-family: Orbitron; letter-spacing: 2px;">ВЕРХНЯЯ СЕТКА (UPPER)</h3><div class="bracket">';
-  html += ub.map((round, ri) => {
-    const title = ri === ub.length - 1 ? 'Финал верхней' : 'Раунд ' + (ri + 1);
-    return `<div class="round"><div class="round-title">${title}</div>${round.map(m => matchHTML(m)).join('')}</div>`;
-  }).join('');
-  html += '</div></div>';
-
-  html += '<div style="margin-bottom: 40px; border-top: 1px solid var(--border); padding-top: 20px;"><h3 style="color: #f59e0b; margin-bottom: 15px; font-family: Orbitron; letter-spacing: 2px;">НИЖНЯЯ СЕТКА (LOWER)</h3><div class="bracket">';
-  html += lb.map((round, ri) => {
-    const title = 'Раунд ' + (ri + 1);
-    return `<div class="round"><div class="round-title">${title}</div>${round.map(m => matchHTML(m)).join('')}</div>`;
-  }).join('');
-  html += '</div></div>';
-
-  html += '<div style="border-top: 2px solid var(--accent); padding-top: 20px; display: flex; justify-content: center;"><div class="bracket"><div class="round"><div class="round-title" style="color: #ffd700; font-size: 12px;">🏆 ГРАНД-ФИНАЛ (Bo5)</div>';
-  html += matchHTML(gf, true);
-  html += '</div></div></div>';
-
-  wrap.innerHTML = html;
-}
-
-// ==========================================
-// ЛОГИКА DOUBLE ELIMINATION
-// ==========================================
-function findMatchInDoubleBracket(matchId) {
-  const b = state.bracket;
-  if (!b) return null;
   
-  if (matchId === 'gf') return { match: b.grandFinal, isGF: true };
+  wrap.innerHTML = '<div id="brackets-viewer"></div>';
+  wrap.style.overflowX = 'auto';
+
+  const viewer = new bracketsViewer.BracketsViewer();
   
-  for (let r of b.ub) for (let m of r) if (m.id === matchId) return { match: m, isUB: true };
-  for (let r of b.lb) for (let m of r) if (m.id === matchId) return { match: m, isLB: true };
-  if (b.resetFinal && b.resetFinal.id === matchId) return { match: b.resetFinal, isReset: true };
-  
-  return null;
-}
+  const participantsMap = state.bracket.data.participant.map(p => ({
+    id: p.id,
+    name: p.name,
+  }));
 
-function getNextMatchDouble(matchId) {
-  const b = state.bracket;
-  if (matchId === 'gf') return null;
-
-  // Верхняя сетка
-  for (let r = 0; r < b.ub.length; r++) {
-    for (let m = 0; m < b.ub[r].length; m++) {
-      if (b.ub[r][m].id === matchId) {
-        if (r + 1 < b.ub.length) {
-           const next = b.ub[r + 1][Math.floor(m / 2)];
-           return { match: next, slot: m % 2 === 0 ? 'p1' : 'p2' };
-        } else {
-           return { match: b.grandFinal, slot: 'p1' };
-        }
-      }
-    }
-  }
-
-  // Нижняя сетка
-  for (let r = 0; r < b.lb.length; r++) {
-    for (let m = 0; m < b.lb[r].length; m++) {
-      if (b.lb[r][m].id === matchId) {
-        if (r + 1 < b.lb.length) {
-           const currentRoundSize = b.lb[r].length;
-           const nextRoundSize = b.lb[r+1].length;
-           
-           if (nextRoundSize === currentRoundSize) {
-              const next = b.lb[r+1][m];
-              return { match: next, slot: 'p1' };
-           } else {
-              const next = b.lb[r+1][Math.floor(m / 2)];
-              return { match: next, slot: m % 2 === 0 ? 'p1' : 'p2' };
-           }
-        } else {
-           return { match: b.grandFinal, slot: 'p2' };
-        }
-      }
-    }
-  }
-  return null;
-}
-
-function getLoserDropMatchDouble(matchId) {
-  const b = state.bracket;
-  
-  for (let r = 0; r < b.ub.length; r++) {
-    for (let m = 0; m < b.ub[r].length; m++) {
-      if (b.ub[r][m].id === matchId) {
-         if (r === 0) {
-            return { match: b.lb[0][Math.floor(m / 2)], slot: m % 2 === 0 ? 'p1' : 'p2' };
-         } else {
-            let targetLbRoundIdx = (r * 2) - 1;
-            if (targetLbRoundIdx >= b.lb.length) return null;
-            
-            const targetRound = b.lb[targetLbRoundIdx];
-            for (let lm of targetRound) {
-               if (lm.p1 === null) return { match: lm, slot: 'p1' };
-               if (lm.p2 === null) return { match: lm, slot: 'p2' };
-            }
-         }
-      }
-    }
-  }
-  return null;
-}
-
-async function setScoreDouble(matchId) {
-  if (!isAdmin()) return;
-  const b = state.bracket;
-  const found = findMatchInDoubleBracket(matchId);
-  if (!found) return;
-
-  const match = found.match;
-  const s1 = parseInt(document.getElementById('score-' + matchId + '-1').value) || 0;
-  const s2 = parseInt(document.getElementById('score-' + matchId + '-2').value) || 0;
-
-  if (s1 === s2 || (s1 !== 2 && s2 !== 2)) {
-     alert('Победитель должен набрать 2 карты (Bo3).'); return;
-  }
-
-  match.score = { p1: s1, p2: s2 };
-  const winner = s1 === 2 ? match.p1 : match.p2;
-  const loser = s1 === 2 ? match.p2 : match.p1;
-  
-  if (!winner) return;
-
-  match.winner = winner;
-
-  if (found.isGF) {
-     if (winner.id === match.p2?.id && match.p1) {
-        b.resetFinal = { id: 'gf-reset', round: 'GF-R', p1: match.p1, p2: match.p2, winner: null, score: null };
-        alert('Победитель из нижней сетки выиграл! Назначен второй Гранд-финал.');
-     } else {
-        setTimeout(() => alert('🏆 Победитель турнира: ' + winner.name), 150);
-     }
-     saveState(); renderDoubleBracket(); return;
-  }
-
-  const next = getNextMatchDouble(matchId);
-  if (next && next.match) {
-     next.match[next.slot] = winner;
-     next.match.winner = null; 
-  }
-
-  if (!found.isLB || (found.isLB && !matchId.startsWith('lb' + b.lb.length))) {
-     const drop = getLoserDropMatchDouble(matchId);
-     if (drop && drop.match) {
-        drop.match[drop.slot] = loser;
-        drop.match.winner = null;
-     }
-  }
-
-  saveState();
-  renderDoubleBracket();
+  viewer.render({
+    stages: state.bracket.data.stage,
+    matches: state.bracket.data.match,
+    matchGames: state.bracket.data.match_game,
+    participants: participantsMap,
+  }, {
+    selector: '#brackets-viewer',
+    clear: true,
+    participantOriginPlacement: 'none',
+    teamName: 'name',
+    roundTitles: true,
+  });
 }
 
 init();
