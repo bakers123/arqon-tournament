@@ -1173,25 +1173,25 @@ function switchTab(tab) {
   const bracketSection = document.getElementById('tab-bracket');
   const newsSection = document.getElementById('tab-news'); 
   const scheduleSection = document.getElementById('tab-schedule'); 
-  const resultsSection = document.getElementById('tab-results'); // <--- НОВОЕ
+  const resultsSection = document.getElementById('tab-results');
   
-  if (resultsSection) resultsSection.classList.toggle('hidden', tab !== 'results'); // <--- НОВО
+  if (resultsSection) resultsSection.classList.toggle('hidden', tab !== 'results');
   if (adminSection) adminSection.classList.toggle('hidden', tab !== 'admin');
   if (bracketSection) bracketSection.classList.toggle('hidden', tab !== 'bracket');
   if (newsSection) newsSection.classList.toggle('hidden', tab !== 'news'); 
   if (scheduleSection) scheduleSection.classList.toggle('hidden', tab !== 'schedule'); 
   
- if (tab === 'bracket') {
-  if (state.bracket && state.bracket.type === 'double') {
-    renderDoubleBracket();
-  } else {
-    renderBracket();
+  if (tab === 'bracket') {
+    if (state.bracket && state.bracket.type === 'double') {
+      renderBracketsViewer();
+    } else {
+      renderBracket();
+    }
   }
-}
-  if (tab === 'news') loadNews();      // <--- ДОБАВИТЬ
-  if (tab === 'schedule') loadSchedule(); // <--- ДОБАВИТЬ
-    if (tab === 'results') loadResults(); // <--- НОВОЕ
-   if (tab === 'admin') loadSponsorsAdmin(); 
+  if (tab === 'news') loadNews();
+  if (tab === 'schedule') loadSchedule();
+  if (tab === 'results') loadResults();
+  if (tab === 'admin') loadSponsorsAdmin(); 
 }
 
 function switchSubTab(sub) {
@@ -1259,35 +1259,26 @@ window.setScore = setScore;
 window.loginWithCode = loginWithCode;
 window.logoutPlayer = logoutPlayer;
   async function showPlayerBracket() {
-  // Прячем экран драфта
   document.getElementById('player-screen').classList.add('hidden');
   
-  // Показываем главную страницу
   document.querySelector('main').style.display = 'block';
-  document.getElementById('tab-bracket').classList.remove('hidden'); // Показываем вкладку сетки
-  document.getElementById('tab-admin').classList.add('hidden');     // Админку прячем
+  document.getElementById('tab-bracket').classList.remove('hidden');
+  document.getElementById('tab-admin').classList.add('hidden');
   
-  // Показываем кнопку возврата
   document.getElementById('back-to-draft-btn').style.display = 'inline-block';
 
-  // СКАЧИВАЕМ СЕТКУ ИЗ БАЗЫ ПЕРЕД ТЕМ, КАК ПОКАЗАТЬ
   const { data } = await supabaseClient.from('tournament').select('data').eq('id', 1).single();
   if (data && data.data && data.data.bracket) {
-    state.bracket = data.data.bracket; // Записываем в память игрока
-    if (data && data.data && data.data.bracket && data.data.bracket.type === 'double') {
-  renderDoubleBracket();
-} else {
-  renderBracket();
-}
+    state.bracket = data.data.bracket;
+    if (state.bracket.type === 'double') {
+      renderBracketsViewer();
+    } else {
+      renderBracket();
+    }
   } else {
-    if (data && data.data && data.data.bracket && data.data.bracket.type === 'double') {
-  renderDoubleBracket();
-} else {
-  renderBracket();
-}
+    renderBracket();
   }
 
-  // Меняем активную кнопку в шапке
   document.querySelectorAll('nav button').forEach(b => {
     b.classList.toggle('active', b.dataset.tab === 'bracket');
   });
@@ -2112,17 +2103,14 @@ async function generateDoubleBracket() {
   renderBracketsViewer();
 }
 async function restoreDoubleBracket() {
-  // Если сетки нет или она не дабл — выходим
   if (!state.bracket || state.bracket.type !== 'double') return;
   if (!state.bracket.seeding || !state.bracket.data) return;
 
   console.log('Восстанавливаем дабл-элиминейшн...');
 
-  // Создаём новое хранилище и менеджер
   const storage = new bracketsMemoryDb.InMemoryDatabase();
   const manager = new bracketsManager.BracketsManager(storage);
 
-  // Заново создаём стадию с теми же участниками
   const stageId = await manager.create.stage({
     tournamentId: 0,
     name: 'ARQON Cup',
@@ -2131,20 +2119,18 @@ async function restoreDoubleBracket() {
     settings: { grandFinal: 'double' },
   });
 
-  // Теперь проходимся по всем матчам из сохранённых данных и «отыгрываем» их заново
   const savedMatches = state.bracket.data.match || [];
   
-  // Сортируем по id, чтобы восстановление шло в хронологическом порядке
+  // Completed = 3 в brackets-manager
   const sortedMatches = savedMatches
-    .filter(m => m.status >= 4) // только завершённые матчи (status 4 = Completed)
+    .filter(m => m.status === 3)
     .sort((a, b) => a.id - b.id);
 
   for (const match of sortedMatches) {
-    // Берём сохранённый счёт
     const score1 = match.opponent1?.score ?? 0;
     const score2 = match.opponent2?.score ?? 0;
     
-    if (score1 === 0 && score2 === 0) continue; // пропускаем пустые
+    if (score1 === 0 && score2 === 0) continue;
 
     let opponent1Result = 'loss';
     let opponent2Result = 'win';
@@ -2164,7 +2150,6 @@ async function restoreDoubleBracket() {
     }
   }
 
-  // Обновляем состояние свежими данными
   const newData = await manager.get.tournamentData(0);
   
   state.bracket.manager = manager;
@@ -2242,7 +2227,6 @@ function renderBracketsViewer() {
     name: p.name,
   }));
 
-  // Настройки рендера с обработчиком клика
   viewer.render({
     stages: state.bracket.data.stage,
     matches: state.bracket.data.match,
@@ -2254,21 +2238,23 @@ function renderBracketsViewer() {
     participantOriginPlacement: 'none',
     teamName: 'name',
     roundTitles: true,
-    // Вот здесь мы ловим клик по матчу (только для админа)
     onMatchClick: (match) => {
       if (!isAdmin()) return;
-      
-      // match здесь — это объект матча из данных
-      // Нам нужен его id и имена игроков для prompt
-      const p1 = match.opponent1?.name || 'TBD';
-      const p2 = match.opponent2?.name || 'TBD';
-      
+
+      const findName = (opp) => {
+        if (!opp || !opp.id) return 'TBD';
+        const p = participantsMap.find(x => x.id === opp.id);
+        return p ? p.name : 'TBD';
+      };
+
+      const p1 = findName(match.opponent1);
+      const p2 = findName(match.opponent2);
+
       if (p1 === 'TBD' || p2 === 'TBD') {
         alert('Этот матч ещё не готов (нет одного из игроков).');
         return;
       }
 
-      // Спрашиваем счёт
       const score1 = prompt(`Счёт для ${p1}:`, '');
       if (score1 === null) return;
       const score2 = prompt(`Счёт для ${p2}:`, '');
@@ -2286,7 +2272,6 @@ function renderBracketsViewer() {
         return;
       }
 
-      // Вызываем обновление
       updateDoubleMatch(match.id, s1, s2);
     }
   });
