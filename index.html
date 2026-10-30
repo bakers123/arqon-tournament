@@ -514,6 +514,30 @@
         <button class="btn" onclick="sendAdminMessage()">Отправить</button>
       </div>
     </div>
+     <!-- УПРАВЛЕНИЕ НОВОСТЯМИ -->
+    <div class="card">
+      <h2>📰 Добавить новость</h2>
+      <div class="row" style="flex-direction: column; gap: 10px;">
+        <input id="news-title" placeholder="Заголовок новости" />
+        <textarea id="news-content" placeholder="Текст новости..." style="background: #0F0F14; border: 1px solid var(--border); color: var(--text); padding: 11px 14px; border-radius: 6px; font-family: 'Rajdhani', sans-serif; font-size: 14px; outline: none; min-height: 100px; resize: vertical;"></textarea>
+        <button class="btn" onclick="addNews()">Опубликовать</button>
+      </div>
+      <div id="news-msg"></div>
+    </div>
+
+    <!-- УПРАВЛЕНИЕ РАСПИСАНИЕМ -->
+    <div class="card">
+      <h2>📅 Добавить матч в расписание</h2>
+      <div class="row" style="flex-direction: column; gap: 10px;">
+        <div class="row">
+          <input id="sch-time" placeholder="Время (например: Сегодня, 19:00)" style="flex:1;" />
+          <input id="sch-tournament" placeholder="Турнир (например: ARQON Cup #1)" style="flex:1;" />
+        </div>
+        <input id="sch-match" placeholder="Матч (например: Team A vs Team B)" />
+        <button class="btn" onclick="addSchedule()">Добавить в расписание</button>
+      </div>
+      <div id="sch-msg"></div>
+    </div>
   </section>
 
   <!-- ВКЛАДКА СЕТКА -->
@@ -531,67 +555,8 @@
   </section>
 
   <!-- ВКЛАДКА НОВОСТИ -->
-  <section id="tab-news" class="hidden">
-    <div class="card">
-      <h2 style="margin-bottom: 20px;">📰 Новости и анонсы</h2>
-      
-      <div style="border-bottom: 1px solid var(--border); padding-bottom: 20px; margin-bottom: 20px;">
-        <div style="font-size: 12px; color: var(--text-dim); margin-bottom: 5px;">30 Октября 2026</div>
-        <h3 style="font-size: 18px; margin-bottom: 10px; color: var(--accent);">Запуск первого турнира ARQON!</h3>
-        <p style="color: #ccc; line-height: 1.5; margin-bottom: 10px;">Мы рады сообщить о старте регистрации на наш дебютный турнир по Dota 2. Призовой фонд составляет 10 000 рублей. Участие бесплатное, количество мест ограничено.</p>
-        <button class="btn ghost" style="font-size: 12px; padding: 5px 10px;">Читать далее</button>
-      </div>
-
-      <div>
-        <div style="font-size: 12px; color: var(--text-dim); margin-bottom: 5px;">25 Октября 2026</div>
-        <h3 style="font-size: 18px; margin-bottom: 10px; color: var(--accent);">Обновление системы драфта</h3>
-        <p style="color: #ccc; line-height: 1.5; margin-bottom: 10px;">Мы добавили живые баны и пики в реальном времени! Теперь участники могут видеть ход драфта соперника, а также общаться в скрытом чате во время матча.</p>
-        <button class="btn ghost" style="font-size: 12px; padding: 5px 10px;">Читать далее</button>
-      </div>
-    </div>
-  </section>
-
-  <!-- ВКЛАДКА РАСПИСАНИЕ -->
-  <section id="tab-schedule" class="hidden">
-    <div class="card">
-      <h2 style="margin-bottom: 20px;">📅 Расписание матчей</h2>
-      
-      <table style="width: 100%; border-collapse: collapse; color: #ccc;">
-        <thead>
-          <tr style="border-bottom: 1px solid var(--border); text-align: left;">
-            <th style="padding: 10px; color: var(--accent);">Время</th>
-            <th style="padding: 10px; color: var(--accent);">Турнир</th>
-            <th style="padding: 10px; color: var(--accent);">Матч</th>
-            <th style="padding: 10px; color: var(--accent);">Статус</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr style="border-bottom: 1px solid var(--border);">
-            <td style="padding: 10px;">Сегодня, 19:00</td>
-            <td style="padding: 10px;">ARQON Cup #1</td>
-            <td style="padding: 10px;">Team Spirit vs Team Liquid</td>
-            <td style="padding: 10px; color: #22c55e;">Скоро</td>
-          </tr>
-          <tr style="border-bottom: 1px solid var(--border);">
-            <td style="padding: 10px;">Сегодня, 21:00</td>
-            <td style="padding: 10px;">ARQON Cup #1</td>
-            <td style="padding: 10px;">Gaimin Gladiators vs BetBoom</td>
-            <td style="padding: 10px; color: var(--text-dim);">Ожидание</td>
-          </tr>
-          <tr>
-            <td style="padding: 10px;">Завтра, 18:00</td>
-            <td style="padding: 10px;">ARQON Cup #1</td>
-            <td style="padding: 10px;">Финал (TBD vs TBD)</td>
-            <td style="padding: 10px; color: var(--text-dim);">Ожидание</td>
-          </tr>
-        </tbody>
-      </table>
-      
-      <div class="hint" style="margin-top: 20px;">
-        * Время указано по МСК. Следите за обновлениями в разделе «Новости».
-      </div>
-    </div>
-  </section>
+ <section id="tab-news" class="hidden"></section>
+<section id="tab-schedule" class="hidden"></section>
 </main>
 <!-- УНИВЕРСАЛЬНОЕ ОКНО ДЛЯ ИНФОРМАЦИИ -->
 <div id="info-modal" class="modal" style="display: none; z-index: 1000;">
@@ -1111,14 +1076,16 @@ function switchTab(tab) {
   const adminSection = document.getElementById('tab-admin');
   const bracketSection = document.getElementById('tab-bracket');
   const newsSection = document.getElementById('tab-news'); 
-  const scheduleSection = document.getElementById('tab-schedule'); // <--- НОВОЕ
+  const scheduleSection = document.getElementById('tab-schedule'); 
   
   if (adminSection) adminSection.classList.toggle('hidden', tab !== 'admin');
   if (bracketSection) bracketSection.classList.toggle('hidden', tab !== 'bracket');
   if (newsSection) newsSection.classList.toggle('hidden', tab !== 'news'); 
-  if (scheduleSection) scheduleSection.classList.toggle('hidden', tab !== 'schedule'); // <--- НОВОЕ
+  if (scheduleSection) scheduleSection.classList.toggle('hidden', tab !== 'schedule'); 
   
   if (tab === 'bracket') renderBracket();
+  if (tab === 'news') loadNews();      // <--- ДОБАВИТЬ
+  if (tab === 'schedule') loadSchedule(); // <--- ДОБАВИТЬ
 }
 
 function switchSubTab(sub) {
@@ -1701,6 +1668,111 @@ function closeInfoModal() {
 
 window.openInfoModal = openInfoModal;
 window.closeInfoModal = closeInfoModal;
+  // ==========================================
+// УПРАВЛЕНИЕ НОВОСТЯМИ И РАСПИСАНИЕМ
+// ==========================================
+async function addNews() {
+  const title = document.getElementById('news-title').value.trim();
+  const content = document.getElementById('news-content').value.trim();
+  const msg = document.getElementById('news-msg');
+  if (!title || !content) { msg.innerHTML = '<div class="msg error">Заполни все поля!</div>'; return; }
+
+  const { error } = await supabaseClient.from('news').insert({ title, content });
+  if (error) {
+    msg.innerHTML = `<div class="msg error">Ошибка: ${error.message}</div>`;
+  } else {
+    msg.innerHTML = '<div class="msg success">Новость опубликована!</div>';
+    document.getElementById('news-title').value = '';
+    document.getElementById('news-content').value = '';
+    loadNews(); // Обновляем список на вкладке
+  }
+}
+
+async function addSchedule() {
+  const match_time = document.getElementById('sch-time').value.trim();
+  const tournament = document.getElementById('sch-tournament').value.trim();
+  const match_name = document.getElementById('sch-match').value.trim();
+  const msg = document.getElementById('sch-msg');
+  if (!match_time || !tournament || !match_name) { msg.innerHTML = '<div class="msg error">Заполни все поля!</div>'; return; }
+
+  const { error } = await supabaseClient.from('schedule').insert({ match_time, tournament, match_name, status: 'Ожидание' });
+  if (error) {
+    msg.innerHTML = `<div class="msg error">Ошибка: ${error.message}</div>`;
+  } else {
+    msg.innerHTML = '<div class="msg success">Матч добавлен!</div>';
+    document.getElementById('sch-time').value = '';
+    document.getElementById('sch-tournament').value = '';
+    document.getElementById('sch-match').value = '';
+    loadSchedule(); // Обновляем таблицу
+  }
+}
+
+// Загрузка новостей из базы
+async function loadNews() {
+  const { data } = await supabaseClient.from('news').select('*').order('created_at', { ascending: false });
+  const container = document.getElementById('tab-news');
+  if (!container) return;
+
+  let html = '<div class="card"><h2 style="margin-bottom: 20px;">📰 Новости и анонсы</h2>';
+  if (!data || data.length === 0) {
+    html += '<p style="color: var(--text-dim);">Пока новостей нет.</p>';
+  } else {
+    data.forEach(item => {
+      const date = new Date(item.created_at).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' });
+      html += `
+        <div style="border-bottom: 1px solid var(--border); padding-bottom: 20px; margin-bottom: 20px;">
+          <div style="font-size: 12px; color: var(--text-dim); margin-bottom: 5px;">${date}</div>
+          <h3 style="font-size: 18px; margin-bottom: 10px; color: var(--accent);">${escapeHtml(item.title)}</h3>
+          <p style="color: #ccc; line-height: 1.5; margin-bottom: 10px;">${escapeHtml(item.content).replace(/\n/g, '<br>')}</p>
+        </div>
+      `;
+    });
+  }
+  html += '</div>';
+  container.innerHTML = html;
+}
+
+// Загрузка расписания из базы
+async function loadSchedule() {
+  const { data } = await supabaseClient.from('schedule').select('*').order('id', { ascending: true });
+  const container = document.getElementById('tab-schedule');
+  if (!container) return;
+
+  let html = `
+    <div class="card">
+      <h2 style="margin-bottom: 20px;">📅 Расписание матчей</h2>
+      <table style="width: 100%; border-collapse: collapse; color: #ccc;">
+        <thead>
+          <tr style="border-bottom: 1px solid var(--border); text-align: left;">
+            <th style="padding: 10px; color: var(--accent);">Время</th>
+            <th style="padding: 10px; color: var(--accent);">Турнир</th>
+            <th style="padding: 10px; color: var(--accent);">Матч</th>
+            <th style="padding: 10px; color: var(--accent);">Статус</th>
+          </tr>
+        </thead>
+        <tbody>
+  `;
+  
+  if (!data || data.length === 0) {
+    html += '<tr><td colspan="4" style="padding: 10px; text-align: center; color: var(--text-dim);">Матчей пока нет.</td></tr>';
+  } else {
+    data.forEach(item => {
+      html += `
+        <tr style="border-bottom: 1px solid var(--border);">
+          <td style="padding: 10px;">${escapeHtml(item.match_time)}</td>
+          <td style="padding: 10px;">${escapeHtml(item.tournament)}</td>
+          <td style="padding: 10px;">${escapeHtml(item.match_name)}</td>
+          <td style="padding: 10px; color: ${item.status === 'Скоро' ? '#22c55e' : 'var(--text-dim)'};">${escapeHtml(item.status)}</td>
+        </tr>
+      `;
+    });
+  }
+  html += `</tbody></table><div class="hint" style="margin-top: 20px;">* Время указано по МСК.</div></div>`;
+  container.innerHTML = html;
+}
+
+window.addNews = addNews;
+window.addSchedule = addSchedule;
 init();
 </script>
 </body>
