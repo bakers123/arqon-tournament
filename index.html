@@ -1082,30 +1082,26 @@ function matchHTML(match) {
   const p1W = match.p1 && match.winner && match.winner.id === match.p1.id;
   const p2W = match.p2 && match.winner && match.winner.id === match.p2.id;
   const score = match.score || { p1: '', p2: '' };
+  
   let html = '<div class="match">' + slotHTML(match.p1, p1W, match.id, 'p1') + '<div class="divider"></div>' + slotHTML(match.p2, p2W, match.id, 'p2');
   
-  // Если есть счёт, показываем его всегда, даже если один из игроков TBD
-  if (match.score) {
-    if (canPlay && isAdmin()) {
-      // Если оба игрока есть и мы админ — показываем форму для редактирования
-      html += '<div class="score-box">';
-      html += '<input type="number" min="0" max="2" class="score-input" id="score-' + match.id + '-1" value="' + (match.score.p1 !== '' ? match.score.p1 : '') + '" placeholder="0" />';
-      html += '<span class="score-sep">:</span>';
-      html += '<input type="number" min="0" max="2" class="score-input" id="score-' + match.id + '-2" value="' + (match.score.p2 !== '' ? match.score.p2 : '') + '" placeholder="0" />';
-      html += '<button class="btn score-save" onclick="setScore(\'' + match.id + '\')">OK</button>';
-      html += '</div>';
-    } else {
-      // Если не админ или не оба игрока — показываем просто текст счёта
-      html += '<div class="score-display">' + match.score.p1 + ' : ' + match.score.p2 + '</div>';
-    }
-  } else if (canPlay && isAdmin()) {
-    // Если счёта нет, но оба игрока есть — показываем форму ввода
+  if (canPlay) {
     html += '<div class="score-box">';
-    html += '<input type="number" min="0" max="2" class="score-input" id="score-' + match.id + '-1" value="" placeholder="0" />';
+    html += '<input type="number" min="0" max="2" class="score-input" id="score-' + match.id + '-1" value="' + (score.p1 !== '' ? score.p1 : '') + '" placeholder="0" />';
     html += '<span class="score-sep">:</span>';
-    html += '<input type="number" min="0" max="2" class="score-input" id="score-' + match.id + '-2" value="" placeholder="0" />';
+    html += '<input type="number" min="0" max="2" class="score-input" id="score-' + match.id + '-2" value="' + (score.p2 !== '' ? score.p2 : '') + '" placeholder="0" />';
     html += '<button class="btn score-save" onclick="setScore(\'' + match.id + '\')">OK</button>';
     html += '</div>';
+    
+    // Проверяем, есть ли в матче "призраки"
+    const isGhostMatch = (match.p1 && match.p1.isGhost) || (match.p2 && match.p2.isGhost);
+    
+    // Кнопка Драфт ТОЛЬКО для админа и только если нет призраков и счета
+    if (isAdmin() && !isGhostMatch && !match.winner && !match.score) {
+        html += '<button class="btn" style="width: 100%; background: #22c55e; border-radius: 0; font-size: 11px; padding: 5px;" onclick="startDraftForMatch(\'' + match.id + '\')">▶️ Драфт</button>';
+    }
+  } else if (match.winner && match.score) {
+    html += '<div class="score-display">' + match.score.p1 + ' : ' + match.score.p2 + '</div>';
   }
   html += '</div>';
   return html;
@@ -1550,16 +1546,35 @@ async function startDraftForMatch(matchId) {
   
   // Находим матч в сетке
   let match = null;
-  state.bracket.rounds.forEach(r => r.forEach(m => { if (m.id === matchId) match = m; }));
+  if (state.bracket.type === 'double') {
+    state.bracket.wb.forEach(r => r.forEach(m => { if (m.id === matchId) match = m; }));
+    state.bracket.lb.forEach(r => r.forEach(m => { if (m.id === matchId) match = m; }));
+    if (state.bracket.gf.id === matchId) match = state.bracket.gf;
+  } else {
+    state.bracket.rounds.forEach(r => r.forEach(m => { if (m.id === matchId) match = m; }));
+  }
   
-  if (!match || !match.p1 || !match.p2) {
+  if (!match) return;
+
+  // ЗАЩИТА: Если в матче уже есть счёт или победитель, драфт запускать нельзя
+  if (match.winner || match.score) {
+    alert('Этот матч уже сыгран! Очистите счёт, чтобы запустить драфт заново.');
+    return;
+  }
+
+  // ЗАЩИТА: Если один из игроков — "призрак" или TBD, драфт не запустится
+  if (!match.p1 || !match.p2) {
     alert('В этом матче еще нет двух игроков!');
+    return;
+  }
+
+  if (match.p1.isGhost || match.p2.isGhost) {
+    alert('Один из игроков уже покинул этот матч (ушел дальше по сетке). Драфт невозможен.');
     return;
   }
 
   const p1 = match.p1;
   const p2 = match.p2;
-
   // Ищем их UID в базе (по никам)
   const { data: dbPlayers, error } = await supabaseClient.from('players').select('*');
   if (error || !dbPlayers) { alert('Ошибка базы данных'); return; }
