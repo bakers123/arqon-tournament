@@ -675,19 +675,15 @@ function handleNoAuth() {
     document.getElementById('player-screen').classList.add('hidden');
     document.querySelector('main').style.display = 'block';
     
-    // Показываем только сетку, админку прячем
     document.getElementById('tab-bracket').classList.remove('hidden');
     document.getElementById('tab-admin').classList.add('hidden');
     
     // Загружаем сетку, чтобы зритель увидел результаты
-   supabaseClient.from('tournament').select('data').eq('id', 1).single().then(async ({data}) => {
+    supabaseClient.from('tournament').select('data').eq('id', 1).single().then(({data}) => {
       if (data && data.data && data.data.bracket) {
         state.bracket = data.data.bracket;
-        
-        // Восстанавливаем менеджер для дабл
         if (state.bracket.type === 'double') {
-          await restoreDoubleBracket();
-          renderBracketsViewer();
+          renderDoubleBracket();
         } else {
           renderBracket();
         }
@@ -695,6 +691,7 @@ function handleNoAuth() {
     });
   }
 }
+
 
 async function checkUserRole(uid) {
   if (isAdmin()) {
@@ -798,15 +795,9 @@ async function initSupabaseSync() {
   if (isRealtimeActive) return;
   isRealtimeActive = true;
   
- const { data } = await supabaseClient.from('tournament').select('data').eq('id', 1).single();
+  const { data } = await supabaseClient.from('tournament').select('data').eq('id', 1).single();
   if (data && data.data) {
     state = data.data;
-    
-    // ВОТ ЭТА СТРОЧКА — восстанавливаем менеджер дабл-элиминейшн
-    if (state.bracket && state.bracket.type === 'double') {
-      await restoreDoubleBracket();
-    }
-    
     renderAll();
   }
   
@@ -819,6 +810,7 @@ async function initSupabaseSync() {
     })
     .subscribe();
 }
+
 
 function saveState() {
   supabaseClient.from('tournament').upsert({ id: 1, data: state }).then(({ error }) => {
@@ -1118,7 +1110,17 @@ function renderBracket() {
   const empty = document.getElementById('bracket-empty');
   const info = document.getElementById('bracket-info');
   if (!wrap) return;
-  if (!state.bracket) { wrap.innerHTML = ''; empty.classList.remove('hidden'); info.innerHTML = ''; return; }
+  
+  // Защита: если внезапно вызвалась для дабла — перекидываем на дабл
+  if (state.bracket && state.bracket.type === 'double') {
+    renderDoubleBracket();
+    return;
+  }
+  
+  if (!state.bracket || !state.bracket.rounds) { 
+    wrap.innerHTML = ''; empty.classList.remove('hidden'); info.innerHTML = ''; return; 
+  }
+  
   empty.classList.add('hidden');
   const rounds = state.bracket.rounds;
   info.innerHTML = 'Формат: <b>' + state.bracket.mode + '</b> · Тип: <b>Single Elimination (Bo3)</b> · Участников: <b>' + countParticipants() + '</b>';
@@ -1179,7 +1181,7 @@ function switchTab(tab) {
   
   if (tab === 'bracket') {
     if (state.bracket && state.bracket.type === 'double') {
-      renderBracketsViewer();
+      renderDoubleBracket();
     } else {
       renderBracket();
     }
@@ -1189,7 +1191,6 @@ function switchTab(tab) {
   if (tab === 'results') loadResults();
   if (tab === 'admin') loadSponsorsAdmin(); 
 }
-
 function switchSubTab(sub) {
   document.querySelectorAll('[data-sub]').forEach(b => b.classList.toggle('active', b.dataset.sub === sub));
   const solo = document.getElementById('sub-solo');
@@ -1201,7 +1202,11 @@ function switchSubTab(sub) {
 function renderAll() {
   renderSolo();
   renderTeams();
-  renderBracket();
+  if (state.bracket && state.bracket.type === 'double') {
+    renderDoubleBracket();
+  } else {
+    renderBracket();
+  }
 }
 
 function init() {
@@ -1256,18 +1261,16 @@ window.loginWithCode = loginWithCode;
 window.logoutPlayer = logoutPlayer;
   async function showPlayerBracket() {
   document.getElementById('player-screen').classList.add('hidden');
-  
   document.querySelector('main').style.display = 'block';
   document.getElementById('tab-bracket').classList.remove('hidden');
   document.getElementById('tab-admin').classList.add('hidden');
-  
   document.getElementById('back-to-draft-btn').style.display = 'inline-block';
 
   const { data } = await supabaseClient.from('tournament').select('data').eq('id', 1).single();
   if (data && data.data && data.data.bracket) {
     state.bracket = data.data.bracket;
     if (state.bracket.type === 'double') {
-      renderBracketsViewer();
+      renderDoubleBracket();
     } else {
       renderBracket();
     }
