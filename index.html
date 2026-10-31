@@ -2096,7 +2096,9 @@ function generateDoubleBracket() {
 
   // --- 2. СТРОИМ НИЖНЮЮ СЕТКУ (LB) ---
   // Количество раундов в LB обычно в 2 раза больше, чем в WB - 1
-  const lbRoundsCount = (wbRounds.length - 1) * 2;
+  // --- 2. СТРОИМ НИЖНЮЮ СЕТКУ (LB) ---
+  // Количество раундов в LB = (Количество раундов в WB - 1) * 2 - 1
+  const lbRoundsCount = (wbRounds.length - 1) * 2 - 1;
   const lbRounds = [];
   
   for (let i = 0; i < lbRoundsCount; i++) {
@@ -2234,7 +2236,7 @@ function recalculateDoubleBracket() {
     else if (s2 > s1) { gf.winner = gf.p2; gf.loser = gf.p1; }
   } else { gf.winner = null; gf.loser = null; }
 
-  // 2. Очищаем все слоты (кроме первых матчей WB)
+  // 2. Очищаем все слоты
   for (let r = 1; r < wb.length; r++) { wb[r].forEach(m => { m.p1 = null; m.p2 = null; }); }
   for (let r = 0; r < lb.length; r++) { lb[r].forEach(m => { m.p1 = null; m.p2 = null; }); }
   gf.p1 = null; gf.p2 = null;
@@ -2252,45 +2254,30 @@ function recalculateDoubleBracket() {
     gf.p1 = wb[wb.length - 1][0].winner;
   }
 
-  // 4. Раскидываем по Нижней сетке (LB) ЖЕСТКО
-  // --- Раунд LB1 (индекс 0) ---
-  if (lb[0]) {
-    // Матч LB1-0 (индекс 0)
-    if (wb[0] && wb[0][0] && wb[0][0].loser) lb[0][0].p1 = wb[0][0].loser;
-    if (wb[0] && wb[0][1] && wb[0][1].loser) lb[0][0].p2 = wb[0][1].loser;
-    // Матч LB1-1 (индекс 1)
-    if (lb[0][1]) {
-      if (wb[0] && wb[0][2] && wb[0][2].loser) lb[0][1].p1 = wb[0][2].loser;
-      if (wb[0] && wb[0][3] && wb[0][3].loser) lb[0][1].p2 = wb[0][3].loser;
-    }
+  // 4. Раскидываем по Нижней сетке (LB) ЖЕСТКО (для 8 игроков)
+  if (lb.length >= 3) {
+    // --- Раунд LB1 ---
+    if (wb[0][0] && wb[0][0].loser) lb[0][0].p1 = wb[0][0].loser;
+    if (wb[0][1] && wb[0][1].loser) lb[0][0].p2 = wb[0][1].loser;
+    if (wb[0][2] && wb[0][2].loser) lb[0][1].p1 = wb[0][2].loser;
+    if (wb[0][3] && wb[0][3].loser) lb[0][1].p2 = wb[0][3].loser;
+
+    // --- Раунд LB2 ---
+    if (lb[0][0] && lb[0][0].winner) lb[1][0].p1 = lb[0][0].winner;
+    if (wb[1][0] && wb[1][0].loser) lb[1][0].p2 = wb[1][0].loser;
+    
+    if (lb[0][1] && lb[0][1].winner) lb[1][1].p1 = lb[0][1].winner;
+    if (wb[1][1] && wb[1][1].loser) lb[1][1].p2 = wb[1][1].loser;
+
+    // --- Раунд LB3 (ФИНАЛ НИЖНЕЙ СЕТКИ) ---
+    // В него попадают победители LB2
+    if (lb[1][0] && lb[1][0].winner) lb[2][0].p1 = lb[1][0].winner;
+    if (lb[1][1] && lb[1][1].winner) lb[2][0].p2 = lb[1][1].winner;
   }
 
-  // --- Раунд LB2 (индекс 1) ---
-  if (lb[1]) {
-    // Матч LB2-0 (индекс 0): Победитель LB1-0 (сверху) + Проигравший WB2-0 (снизу)
-    if (lb[0] && lb[0][0] && lb[0][0].winner) lb[1][0].p1 = lb[0][0].winner;
-    if (wb[1] && wb[1][0] && wb[1][0].loser) lb[1][0].p2 = wb[1][0].loser;
-
-    // Матч LB2-1 (индекс 1): Победитель LB1-1 (сверху) + Проигравший WB2-1 (снизу)
-    if (lb[1][1]) {
-      if (lb[0] && lb[0][1] && lb[0][1].winner) lb[1][1].p1 = lb[0][1].winner;
-      if (wb[1] && wb[1][1] && wb[1][1].loser) lb[1][1].p2 = wb[1][1].loser;
-    }
-  }
-
-  // --- Раунд LB3 (индекс 2) ---
-  if (lb[2]) {
-    // Матч LB3-0 (индекс 0): Победитель LB2-0 (сверху) + Победитель LB2-1 (снизу, перекрест)
-    // В нашем коде для простоты победители LB2 играют друг с другом
-    if (lb[1] && lb[1][0] && lb[1][0].winner) lb[2][0].p1 = lb[1][0].winner;
-    if (lb[1] && lb[1][1] && lb[1][1].winner) lb[2][0].p2 = lb[1][1].winner;
-  }
-
-  // --- Гранд-финал ---
-  // В гранд-финал идет победитель LB Финала (последний матч LB)
-  const lastLbRound = lb[lb.length - 1];
-  if (lastLbRound && lastLbRound[0] && lastLbRound[0].winner) {
-    gf.p2 = lastLbRound[0].winner;
+  // 5. Гранд-финал: Победитель LB3 идет в Гранд-финал
+  if (lb.length > 0 && lb[lb.length - 1][0] && lb[lb.length - 1][0].winner) {
+    gf.p2 = lb[lb.length - 1][0].winner;
   }
 }
   
