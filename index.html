@@ -1082,20 +1082,28 @@ function matchHTML(match) {
   const score = match.score || { p1: '', p2: '' };
   let html = '<div class="match">' + slotHTML(match.p1, p1W, match.id, 'p1') + '<div class="divider"></div>' + slotHTML(match.p2, p2W, match.id, 'p2');
   
-  if (canPlay) {
+  // Если есть счёт, показываем его всегда, даже если один из игроков TBD
+  if (match.score) {
+    if (canPlay && isAdmin()) {
+      // Если оба игрока есть и мы админ — показываем форму для редактирования
+      html += '<div class="score-box">';
+      html += '<input type="number" min="0" max="2" class="score-input" id="score-' + match.id + '-1" value="' + (match.score.p1 !== '' ? match.score.p1 : '') + '" placeholder="0" />';
+      html += '<span class="score-sep">:</span>';
+      html += '<input type="number" min="0" max="2" class="score-input" id="score-' + match.id + '-2" value="' + (match.score.p2 !== '' ? match.score.p2 : '') + '" placeholder="0" />';
+      html += '<button class="btn score-save" onclick="setScore(\'' + match.id + '\')">OK</button>';
+      html += '</div>';
+    } else {
+      // Если не админ или не оба игрока — показываем просто текст счёта
+      html += '<div class="score-display">' + match.score.p1 + ' : ' + match.score.p2 + '</div>';
+    }
+  } else if (canPlay && isAdmin()) {
+    // Если счёта нет, но оба игрока есть — показываем форму ввода
     html += '<div class="score-box">';
-    html += '<input type="number" min="0" max="2" class="score-input" id="score-' + match.id + '-1" value="' + (score.p1 !== '' ? score.p1 : '') + '" placeholder="0" />';
+    html += '<input type="number" min="0" max="2" class="score-input" id="score-' + match.id + '-1" value="" placeholder="0" />';
     html += '<span class="score-sep">:</span>';
-    html += '<input type="number" min="0" max="2" class="score-input" id="score-' + match.id + '-2" value="' + (score.p2 !== '' ? score.p2 : '') + '" placeholder="0" />';
+    html += '<input type="number" min="0" max="2" class="score-input" id="score-' + match.id + '-2" value="" placeholder="0" />';
     html += '<button class="btn score-save" onclick="setScore(\'' + match.id + '\')">OK</button>';
     html += '</div>';
-    
-    // Кнопка Драфт ТОЛЬКО для админа
-    if (isAdmin()) {
-        html += '<button class="btn" style="width: 100%; background: #22c55e; border-radius: 0; font-size: 11px; padding: 5px;" onclick="startDraftForMatch(\'' + match.id + '\')">▶️ Драфт</button>';
-    }
-  } else if (match.winner && match.score) {
-    html += '<div class="score-display">' + match.score.p1 + ' : ' + match.score.p2 + '</div>';
   }
   html += '</div>';
   return html;
@@ -2214,7 +2222,7 @@ function setScoreDouble(matchId) {
   match.winner = s1 > s2 ? match.p1 : match.p2;
   match.loser = s1 > s2 ? match.p2 : match.p1;
 
-  saveState(); 
+  saveState(); // <--- ВАЖНО: сохраняем счёт в базу!
   renderDoubleBracket();
 }
 
@@ -2235,10 +2243,8 @@ window.handleDrop = function(event, targetMatchId, targetSlotKey) {
   
   const sourceMatchId = draggedItem.matchId;
   const sourceSlotKey = draggedItem.slotKey;
-  
   draggedItem = null;
 
-  // Находим матчи в сетке
   function findMatch(id) {
     let found = null;
     if (state.bracket.type === 'double') {
@@ -2261,20 +2267,19 @@ window.handleDrop = function(event, targetMatchId, targetSlotKey) {
   targetMatch[targetSlotKey] = sourceMatch[sourceSlotKey];
   sourceMatch[sourceSlotKey] = temp;
 
-  // Очищаем счёт у этих матчей, так как состав изменился
-  sourceMatch.score = null;
-  sourceMatch.winner = null;
-  targetMatch.score = null;
-  targetMatch.winner = null;
+  // НЕ сбрасываем счёт и победителя! (убираем эти строки)
+  // sourceMatch.score = null;
+  // sourceMatch.winner = null;
+  // targetMatch.score = null;
+  // targetMatch.winner = null;
 
-  // Сохраняем и перерисовываем
   saveState();
   if (state.bracket.type === 'double') {
     renderDoubleBracket();
   } else {
     renderBracket();
   }
-};  
+};
 init();
 </script>
 </body>
