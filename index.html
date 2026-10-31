@@ -2212,9 +2212,7 @@ function recalculateDoubleBracket() {
         const s2 = m.score.p2 || 0;
         if (s1 > s2) { m.winner = m.p1; m.loser = m.p2; }
         else if (s2 > s1) { m.winner = m.p2; m.loser = m.p1; }
-      } else {
-        m.winner = null; m.loser = null;
-      }
+      } else { m.winner = null; m.loser = null; }
     });
   });
 
@@ -2225,9 +2223,7 @@ function recalculateDoubleBracket() {
         const s2 = m.score.p2 || 0;
         if (s1 > s2) { m.winner = m.p1; m.loser = m.p2; }
         else if (s2 > s1) { m.winner = m.p2; m.loser = m.p1; }
-      } else {
-        m.winner = null; m.loser = null;
-      }
+      } else { m.winner = null; m.loser = null; }
     });
   });
 
@@ -2236,20 +2232,14 @@ function recalculateDoubleBracket() {
     const s2 = gf.score.p2 || 0;
     if (s1 > s2) { gf.winner = gf.p1; gf.loser = gf.p2; }
     else if (s2 > s1) { gf.winner = gf.p2; gf.loser = gf.p1; }
-  } else {
-    gf.winner = null; gf.loser = null;
-  }
+  } else { gf.winner = null; gf.loser = null; }
 
-  // 2. ОЧИЩАЕМ СЛОТЫ
-  for (let r = 1; r < wb.length; r++) {
-    wb[r].forEach(m => { m.p1 = null; m.p2 = null; });
-  }
-  for (let r = 0; r < lb.length; r++) {
-    lb[r].forEach(m => { m.p1 = null; m.p2 = null; });
-  }
+  // 2. ОЧИЩАЕМ СЛОТЫ (кроме WB1, где изначально стоят игроки)
+  for (let r = 1; r < wb.length; r++) { wb[r].forEach(m => { m.p1 = null; m.p2 = null; }); }
+  for (let r = 0; r < lb.length; r++) { lb[r].forEach(m => { m.p1 = null; m.p2 = null; }); }
   gf.p1 = null; gf.p2 = null;
 
-  // 3. РАСКИДЫВАЕМ ИГРОКОВ ПО ВЕРХНЕЙ СЕТКЕ (WB)
+  // 3. РАСКИДЫВАЕМ ПО ВЕРХНЕЙ СЕТКЕ (WB)
   for (let r = 1; r < wb.length; r++) {
     for (let i = 0; i < wb[r].length; i++) {
       const prev1 = wb[r-1][i*2];
@@ -2259,38 +2249,16 @@ function recalculateDoubleBracket() {
     }
   }
 
-  const wbFinal = wb[wb.length - 1][0];
-  if (wbFinal && wbFinal.winner) gf.p1 = wbFinal.winner;
+  if (wb[wb.length - 1][0] && wb[wb.length - 1][0].winner) {
+    gf.p1 = wb[wb.length - 1][0].winner;
+  }
 
-  // 4. РАСКИДЫВАЕМ ИГРОКОВ ПО НИЖНЕЙ СЕТКЕ (LB)
-  // Логика классического Double Elimination:
-  // - В LB1 падают проигравшие из WB1.
-  // - Победители LB1 идут в LB2.
-  // - В LB2 падают проигравшие из WB2 (и играют с победителями LB1).
-  // - Победители LB2 идут в LB3.
-  // - В LB3 падают проигравшие из WB Финала.
-  
+  // 4. РАСКИДЫВАЕМ ПО НИЖНЕЙ СЕТКЕ (LB)
   for (let r = 0; r < lb.length; r++) {
     for (let i = 0; i < lb[r].length; i++) {
       const m = lb[r][i];
       
-      // --- Б) Кто идет из предыдущего раунда LB? (Заполняем сначала тех, кто выиграл) ---
-      if (r > 0) {
-        const prev1 = lb[r-1][i*2];
-        const prev2 = lb[r-1][i*2 + 1];
-        
-        if (r % 2 === 1) {
-          // В нечетные раунды LB (1, 3...) победители идут ровно
-          if (prev1 && prev1.winner) m.p1 = prev1.winner;
-          if (prev2 && prev2.winner) m.p2 = prev2.winner;
-        } else {
-          // В четные раунды LB (2, 4...) победители перекрещиваются
-          if (prev1 && prev1.winner) m.p2 = prev1.winner;
-          if (prev2 && prev2.winner) m.p1 = prev2.winner;
-        }
-      }
-      
-      // --- А) Кто падает из Верхней сетки (WB)? (Перезаписываем на нужные места) ---
+      // --- ШАГ 1: Кто падает из Верхней сетки (WB)? ---
       if (r === 0) {
         // В LB1 падают проигравшие из WB1 (парами)
         const m1 = wb[0][i * 2];
@@ -2299,33 +2267,49 @@ function recalculateDoubleBracket() {
         if (m2 && m2.loser) m.p2 = m2.loser;
       } 
       else if (r === 1) {
-        // В LB2 падают проигравшие из WB2. Они встают на свободное место к победителю LB1.
-        // Для 8 игроков: в LB1 было 2 матча, значит в LB2 тоже 2 матча.
-        // В LB1[i] проиграл кто-то, а победитель ушел в LB2[i].
-        // Проигравший из WB2[i] падает в LB2[i].
-        const loserFromWB2 = wb[1] && wb[1][i] ? wb[1][i].loser : null;
-        if (loserFromWB2) {
-           // Ставим его на свободный слот. Если p1 занят победителем LB1, ставим в p2.
-           if (!m.p1) m.p1 = loserFromWB2;
-           else m.p2 = loserFromWB2;
-        }
+        // В LB2 падают проигравшие из WB2
+        const wbMatch = wb[1][i];
+        if (wbMatch && wbMatch.loser) m.p2 = wbMatch.loser;
       }
-      else if (r === 2) {
-        // В LB3 (полуфинал нижней сетки) падает проигравший из Финала WB (WB[wb.length - 1])
-        // У нас всего 1 матч в LB3 (i=0), туда падает 1 проигравший.
-        if (i === 0 && wb.length > 1) {
-          const wbFinalMatch = wb[wb.length - 1][0];
-          if (wbFinalMatch && wbFinalMatch.loser) {
-            if (!m.p1) m.p1 = wbFinalMatch.loser;
-            else m.p2 = wbFinalMatch.loser;
+      else if (r === 2 && i === 0) {
+        // В LB3 (полуфинал нижней сетки) падает проигравший из Финала WB
+        const wbFinalMatch = wb[wb.length - 1][0];
+        if (wbFinalMatch && wbFinalMatch.loser) m.p2 = wbFinalMatch.loser;
+      }
+      // В остальные четные раунды (если участников больше) проигравшие падают на p2
+      else if (r % 2 === 0 && r > 2) {
+         const wbMatch = wb[r/2] && wb[r/2][i];
+         if (wbMatch && wbMatch.loser) m.p2 = wbMatch.loser;
+      }
+
+      // --- ШАГ 2: Кто идет из предыдущего раунда LB? ---
+      if (r > 0) {
+        const prev1 = lb[r-1][i*2];
+        const prev2 = lb[r-1][i*2 + 1];
+        
+        if (r % 2 === 1) {
+          // В нечетные раунды LB (1, 3) победители идут ровно
+          if (prev1 && prev1.winner) m.p1 = prev1.winner;
+          if (prev2 && prev2.winner) m.p2 = prev2.winner;
+        } else {
+          // В четные раунды LB (2, 4) победители перекрещиваются
+          // И ставим их так, чтобы они не перезаписали проигравших из WB
+          if (prev1 && prev1.winner) {
+            if (!m.p1) m.p1 = prev1.winner; else m.p2 = prev1.winner;
+          }
+          if (prev2 && prev2.winner) {
+            if (!m.p1) m.p1 = prev2.winner; else m.p2 = prev2.winner;
           }
         }
       }
     }
   }
 
+  // Победитель финала LB идет в Гранд-финал
   const lbFinal = lb[lb.length - 1][0];
-  if (lbFinal && lbFinal.winner) gf.p2 = lbFinal.winner;
+  if (lbFinal && lbFinal.winner) {
+    gf.p2 = lbFinal.winner;
+  }
 }
 
 init();
