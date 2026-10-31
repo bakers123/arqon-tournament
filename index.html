@@ -2178,14 +2178,9 @@ function setScoreDouble(matchId) {
   if (!isAdmin()) return;
   
   let match = null;
-  let bracketType = '';
-  
-  // Ищем матч в WB
-  state.bracket.wb.forEach(r => r.forEach(m => { if (m.id === matchId) { match = m; bracketType = 'wb'; } }));
-  // Ищем в LB
-  state.bracket.lb.forEach(r => r.forEach(m => { if (m.id === matchId) { match = m; bracketType = 'lb'; } }));
-  // Ищем в GF
-  if (state.bracket.gf.id === matchId) { match = state.bracket.gf; bracketType = 'gf'; }
+  state.bracket.wb.forEach(r => r.forEach(m => { if (m.id === matchId) match = m; }));
+  state.bracket.lb.forEach(r => r.forEach(m => { if (m.id === matchId) match = m; }));
+  if (state.bracket.gf.id === matchId) match = state.bracket.gf;
   
   if (!match) return;
 
@@ -2195,73 +2190,53 @@ function setScoreDouble(matchId) {
   if (s1 === s2) { alert('Ничья невозможна в Bo3.'); return; }
   if (s1 > 2 || s2 > 2) { alert('Максимум 2 карты в Bo3'); return; }
 
-  // Записываем счёт в текущий матч
   match.score = { p1: s1, p2: s2 };
   match.winner = s1 > s2 ? match.p1 : match.p2;
   match.loser = s1 > s2 ? match.p2 : match.p1;
 
-  // Запускаем полную перепроверку всей сетки!
-  function recalculateDoubleBracket() {
+  recalculateDoubleBracket();
+  saveState(); 
+  renderDoubleBracket();
+}
+
+function recalculateDoubleBracket() {
   const wb = state.bracket.wb;
   const lb = state.bracket.lb;
   const gf = state.bracket.gf;
 
-  // 1. ПРИНУДИТЕЛЬНО ОПРЕДЕЛЯЕМ ПОБЕДИТЕЛЕЙ И ПРОИГРАВШИХ ТАМ, ГДЕ ЕСТЬ СЧЕТ
-  // Проходим по верхней сетке
+  // 1. ПРИНУДИТЕЛЬНО ОПРЕДЕЛЯЕМ ПОБЕДИТЕЛЕЙ И ПРОИГРАВШИХ
   wb.forEach(round => {
     round.forEach(m => {
       if (m.score && m.p1 && m.p2) {
         const s1 = m.score.p1 || 0;
         const s2 = m.score.p2 || 0;
-        if (s1 > s2) {
-          m.winner = m.p1; m.loser = m.p2;
-        } else if (s2 > s1) {
-          m.winner = m.p2; m.loser = m.p1;
-        }
-      } else {
-        // Если счета нет — сбрасываем победителя
-        m.winner = null; m.loser = null;
-      }
+        if (s1 > s2) { m.winner = m.p1; m.loser = m.p2; }
+        else if (s2 > s1) { m.winner = m.p2; m.loser = m.p1; }
+      } else { m.winner = null; m.loser = null; }
     });
   });
 
-  // Проходим по нижней сетке
   lb.forEach(round => {
     round.forEach(m => {
       if (m.score && m.p1 && m.p2) {
         const s1 = m.score.p1 || 0;
         const s2 = m.score.p2 || 0;
-        if (s1 > s2) {
-          m.winner = m.p1; m.loser = m.p2;
-        } else if (s2 > s1) {
-          m.winner = m.p2; m.loser = m.p1;
-        }
-      } else {
-        m.winner = null; m.loser = null;
-      }
+        if (s1 > s2) { m.winner = m.p1; m.loser = m.p2; }
+        else if (s2 > s1) { m.winner = m.p2; m.loser = m.p1; }
+      } else { m.winner = null; m.loser = null; }
     });
   });
 
-  // Гранд-финал
   if (gf.score && gf.p1 && gf.p2) {
     const s1 = gf.score.p1 || 0;
     const s2 = gf.score.p2 || 0;
-    if (s1 > s2) {
-      gf.winner = gf.p1; gf.loser = gf.p2;
-    } else if (s2 > s1) {
-      gf.winner = gf.p2; gf.loser = gf.p1;
-    }
-  } else {
-    gf.winner = null; gf.loser = null;
-  }
+    if (s1 > s2) { gf.winner = gf.p1; gf.loser = gf.p2; }
+    else if (s2 > s1) { gf.winner = gf.p2; gf.loser = gf.p1; }
+  } else { gf.winner = null; gf.loser = null; }
 
   // 2. ОЧИЩАЕМ СЛОТЫ ДЛЯ СЛЕДУЮЩИХ РАУНДОВ
-  for (let r = 1; r < wb.length; r++) {
-    wb[r].forEach(m => { m.p1 = null; m.p2 = null; });
-  }
-  for (let r = 0; r < lb.length; r++) {
-    lb[r].forEach(m => { m.p1 = null; m.p2 = null; });
-  }
+  for (let r = 1; r < wb.length; r++) { wb[r].forEach(m => { m.p1 = null; m.p2 = null; }); }
+  for (let r = 0; r < lb.length; r++) { lb[r].forEach(m => { m.p1 = null; m.p2 = null; }); }
   gf.p1 = null; gf.p2 = null;
 
   // 3. РАСКИДЫВАЕМ ИГРОКОВ ПО ВЕРХНЕЙ СЕТКЕ (WB)
@@ -2270,17 +2245,13 @@ function setScoreDouble(matchId) {
       const m = wb[r][i];
       const prev1 = wb[r-1][i*2];
       const prev2 = wb[r-1][i*2 + 1];
-      
       if (prev1 && prev1.winner) m.p1 = prev1.winner;
       if (prev2 && prev2.winner) m.p2 = prev2.winner;
     }
   }
 
-  // Победитель финала WB идет в Гранд-финал
   const wbFinal = wb[wb.length - 1][0];
-  if (wbFinal && wbFinal.winner) {
-    gf.p1 = wbFinal.winner;
-  }
+  if (wbFinal && wbFinal.winner) gf.p1 = wbFinal.winner;
 
   // 4. РАСКИДЫВАЕМ ИГРОКОВ ПО НИЖНЕЙ СЕТКЕ (LB)
   for (let r = 0; r < lb.length; r++) {
@@ -2290,17 +2261,18 @@ function setScoreDouble(matchId) {
       // А) Кто падает из Верхней сетки (WB)?
       if (r % 2 === 0) { 
         const wbRoundIdx = r / 2;
-        if (wbRoundIdx < wb.length && wb[wbRoundIdx][i]) {
+        
+        // В ПЕРВОМ раунде LB (r = 0) проигравшие из WB1 падают парами в матчи LB1
+        if (r === 0 && wbRoundIdx === 0 && wb[0]) {
+           const m1 = wb[0][i * 2];
+           const m2 = wb[0][i * 2 + 1];
+           if (m1 && m1.loser) m.p1 = m1.loser;
+           if (m2 && m2.loser) m.p2 = m2.loser;
+        } 
+        // В остальных четных раундах проигравшие падают по одному
+        else if (wbRoundIdx < wb.length && wb[wbRoundIdx][i]) {
           const loserFromWB = wb[wbRoundIdx][i].loser;
-          if (loserFromWB) {
-            if (r === 0) {
-              // В первом раунде LB кидаем на свободное место
-              if (!m.p1) m.p1 = loserFromWB; else m.p2 = loserFromWB;
-            } else {
-              // В остальных четных раундах LB кидаем на нижнюю строчку
-              m.p2 = loserFromWB; 
-            }
-          }
+          if (loserFromWB) m.p2 = loserFromWB; 
         }
       }
 
@@ -2309,12 +2281,10 @@ function setScoreDouble(matchId) {
         const prev1 = lb[r-1][i*2];
         const prev2 = lb[r-1][i*2 + 1];
         
-        // В нечетные раунды LB (1, 3, 5...) играют победители предыдущих матчей LB
         if (r % 2 === 1) {
           if (prev1 && prev1.winner) m.p1 = prev1.winner;
           if (prev2 && prev2.winner) m.p2 = prev2.winner;
         } else {
-          // В четные раунды (куда падают из WB) победители LB перекрещиваются
           if (prev1 && prev1.winner) m.p2 = prev1.winner;
           if (prev2 && prev2.winner) m.p1 = prev2.winner;
         }
@@ -2322,11 +2292,8 @@ function setScoreDouble(matchId) {
     }
   }
 
-  // Победитель финала LB идет в Гранд-финал
   const lbFinal = lb[lb.length - 1][0];
-  if (lbFinal && lbFinal.winner) {
-    gf.p2 = lbFinal.winner;
-  }
+  if (lbFinal && lbFinal.winner) gf.p2 = lbFinal.winner;
 }
 
 init();
