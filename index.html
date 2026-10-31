@@ -2449,15 +2449,15 @@ function setScoreDouble(matchId) {
 let draggedItem = null;
 
 window.handleDragStart = function(event, matchId, slotKey) {
-  if (!isAdmin()) return; // Только админ может двигать
+  if (!isAdmin()) return;
   draggedItem = { matchId, slotKey };
   event.dataTransfer.effectAllowed = 'move';
   event.target.classList.add('dragging');
 };
-  // ==========================================
+
+// ==========================================
 // DRAG & DROP ИГРОКОВ В КОМАНДЫ (5x5)
 // ==========================================
-
 window.dragPlayerFromPool = function(event, accountId) {
   if (!isAdmin()) return;
   event.dataTransfer.setData('text/plain', accountId);
@@ -2477,7 +2477,6 @@ window.handleDropOnTeam = function(event, teamId) {
   if (!state.freeAgents) state.freeAgents = [];
   if (!state.teams) state.teams = [];
 
-  // Если перетащили из пула
   if (source === 'pool') {
     const player = state.freeAgents.find(p => p.account_id === accountId);
     if (!player) return;
@@ -2486,13 +2485,8 @@ window.handleDropOnTeam = function(event, teamId) {
     if (!team) return;
     if (team.players.length >= 5) { alert('В команде уже 5 игроков!'); return; }
     
-    // Удаляем из пула и добавляем в команду
     state.freeAgents = state.freeAgents.filter(p => p.account_id !== accountId);
     team.players.push(player);
-  } 
-  // Если перетащили из другой команды (меняем местами или переносим)
-  else if (source === 'team') {
-    // Логика для переноса между командами (опционально)
   }
 
   saveState();
@@ -2527,21 +2521,14 @@ window.handleDrop = function(event, targetMatchId, targetSlotKey) {
 
   if (!sourceMatch || !targetMatch) return;
 
-  // Берем игрока из старого слота
   const playerToMove = sourceMatch[sourceSlotKey];
   if (!playerToMove) return;
 
-  // Делаем копию игрока (чтобы не ссылаться на один и тот же объект)
   const playerCopy = JSON.parse(JSON.stringify(playerToMove));
-  
-  // В старом слоте ставим флаг "призрака", чтобы он был полупрозрачным
   sourceMatch[sourceSlotKey].isGhost = true;
-
-  // В новый слот кидаем чистую копию (без флага)
   delete playerCopy.isGhost;
   targetMatch[targetSlotKey] = playerCopy;
 
-  // Сохраняем и перерисовываем
   saveState();
   if (state.bracket.type === 'double') {
     renderDoubleBracket();
@@ -2549,6 +2536,18 @@ window.handleDrop = function(event, targetMatchId, targetSlotKey) {
     renderBracket();
   }
 };
+
+// ==========================================
+// УДАЛЕНИЕ ЗАПИСЕЙ (НОВОСТИ, РАСПИСАНИЕ, РЕЗУЛЬТАТЫ)
+// ==========================================
+async function removeNews(id) {
+  if (!isAdmin()) return;
+  if (!confirm('Удалить эту новость?')) return;
+  await supabaseClient.from('news').delete().eq('id', id);
+  loadNews();
+}
+window.removeNews = removeNews;
+
 async function removeSchedule(id) {
   if (!isAdmin()) return;
   if (!confirm('Удалить этот матч из расписания?')) return;
@@ -2556,7 +2555,8 @@ async function removeSchedule(id) {
   loadSchedule();
 }
 window.removeSchedule = removeSchedule;
-  async function removeResult(id) {
+
+async function removeResult(id) {
   if (!isAdmin()) return;
   if (!confirm('Удалить эти результаты?')) return;
   await supabaseClient.from('results').delete().eq('id', id);
