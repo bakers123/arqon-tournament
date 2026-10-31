@@ -9,6 +9,10 @@
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <style>
+   .slot[draggable="true"] { cursor: grab; }
+  .slot[draggable="true"]:active { cursor: grabbing; }
+  .slot.drag-over { background: rgba(122,59,255,0.3) !important; border: 1px dashed var(--accent); }
+  .slot.dragging { opacity: 0.5; }
     :root {
     --bg:       #09090B;
     --panel:    #15151A;
@@ -1076,8 +1080,7 @@ function matchHTML(match) {
   const p1W = match.p1 && match.winner && match.winner.id === match.p1.id;
   const p2W = match.p2 && match.winner && match.winner.id === match.p2.id;
   const score = match.score || { p1: '', p2: '' };
-  
-  let html = '<div class="match">' + slotHTML(match.p1, p1W) + '<div class="divider"></div>' + slotHTML(match.p2, p2W);
+  let html = '<div class="match">' + slotHTML(match.p1, p1W, match.id, 'p1') + '<div class="divider"></div>' + slotHTML(match.p2, p2W, match.id, 'p2');
   
   if (canPlay) {
     html += '<div class="score-box">';
@@ -1098,12 +1101,27 @@ function matchHTML(match) {
   return html;
 }
 
-function slotHTML(player, isWinner) {
-  if (!player) return '<div class="slot"><span class="tbd">TBD</span></div>';
-  return '<div class="slot ' + (isWinner ? 'winner' : '') + '">' +
-    (player.avatar ? '<img src="' + player.avatar + '" onerror="this.style.display=\'none\'">' : '') +
-    '<span>' + escapeHtml(player.name) + '</span>' +
-  '</div>';
+function slotHTML(player, isWinner, matchId, slotKey) {
+  if (!player) {
+    // Пустой слот тоже должен принимать игроков
+    return `<div class="slot" 
+                 ondragover="event.preventDefault(); this.classList.add('drag-over');" 
+                 ondragleave="this.classList.remove('drag-over');" 
+                 ondrop="handleDrop(event, '${matchId}', '${slotKey}')">
+              <span class="tbd">TBD</span>
+            </div>`;
+  }
+  
+  // Слот с игроком
+  return `<div class="slot ${isWinner ? 'winner' : ''}" 
+               draggable="true" 
+               ondragstart="handleDragStart(event, '${matchId}', '${slotKey}')"
+               ondragover="event.preventDefault(); this.classList.add('drag-over');" 
+               ondragleave="this.classList.remove('drag-over');" 
+               ondrop="handleDrop(event, '${matchId}', '${slotKey}')">
+            ${player.avatar ? '<img src="' + player.avatar + '" onerror="this.style.display=\'none\'">' : ''}
+            <span>${escapeHtml(player.name)}</span>
+          </div>`;
 }
 
 function renderBracket() {
@@ -2196,126 +2214,67 @@ function setScoreDouble(matchId) {
   match.winner = s1 > s2 ? match.p1 : match.p2;
   match.loser = s1 > s2 ? match.p2 : match.p1;
 
-  recalculateDoubleBracket();
   saveState(); 
   renderDoubleBracket();
 }
 
-function recalculateDoubleBracket() {
-  const wb = state.bracket.wb;
-  const lb = state.bracket.lb;
-  const gf = state.bracket.gf;
+let draggedItem = null;
 
-  // 1. ПРИНУДИТЕЛЬНО ВЫЧИСЛЯЕМ ПОБЕДИТЕЛЕЙ И ПРОИГРАВШИХ
-  wb.forEach(round => {
-    round.forEach(m => {
-      if (m.score && m.p1 && m.p2) {
-        const s1 = m.score.p1 || 0;
-        const s2 = m.score.p2 || 0;
-        if (s1 > s2) { m.winner = m.p1; m.loser = m.p2; }
-        else if (s2 > s1) { m.winner = m.p2; m.loser = m.p1; }
-      } else { m.winner = null; m.loser = null; }
-    });
-  });
+window.handleDragStart = function(event, matchId, slotKey) {
+  if (!isAdmin()) return; // Только админ может двигать
+  draggedItem = { matchId, slotKey };
+  event.dataTransfer.effectAllowed = 'move';
+  event.target.classList.add('dragging');
+};
 
-  lb.forEach(round => {
-    round.forEach(m => {
-      if (m.score && m.p1 && m.p2) {
-        const s1 = m.score.p1 || 0;
-        const s2 = m.score.p2 || 0;
-        if (s1 > s2) { m.winner = m.p1; m.loser = m.p2; }
-        else if (s2 > s1) { m.winner = m.p2; m.loser = m.p1; }
-      } else { m.winner = null; m.loser = null; }
-    });
-  });
-
-  if (gf.score && gf.p1 && gf.p2) {
-    const s1 = gf.score.p1 || 0;
-    const s2 = gf.score.p2 || 0;
-    if (s1 > s2) { gf.winner = gf.p1; gf.loser = gf.p2; }
-    else if (s2 > s1) { gf.winner = gf.p2; gf.loser = gf.p1; }
-  } else { gf.winner = null; gf.loser = null; }
-
-  // 2. ОЧИЩАЕМ СЛОТЫ
-  for (let r = 1; r < wb.length; r++) { wb[r].forEach(m => { m.p1 = null; m.p2 = null; }); }
-  for (let r = 0; r < lb.length; r++) { lb[r].forEach(m => { m.p1 = null; m.p2 = null; }); }
-  gf.p1 = null; gf.p2 = null;
-
-  // 3. РАСКИДЫВАЕМ ПО ВЕРХНЕЙ СЕТКЕ (WB)
-  for (let r = 1; r < wb.length; r++) {
-    for (let i = 0; i < wb[r].length; i++) {
-      const prev1 = wb[r-1][i*2];
-      const prev2 = wb[r-1][i*2 + 1];
-      if (prev1 && prev1.winner) wb[r][i].p1 = prev1.winner;
-      if (prev2 && prev2.winner) wb[r][i].p2 = prev2.winner;
-    }
-  }
-  if (wb[wb.length - 1][0] && wb[wb.length - 1][0].winner) {
-    gf.p1 = wb[wb.length - 1][0].winner;
-  }
-
-  // 4. РАСКИДЫВАЕМ ПО НИЖНЕЙ СЕТКЕ (LB) - АВТОМАТИЧЕСКАЯ ЛОГИКА
-  // Сначала собираем ВСЕХ проигравших из WB по раундам
-  const wbLosers = {};
-  for (let r = 0; r < wb.length; r++) {
-    wbLosers[r] = [];
-    wb[r].forEach(m => { if (m && m.loser) wbLosers[r].push(m.loser); });
-  }
-
-  for (let r = 0; r < lb.length; r++) {
-    for (let i = 0; i < lb[r].length; i++) {
-      const m = lb[r][i];
-      
-      // --- ШАГ 1: Кто падает из Верхней сетки (WB)? ---
-      // Падают только в ЧЕТНЫЕ раунды LB (0, 2, 4...)
-      if (r % 2 === 0) {
-        const wbRoundIdx = r / 2;
-        
-        if (r === 0) {
-          // В LB1 падают ВСЕ проигравшие из WB1 (по 2 человека в матч)
-          const loser1 = wbLosers[0] ? wbLosers[0][i*2] : null;
-          const loser2 = wbLosers[0] ? wbLosers[0][i*2 + 1] : null;
-          if (loser1) m.p1 = loser1;
-          if (loser2) m.p2 = loser2;
-        } else {
-          // В остальные четные раунды (LB3, LB5) падают по одному
-          if (wbLosers[wbRoundIdx] && wbLosers[wbRoundIdx][i]) {
-            m.p2 = wbLosers[wbRoundIdx][i]; // Кидаем на нижний слот
-          }
-        }
-      }
-
-      // --- ШАГ 2: Кто идет из предыдущего раунда LB? ---
-      if (r > 0) {
-        const prev1 = lb[r-1][i*2];
-        const prev2 = lb[r-1][i*2 + 1];
-        
-        if (r % 2 === 1) {
-          // В нечетные раунды LB (1, 3...) победители идут ровно на p1
-          if (prev1 && prev1.winner) m.p1 = prev1.winner;
-          if (prev2 && prev2.winner) {
-            if (!m.p1) m.p1 = prev2.winner; else m.p2 = prev2.winner;
-          }
-        } else {
-          // В четные раунды (2, 4...) победители перекрещиваются
-          if (prev1 && prev1.winner) {
-            if (!m.p1) m.p1 = prev1.winner; else m.p2 = prev1.winner;
-          }
-          if (prev2 && prev2.winner) {
-            if (!m.p1) m.p1 = prev2.winner; else m.p2 = prev2.winner;
-          }
-        }
-      }
-    }
-  }
-
-  // 5. ГРАНД-ФИНАЛ
-  const lbFinal = lb[lb.length - 1][0];
-  if (lbFinal && lbFinal.winner) {
-    gf.p2 = lbFinal.winner;
-  }
-}
+window.handleDrop = function(event, targetMatchId, targetSlotKey) {
+  event.preventDefault();
+  event.target.classList.remove('drag-over');
   
+  if (!isAdmin() || !draggedItem) return;
+  
+  const sourceMatchId = draggedItem.matchId;
+  const sourceSlotKey = draggedItem.slotKey;
+  
+  draggedItem = null;
+
+  // Находим матчи в сетке
+  function findMatch(id) {
+    let found = null;
+    if (state.bracket.type === 'double') {
+      state.bracket.wb.forEach(r => r.forEach(m => { if (m.id === id) found = m; }));
+      state.bracket.lb.forEach(r => r.forEach(m => { if (m.id === id) found = m; }));
+      if (state.bracket.gf.id === id) found = state.bracket.gf;
+    } else {
+      state.bracket.rounds.forEach(r => r.forEach(m => { if (m.id === id) found = m; }));
+    }
+    return found;
+  }
+
+  const sourceMatch = findMatch(sourceMatchId);
+  const targetMatch = findMatch(targetMatchId);
+
+  if (!sourceMatch || !targetMatch) return;
+
+  // Меняем игроков местами
+  const temp = targetMatch[targetSlotKey];
+  targetMatch[targetSlotKey] = sourceMatch[sourceSlotKey];
+  sourceMatch[sourceSlotKey] = temp;
+
+  // Очищаем счёт у этих матчей, так как состав изменился
+  sourceMatch.score = null;
+  sourceMatch.winner = null;
+  targetMatch.score = null;
+  targetMatch.winner = null;
+
+  // Сохраняем и перерисовываем
+  saveState();
+  if (state.bracket.type === 'double') {
+    renderDoubleBracket();
+  } else {
+    renderBracket();
+  }
+};  
 init();
 </script>
 </body>
