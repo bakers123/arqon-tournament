@@ -2263,37 +2263,18 @@ function recalculateDoubleBracket() {
   if (wbFinal && wbFinal.winner) gf.p1 = wbFinal.winner;
 
   // 4. РАСКИДЫВАЕМ ИГРОКОВ ПО НИЖНЕЙ СЕТКЕ (LB)
+  // Логика классического Double Elimination:
+  // - В LB1 падают проигравшие из WB1.
+  // - Победители LB1 идут в LB2.
+  // - В LB2 падают проигравшие из WB2 (и играют с победителями LB1).
+  // - Победители LB2 идут в LB3.
+  // - В LB3 падают проигравшие из WB Финала.
+  
   for (let r = 0; r < lb.length; r++) {
     for (let i = 0; i < lb[r].length; i++) {
       const m = lb[r][i];
       
-      // --- А) Кто падает из Верхней сетки (WB)? ---
-      // В LB падают только в ЧЕТНЫЕ раунды (0, 2, 4...)
-      if (r % 2 === 0) { 
-        // Для LB1 (r=0) проигравшие из WB1 падают парами
-        if (r === 0) {
-          const m1 = wb[0][i * 2];
-          const m2 = wb[0][i * 2 + 1];
-          if (m1 && m1.loser) m.p1 = m1.loser;
-          if (m2 && m2.loser) m.p2 = m2.loser;
-        } 
-        // Для LB3 (r=2), LB4 (r=4) проигравшие падают на нижнюю строчку
-        else {
-          const wbRoundIdx = r / 2; 
-          // Для LB3 (r=2) берем проигравших из WB2 (индекс 1). 
-          // Формула: если матчей LB меньше чем WB, берем индекс по модулю.
-          const wbMatchIdx = i % wb[wbRoundIdx].length; 
-          
-          if (wb[wbRoundIdx] && wb[wbRoundIdx][wbMatchIdx]) {
-            const loserFromWB = wb[wbRoundIdx][wbMatchIdx].loser;
-            if (loserFromWB) {
-              m.p2 = loserFromWB;
-            }
-          }
-        }
-      }
-
-      // --- Б) Кто идет из предыдущего раунда LB? ---
+      // --- Б) Кто идет из предыдущего раунда LB? (Заполняем сначала тех, кто выиграл) ---
       if (r > 0) {
         const prev1 = lb[r-1][i*2];
         const prev2 = lb[r-1][i*2 + 1];
@@ -2306,6 +2287,38 @@ function recalculateDoubleBracket() {
           // В четные раунды LB (2, 4...) победители перекрещиваются
           if (prev1 && prev1.winner) m.p2 = prev1.winner;
           if (prev2 && prev2.winner) m.p1 = prev2.winner;
+        }
+      }
+      
+      // --- А) Кто падает из Верхней сетки (WB)? (Перезаписываем на нужные места) ---
+      if (r === 0) {
+        // В LB1 падают проигравшие из WB1 (парами)
+        const m1 = wb[0][i * 2];
+        const m2 = wb[0][i * 2 + 1];
+        if (m1 && m1.loser) m.p1 = m1.loser;
+        if (m2 && m2.loser) m.p2 = m2.loser;
+      } 
+      else if (r === 1) {
+        // В LB2 падают проигравшие из WB2. Они встают на свободное место к победителю LB1.
+        // Для 8 игроков: в LB1 было 2 матча, значит в LB2 тоже 2 матча.
+        // В LB1[i] проиграл кто-то, а победитель ушел в LB2[i].
+        // Проигравший из WB2[i] падает в LB2[i].
+        const loserFromWB2 = wb[1] && wb[1][i] ? wb[1][i].loser : null;
+        if (loserFromWB2) {
+           // Ставим его на свободный слот. Если p1 занят победителем LB1, ставим в p2.
+           if (!m.p1) m.p1 = loserFromWB2;
+           else m.p2 = loserFromWB2;
+        }
+      }
+      else if (r === 2) {
+        // В LB3 (полуфинал нижней сетки) падает проигравший из Финала WB (WB[wb.length - 1])
+        // У нас всего 1 матч в LB3 (i=0), туда падает 1 проигравший.
+        if (i === 0 && wb.length > 1) {
+          const wbFinalMatch = wb[wb.length - 1][0];
+          if (wbFinalMatch && wbFinalMatch.loser) {
+            if (!m.p1) m.p1 = wbFinalMatch.loser;
+            else m.p2 = wbFinalMatch.loser;
+          }
         }
       }
     }
