@@ -2009,7 +2009,10 @@ async function loadNews() {
       html += `
         <div style="border-bottom: 1px solid var(--border); padding-bottom: 20px; margin-bottom: 20px;">
           <div style="font-size: 12px; color: var(--text-dim); margin-bottom: 5px;">${date}</div>
-          <h3 style="font-size: 18px; margin-bottom: 10px; color: var(--accent);">${escapeHtml(item.title)}</h3>
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <h3 style="font-size: 18px; margin-bottom: 10px; color: var(--accent);">${escapeHtml(item.title)}</h3>
+            ${isAdmin() ? `<button class="btn danger" style="padding: 2px 8px; font-size: 10px;" onclick="removeNews(${item.id})">Удалить</button>` : ''}
+          </div>
           <p style="color: #ccc; line-height: 1.5; margin-bottom: 10px;">${escapeHtml(item.content).replace(/\n/g, '<br>')}</p>
         </div>
       `;
@@ -2035,13 +2038,14 @@ async function loadSchedule() {
             <th style="padding: 10px; color: var(--accent);">Турнир</th>
             <th style="padding: 10px; color: var(--accent);">Матч</th>
             <th style="padding: 10px; color: var(--accent);">Статус</th>
+            <th style="padding: 10px; color: var(--accent);"></th>
           </tr>
         </thead>
         <tbody>
   `;
   
   if (!data || data.length === 0) {
-    html += '<tr><td colspan="4" style="padding: 10px; text-align: center; color: var(--text-dim);">Матчей пока нет.</td></tr>';
+    html += '<tr><td colspan="5" style="padding: 10px; text-align: center; color: var(--text-dim);">Матчей пока нет.</td></tr>';
   } else {
     data.forEach(item => {
       html += `
@@ -2050,6 +2054,7 @@ async function loadSchedule() {
           <td style="padding: 10px;">${escapeHtml(item.tournament)}</td>
           <td style="padding: 10px;">${escapeHtml(item.match_name)}</td>
           <td style="padding: 10px; color: ${item.status === 'Скоро' ? '#22c55e' : 'var(--text-dim)'};">${escapeHtml(item.status)}</td>
+          <td style="padding: 10px;">${isAdmin() ? `<button class="btn danger" style="padding: 2px 8px; font-size: 10px;" onclick="removeSchedule(${item.id})">Удалить</button>` : ''}</td>
         </tr>
       `;
     });
@@ -2060,6 +2065,13 @@ async function loadSchedule() {
 
 window.addNews = addNews;
 window.addSchedule = addSchedule;
+  async function removeNews(id) {
+  if (!isAdmin()) return;
+  if (!confirm('Удалить эту новость?')) return;
+  await supabaseClient.from('news').delete().eq('id', id);
+  loadNews();
+}
+window.removeNews = removeNews;
   // ==========================================
 // РЕЗУЛЬТАТЫ И ПРИЗОВОЙ ФОНД
 // ==========================================
@@ -2120,7 +2132,10 @@ async function loadResults() {
     data.forEach(item => {
       html += `
         <div style="border-bottom: 1px solid var(--border); padding-bottom: 15px; margin-bottom: 15px;">
-          <h3 style="font-size: 16px; color: var(--accent); margin-bottom: 10px;">${escapeHtml(item.tournament_name)}</h3>
+         <div style="display: flex; justify-content: space-between; align-items: center;">
+            <h3 style="font-size: 16px; color: var(--accent); margin-bottom: 10px;">${escapeHtml(item.tournament_name)}</h3>
+            ${isAdmin() ? `<button class="btn danger" style="padding: 2px 8px; font-size: 10px;" onclick="removeResult(${item.id})">Удалить</button>` : ''}
+          </div>
           <div style="display: flex; flex-direction: column; gap: 5px; font-size: 14px;">
             <div style="color: #FFD700;">🥇 1 место: <b>${escapeHtml(item.place_1)}</b></div>
             ${item.place_2 ? `<div style="color: #C0C0C0;">🥈 2 место: <b>${escapeHtml(item.place_2)}</b></div>` : ''}
@@ -2479,6 +2494,20 @@ window.handleDrop = function(event, targetMatchId, targetSlotKey) {
     renderBracket();
   }
 };
+async function removeSchedule(id) {
+  if (!isAdmin()) return;
+  if (!confirm('Удалить этот матч из расписания?')) return;
+  await supabaseClient.from('schedule').delete().eq('id', id);
+  loadSchedule();
+}
+window.removeSchedule = removeSchedule;
+  async function removeResult(id) {
+  if (!isAdmin()) return;
+  if (!confirm('Удалить эти результаты?')) return;
+  await supabaseClient.from('results').delete().eq('id', id);
+  loadResults();
+}
+window.removeResult = removeResult;
   
 init();
 </script>
