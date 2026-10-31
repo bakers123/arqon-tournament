@@ -2173,6 +2173,7 @@ function renderDoubleBracket() {
 }
 
 // Обработка клика по счёту (работает и для сингла, и для дабла)
+// Обработка клика по счёту (работает и для сингла, и для дабла)
 function setScoreDouble(matchId) {
   if (!isAdmin()) return;
   
@@ -2199,18 +2200,20 @@ function setScoreDouble(matchId) {
   match.winner = s1 > s2 ? match.p1 : match.p2;
   match.loser = s1 > s2 ? match.p2 : match.p1;
 
-  // Вместо ручного раскидывания — запускаем полную перепроверку всей сетки!
+  // Запускаем полную перепроверку всей сетки!
   recalculateDoubleBracket();
 
   saveState(); 
   renderDoubleBracket();
 }
-  function recalculateDoubleBracket() {
+
+// Функция пересчета всей сетки
+function recalculateDoubleBracket() {
   const wb = state.bracket.wb;
   const lb = state.bracket.lb;
   const gf = state.bracket.gf;
 
-  // 1. ОЧИЩАЕМ ВСЕ СЛОТЫ (кроме первых матчей WB, где стоят изначальные участники)
+  // 1. ОЧИЩАЕМ ВСЕ СЛОТЫ (кроме самых первых матчей в обеих сетках)
   for (let r = 1; r < wb.length; r++) {
     wb[r].forEach(m => { m.p1 = null; m.p2 = null; });
   }
@@ -2219,82 +2222,72 @@ function setScoreDouble(matchId) {
   }
   gf.p1 = null; gf.p2 = null;
 
-  // 2. ПРОХОДИМ ПО ВЕРХНЕЙ СЕТКЕ И РАСКИДЫВАЕМ ИГРОКОВ
-  for (let r = 0; r < wb.length; r++) {
+  // 2. РАСКИДЫВАЕМ ИГРОКОВ ПО ВЕРХНЕЙ СЕТКЕ (WB)
+  for (let r = 1; r < wb.length; r++) {
     for (let i = 0; i < wb[r].length; i++) {
       const m = wb[r][i];
+      const prev1 = wb[r-1][i*2];
+      const prev2 = wb[r-1][i*2 + 1];
       
-      // Если это не первый раунд, берем победителей из предыдущих матчей
-      if (r > 0) {
-        const prev1 = wb[r-1][i*2];
-        const prev2 = wb[r-1][i*2 + 1];
-        if (prev1 && prev1.winner) m.p1 = prev1.winner;
-        if (prev2 && prev2.winner) m.p2 = prev2.winner;
-      }
-
-      // Если в матче есть оба игрока и есть победитель — раскидываем дальше
-      if (m.p1 && m.p2 && m.winner) {
-        // Победитель идет в след. раунд WB (сделаем это на следующей итерации цикла, когда будем читать m.winner)
-        
-        // Проигравший падает в LB
-        const lbRoundIdx = (r === 0) ? 0 : (r * 2);
-        if (lbRoundIdx < lb.length) {
-          let lbMatchIdx = Math.floor(i / 2);
-          let targetMatch = lb[lbRoundIdx][lbMatchIdx];
-          
-          if (targetMatch) {
-            if (r === 0) {
-              // В первом раунде LB кидаем на свободное место
-              if (!targetMatch.p1) targetMatch.p1 = m.loser;
-              else targetMatch.p2 = m.loser;
-            } else {
-              // В остальных раундах LB кидаем на специальную позицию (ожидаем падения из WB)
-              targetMatch.p2 = m.loser;
-            }
-          }
-        }
-      }
+      // Победители предыдущих матчей идут сюда
+      if (prev1 && prev1.winner) m.p1 = prev1.winner;
+      if (prev2 && prev2.winner) m.p2 = prev2.winner;
     }
   }
 
-  // 3. ПРОХОДИМ ПО НИЖНЕЙ СЕТКЕ
-  for (let r = 0; r < lb.length; r++) {
-    for (let i = 0; i < lb[r].length; i++) {
-      const m = lb[r][i];
-      
-      // Если это не первый раунд, берем победителей из предыдущих матчей LB
-      if (r > 0) {
-        const prev1 = lb[r-1][i*2];
-        const prev2 = lb[r-1][i*2 + 1];
-        
-        // Логика перекрестного посева в LB (чтобы не было рематчей)
-        if (r % 2 === 1) {
-          if (prev1 && prev1.winner) m.p1 = prev1.winner;
-          if (prev2 && prev2.winner) m.p2 = prev2.winner;
-        } else {
-          if (prev1 && prev1.winner) m.p2 = prev1.winner;
-          if (prev2 && prev2.winner) m.p1 = prev2.winner;
-        }
-      }
-
-      // Победитель LB идет в следующий раунд (или в гранд-финал)
-      if (m.p1 && m.p2 && m.winner) {
-        if (r + 1 < lb.length) {
-          // Победитель уйдет дальше при следующем проходе цикла
-        } else {
-          gf.p2 = m.winner;
-        }
-      }
-    }
-  }
-
-  // 4. ВЕРХНЯЯ СЕТКА: ФИНАЛ -> ГРАНД-ФИНАЛ
+  // Победитель финала WB идет в Гранд-финал
   const wbFinal = wb[wb.length - 1][0];
   if (wbFinal && wbFinal.winner) {
     gf.p1 = wbFinal.winner;
   }
+
+  // 3. РАСКИДЫВАЕМ ИГРОКОВ ПО НИЖНЕЙ СЕТКЕ (LB)
+  for (let r = 0; r < lb.length; r++) {
+    for (let i = 0; i < lb[r].length; i++) {
+      const m = lb[r][i];
+      
+      // А) Кто падает из Верхней сетки (WB)?
+      if (r % 2 === 0) { 
+        // В четные раунды LB (0, 2, 4...) падают проигравшие из WB
+        const wbRoundIdx = r / 2;
+        if (wbRoundIdx < wb.length && wb[wbRoundIdx][i]) {
+          const loserFromWB = wb[wbRoundIdx][i].loser;
+          if (loserFromWB) {
+            // В первом раунде LB кидаем на свободное место, в остальных — на нижнюю строчку
+            if (r === 0) {
+              if (!m.p1) m.p1 = loserFromWB; else m.p2 = loserFromWB;
+            } else {
+              m.p2 = loserFromWB; 
+            }
+          }
+        }
+      }
+
+      // Б) Кто идет из предыдущего раунда LB?
+      if (r > 0) {
+        const prev1 = lb[r-1][i*2];
+        const prev2 = lb[r-1][i*2 + 1];
+        
+        // В нечетные раунды LB (1, 3, 5...) играют победители предыдущих матчей LB
+        if (r % 2 === 1) {
+          if (prev1 && prev1.winner) m.p1 = prev1.winner;
+          if (prev2 && prev2.winner) m.p2 = prev2.winner;
+        } else {
+          // В четные раунды (куда падают из WB) победители LB перекрещиваются
+          if (prev1 && prev1.winner) m.p2 = prev1.winner;
+          if (prev2 && prev2.winner) m.p1 = prev2.winner;
+        }
+      }
+    }
+  }
+
+  // Победитель финала LB идет в Гранд-финал
+  const lbFinal = lb[lb.length - 1][0];
+  if (lbFinal && lbFinal.winner) {
+    gf.p2 = lbFinal.winner;
+  }
 }
-  
+
 init();
 </script>
 </body>
