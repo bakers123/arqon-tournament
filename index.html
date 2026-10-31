@@ -2258,49 +2258,43 @@ function recalculateDoubleBracket() {
     for (let i = 0; i < lb[r].length; i++) {
       const m = lb[r][i];
       
-      // --- ШАГ 1: Кто падает из Верхней сетки (WB)? ---
+      // --- ШАГ 1: Сначала забираем победителей из предыдущего раунда LB ---
+      if (r > 0) {
+        const prev1 = lb[r-1][i*2];
+        const prev2 = lb[r-1][i*2 + 1];
+        
+        if (r % 2 === 1) {
+          // В нечетные раунды LB (1, 3...) победители идут ровно
+          if (prev1 && prev1.winner) m.p1 = prev1.winner;
+          if (prev2 && prev2.winner) m.p2 = prev2.winner;
+        } else {
+          // В четные раунды LB (2, 4...) победители перекрещиваются
+          // Ставим их на p1 (верхний слот), чтобы оставить p2 для падающих из WB
+          if (prev1 && prev1.winner) m.p1 = prev1.winner;
+          if (prev2 && prev2.winner) {
+             if (!m.p1) m.p1 = prev2.winner; else m.p2 = prev2.winner;
+          }
+        }
+      }
+
+      // --- ШАГ 2: Затем кидаем проигравших из Верхней сетки (WB) ---
       if (r === 0) {
-        // В LB1 падают проигравшие из WB1 (парами)
+        // В LB1 падают проигравшие из WB1 (парами на p1 и p2)
         const m1 = wb[0][i * 2];
         const m2 = wb[0][i * 2 + 1];
         if (m1 && m1.loser) m.p1 = m1.loser;
         if (m2 && m2.loser) m.p2 = m2.loser;
       } 
       else if (r === 1) {
-        // В LB2 падают проигравшие из WB2
-        const wbMatch = wb[1][i];
+        // В LB2 падают проигравшие из WB2. 
+        // Победитель LB1 уже сидит на p1. Кидаем проигравшего WB2 на p2.
+        const wbMatch = wb[1] && wb[1][i];
         if (wbMatch && wbMatch.loser) m.p2 = wbMatch.loser;
       }
       else if (r === 2 && i === 0) {
-        // В LB3 (полуфинал нижней сетки) падает проигравший из Финала WB
+        // В LB3 (полуфинал) падает проигравший из Финала WB
         const wbFinalMatch = wb[wb.length - 1][0];
         if (wbFinalMatch && wbFinalMatch.loser) m.p2 = wbFinalMatch.loser;
-      }
-      // В остальные четные раунды (если участников больше) проигравшие падают на p2
-      else if (r % 2 === 0 && r > 2) {
-         const wbMatch = wb[r/2] && wb[r/2][i];
-         if (wbMatch && wbMatch.loser) m.p2 = wbMatch.loser;
-      }
-
-      // --- ШАГ 2: Кто идет из предыдущего раунда LB? ---
-      if (r > 0) {
-        const prev1 = lb[r-1][i*2];
-        const prev2 = lb[r-1][i*2 + 1];
-        
-        if (r % 2 === 1) {
-          // В нечетные раунды LB (1, 3) победители идут ровно
-          if (prev1 && prev1.winner) m.p1 = prev1.winner;
-          if (prev2 && prev2.winner) m.p2 = prev2.winner;
-        } else {
-          // В четные раунды LB (2, 4) победители перекрещиваются
-          // И ставим их так, чтобы они не перезаписали проигравших из WB
-          if (prev1 && prev1.winner) {
-            if (!m.p1) m.p1 = prev1.winner; else m.p2 = prev1.winner;
-          }
-          if (prev2 && prev2.winner) {
-            if (!m.p1) m.p1 = prev2.winner; else m.p2 = prev2.winner;
-          }
-        }
       }
     }
   }
