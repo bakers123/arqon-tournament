@@ -2201,19 +2201,61 @@ function setScoreDouble(matchId) {
   match.loser = s1 > s2 ? match.p2 : match.p1;
 
   // Запускаем полную перепроверку всей сетки!
-  recalculateDoubleBracket();
-
-  saveState(); 
-  renderDoubleBracket();
-}
-
-// Функция пересчета всей сетки
-function recalculateDoubleBracket() {
+  function recalculateDoubleBracket() {
   const wb = state.bracket.wb;
   const lb = state.bracket.lb;
   const gf = state.bracket.gf;
 
-  // 1. ОЧИЩАЕМ ВСЕ СЛОТЫ (кроме самых первых матчей в обеих сетках)
+  // 1. ПРИНУДИТЕЛЬНО ОПРЕДЕЛЯЕМ ПОБЕДИТЕЛЕЙ И ПРОИГРАВШИХ ТАМ, ГДЕ ЕСТЬ СЧЕТ
+  // Проходим по верхней сетке
+  wb.forEach(round => {
+    round.forEach(m => {
+      if (m.score && m.p1 && m.p2) {
+        const s1 = m.score.p1 || 0;
+        const s2 = m.score.p2 || 0;
+        if (s1 > s2) {
+          m.winner = m.p1; m.loser = m.p2;
+        } else if (s2 > s1) {
+          m.winner = m.p2; m.loser = m.p1;
+        }
+      } else {
+        // Если счета нет — сбрасываем победителя
+        m.winner = null; m.loser = null;
+      }
+    });
+  });
+
+  // Проходим по нижней сетке
+  lb.forEach(round => {
+    round.forEach(m => {
+      if (m.score && m.p1 && m.p2) {
+        const s1 = m.score.p1 || 0;
+        const s2 = m.score.p2 || 0;
+        if (s1 > s2) {
+          m.winner = m.p1; m.loser = m.p2;
+        } else if (s2 > s1) {
+          m.winner = m.p2; m.loser = m.p1;
+        }
+      } else {
+        m.winner = null; m.loser = null;
+      }
+    });
+  });
+
+  // Гранд-финал
+  if (gf.score && gf.p1 && gf.p2) {
+    const s1 = gf.score.p1 || 0;
+    const s2 = gf.score.p2 || 0;
+    if (s1 > s2) {
+      gf.winner = gf.p1; gf.loser = gf.p2;
+    } else if (s2 > s1) {
+      gf.winner = gf.p2; gf.loser = gf.p1;
+    }
+  } else {
+    gf.winner = null; gf.loser = null;
+  }
+
+  // 2. ОЧИЩАЕМ СЛОТЫ ДЛЯ СЛЕДУЮЩИХ РАУНДОВ
   for (let r = 1; r < wb.length; r++) {
     wb[r].forEach(m => { m.p1 = null; m.p2 = null; });
   }
@@ -2222,14 +2264,13 @@ function recalculateDoubleBracket() {
   }
   gf.p1 = null; gf.p2 = null;
 
-  // 2. РАСКИДЫВАЕМ ИГРОКОВ ПО ВЕРХНЕЙ СЕТКЕ (WB)
+  // 3. РАСКИДЫВАЕМ ИГРОКОВ ПО ВЕРХНЕЙ СЕТКЕ (WB)
   for (let r = 1; r < wb.length; r++) {
     for (let i = 0; i < wb[r].length; i++) {
       const m = wb[r][i];
       const prev1 = wb[r-1][i*2];
       const prev2 = wb[r-1][i*2 + 1];
       
-      // Победители предыдущих матчей идут сюда
       if (prev1 && prev1.winner) m.p1 = prev1.winner;
       if (prev2 && prev2.winner) m.p2 = prev2.winner;
     }
@@ -2241,22 +2282,22 @@ function recalculateDoubleBracket() {
     gf.p1 = wbFinal.winner;
   }
 
-  // 3. РАСКИДЫВАЕМ ИГРОКОВ ПО НИЖНЕЙ СЕТКЕ (LB)
+  // 4. РАСКИДЫВАЕМ ИГРОКОВ ПО НИЖНЕЙ СЕТКЕ (LB)
   for (let r = 0; r < lb.length; r++) {
     for (let i = 0; i < lb[r].length; i++) {
       const m = lb[r][i];
       
       // А) Кто падает из Верхней сетки (WB)?
       if (r % 2 === 0) { 
-        // В четные раунды LB (0, 2, 4...) падают проигравшие из WB
         const wbRoundIdx = r / 2;
         if (wbRoundIdx < wb.length && wb[wbRoundIdx][i]) {
           const loserFromWB = wb[wbRoundIdx][i].loser;
           if (loserFromWB) {
-            // В первом раунде LB кидаем на свободное место, в остальных — на нижнюю строчку
             if (r === 0) {
+              // В первом раунде LB кидаем на свободное место
               if (!m.p1) m.p1 = loserFromWB; else m.p2 = loserFromWB;
             } else {
+              // В остальных четных раундах LB кидаем на нижнюю строчку
               m.p2 = loserFromWB; 
             }
           }
