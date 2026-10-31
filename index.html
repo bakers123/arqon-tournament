@@ -13,6 +13,8 @@
   .slot[draggable="true"]:active { cursor: grabbing; }
   .slot.drag-over { background: rgba(122,59,255,0.3) !important; border: 1px dashed var(--accent); }
   .slot.dragging { opacity: 0.5; }
+  .slot.ghost-player { opacity: 0.4; filter: grayscale(50%); }
+  .slot.ghost-player span { text-decoration: line-through; }
     :root {
     --bg:       #09090B;
     --panel:    #15151A;
@@ -1120,8 +1122,11 @@ function slotHTML(player, isWinner, matchId, slotKey) {
             </div>`;
   }
   
+  // Проверяем, "призрак" ли это
+  const ghostClass = player.isGhost ? 'ghost-player' : '';
+  
   // Слот с игроком
-  return `<div class="slot ${isWinner ? 'winner' : ''}" 
+  return `<div class="slot ${isWinner ? 'winner' : ''} ${ghostClass}" 
                draggable="true" 
                ondragstart="handleDragStart(event, '${matchId}', '${slotKey}')"
                ondragover="event.preventDefault(); this.classList.add('drag-over');" 
@@ -2262,17 +2267,21 @@ window.handleDrop = function(event, targetMatchId, targetSlotKey) {
 
   if (!sourceMatch || !targetMatch) return;
 
-  // Меняем игроков местами
-  const temp = targetMatch[targetSlotKey];
-  targetMatch[targetSlotKey] = sourceMatch[sourceSlotKey];
-  sourceMatch[sourceSlotKey] = temp;
+  // Берем игрока из старого слота
+  const playerToMove = sourceMatch[sourceSlotKey];
+  if (!playerToMove) return;
 
-  // НЕ сбрасываем счёт и победителя! (убираем эти строки)
-  // sourceMatch.score = null;
-  // sourceMatch.winner = null;
-  // targetMatch.score = null;
-  // targetMatch.winner = null;
+  // Делаем копию игрока (чтобы не ссылаться на один и тот же объект)
+  const playerCopy = JSON.parse(JSON.stringify(playerToMove));
+  
+  // В старом слоте ставим флаг "призрака", чтобы он был полупрозрачным
+  sourceMatch[sourceSlotKey].isGhost = true;
 
+  // В новый слот кидаем чистую копию (без флага)
+  delete playerCopy.isGhost;
+  targetMatch[targetSlotKey] = playerCopy;
+
+  // Сохраняем и перерисовываем
   saveState();
   if (state.bracket.type === 'double') {
     renderDoubleBracket();
@@ -2280,6 +2289,7 @@ window.handleDrop = function(event, targetMatchId, targetSlotKey) {
     renderBracket();
   }
 };
+  
 init();
 </script>
 </body>
