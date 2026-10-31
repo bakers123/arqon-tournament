@@ -2259,7 +2259,6 @@ function recalculateDoubleBracket() {
     }
   }
 
-  // Победитель финала WB идет в Гранд-финал
   const wbFinal = wb[wb.length - 1][0];
   if (wbFinal && wbFinal.winner) gf.p1 = wbFinal.winner;
 
@@ -2279,11 +2278,16 @@ function recalculateDoubleBracket() {
           if (m1 && m1.loser) m.p1 = m1.loser;
           if (m2 && m2.loser) m.p2 = m2.loser;
         } else if (wbRoundIdx > 0 && wbRoundIdx < wb.length) {
-          // В остальные четные раунды LB падают по одному (на нижнюю строчку)
-          // Формула: берем проигравшего из WB и ставим его в LB
-          const wbMatch = wb[wbRoundIdx][i];
+          // В остальные четные раунды LB (2, 4...) падают проигравшие из WB
+          // Исправляем индекс: для LB2 берем WB2, для LB4 берем WB3
+          let wbMatch = wb[wbRoundIdx][i];
+          
+          if (!wbMatch && wb[wbRoundIdx] && wb[wbRoundIdx].length > 0) {
+            wbMatch = wb[wbRoundIdx][0];
+          }
+          
           if (wbMatch && wbMatch.loser) {
-            m.p2 = wbMatch.loser; 
+             m.p2 = wbMatch.loser; 
           }
         }
       }
@@ -2306,11 +2310,8 @@ function recalculateDoubleBracket() {
     }
   }
 
-  // Победитель финала LB идет в Гранд-финал
   const lbFinal = lb[lb.length - 1][0];
-  if (lbFinal && lbFinal.winner) {
-    gf.p2 = lbFinal.winner;
-  }
+  if (lbFinal && lbFinal.winner) gf.p2 = lbFinal.winner;
 }
 
 init();
