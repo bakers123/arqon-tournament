@@ -423,6 +423,14 @@
       <h2>Настройки турнира</h2>
       <div class="row">
         <div style="flex:1">
+  <label class="label">Игра</label>
+  <select id="game-type">
+    <option value="dota">Dota 2</option>
+    <option value="cs2">CS2 (только 5x5)</option>
+  </select>
+</div>
+
+        <div style="flex:1">
           <label class="label">Формат</label>
           <select id="mode">
             <option value="1x1">1x1 (соло)</option>
@@ -629,7 +637,12 @@ let currentUser = null;
 let isRealtimeActive = false;
 
 // Состояние турнира (по умолчанию)
-let state = { mode: '5x5', bracketType: 'single', maxParticipants: 8, soloPlayers: [], teams: [], bracket: null };
+let state = { game: 'dota', mode: '5x5', bracketType: 'single', maxParticipants: 8, soloPlayers: [], teams: [], bracket: null };
+
+// Маппул CS2
+const CS2_MAPS = [
+  "de_ancient", "de_anubis", "de_dust2", "de_inferno", "de_mirage", "de_nuke", "de_vertigo"
+];
 
 function isAdmin() {
   const params = new URLSearchParams(window.location.search);
@@ -1244,9 +1257,33 @@ function init() {
   const modeSel = document.getElementById('mode');
   const typeSel = document.getElementById('bracket-type');
   const maxSel = document.getElementById('max-participants');
+  
   if (modeSel) { modeSel.value = state.mode; modeSel.onchange = e => { state.mode = e.target.value; saveState(); renderAll(); }; }
   if (typeSel) { typeSel.value = state.bracketType; typeSel.onchange = e => { state.bracketType = e.target.value; saveState(); }; }
   if (maxSel) { maxSel.value = state.maxParticipants; maxSel.onchange = e => { state.maxParticipants = +e.target.value; saveState(); }; }
+  const gameSel = document.getElementById('game-type');
+  if (gameSel) {
+    gameSel.value = state.game || 'dota';
+    gameSel.onchange = e => {
+      state.game = e.target.value;
+      // Если CS2, принудительно ставим 5x5 и блокируем смену формата
+      if (state.game === 'cs2') {
+        state.mode = '5x5';
+        if (modeSel) { modeSel.value = '5x5'; modeSel.disabled = true; }
+      } else {
+        if (modeSel) modeSel.disabled = false;
+      }
+      saveState();
+      renderAll();
+    };
+  }
+  
+  // При загрузке тоже проверяем, если CS2 — блокируем формат
+  if (state.game === 'cs2' && modeSel) {
+    modeSel.value = '5x5';
+    modeSel.disabled = true;
+  }
+  
   
   const addBtn = document.getElementById('add-player-btn');
   const playerInput = document.getElementById('player-input');
@@ -1418,7 +1455,8 @@ function renderPlayerDraft(myUid) {
     const amIOnTurn = (myRole === turnRole);
     
     if (amIOnTurn) {
-      statusEl.innerHTML = 'Твой ход! Забань героя (осталось банов: ' + (5 - draftState.bans[myRole].length) + ')';
+      const itemName = state.game === 'cs2' ? 'карту' : 'героя';
+statusEl.innerHTML = 'Твой ход! Забань ' + itemName + ' (осталось банов: ' + (5 - draftState.bans[myRole].length) + ')';
       btn.style.display = 'inline-block';
       btn.textContent = 'Закончить баны';
       btn.onclick = async () => {
@@ -1434,28 +1472,52 @@ function renderPlayerDraft(myUid) {
     }
 
     // Отрисовка героев
-    poolEl.innerHTML = draftState.pool.map(id => {
-      const isBannedByMe = draftState.bans[myRole].includes(id);
-      const isBannedByEnemy = draftState.bans[enemyRole].includes(id);
-      const isBanned = isBannedByMe || isBannedByEnemy;
-      
-      let style = 'cursor: pointer; border-radius: 8px; overflow: hidden; border: 2px solid transparent;';
-      let overlay = '';
-      
-      if (isBannedByMe) { style += 'opacity: 0.2; filter: grayscale(100%);'; overlay = '❌'; }
-      if (isBannedByEnemy) { style += 'opacity: 0.4; border-color: red;'; overlay = '🚫'; }
-      if (!isBanned && amIOnTurn && draftState.bans[myRole].length < 5) { style += 'cursor: pointer;'; } 
-      else { style += 'cursor: not-allowed;'; }
+     if (state.game === 'cs2') {
+      // --- ОТРИСОВКА КАРТ CS2 ---
+      poolEl.innerHTML = draftState.pool.map(mapName => {
+        const isBannedByMe = draftState.bans[myRole].includes(mapName);
+        const isBannedByEnemy = draftState.bans[enemyRole].includes(mapName);
+        const isBanned = isBannedByMe || isBannedByEnemy;
+        
+        let style = 'cursor: pointer; border-radius: 8px; overflow: hidden; border: 2px solid transparent; height: 100px; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 16px; text-transform: uppercase; background: #1A1A1F; color: white;';
+        let overlay = '';
+        
+        if (isBannedByMe) { style += 'opacity: 0.2; filter: grayscale(100%);'; overlay = '❌'; }
+        if (isBannedByEnemy) { style += 'opacity: 0.4; border-color: red;'; overlay = '🚫'; }
+        if (!isBanned && amIOnTurn && draftState.bans[myRole].length < 5) { style += 'cursor: pointer; border-color: var(--accent);'; } 
+        else { style += 'cursor: not-allowed;'; }
+        
+        const mapDisplayName = mapName.replace('de_', '').toUpperCase();
+        return `<div style="${style} position:relative;" onclick="${(!isBanned && amIOnTurn && draftState.bans[myRole].length < 5) ? `banHero('${mapName}','${myRole}')` : ''}">
+          <span>${mapDisplayName}</span>
+          <div style="position:absolute; inset:0; display:flex; align-items: center; justify-content: center; font-size: 32px;">${overlay}</div>
+        </div>`;
+      }).join('');
+    } else {
+        // --- ОТРИСОВКА ГЕРОЕВ DOTА 2 ---
+      poolEl.innerHTML = draftState.pool.map(id => {
+        const isBannedByMe = draftState.bans[myRole].includes(id);
+        const isBannedByEnemy = draftState.bans[enemyRole].includes(id);
+        const isBanned = isBannedByMe || isBannedByEnemy;
+        
+        let style = 'cursor: pointer; border-radius: 8px; overflow: hidden; border: 2px solid transparent;';
+        let overlay = '';
+        
+        if (isBannedByMe) { style += 'opacity: 0.2; filter: grayscale(100%);'; overlay = '❌'; }
+        if (isBannedByEnemy) { style += 'opacity: 0.4; border-color: red;'; overlay = '🚫'; }
+        if (!isBanned && amIOnTurn && draftState.bans[myRole].length < 5) { style += 'cursor: pointer;'; } 
+        else { style += 'cursor: not-allowed;'; }
 
-      return `<div style="${style} position:relative;" onclick="${(!isBanned && amIOnTurn && draftState.bans[myRole].length < 5) ? `banHero('${id}','${myRole}')` : ''}">
-        <img src="https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/heroes/${id}.png" style="width: 100%; display: block;">
-        <div style="position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:32px;">${overlay}</div>
-      </div>`;
-    }).join('');
+        return `<div style="${style} position:relative;" onclick="${(!isBanned && amIOnTurn && draftState.bans[myRole].length < 5) ? `banHero('${id}','${myRole}')` : ''}">
+          <img src="https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/heroes/${id}.png" style="width: 100%; display: block;">
+          <div style="position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:32px;">${overlay}</div>
+        </div>`;
+      }).join('');
+    }
     return;
   }
 
-    // === ФАЗА 3: ПИКИ ===
+  // === ФАЗА 3: ПИКИ ===
   if (draftState.phase === 'pick') {
     const availableHeroes = draftState.pool.filter(id => !draftState.bans.p1.includes(id) && !draftState.bans.p2.includes(id));
     const myPick = draftState.picks[myRole];
@@ -1493,7 +1555,7 @@ function renderPlayerDraft(myUid) {
     }).join('');
     return;
   }
-} // <--- ВОТ ЭТА СКОБКА ЗАКРЫВАЕТ renderPlayerDraft
+} // <--- ЗДЕСЬ ЗАКРЫВАЕТСЯ ФУНКЦИЯ renderPlayerDraft
 
 async function banHero(heroId, myRole) {
   if (!draftState) return;
@@ -1590,7 +1652,9 @@ async function startDraftForMatch(matchId) {
     phase: 'coinflip',
     first_turn: null,
     turn: null,
-    pool: [...ALL_HEROES].sort(() => 0.5 - Math.random()).slice(0, 20),
+    pool: state.game === 'cs2' 
+  ? [...CS2_MAPS].sort(() => 0.5 - Math.random()) // Для CS2 отдаем все карты
+  : [...ALL_HEROES].sort(() => 0.5 - Math.random()).slice(0, 20),
     bans: { p1: [], p2: [] },
     picks: { p1: null, p2: null },
     p1_uid: dbP1.uid,
