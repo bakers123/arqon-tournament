@@ -2249,55 +2249,49 @@ function recalculateDoubleBracket() {
     }
   }
 
-  const wbFinalMatch = wb[wb.length - 1][0];
-  if (wbFinalMatch && wbFinalMatch.winner) {
-    gf.p1 = wbFinalMatch.winner;
+  if (wb[wb.length - 1][0] && wb[wb.length - 1][0].winner) {
+    gf.p1 = wb[wb.length - 1][0].winner;
   }
 
   // 4. РАСКИДЫВАЕМ ПО НИЖНЕЙ СЕТКЕ (LB)
-  // Для 8 игроков: LB0, LB1, LB2
   for (let r = 0; r < lb.length; r++) {
     for (let i = 0; i < lb[r].length; i++) {
       const m = lb[r][i];
       
-      // --- ШАГ 1: Сначала ставим тех, кто падает из Верхней сетки (WB) ---
+      // --- ШАГ 1: Кто падает из Верхней сетки (WB)? ---
       if (r === 0) {
-        // В LB1 падают проигравшие из WB1 (парами в матч)
+        // LB1 (r=0): Проигравшие из WB1 падают парами
         const m1 = wb[0][i * 2];
         const m2 = wb[0][i * 2 + 1];
         if (m1 && m1.loser) m.p1 = m1.loser;
         if (m2 && m2.loser) m.p2 = m2.loser;
       } 
       else if (r === 1) {
-        // В LB2 падают проигравшие из WB2. ВСЕГДА ставим на нижний слот (p2).
+        // LB2 (r=1): Проигравшие из WB2 падают ВСЕГДА на нижний слот (p2)
         const wbMatch = wb[1] && wb[1][i];
         if (wbMatch && wbMatch.loser) m.p2 = wbMatch.loser;
       }
       else if (r === 2 && i === 0) {
-        // В LB3 (финал нижней сетки) падает проигравший из WB Финала (WB3)
-        if (wb[2] && wb[2][0] && wb[2][0].loser) m.p2 = wb[2][0].loser;
-        // (Если игроков меньше, и финал был в WB2, то берем из последнего раунда WB)
-        else if (wb[wb.length - 1][0] && wb[wb.length - 1][0].loser) {
-          m.p2 = wb[wb.length - 1][0].loser;
-        }
+        // LB3 (r=2): Проигравший из Финала WB падает на нижний слот (p2)
+        const wbFinalMatch = wb[wb.length - 1][0];
+        if (wbFinalMatch && wbFinalMatch.loser) m.p2 = wbFinalMatch.loser;
       }
 
-      // --- ШАГ 2: Потом ставим тех, кто идет из предыдущего раунда LB ---
+      // --- ШАГ 2: Кто идет из предыдущего раунда LB? ---
       if (r > 0) {
+        // Берем победителей из предыдущего раунда LB
         const prev1 = lb[r-1][i*2];
         const prev2 = lb[r-1][i*2 + 1];
         
         if (r % 2 === 1) {
-          // В LB2, LB4 победители идут ровно. ВСЕГДА ставим на верхний слот (p1).
+          // В нечетные раунды (LB2, LB4) победители идут ровно на ВЕРХНИЙ слот (p1)
           if (prev1 && prev1.winner) m.p1 = prev1.winner;
           if (prev2 && prev2.winner) {
             if (!m.p1) m.p1 = prev2.winner; else m.p2 = prev2.winner;
           }
         } else {
-          // В LB3 победители перекрещиваются
-          if (prev1 && prev1.winner) {
-            if (!m.p1) m.p1 = prev1.winner; else m.p2 = prev1.winner;
-          }
+          // В четные раунды (LB3) победители перекрещиваются (но у нас 1 матч, так что просто встают на p1)
+          if (prev1 && prev1.winner) m.p1 = prev1.winner;
           if (prev2 && prev2.winner) {
             if (!m.p1) m.p1 = prev2.winner; else m.p2 = prev2.winner;
           }
