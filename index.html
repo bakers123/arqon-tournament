@@ -2254,30 +2254,59 @@ function recalculateDoubleBracket() {
     gf.p1 = wb[wb.length - 1][0].winner;
   }
 
-  // 4. Раскидываем по Нижней сетке (LB) ЖЕСТКО (для 8 игроков)
-  if (lb.length >= 3) {
-    // --- Раунд LB1 ---
-    if (wb[0][0] && wb[0][0].loser) lb[0][0].p1 = wb[0][0].loser;
-    if (wb[0][1] && wb[0][1].loser) lb[0][0].p2 = wb[0][1].loser;
-    if (wb[0][2] && wb[0][2].loser) lb[0][1].p1 = wb[0][2].loser;
-    if (wb[0][3] && wb[0][3].loser) lb[0][1].p2 = wb[0][3].loser;
+  // 4. Раскидываем по Нижней сетке (LB) АВТОМАТИЧЕСКИ
+  for (let r = 0; r < lb.length; r++) {
+    for (let i = 0; i < lb[r].length; i++) {
+      const m = lb[r][i];
+      
+      // --- Кто падает из WB ---
+      if (r === 0) {
+        // В LB1 падают парами из WB1 (используем i*2 и i*2+1, это работает для любого размера)
+        const m1 = wb[0][i * 2];
+        const m2 = wb[0][i * 2 + 1];
+        if (m1 && m1.loser) m.p1 = m1.loser;
+        if (m2 && m2.loser) m.p2 = m2.loser;
+      } 
+      else if (r === 1) {
+        // В LB2 падают проигравшие из WB2
+        const wbMatch = wb[1] && wb[1][i];
+        if (wbMatch && wbMatch.loser) m.p2 = wbMatch.loser;
+      }
+      else if (r % 2 === 0 && r > 1) {
+        // В остальные четные раунды LB (2, 4, 6...) падают из соответствующих раундов WB
+        const wbRoundIdx = r / 2;
+        const wbMatch = wb[wbRoundIdx] && wb[wbRoundIdx][i];
+        if (wbMatch && wbMatch.loser) m.p2 = wbMatch.loser;
+      }
 
-    // --- Раунд LB2 ---
-    if (lb[0][0] && lb[0][0].winner) lb[1][0].p1 = lb[0][0].winner;
-    if (wb[1][0] && wb[1][0].loser) lb[1][0].p2 = wb[1][0].loser;
-    
-    if (lb[0][1] && lb[0][1].winner) lb[1][1].p1 = lb[0][1].winner;
-    if (wb[1][1] && wb[1][1].loser) lb[1][1].p2 = wb[1][1].loser;
-
-    // --- Раунд LB3 (ФИНАЛ НИЖНЕЙ СЕТКИ) ---
-    // В него попадают победители LB2
-    if (lb[1][0] && lb[1][0].winner) lb[2][0].p1 = lb[1][0].winner;
-    if (lb[1][1] && lb[1][1].winner) lb[2][0].p2 = lb[1][1].winner;
+      // --- Кто идет из предыдущего раунда LB ---
+      if (r > 0) {
+        const prev1 = lb[r-1][i*2];
+        const prev2 = lb[r-1][i*2 + 1];
+        
+        if (r % 2 === 1) {
+          // В нечетные раунды LB (1, 3...) победители идут ровно наверх (p1)
+          if (prev1 && prev1.winner) m.p1 = prev1.winner;
+          if (prev2 && prev2.winner) {
+            if (!m.p1) m.p1 = prev2.winner; else m.p2 = prev2.winner;
+          }
+        } else {
+          // В четные раунды LB (2, 4...) победители перекрещиваются
+          if (prev1 && prev1.winner) {
+            if (!m.p1) m.p1 = prev1.winner; else m.p2 = prev1.winner;
+          }
+          if (prev2 && prev2.winner) {
+            if (!m.p1) m.p1 = prev2.winner; else m.p2 = prev2.winner;
+          }
+        }
+      }
+    }
   }
 
-  // 5. Гранд-финал: Победитель LB3 идет в Гранд-финал
-  if (lb.length > 0 && lb[lb.length - 1][0] && lb[lb.length - 1][0].winner) {
-    gf.p2 = lb[lb.length - 1][0].winner;
+  // 5. Гранд-финал
+  const lbFinal = lb[lb.length - 1][0];
+  if (lbFinal && lbFinal.winner) {
+    gf.p2 = lbFinal.winner;
   }
 }
   
