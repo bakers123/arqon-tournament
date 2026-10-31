@@ -15,6 +15,18 @@
   .slot.dragging { opacity: 0.5; }
   .slot.ghost-player { opacity: 0.4; filter: grayscale(50%); }
   .slot.ghost-player span { text-decoration: line-through; }
+  /* Уровни FACEIT */
+  .faceit-badge { padding: 2px 6px; border-radius: 4px; font-weight: 900; font-size: 11px; color: #000; display: inline-block; margin-left: 5px; vertical-align: middle; }
+  .lvl-1 { background: #EEEEEE; color: #333; }
+  .lvl-2 { background: #1CE400; color: #000; }
+  .lvl-3 { background: #1CE400; color: #000; }
+  .lvl-4 { background: #FFC800; color: #000; }
+  .lvl-5 { background: #FFC800; color: #000; }
+  .lvl-6 { background: #FFC800; color: #000; }
+  .lvl-7 { background: #FF6309; color: #fff; }
+  .lvl-8 { background: #FF6309; color: #fff; }
+  .lvl-9 { background: #FF6309; color: #fff; }
+  .lvl-10 { background: #FE1F00; color: #fff; }
     :root {
     --bg:       #09090B;
     --panel:    #15151A;
@@ -507,7 +519,22 @@
           </select>
         </div>
       </div>
-
+ <div style="margin-bottom:10px;">
+        <label class="label">Уровень FACEIT (только для CS2)</label>
+        <select id="p-faceit">
+          <option value="0">Нет (обычный игрок)</option>
+          <option value="1">1 уровень</option>
+          <option value="2">2 уровень</option>
+          <option value="3">3 уровень</option>
+          <option value="4">4 уровень</option>
+          <option value="5">5 уровень</option>
+          <option value="6">6 уровень</option>
+          <option value="7">7 уровень</option>
+          <option value="8">8 уровень</option>
+          <option value="9">9 уровень</option>
+          <option value="10">10 уровень</option>
+        </select>
+      </div>
       <div style="margin-bottom:10px;">
         <label class="label">Ссылка на аватарку (необязательно)</label>
         <input id="p-avatar" placeholder="https://..." />
@@ -529,12 +556,21 @@
         <div id="solo-empty" class="empty">Пока никого нет. Добавь игроков сверху.</div>
       </div>
       <div id="sub-teams" class="hidden">
+        <!-- Пул свободных агентов -->
+        <div class="card" style="margin-bottom: 15px; background: #101014;">
+          <h3 style="font-size: 13px; margin-bottom: 10px; color: var(--accent);">🎯 Свободные игроки (перетащи в команду)</h3>
+          <div id="free-agents-list" class="grid">
+            <!-- Сюда рендерятся свободные игроки -->
+          </div>
+          <div id="free-agents-empty" class="hint">Нет свободных игроков. Добавь через форму сверху.</div>
+        </div>
+
+        <!-- Список команд -->
         <div id="teams-list"></div>
         <button class="btn ghost" id="add-team-btn" style="width:100%; margin-top:10px;">
           + Добавить команду
         </button>
       </div>
-    </div>
 
     <div class="card">
       <button class="btn" id="generate-bracket">🎲 Сгенерировать сетку</button>
@@ -637,8 +673,7 @@ let currentUser = null;
 let isRealtimeActive = false;
 
 // Состояние турнира (по умолчанию)
-let state = { game: 'dota', mode: '5x5', bracketType: 'single', maxParticipants: 8, soloPlayers: [], teams: [], bracket: null };
-
+let state = { game: 'dota', mode: '5x5', bracketType: 'single', maxParticipants: 8, soloPlayers: [], freeAgents: [], teams: [], bracket: null };
 // Маппул CS2
 const CS2_MAPS = [
   "de_ancient", "de_anubis", "de_dust2", "de_inferno", "de_mirage", "de_nuke", "de_vertigo"
@@ -904,17 +939,18 @@ window.saveUidDirect = saveUidDirect;
 function playerCardHTML(p, removeFn) {
   const rank = parseRank(p.rank_tier);
   const removeBtn = isAdmin() ? '<button class="remove" onclick="' + removeFn + '">×</button>' : '';
-  const codeBtn = isAdmin() ? '<button class="btn ghost" style="padding:2px 8px; font-size:10px; margin-top:5px;" onclick="generateAccessCode(\'' + escapeHtml(p.name) + '\')">🔑 Выдать код</button>' : '';
   
-  const uidStatus = p.auth_uid ? '<span style="font-size:10px; color:green; margin-left:5px;">✅ Готов</span>' : '<span style="font-size:10px; color:orange; margin-left:5px;">⚠️ Ждет входа</span>';
-  const uidBtn = isAdmin() ? `<button class="btn ghost" style="padding:2px 8px; font-size:10px; margin-top:5px; margin-left:5px;" onclick="promptUid('${p.account_id}', '${escapeHtml(p.name)}')">🔗 UID</button>` : '';
+  // Бейдж FACEIT
+  let faceitBadge = '';
+  if (p.faceitLevel && state.game === 'cs2') {
+    faceitBadge = `<span class="faceit-badge lvl-${p.faceitLevel}">LVL ${p.faceitLevel}</span>`;
+  }
 
-  return '<div class="player">' +
+  return '<div class="player" draggable="true" ondragstart="dragPlayerFromPool(event, \'' + p.account_id + '\')">' +
     '<img src="' + p.avatar + '" alt="" onerror="this.style.display=\'none\'">' +
     '<div>' +
-      '<div class="name">' + escapeHtml(p.name) + ' ' + uidStatus + '</div>' +
+      '<div class="name">' + escapeHtml(p.name) + ' ' + faceitBadge + '</div>' +
       '<div class="rank" style="color:' + rank.color + '">' + rank.icon + ' ' + rank.name + '</div>' +
-      codeBtn + uidBtn +
     '</div>' + removeBtn +
   '</div>';
 }
@@ -980,6 +1016,30 @@ function renderSolo() {
   list.innerHTML = state.soloPlayers.map(p => playerCardHTML(p, "removeSolo('" + p.account_id + "')")).join('');
 }
 
+function renderFreeAgents() {
+  const list = document.getElementById('free-agents-list');
+  const empty = document.getElementById('free-agents-empty');
+  if (!list || !empty) return;
+  
+  if (!state.freeAgents) state.freeAgents = [];
+  
+  if (!state.freeAgents.length) {
+    list.innerHTML = '';
+    empty.classList.remove('hidden');
+    return;
+  }
+  empty.classList.add('hidden');
+  list.innerHTML = state.freeAgents.map(p => playerCardHTML(p, "removeFreeAgent('" + p.account_id + "')")).join('');
+}
+
+function removeFreeAgent(accId) {
+  if (!isAdmin()) return;
+  state.freeAgents = state.freeAgents.filter(p => p.account_id !== accId);
+  renderFreeAgents();
+  saveState();
+}
+window.removeFreeAgent = removeFreeAgent;
+
 function renderTeams() {
   const list = document.getElementById('teams-list');
   if (!list) return;
@@ -991,11 +1051,13 @@ function renderTeams() {
     const nameInput = isAdm
       ? '<input value="' + escapeHtml(t.name) + '" onchange="renameTeam(\'' + t.id + '\', this.value)" style="flex:1; font-weight:700; letter-spacing:1px;" />'
       : '<input value="' + escapeHtml(t.name) + '" disabled style="flex:1; font-weight:700; letter-spacing:1px;" />';
-    return '<div class="card" style="margin-bottom:12px;">' +
+    
+    // Оборачиваем в drop-зону
+    return '<div class="card team-slot" style="margin-bottom:12px;" ondragover="event.preventDefault(); this.classList.add(\'drag-over\');" ondragleave="this.classList.remove(\'drag-over\');" ondrop="handleDropOnTeam(event, \'' + t.id + '\')">' +
       '<div class="row" style="align-items:center; margin-bottom:10px;">' +
         nameInput + '<span class="hint" style="margin:0;">' + t.players.length + '/5</span>' + rmTeam +
       '</div>' +
-      '<div class="grid">' + players + '</div>' +
+      '<div class="grid">' + (players || '<div class="hint" style="padding: 10px; color: var(--text-dim); text-align: center; border: 1px dashed var(--border); border-radius: 6px;">Перетащи сюда игроков</div>') + '</div>' +
     '</div>';
   }).join('');
 }
@@ -1007,24 +1069,26 @@ async function handleAddPlayer() {
   const btn = document.getElementById('add-player-btn');
   const val = input.value.trim();
   btn.disabled = true; btn.textContent = 'Загрузка...'; msg.innerHTML = '';
+  
   try {
     const player = await fetchPlayer(val);
+    // Добавляем FACEIT-уровень
+    player.faceitLevel = parseInt(document.getElementById('p-faceit')?.value) || 0;
+    
     if (state.mode === '1x1') {
       if (state.soloPlayers.find(p => p.account_id === player.account_id)) throw new Error('Этот игрок уже добавлен');
       state.soloPlayers.push(player);
       renderSolo();
     } else {
-      if (!state.teams.length) state.teams.push({ id: genId(), name: 'Team 1', players: [] });
-      const team = state.teams[state.teams.length - 1];
-      if (team.players.length >= 5) {
-        state.teams.push({ id: genId(), name: 'Team ' + (state.teams.length + 1), players: [player] });
-      } else {
-        if (team.players.find(p => p.account_id === player.account_id)) throw new Error('Этот игрок уже в команде');
-        team.players.push(player);
-      }
-      renderTeams();
+      // В 5x5 просто добавляем в "пул свободных агентов" (мы будем рендерить их отдельно)
+      if (!state.freeAgents) state.freeAgents = [];
+      if (state.freeAgents.find(p => p.account_id === player.account_id)) throw new Error('Этот игрок уже добавлен');
+      state.freeAgents.push(player);
+      renderFreeAgents(); // Новая функция для отрисовки пула
     }
+    
     input.value = ''; document.getElementById('p-name').value = ''; document.getElementById('p-avatar').value = ''; document.getElementById('p-rank').value = '0';
+    if (document.getElementById('p-faceit')) document.getElementById('p-faceit').value = '0';
     msg.innerHTML = '<div class="msg success">✓ ' + escapeHtml(player.name) + ' добавлен</div>';
     saveState();
   } catch (e) {
@@ -1243,6 +1307,7 @@ function switchSubTab(sub) {
 function renderAll() {
   renderSolo();
   renderTeams();
+  renderFreeAgents(); // <--- ДОБАВИТЬ ЭТО
   if (state.bracket && state.bracket.type === 'double') {
     renderDoubleBracket();
   } else {
@@ -1314,6 +1379,7 @@ function init() {
     document.getElementById('admin-tab-btn').style.display = 'inline-block';
   }
   showAuthButtonIfNeeded();
+  renderFreeAgents(); // <--- ДОБАВИТЬ ЭТО
   renderAll();
 }
 
@@ -2317,6 +2383,51 @@ window.handleDragStart = function(event, matchId, slotKey) {
   draggedItem = { matchId, slotKey };
   event.dataTransfer.effectAllowed = 'move';
   event.target.classList.add('dragging');
+};
+  // ==========================================
+// DRAG & DROP ИГРОКОВ В КОМАНДЫ (5x5)
+// ==========================================
+
+window.dragPlayerFromPool = function(event, accountId) {
+  if (!isAdmin()) return;
+  event.dataTransfer.setData('text/plain', accountId);
+  event.dataTransfer.setData('source', 'pool');
+};
+
+window.handleDropOnTeam = function(event, teamId) {
+  event.preventDefault();
+  event.target.closest('.team-slot').classList.remove('drag-over');
+  
+  if (!isAdmin()) return;
+  
+  const source = event.dataTransfer.getData('source');
+  const accountId = event.dataTransfer.getData('text/plain');
+  if (!accountId) return;
+
+  if (!state.freeAgents) state.freeAgents = [];
+  if (!state.teams) state.teams = [];
+
+  // Если перетащили из пула
+  if (source === 'pool') {
+    const player = state.freeAgents.find(p => p.account_id === accountId);
+    if (!player) return;
+    
+    const team = state.teams.find(t => t.id === teamId);
+    if (!team) return;
+    if (team.players.length >= 5) { alert('В команде уже 5 игроков!'); return; }
+    
+    // Удаляем из пула и добавляем в команду
+    state.freeAgents = state.freeAgents.filter(p => p.account_id !== accountId);
+    team.players.push(player);
+  } 
+  // Если перетащили из другой команды (меняем местами или переносим)
+  else if (source === 'team') {
+    // Логика для переноса между командами (опционально)
+  }
+
+  saveState();
+  renderTeams();
+  renderFreeAgents();
 };
 
 window.handleDrop = function(event, targetMatchId, targetSlotKey) {
