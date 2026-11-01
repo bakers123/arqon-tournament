@@ -901,42 +901,41 @@ async function loginWithCode() {
   if (errorDiv) { errorDiv.classList.add('hidden'); errorDiv.textContent = ''; }
 
   try {
+    // 1. Ищем код
     const { data: codeData, error: codeError } = await supabaseClient
       .from('access_codes').select('*').eq('code', code).maybeSingle();
 
     if (codeError || !codeData) throw new Error('Неверный код доступа');
 
+    // 2. Создаем сессию
     const { data: { session: existingSession } } = await supabaseClient.auth.getSession();
-
     let userId = null;
 
     if (existingSession && existingSession.user) {
       userId = existingSession.user.id;
     } else {
-      const authPromise = supabaseClient.auth.signInAnonymously();
-      const timeoutPromise = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error('Сервер долго не отвечает. Попробуй еще раз.')), 15000)
-      );
-      const result = await Promise.race([authPromise, timeoutPromise]);
-      if (result.error) throw new Error('Ошибка входа: ' + result.error.message);
-      userId = result.data.user.id;
+      const { data: authData, error: authError } = await supabaseClient.auth.signInAnonymously();
+      if (authError) throw new Error('Ошибка входа: ' + authError.message);
+      userId = authData.user.id;
     }
 
-    const { data: existingPlayers } = await supabaseClient
-      .from('players').select('*').eq('name', codeData.player_name);
+    // 3. Записываем или ОБНОВЛЯЕМ игрока (используем upsert!)
+    // onConflict: 'name' — если ник уже есть, просто обновим его UID
+    const { error: upsertError } = await supabaseClient.from('players').upsert(
+      { uid: userId, name: codeData.player_name },
+      { onConflict: 'name' } 
+    );
 
-    if (existingPlayers && existingPlayers.length > 0) {
-      await supabaseClient.from('players').update({ uid: userId }).eq('name', codeData.player_name);
-    } else {
-      await supabaseClient.from('players').insert({ uid: userId, name: codeData.player_name });
-    }
+    if (upsertError) throw new Error('Ошибка записи: ' + upsertError.message);
 
-    localStorage.setItem('last_login_uid_' + codeData.player_name, userId);
+    // 4. Сохраняем в кэш и удаляем код
     localStorage.setItem('arqon_current_uid', userId); 
-localStorage.setItem('arqon_current_name', codeData.player_name);
+    localStorage.setItem('arqon_current_name', codeData.player_name);
     await supabaseClient.from('access_codes').delete().eq('code', code);
 
+    // 5. Перезагружаем страницу
     window.location.reload();
+    
   } catch (err) {
     if (errorDiv) {
       errorDiv.textContent = err.message;
