@@ -806,6 +806,9 @@ function isAdmin() {
 // АВТОРИЗАЦИЯ
 // ==========================================
 supabaseClient.auth.getSession().then(({ data: { session } }) => {
+  const savedUid = localStorage.getItem('arqon_current_uid');
+  const savedName = localStorage.getItem('arqon_current_name');
+
   if (isAdmin()) {
     document.getElementById('auth-screen').style.display = 'none';
     document.querySelector('main').style.display = 'block';
@@ -813,6 +816,17 @@ supabaseClient.auth.getSession().then(({ data: { session } }) => {
   } else if (session) {
     currentUser = session.user;
     checkUserRole(session.user.id);
+  } else if (savedUid && savedName) {
+    // Если сессии нет, но мы только что входили — принудительно пускаем
+    console.log("Используем сохраненный UID:", savedUid);
+    currentUser = { id: savedUid }; // Создаем фейковый объект юзера для скрипта
+    document.getElementById('auth-screen').style.display = 'none';
+    document.querySelector('main').style.display = 'none';
+    const playerScreen = document.getElementById('player-screen');
+    playerScreen.classList.remove('hidden');
+    playerScreen.style.display = 'flex';
+    document.getElementById('player-display-name').textContent = savedName;
+    startDraftListener(savedUid);
   } else {
     handleNoAuth();
   }
@@ -958,6 +972,8 @@ localStorage.setItem('arqon_current_name', codeData.player_name);
 }
 
 function logoutPlayer() {
+  localStorage.removeItem('arqon_current_uid');
+  localStorage.removeItem('arqon_current_name');
   supabaseClient.auth.signOut().then(() => window.location.reload());
 }
 
