@@ -1047,11 +1047,17 @@ function playerCardHTML(p, removeFn) {
     faceitBadge = `<span class="faceit-badge lvl-${p.faceitLevel}">LVL ${p.faceitLevel}</span>`;
   }
 
+  // Кнопка выдачи кода (только для админа)
+  const codeBtn = isAdmin() 
+    ? `<button class="btn ghost" style="padding:2px 8px; font-size:10px; margin-top:5px;" onclick="event.stopPropagation(); generateAccessCode('${escapeHtml(p.name)}')">🔑 Выдать код</button>` 
+    : '';
+
   return '<div class="player" draggable="true" ondragstart="dragPlayerFromPool(event, \'' + p.account_id + '\')">' +
     '<img src="' + p.avatar + '" alt="" onerror="this.style.display=\'none\'">' +
     '<div>' +
       '<div class="name">' + escapeHtml(p.name) + ' ' + faceitBadge + '</div>' +
       '<div class="rank" style="color:' + rank.color + '">' + rank.icon + ' ' + rank.name + '</div>' +
+      codeBtn + // <-- ВОТ ОНА
     '</div>' + removeBtn +
   '</div>';
 }
