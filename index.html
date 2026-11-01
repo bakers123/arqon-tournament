@@ -1882,93 +1882,186 @@ async function pickHero(heroId, myRole) {
 window.banHero = banHero;
 window.pickHero = pickHero;
 
-async function startDraftForMatch(matchId) {
-  if (!isAdmin()) return;
-  
-  // Находим матч в сетке
-  let match = null;
-  if (state.bracket.type === 'double') {
-    state.bracket.wb.forEach(r => r.forEach(m => { if (m.id === matchId) match = m; }));
-    state.bracket.lb.forEach(r => r.forEach(m => { if (m.id === matchId) match = m; }));
-    if (state.bracket.gf.id === matchId) match = state.bracket.gf;
-  } else {
-    state.bracket.rounds.forEach(r => r.forEach(m => { if (m.id === matchId) match = m; }));
-  }
-  
-  if (!match) return;
+function renderPlayerDraft(myUid) {
+  const screen = document.getElementById('player-screen');
+  const nameEl = document.getElementById('player-display-name');
+  const statusEl = document.getElementById('draft-status');
+  const poolEl = document.getElementById('hero-pool');
+  const btn = document.getElementById('draft-action-btn');
 
-  // ЗАЩИТА: Если в матче уже есть счёт или победитель, драфт запускать нельзя
-  if (match.winner || match.score) {
-    alert('Этот матч уже сыгран! Очистите счёт, чтобы запустить драфт заново.');
+  if (!draftState) return;
+
+  // Проверка участия
+  const isP1 = draftState.p1_uid === myUid;
+  const isP2 = draftState.p2_uid === myUid;
+
+  if (!isP1 && !isP2) {
+    statusEl.textContent = "Ожидание твоего матча...";
+    poolEl.innerHTML = '';
+    btn.style.display = 'none';
     return;
   }
 
-  if (!match.p1 || !match.p2) {
-    alert('В этом матче еще нет двух игроков/команд!');
-    return;
-  }
+  // Проверка на капитана
+  const p1Captain = draftState.p1_captain_uid || draftState.p1_uid;
+  const p2Captain = draftState.p2_captain_uid || draftState.p2_uid;
+  const isCaptain = (myUid === p1Captain) || (myUid === p2Captain);
 
-  if (match.p1.isGhost || match.p2.isGhost) {
-    alert('Один из игроков уже покинул этот матч (ушел дальше по сетке). Драфт невозможен.');
-    return;
-  }
+  const myRole = (myUid === p1Captain) ? 'p1' : (myUid === p2Captain ? 'p2' : (isP1 ? 'p1' : 'p2'));
+  const enemyRole = myRole === 'p1' ? 'p2' : 'p1';
+  const myName = myRole === 'p1' ? draftState.p1_name : draftState.p2_name;
+  const enemyName = myRole === 'p1' ? draftState.p2_name : draftState.p1_name;
 
-  // ФУНКЦИЯ ПОИСКА ИГРОКА (С УЧЕТОМ КОМАНД)
-  async function findPlayerUidInDb(participant) {
-    if (!participant) return null;
-    
-    // Пытаемся найти по имени (для 1х1)
-    let { data } = await supabaseClient.from('players').select('uid').eq('name', participant.name).single();
-    if (data && data.uid) return data.uid;
+  nameEl.textContent = myName;
+  statusEl.textContent = `Играешь против: ${enemyName}`;
 
-    // Если не нашли, ищем в командах (для 5х5)
-    // Ищем команду в state.teams по ID
-    const team = state.teams.find(t => t.id === participant.id || t.name === participant.name);
-    if (team && team.players && team.players.length > 0) {
-      // Ищем любого игрока в команде, у которого есть UID в базе
-      for (const p of team.players) {
-        let { data: pData } = await supabaseClient.from('players').select('uid').eq('name', p.name).single();
-        if (pData && pData.uid) return pData.uid; // Возвращаем UID первого найденного игрока (капитана)
+  // === ФАЗА 1: МОНЕТКА ===
+  if (draftState.phase === 'coinflip') {
+    if (draftState.first_turn) {
+      const winnerName = draftState.first_turn === 'p1' ? draftState.p1_name : draftState.p2_name;
+      statusEl.innerHTML = `Монетка брошена! Первым банит: <b style="color:var(--accent);">${winnerName}</b>. Ожидание начала банов...`;
+      poolEl.innerHTML = '';
+      btn.style.display = 'none';
+    } else {
+      if (isCaptain) {
+        statusEl.innerHTML = 'Монетка!';
+        btn.textContent = 'Бросить монетку';
+        btn.style.display = 'inline-block';
+        btn.onclick = async () => {
+          const winner = Math.random() < 0.5 ? 'p1' : 'p2';
+          const newDraft = { ...draftState, first_turn: winner, phase: 'ban', turn: winner };
+          await supabaseClient.from('drafts').upsert({ id: 1, data: newDraft });
+          window.dispatchEvent(new Event('storage')); 
+        };
+      } else {
+        statusEl.innerHTML = 'Ожидание броска монетки капитаном...';
+        btn.style.display = 'none';
       }
     }
-    return null;
+    return;
   }
 
-  // Получаем UID для обеих сторон
-  const p1_uid = await findPlayerUidInDb(match.p1);
-  const p2_uid = await findPlayerUidInDb(match.p2);
+  // === ФАЗА 2: БАНЫ ===
+  if (draftState.phase === 'ban') {
+    const turnRole = draftState.turn;
+    const amIOnTurn = (isCaptain && myRole === turnRole);
+    
+    if (amIOnTurn) {
+      const itemName = draftState.game === 'cs2' ? 'карту' : 'героя';
+      statusEl.innerHTML = 'Твой ход! Забань ' + itemName + ' (осталось: ' + (5 - draftState.bans[myRole].length) + '/5)';
+      btn.style.display = 'inline-block';
+      btn.textContent = 'Закончить баны';
+      btn.onclick = async () => {
+        if (new Set(draftState.bans[myRole]).size < 5) { alert('Забань ровно 5 ' + (draftState.game === 'cs2' ? 'карт' : 'героев')); return; }
+        const nextTurn = turnRole === 'p1' ? 'p2' : 'p1';
+        const nextPhase = (draftState.bans[nextTurn].length >= 5) ? 'pick' : 'ban';
+        await supabaseClient.from('drafts').upsert({ id: 1, data: { ...draftState, turn: nextTurn, phase: nextPhase } });
+      };
+    } else {
+      if (isCaptain) {
+        statusEl.innerHTML = `Ход соперника (${enemyName}). Он банит...`;
+      } else {
+        statusEl.innerHTML = `Ваш капитан банит ${draftState.game === 'cs2' ? 'карты' : 'героев'}...`;
+      }
+      btn.style.display = 'none';
+    }
 
-  if (!p1_uid) { 
-    const teamName = match.p1.name;
-    alert('Никто из команды "' + teamName + '" еще не заходил на сайт по коду! Попросите любого игрока из этой команды ввести код.'); 
-    return; 
+    // Отрисовка пула
+    if (draftState.game === 'cs2') {
+      // --- ОТРИСОВКА КАРТ CS2 ---
+      poolEl.innerHTML = draftState.pool.map(mapName => {
+        const isBannedByMe = draftState.bans[myRole] ? draftState.bans[myRole].includes(mapName) : false;
+        const isBannedByEnemy = draftState.bans[enemyRole] ? draftState.bans[enemyRole].includes(mapName) : false;
+        const isBanned = isBannedByMe || isBannedByEnemy;
+        
+        let style = 'cursor: pointer; border-radius: 8px; overflow: hidden; border: 2px solid transparent; height: 140px; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 20px; text-transform: uppercase; background: #1A1A1F; color: white; position: relative; transition: 0.2s;';
+        let overlay = '';
+        
+        if (isBannedByMe) { style += 'opacity: 0.2; filter: grayscale(100%);'; overlay = '❌'; }
+        if (isBannedByEnemy) { style += 'opacity: 0.4; border-color: red;'; overlay = '🚫'; }
+        if (!isBanned && amIOnTurn && draftState.bans[myRole].length < 5) { style += 'cursor: pointer; border-color: var(--accent); box-shadow: 0 0 15px rgba(139,59,255,0.5);'; } 
+        else { style += 'cursor: not-allowed;'; }
+        
+        const mapDisplayName = mapName.replace('de_', '').toUpperCase();
+        
+        // Надежная ссылка на картинку карты (Steam CDN)
+        const mapImage = `https://cdn.cloudflare.steamstatic.com/apps/csgo/images/maps/overviews/${mapName}.png`;
+
+        return `<div style="${style}" onclick="${(!isBanned && amIOnTurn && draftState.bans[myRole].length < 5) ? `banHero('${mapName}','${myRole}')` : ''}">
+          <img src="${mapImage}" alt="${mapDisplayName}" style="width: 100%; height: 100%; object-fit: cover; position: absolute; inset: 0; z-index: 1;" onerror="this.style.display='none'">
+          <div style="position: absolute; inset: 0; background: linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0) 60%); z-index: 2;"></div>
+          <span style="position: relative; z-index: 3; text-shadow: 0 0 10px black, 0 0 5px black; letter-spacing: 2px;">${mapDisplayName}</span>
+          <div style="position:absolute; inset:0; display:flex; align-items: center; justify-content: center; font-size: 48px; z-index: 4;">${overlay}</div>
+        </div>`;
+      }).join('');
+    } else {
+      // --- ОТРИСОВКА ГЕРОЕВ ДОТА 2 ---
+      poolEl.innerHTML = draftState.pool.map(id => {
+        const isBannedByMe = draftState.bans[myRole] ? draftState.bans[myRole].includes(id) : false;
+        const isBannedByEnemy = draftState.bans[enemyRole] ? draftState.bans[enemyRole].includes(id) : false;
+        const isBanned = isBannedByMe || isBannedByEnemy;
+        
+        let style = 'cursor: pointer; border-radius: 8px; overflow: hidden; border: 2px solid transparent;';
+        let overlay = '';
+        
+        if (isBannedByMe) { style += 'opacity: 0.2; filter: grayscale(100%);'; overlay = '❌'; }
+        if (isBannedByEnemy) { style += 'opacity: 0.4; border-color: red;'; overlay = '🚫'; }
+        if (!isBanned && amIOnTurn && draftState.bans[myRole].length < 5) { style += 'cursor: pointer;'; } 
+        else { style += 'cursor: not-allowed;'; }
+
+        return `<div style="${style} position:relative;" onclick="${(!isBanned && amIOnTurn && draftState.bans[myRole].length < 5) ? `banHero('${id}','${myRole}')` : ''}">
+          <img src="https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/heroes/${id}.png" style="width: 100%; display: block;">
+          <div style="position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:32px;">${overlay}</div>
+        </div>`;
+      }).join('');
+    }
+    return;
   }
-  if (!p2_uid) { 
-    const teamName = match.p2.name;
-    alert('Никто из команды "' + teamName + '" еще не заходил на сайт по коду! Попросите любого игрока из этой команды ввести код.'); 
-    return; 
+
+  // === ФАЗА 3: ПИКИ ===
+  if (draftState.phase === 'pick') {
+    const availableHeroes = draftState.pool.filter(id => !draftState.bans.p1.includes(id) && !draftState.bans.p2.includes(id));
+    const myPick = draftState.picks[myRole];
+
+    if (draftState.is_open) {
+      statusEl.innerHTML = `Пики открыты!<br>Твой ${draftState.game === 'cs2' ? 'пик' : 'герой'}: <b>${getHeroName(draftState.picks[myRole])}</b><br>Соперник: <b>${getHeroName(draftState.picks[enemyRole])}</b>`;
+      initChat(myName);
+      poolEl.innerHTML = availableHeroes.map(id => {
+        const isMe = draftState.picks[myRole] === id;
+        const isEnemy = draftState.picks[enemyRole] === id;
+        const border = isMe ? 'var(--accent)' : (isEnemy ? 'red' : 'transparent');
+        return `<div style="border-radius: 8px; overflow: hidden; border: 2px solid ${border};">
+          <img src="https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/heroes/${id}.png" style="width: 100%; display: block;">
+        </div>`;
+      }).join('');
+      btn.style.display = 'none';
+      return;
+    }
+
+    if (!isCaptain) {
+      statusEl.innerHTML = 'Ожидание выбора капитана...';
+      btn.style.display = 'none'; 
+      return;
+    }
+
+    if (myPick) {
+      statusEl.innerHTML = `Ты выбрал. Ожидай соперника...`;
+      btn.style.display = 'none'; 
+    } else {
+      statusEl.innerHTML = 'Баны завершены! Кликни на своего героя.';
+      btn.style.display = 'none'; 
+    }
+
+    poolEl.innerHTML = availableHeroes.map(id => {
+      const isSelected = myPick === id;
+      const style = `cursor: pointer; border-radius: 8px; overflow: hidden; border: 2px solid ${isSelected ? 'var(--accent)' : 'transparent'}; box-shadow: ${isSelected ? '0 0 10px var(--accent)' : 'none'};`;
+      const clickAction = (!myPick && !draftState.is_open) ? `onclick="pickHero('${id}','${myRole}')"` : '';
+      return `<div style="${style}" ${clickAction}>
+        <img src="https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/heroes/${id}.png" style="width: 100%; display: block;">
+      </div>`;
+    }).join('');
+    return;
   }
-
-  // Запускаем драфт
-  const newDraftState = {
-    phase: 'coinflip',
-    first_turn: null,
-    turn: null,
-    pool: state.game === 'cs2' 
-      ? [...CS2_MAPS].sort(() => 0.5 - Math.random())
-      : [...ALL_HEROES].sort(() => 0.5 - Math.random()).slice(0, 20),
-    bans: { p1: [], p2: [] },
-    picks: { p1: null, p2: null },
-    p1_uid: p1_uid,
-    p1_name: match.p1.name,
-    p2_uid: p2_uid,
-    p2_name: match.p2.name,
-    match_id: matchId,
-    is_open: false
-  };
-
-  await supabaseClient.from('drafts').upsert({ id: 1, data: newDraftState });
-  alert('Драфт для матча ' + match.p1.name + ' vs ' + match.p2.name + ' запущен!');
 }
 window.startDraftForMatch = startDraftForMatch;
 
