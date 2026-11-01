@@ -1660,8 +1660,9 @@ async function banHero(heroId, myRole) {
   if (!draftState) return;
   if (draftState.turn !== myRole) return;
   
+  const maxBans = draftState.maxBans || 5; // <--- Используем лимит
   const newBans = JSON.parse(JSON.stringify(draftState.bans));
-  if (newBans[myRole].length >= 5) return;
+  if (newBans[myRole].length >= maxBans) return;
   if (newBans[myRole].includes(heroId)) return;
   
   newBans[myRole].push(heroId);
@@ -1735,6 +1736,8 @@ function renderPlayerDraft(myUid) {
   nameEl.textContent = myName;
   statusEl.textContent = `Играешь против: ${enemyName}`;
 
+  const maxBans = draftState.maxBans || 5; // <--- Получаем лимит банов
+
   // === ФАЗА 1: МОНЕТКА ===
   if (draftState.phase === 'coinflip') {
     if (draftState.first_turn) {
@@ -1768,13 +1771,13 @@ function renderPlayerDraft(myUid) {
     
     if (amIOnTurn) {
       const itemName = draftState.game === 'cs2' ? 'карту' : 'героя';
-      statusEl.innerHTML = 'Твой ход! Забань ' + itemName + ' (осталось: ' + (5 - draftState.bans[myRole].length) + '/5)';
+      statusEl.innerHTML = 'Твой ход! Забань ' + itemName + ' (осталось: ' + (maxBans - draftState.bans[myRole].length) + '/' + maxBans + ')';
       btn.style.display = 'inline-block';
       btn.textContent = 'Закончить баны';
       btn.onclick = async () => {
-        if (new Set(draftState.bans[myRole]).size < 5) { alert('Забань ровно 5 ' + (draftState.game === 'cs2' ? 'карт' : 'героев')); return; }
+        if (new Set(draftState.bans[myRole]).size < maxBans) { alert('Забань ровно ' + maxBans + ' ' + (draftState.game === 'cs2' ? 'карт' : 'героев')); return; }
         const nextTurn = turnRole === 'p1' ? 'p2' : 'p1';
-        const nextPhase = (draftState.bans[nextTurn].length >= 5) ? 'pick' : 'ban';
+        const nextPhase = (draftState.bans[nextTurn].length >= maxBans) ? 'pick' : 'ban';
         await supabaseClient.from('drafts').upsert({ id: 1, data: { ...draftState, turn: nextTurn, phase: nextPhase } });
       };
     } else {
@@ -1799,15 +1802,13 @@ function renderPlayerDraft(myUid) {
         
         if (isBannedByMe) { style += 'opacity: 0.2; filter: grayscale(100%);'; overlay = '❌'; }
         if (isBannedByEnemy) { style += 'opacity: 0.4; border-color: red;'; overlay = '🚫'; }
-        if (!isBanned && amIOnTurn && draftState.bans[myRole].length < 5) { style += 'cursor: pointer; border-color: var(--accent); box-shadow: 0 0 15px rgba(139,59,255,0.5);'; } 
+        if (!isBanned && amIOnTurn && draftState.bans[myRole].length < maxBans) { style += 'cursor: pointer; border-color: var(--accent); box-shadow: 0 0 15px rgba(139,59,255,0.5);'; } 
         else { style += 'cursor: not-allowed;'; }
         
         const mapDisplayName = mapName.replace('de_', '').toUpperCase();
-        
-        // Надежная ссылка на картинку карты (Steam CDN)
         const mapImage = `https://cdn.cloudflare.steamstatic.com/apps/csgo/images/maps/overviews/${mapName}.png`;
 
-        return `<div style="${style}" onclick="${(!isBanned && amIOnTurn && draftState.bans[myRole].length < 5) ? `banHero('${mapName}','${myRole}')` : ''}">
+        return `<div style="${style}" onclick="${(!isBanned && amIOnTurn && draftState.bans[myRole].length < maxBans) ? `banHero('${mapName}','${myRole}')` : ''}">
           <img src="${mapImage}" alt="${mapDisplayName}" style="width: 100%; height: 100%; object-fit: cover; position: absolute; inset: 0; z-index: 1;" onerror="this.style.display='none'">
           <div style="position: absolute; inset: 0; background: linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0) 60%); z-index: 2;"></div>
           <span style="position: relative; z-index: 3; text-shadow: 0 0 10px black, 0 0 5px black; letter-spacing: 2px;">${mapDisplayName}</span>
@@ -1826,10 +1827,10 @@ function renderPlayerDraft(myUid) {
         
         if (isBannedByMe) { style += 'opacity: 0.2; filter: grayscale(100%);'; overlay = '❌'; }
         if (isBannedByEnemy) { style += 'opacity: 0.4; border-color: red;'; overlay = '🚫'; }
-        if (!isBanned && amIOnTurn && draftState.bans[myRole].length < 5) { style += 'cursor: pointer;'; } 
+        if (!isBanned && amIOnTurn && draftState.bans[myRole].length < maxBans) { style += 'cursor: pointer;'; } 
         else { style += 'cursor: not-allowed;'; }
 
-        return `<div style="${style} position:relative;" onclick="${(!isBanned && amIOnTurn && draftState.bans[myRole].length < 5) ? `banHero('${id}','${myRole}')` : ''}">
+        return `<div style="${style} position:relative;" onclick="${(!isBanned && amIOnTurn && draftState.bans[myRole].length < maxBans) ? `banHero('${id}','${myRole}')` : ''}">
           <img src="https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/heroes/${id}.png" style="width: 100%; display: block;">
           <div style="position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:32px;">${overlay}</div>
         </div>`;
@@ -1898,7 +1899,6 @@ function renderPlayerDraft(myUid) {
   
   if (!match) return;
 
-  // ЗАЩИТА: Если в матче уже есть счёт или победитель, драфт запускать нельзя
   if (match.winner || match.score) {
     alert('Этот матч уже сыгран! Очистите счёт, чтобы запустить драфт заново.');
     return;
@@ -1918,39 +1918,32 @@ function renderPlayerDraft(myUid) {
   async function findPlayerUidInDb(participant) {
     if (!participant) return null;
     
-    // Пытаемся найти по имени (для 1х1)
     let { data } = await supabaseClient.from('players').select('uid').eq('name', participant.name).single();
     if (data && data.uid) return data.uid;
 
-    // Если не нашли, ищем в командах (для 5х5)
-    // Ищем команду в state.teams по ID
     const team = state.teams.find(t => t.id === participant.id || t.name === participant.name);
     if (team && team.players && team.players.length > 0) {
-      // Ищем любого игрока в команде, у которого есть UID в базе
       for (const p of team.players) {
         let { data: pData } = await supabaseClient.from('players').select('uid').eq('name', p.name).single();
-        if (pData && pData.uid) return pData.uid; // Возвращаем UID первого найденного игрока (капитана)
+        if (pData && pData.uid) return pData.uid;
       }
     }
     return null;
   }
 
-  // Получаем UID для обеих сторон
   const p1_uid = await findPlayerUidInDb(match.p1);
   const p2_uid = await findPlayerUidInDb(match.p2);
 
   if (!p1_uid) { 
-    const teamName = match.p1.name;
-    alert('Никто из команды "' + teamName + '" еще не заходил на сайт по коду! Попросите любого игрока из этой команды ввести код.'); 
+    alert('Никто из команды "' + match.p1.name + '" еще не заходил на сайт по коду!'); 
     return; 
   }
   if (!p2_uid) { 
-    const teamName = match.p2.name;
-    alert('Никто из команды "' + teamName + '" еще не заходил на сайт по коду! Попросите любого игрока из этой команды ввести код.'); 
+    alert('Никто из команды "' + match.p2.name + '" еще не заходил на сайт по коду!'); 
     return; 
   }
 
-  // --- ВОТ ЗДЕСЬ МЫ БЕРЕМ КАПИТАНОВ ---
+  // Берем капитанов
   const team1 = state.teams.find(t => t.name === match.p1.name);
   const team2 = state.teams.find(t => t.name === match.p2.name);
   
@@ -1978,7 +1971,8 @@ function renderPlayerDraft(myUid) {
     phase: 'coinflip',
     first_turn: null,
     turn: null,
-    game: state.game, // <--- ТЕПЕРЬ ДРАФТ ЗАПОМИНАЕТ ИГРУ
+    game: state.game,
+    maxBans: state.game === 'cs2' ? 1 : 5, // <--- 1 бан для CS2
     pool: state.game === 'cs2' 
       ? [...CS2_MAPS].sort(() => 0.5 - Math.random())
       : [...ALL_HEROES].sort(() => 0.5 - Math.random()).slice(0, 20),
@@ -1988,8 +1982,8 @@ function renderPlayerDraft(myUid) {
     p1_name: match.p1.name,
     p2_uid: p2_uid,
     p2_name: match.p2.name,
-    p1_captain_uid: p1_captain_uid, // <--- ПЕРЕДАЕМ КАПИТАНА
-    p2_captain_uid: p2_captain_uid, // <--- ПЕРЕДАЕМ КАПИТАНА
+    p1_captain_uid: p1_captain_uid,
+    p2_captain_uid: p2_captain_uid,
     match_id: matchId,
     is_open: false
   };
