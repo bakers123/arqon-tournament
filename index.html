@@ -2847,6 +2847,11 @@ async function startApp() {
     handleNoAuth();
   }
 }
+  if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', startApp);
+} else {
+  startApp();
+}
 </script>
 </body>
 </html>
