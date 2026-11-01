@@ -397,20 +397,28 @@
   /* Шапка */
   header {
     flex-direction: column;
-    padding: 10px;
-    gap: 10px;
+    padding: 10px 5px;
+    gap: 15px;
   }
+  
+  /* Меню (кнопки) */
   nav {
+    display: flex;
     flex-wrap: wrap;
     justify-content: center;
-    gap: 5px;
+    gap: 6px;
+    width: 100%;
   }
-  nav button, .nav-social-btn {
+  nav button {
     padding: 6px 10px;
     font-size: 11px;
+    flex: 0 0 auto; /* Кнопки не растягиваются на всю ширину */
   }
   .nav-social-btn {
     margin-left: 0;
+    padding: 6px 10px;
+    font-size: 11px;
+    flex: 0 0 auto;
   }
   
   /* Контент */
