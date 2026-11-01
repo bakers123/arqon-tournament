@@ -808,39 +808,6 @@ function isAdmin() {
 // ==========================================
 // АВТОРИЗАЦИЯ И ЗАПУСК
 // ==========================================
-supabaseClient.auth.getSession().then(({ data: { session } }) => {
-  const savedUid = localStorage.getItem('arqon_current_uid');
-  const savedName = localStorage.getItem('arqon_current_name');
-
-  if (isAdmin()) {
-    document.getElementById('auth-screen').style.display = 'none';
-    document.querySelector('main').style.display = 'block';
-    initSupabaseSync();
-    init(); // Запускаем инициализацию для админа
-  } else if (session) {
-    currentUser = session.user;
-    checkUserRole(session.user.id);
-  } else if (savedUid && savedName) {
-    // Принудительный вход по сохраненному UID
-    console.log("Используем сохраненный UID:", savedUid);
-    currentUser = { id: savedUid }; 
-    
-    document.getElementById('auth-screen').style.display = 'none';
-    document.querySelector('main').style.display = 'none';
-    
-    const playerScreen = document.getElementById('player-screen');
-    playerScreen.classList.remove('hidden');
-    playerScreen.style.display = 'flex';
-    
-    document.getElementById('player-display-name').textContent = savedName;
-    
-    startDraftListener(savedUid);
-    init(); // Инициализируем кнопки (но renderAll не тронет player-screen)
-  } else {
-    handleNoAuth();
-    init(); // Инициализируем для обычного гостя
-  }
-});
 
 supabaseClient.auth.onAuthStateChange((event, session) => {
   if (isAdmin()) return;
@@ -2800,9 +2767,6 @@ function init() {
 
   const adminTabBtn = document.getElementById('admin-tab-btn');
   if (adminTabBtn && isAdmin()) adminTabBtn.style.display = 'inline-block';
-
-  showAuthButtonIfNeeded();
-  renderAll();
 }
 
 function showAuthButtonIfNeeded() {
@@ -2841,10 +2805,48 @@ window.openAuthScreen = openAuthScreen;
 window.renderPlayerDraft = renderPlayerDraft;
 
 // Запуск
+// ==========================================
+// УМНЫЙ ЗАПУСК (ИСПРАВЛЕНИЕ)
+// ==========================================
+async function startApp() {
+  // 1. Инициализируем UI (кнопки, табы)
+  init(); 
+
+  // 2. Проверяем сессию
+  const { data: { session } } = await supabaseClient.auth.getSession();
+  const savedUid = localStorage.getItem('arqon_current_uid');
+  const savedName = localStorage.getItem('arqon_current_name');
+
+  if (isAdmin()) {
+    document.getElementById('auth-screen').style.display = 'none';
+    document.querySelector('main').style.display = 'block';
+    initSupabaseSync();
+  } else if (session) {
+    currentUser = session.user;
+    checkUserRole(session.user.id);
+  } else if (savedUid && savedName) {
+    // Принудительный вход по сохраненному UID
+    console.log("Используем сохраненный UID:", savedUid);
+    currentUser = { id: savedUid }; 
+    
+    document.getElementById('auth-screen').style.display = 'none';
+    document.querySelector('main').style.display = 'none';
+    
+    const playerScreen = document.getElementById('player-screen');
+    playerScreen.classList.remove('hidden');
+    playerScreen.style.display = 'flex';
+    
+    document.getElementById('player-display-name').textContent = savedName;
+    startDraftListener(savedUid);
+  } else {
+    handleNoAuth();
+  }
+}
+
 if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', init);
+  document.addEventListener('DOMContentLoaded', startApp);
 } else {
-  
+  startApp();
 }
 </script>
 </body>
