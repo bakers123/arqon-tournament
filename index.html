@@ -2810,25 +2810,13 @@ window.renderPlayerDraft = renderPlayerDraft;
 // УМНЫЙ ЗАПУСК (ИСПРАВЛЕНИЕ)
 // ==========================================
 async function startApp() {
-  // 1. Инициализируем UI (кнопки, табы)
-  init(); 
-
-  // 2. Проверяем сессию
-  const { data: { session } } = await supabaseClient.auth.getSession();
+  // 1. Мгновенно проверяем LocalStorage (не ждем Supabase)
   const savedUid = localStorage.getItem('arqon_current_uid');
   const savedName = localStorage.getItem('arqon_current_name');
 
-  if (isAdmin()) {
-    document.getElementById('auth-screen').style.display = 'none';
-    document.querySelector('main').style.display = 'block';
-    initSupabaseSync();
-  } else if (session) {
-    currentUser = session.user;
-    checkUserRole(session.user.id);
-  } else if (savedUid && savedName) {
-    // Принудительный вход по сохраненному UID
-    console.log("Используем сохраненный UID:", savedUid);
-    currentUser = { id: savedUid }; 
+  if (savedUid && savedName && !isAdmin()) {
+    console.log("Вход по LocalStorage:", savedName);
+    currentUser = { id: savedUid };
     
     document.getElementById('auth-screen').style.display = 'none';
     document.querySelector('main').style.display = 'none';
@@ -2838,16 +2826,26 @@ async function startApp() {
     playerScreen.style.display = 'flex';
     
     document.getElementById('player-display-name').textContent = savedName;
+    
     startDraftListener(savedUid);
+    init(); // Инициализируем кнопки (но renderAll не тронет player-screen)
+    return; // Выходим, чтобы не ждать Supabase
+  }
+
+  // 2. Если LocalStorage пуст — работаем через Supabase
+  init(); 
+  const { data: { session } } = await supabaseClient.auth.getSession();
+
+  if (isAdmin()) {
+    document.getElementById('auth-screen').style.display = 'none';
+    document.querySelector('main').style.display = 'block';
+    initSupabaseSync();
+  } else if (session) {
+    currentUser = session.user;
+    checkUserRole(session.user.id);
   } else {
     handleNoAuth();
   }
-}
-
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', startApp);
-} else {
-  startApp();
 }
 </script>
 </body>
