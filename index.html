@@ -407,40 +407,47 @@
 
 
 <!-- ЭКРАН ИГРОКА -->
-<div id="player-screen" class="hidden" style="max-width: 1000px; margin: 40px auto; padding: 20px;">
-  <div class="card">
-   <div class="row" style="justify-content: space-between; align-items: center; margin-bottom: 20px;">
-      <h2 style="margin:0;">Драфт: <span id="player-display-name" style="color: var(--accent);">Игрок</span></h2>
+<div id="player-screen" class="hidden" style="flex: 1; padding: 40px 20px; display: flex; flex-direction: column; align-items: center;">
+  <div style="width: 100%; max-width: 1000px;">
+    
+    <!-- Шапка дашборда игрока -->
+    <div class="card" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+      <div>
+        <h2 style="margin: 0; color: var(--accent);">Драфт: <span id="player-display-name">Игрок</span></h2>
+        <div id="draft-status" class="hint" style="margin-top: 5px; font-size: 14px;">
+          Ожидание начала драфта...
+        </div>
+      </div>
       <div style="display: flex; gap: 10px;">
         <button class="btn ghost" onclick="showPlayerBracket()">📊 Сетка</button>
         <button class="btn ghost" onclick="logoutPlayer()">Выйти</button>
       </div>
     </div>
 
-    <div id="draft-status" class="hint" style="text-align: center; font-size: 16px; margin-bottom: 20px;">
-      Ожидание начала драфта...
-    </div>
-
-    <!-- Сетка героев -->
-    <div id="hero-pool" class="grid" style="grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));">
-      <!-- Сюда скрипт вставит иконки героев -->
-    </div>
-
-    <div style="margin-top: 20px; text-align: center;">
-      <button class="btn" id="draft-action-btn" style="display: none;">Действие</button>
-    </div>
-
-    <!-- ЧАТ (ТУТ) -->
-    <div id="chat-container" class="hidden" style="margin-top: 30px; border-top: 1px solid var(--border); padding-top: 20px;">
-      <h2 style="font-size: 14px; margin-bottom: 10px;">💬 Чат матча</h2>
-      <div id="chat-messages" style="height: 200px; overflow-y: auto; background: #0F0F14; border: 1px solid var(--border); border-radius: 6px; padding: 10px; margin-bottom: 10px;">
+    <!-- Основная зона драфта -->
+    <div class="card" style="min-height: 400px;">
+      
+      <!-- Сетка героев/карт -->
+      <div id="hero-pool" class="grid" style="grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));">
+        <!-- Сюда скрипт вставит иконки -->
       </div>
-      <div class="row">
-        <input id="chat-input" placeholder="Написать сообщение..." />
-        <button class="btn" onclick="sendMessage()">Отправить</button>
+
+      <div style="margin-top: 30px; text-align: center;">
+        <button class="btn" id="draft-action-btn" style="display: none; padding: 15px 40px; font-size: 16px;">Действие</button>
       </div>
+
+      <!-- ЧАТ -->
+      <div id="chat-container" class="hidden" style="margin-top: 40px; border-top: 1px solid var(--border); padding-top: 20px;">
+        <h2 style="font-size: 14px; margin-bottom: 10px;">💬 Чат матча</h2>
+        <div id="chat-messages" style="height: 250px; overflow-y: auto; background: #0F0F14; border: 1px solid var(--border); border-radius: 6px; padding: 15px; margin-bottom: 10px;">
+        </div>
+        <div class="row">
+          <input id="chat-input" placeholder="Написать сообщение..." />
+          <button class="btn" onclick="sendMessage()">Отправить</button>
+        </div>
+      </div>
+
     </div>
-   
   </div>
 </div>
 
@@ -853,6 +860,7 @@ async function checkUserRole(uid) {
   if (isAdmin()) {
     document.getElementById('auth-screen').style.display = 'none';
     document.querySelector('main').style.display = 'block';
+    document.getElementById('player-screen').classList.add('hidden');
     initSupabaseSync();
     return;
   }
@@ -863,8 +871,11 @@ async function checkUserRole(uid) {
     document.getElementById('auth-screen').style.display = 'none';
     document.getElementById('player-screen').classList.remove('hidden');
     document.getElementById('player-display-name').textContent = data.name;
+    
+    // Скрываем основную часть, но оставляем футер
     document.querySelector('main').style.display = 'none';
-        startDraftListener(uid);
+    
+    startDraftListener(uid);
   } else {
     handleNoAuth();
   }
@@ -1519,6 +1530,11 @@ window.logoutPlayer = logoutPlayer;
   document.querySelectorAll('nav button').forEach(b => {
     b.classList.toggle('active', b.dataset.tab === 'bracket');
   });
+}
+
+function backToDraft() {
+  document.querySelector('main').style.display = 'none';
+  document.getElementById('player-screen').classList.remove('hidden');
 }
 
 window.showPlayerBracket = showPlayerBracket;
