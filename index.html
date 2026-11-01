@@ -780,12 +780,22 @@ const ADMIN_KEY = 'ARQON2026123123123123123';
 let currentUser = null;
 let isRealtimeActive = false;
 
-// Состояние турнира (по умолчанию)
-let state = { game: 'dota', mode: '5x5', bracketType: 'single', maxParticipants: 8, soloPlayers: [], freeAgents: [], teams: [], bracket: null };
 // Маппул CS2
 const CS2_MAPS = [
   "de_ancient", "de_anubis", "de_cache", "de_dust2", "de_inferno", "de_mirage", "de_nuke"
 ];
+
+// Состояние турнира
+let state = {
+  game: 'dota',
+  mode: '5x5',
+  bracketType: 'single',
+  maxParticipants: 8,
+  soloPlayers: [],
+  freeAgents: [],
+  teams: [],
+  bracket: null
+};
 
 function isAdmin() {
   const params = new URLSearchParams(window.location.search);
@@ -795,7 +805,6 @@ function isAdmin() {
 // ==========================================
 // АВТОРИЗАЦИЯ
 // ==========================================
-// Проверка сессии при загрузке
 supabaseClient.auth.getSession().then(({ data: { session } }) => {
   if (isAdmin()) {
     document.getElementById('auth-screen').style.display = 'none';
@@ -809,10 +818,8 @@ supabaseClient.auth.getSession().then(({ data: { session } }) => {
   }
 });
 
-// Слушатель изменений (вход/выход)
 supabaseClient.auth.onAuthStateChange((event, session) => {
-  if (isAdmin()) return; // Если админ — вообще игнорируем входы игроков
-  
+  if (isAdmin()) return;
   if (session) {
     currentUser = session.user;
     checkUserRole(session.user.id);
@@ -822,17 +829,15 @@ supabaseClient.auth.onAuthStateChange((event, session) => {
   }
 });
 
-
 function handleNoAuth() {
-  document.getElementById('auth-screen').style.display = 'none'; 
-  
-  // Принудительно скрываем плашку игрока
+  document.getElementById('auth-screen').style.display = 'none';
+
   const playerScreen = document.getElementById('player-screen');
   if (playerScreen) {
     playerScreen.classList.add('hidden');
-    playerScreen.style.display = 'none'; // <--- Вот эта строка скроет её навсегда
+    playerScreen.style.display = 'none';
   }
-  
+
   if (isAdmin()) {
     document.querySelector('main').style.display = 'block';
     document.getElementById('tab-bracket').classList.remove('hidden');
@@ -842,8 +847,8 @@ function handleNoAuth() {
     document.querySelector('main').style.display = 'block';
     document.getElementById('tab-bracket').classList.remove('hidden');
     document.getElementById('tab-admin').classList.add('hidden');
-    
-    supabaseClient.from('tournament').select('data').eq('id', 1).single().then(({data}) => {
+
+    supabaseClient.from('tournament').select('data').eq('id', 1).maybeSingle().then(({ data }) => {
       if (data && data.data && data.data.bracket) {
         state.bracket = data.data.bracket;
         if (state.bracket.type === 'double') {
@@ -856,28 +861,26 @@ function handleNoAuth() {
   }
 }
 
-
 async function checkUserRole(uid) {
   if (isAdmin()) {
     document.getElementById('auth-screen').style.display = 'none';
     document.querySelector('main').style.display = 'block';
-    document.getElementById('player-screen').style.display = 'none';
-    document.getElementById('player-screen').classList.add('hidden');
+    const ps = document.getElementById('player-screen');
+    if (ps) { ps.style.display = 'none'; ps.classList.add('hidden'); }
     initSupabaseSync();
     return;
   }
-  
-  const { data, error } = await supabaseClient.from('players').select('*').eq('uid', uid).single();
-  
+
+  const { data } = await supabaseClient.from('players').select('*').eq('uid', uid).maybeSingle();
+
   if (data) {
     document.getElementById('auth-screen').style.display = 'none';
     document.querySelector('main').style.display = 'none';
-    
-    // Показываем плашку
+
     const playerScreen = document.getElementById('player-screen');
     playerScreen.classList.remove('hidden');
-    playerScreen.style.display = 'flex'; // <--- Возвращаем ей нормальный вид
-    
+    playerScreen.style.display = 'flex';
+
     document.getElementById('player-display-name').textContent = data.name;
     startDraftListener(uid);
   } else {
@@ -888,63 +891,50 @@ async function checkUserRole(uid) {
 async function loginWithCode() {
   const code = document.getElementById('auth-code').value.trim().toUpperCase();
   if (!code) return;
-  
+
   const btn = document.getElementById('login-btn');
   const oldText = btn ? btn.textContent : 'Войти';
   const errorDiv = document.getElementById('auth-error');
-  
+
   if (btn) { btn.disabled = true; btn.textContent = 'Подключение...'; }
   if (errorDiv) { errorDiv.classList.add('hidden'); errorDiv.textContent = ''; }
 
   try {
-    // 1. Ищем код в базе
-    const { data: codeData, error: codeError } = await supabaseClient.from('access_codes').select('*').eq('code', code).single();
-    
-    if (codeError || !codeData) {
-      throw new Error('Неверный код доступа');
-    }
+    const { data: codeData, error: codeError } = await supabaseClient
+      .from('access_codes').select('*').eq('code', code).maybeSingle();
 
-    // 2. Проверяем, есть ли уже сессия (чтобы не плодить новых анонимных юзеров)
+    if (codeError || !codeData) throw new Error('Неверный код доступа');
+
     const { data: { session: existingSession } } = await supabaseClient.auth.getSession();
-    
+
     let userId = null;
 
     if (existingSession && existingSession.user) {
-      // Если сессия есть, используем её
       userId = existingSession.user.id;
     } else {
-      // Если нет — создаем нового анонимного пользователя (с таймаутом)
       const authPromise = supabaseClient.auth.signInAnonymously();
-      const timeoutPromise = new Promise((_, reject) => 
+      const timeoutPromise = new Promise((_, reject) =>
         setTimeout(() => reject(new Error('Сервер долго не отвечает. Попробуй еще раз.')), 15000)
       );
-
       const result = await Promise.race([authPromise, timeoutPromise]);
-      
       if (result.error) throw new Error('Ошибка входа: ' + result.error.message);
       userId = result.data.user.id;
     }
 
-    // 3. Сохраняем/обновляем игрока в таблице players
-    const { data: existingPlayers } = await supabaseClient.from('players').select('*').eq('name', codeData.player_name);
-    
+    const { data: existingPlayers } = await supabaseClient
+      .from('players').select('*').eq('name', codeData.player_name);
+
     if (existingPlayers && existingPlayers.length > 0) {
       await supabaseClient.from('players').update({ uid: userId }).eq('name', codeData.player_name);
     } else {
       await supabaseClient.from('players').insert({ uid: userId, name: codeData.player_name });
     }
 
-    // 4. Запоминаем UID (для админки)
     localStorage.setItem('last_login_uid_' + codeData.player_name, userId);
-
-    // 5. Удаляем использованный код
     await supabaseClient.from('access_codes').delete().eq('code', code);
-    
-    // Перезагружаем страницу, чтобы применились права
-    window.location.reload();
 
+    window.location.reload();
   } catch (err) {
-    // Если произошла любая ошибка (неверный код, таймаут, сбой базы)
     if (errorDiv) {
       errorDiv.textContent = err.message;
       errorDiv.classList.remove('hidden');
@@ -965,23 +955,30 @@ function logoutPlayer() {
 async function initSupabaseSync() {
   if (isRealtimeActive) return;
   isRealtimeActive = true;
-  
-  const { data } = await supabaseClient.from('tournament').select('data').eq('id', 1).single();
+
+  const { data } = await supabaseClient.from('tournament').select('data').eq('id', 1).maybeSingle();
   if (data && data.data) {
     state = data.data;
+    // Защита от старых стейтов
+    if (!state.freeAgents) state.freeAgents = [];
+    if (!state.soloPlayers) state.soloPlayers = [];
+    if (!state.teams) state.teams = [];
+    if (state.bracket && !state.bracket.type) state.bracket.type = 'single';
     renderAll();
   }
-  
+
   supabaseClient.channel('public:tournament')
     .on('postgres_changes', { event: '*', schema: 'public', table: 'tournament' }, payload => {
       if (payload.new && payload.new.data) {
         state = payload.new.data;
+        if (!state.freeAgents) state.freeAgents = [];
+        if (!state.soloPlayers) state.soloPlayers = [];
+        if (!state.teams) state.teams = [];
         renderAll();
       }
     })
     .subscribe();
 }
-
 
 function saveState() {
   supabaseClient.from('tournament').upsert({ id: 1, data: state }).then(({ error }) => {
@@ -990,7 +987,7 @@ function saveState() {
 }
 
 // ==========================================
-// ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
+// ВСПОМОГАТЕЛЬНЫЕ
 // ==========================================
 function escapeHtml(s) {
   return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -1011,87 +1008,12 @@ function parseRank(rankTier) {
   const ru = MEDALS_RU[medal] ? MEDALS_RU[medal] + ' ' + star : '? ' + star;
   return { name: en + ' / ' + ru, color: colors[medal] || '#8A8A96', icon: '⭐' };
 }
-  let editingUidId = null;
-
-function openUidModal(accountId) {
-  const p = state.soloPlayers.find(p => String(p.account_id) === String(accountId)) || 
-            state.teams.flatMap(t => t.players).find(p => String(p.account_id) === String(accountId));
-  if (!p) return;
-  editingUidId = accountId;
-  document.getElementById('edit-uid').value = p.auth_uid || '';
-  document.getElementById('uid-modal').classList.remove('hidden');
-}
-
-function closeUidModal() {
-  document.getElementById('uid-modal').classList.add('hidden');
-  editingUidId = null;
-}
-
-function saveUidDirect(accountId) {
-  if (!isAdmin()) return;
-  const input = document.getElementById('uid-input-' + accountId);
-  if (!input) return;
-  const newUid = input.value.trim();
-  
-  let found = state.soloPlayers.find(p => String(p.account_id) === String(accountId));
-  if (found) {
-    found.auth_uid = newUid;
-  } else {
-    for (const team of state.teams) {
-      const p = team.players.find(p => String(p.account_id) === String(accountId));
-      if (p) { p.auth_uid = newUid; break; }
-    }
-  }
-  
-  saveState();
-  renderAll();
-  alert('UID сохранен!');
-}
-window.saveUidDirect = saveUidDirect;
 
 // ==========================================
-// РЕНДЕР ИГРОКОВ И АДМИНКИ (Обновлено)
+// КОДЫ ДОСТУПА
 // ==========================================
-function playerCardHTML(p, removeFn) {
-  const rank = parseRank(p.rank_tier);
-  const removeBtn = isAdmin() ? '<button class="remove" onclick="' + removeFn + '">×</button>' : '';
-  
-  // Бейдж FACEIT
-  let faceitBadge = '';
-  if (p.faceitLevel && state.game === 'cs2') {
-    faceitBadge = `<span class="faceit-badge lvl-${p.faceitLevel}">LVL ${p.faceitLevel}</span>`;
-  }
-
-  // Кнопка выдачи кода (только для админа)
-  const codeBtn = isAdmin() 
-    ? `<button class="btn ghost" style="padding:2px 8px; font-size:10px; margin-top:5px;" onclick="event.stopPropagation(); generateAccessCode('${escapeHtml(p.name)}')">🔑 Выдать код</button>` 
-    : '';
-
-  return '<div class="player" draggable="true" ondragstart="dragPlayerFromPool(event, \'' + p.account_id + '\')">' +
-    '<img src="' + p.avatar + '" alt="" onerror="this.style.display=\'none\'">' +
-    '<div>' +
-      '<div class="name">' + escapeHtml(p.name) + ' ' + faceitBadge + '</div>' +
-      '<div class="rank" style="color:' + rank.color + '">' + rank.icon + ' ' + rank.name + '</div>' +
-      codeBtn + // <-- ВОТ ОНА
-    '</div>' + removeBtn +
-  '</div>';
-}
-
-// Функция для ручной привязки UID
-window.promptUid = function(accountId, name) {
-  const currentUid = state.soloPlayers.find(p => String(p.account_id) === String(accountId))?.auth_uid || '';
-  const newUid = prompt('Введи UID для игрока ' + name + ':', currentUid);
-  if (newUid !== null) {
-    const p = state.soloPlayers.find(p => String(p.account_id) === String(accountId));
-    if (p) {
-      p.auth_uid = newUid.trim();
-      saveState();
-      renderAll();
-      alert('UID сохранен!');
-    }
-  }
-};
 async function generateAccessCode(playerName) {
+  if (!isAdmin()) return;
   let code = "";
   let isUnique = false;
 
@@ -1102,31 +1024,95 @@ async function generateAccessCode(playerName) {
   }
 
   const { error } = await supabaseClient.from('access_codes').insert({ code: code, player_name: playerName });
-  
+
   if (error) {
     alert('Ошибка создания кода: ' + error.message);
   } else {
-    // Ищем, есть ли у этого игрока уже сохраненный UID
-    const { data: dbPlayer } = await supabaseClient.from('players').select('uid').eq('name', playerName).single();
-    
+    const { data: dbPlayer } = await supabaseClient.from('players').select('uid').eq('name', playerName).maybeSingle();
     let msg = `Код для игрока ${playerName}:\n\n${code}\n\nПередайте его игроку.`;
     if (dbPlayer && dbPlayer.uid) {
       msg += `\n\n(Его текущий UID уже в базе: ${dbPlayer.uid})`;
     }
-    
     alert(msg);
   }
 }
 
+// ==========================================
+// ДОБАВЛЕНИЕ ИГРОКА
+// ==========================================
 async function fetchPlayer(steamIdInput) {
   const name = document.getElementById('p-name').value.trim();
   const avatar = document.getElementById('p-avatar').value.trim();
   const rankTier = parseInt(document.getElementById('p-rank').value) || 0;
   if (!name) throw new Error('Введи ник игрока');
-  let accountId = steamIdInput.trim();
+  let accountId = steamIdInput ? steamIdInput.trim() : '';
   if (!accountId) accountId = 'manual_' + Date.now();
   const fallbackAvatar = 'https://ui-avatars.com/api/?name=' + encodeURIComponent(name.charAt(0)) + '&background=7A3BFF&color=F2F2F2&size=96&bold=true';
   return { account_id: accountId, name: name, avatar: avatar || fallbackAvatar, rank_tier: rankTier };
+}
+
+async function handleAddPlayer() {
+  if (!isAdmin()) return;
+  const input = document.getElementById('player-input');
+  const msg = document.getElementById('input-msg');
+  const btn = document.getElementById('add-player-btn');
+  const val = input.value.trim();
+  btn.disabled = true; btn.textContent = 'Загрузка...'; msg.innerHTML = '';
+
+  try {
+    const player = await fetchPlayer(val);
+    const faceitEl = document.getElementById('p-faceit');
+    player.faceitLevel = parseInt(faceitEl ? faceitEl.value : 0) || 0;
+
+    if (state.mode === '1x1') {
+      if (state.soloPlayers.find(p => p.account_id === player.account_id)) throw new Error('Этот игрок уже добавлен');
+      state.soloPlayers.push(player);
+      renderSolo();
+    } else {
+      if (!state.freeAgents) state.freeAgents = [];
+      if (state.freeAgents.find(p => p.account_id === player.account_id)) throw new Error('Этот игрок уже добавлен');
+      state.freeAgents.push(player);
+      renderFreeAgents();
+    }
+
+    input.value = '';
+    document.getElementById('p-name').value = '';
+    document.getElementById('p-avatar').value = '';
+    document.getElementById('p-rank').value = '0';
+    if (faceitEl) faceitEl.value = '0';
+    msg.innerHTML = '<div class="msg success">✓ ' + escapeHtml(player.name) + ' добавлен</div>';
+    saveState();
+  } catch (e) {
+    msg.innerHTML = '<div class="msg error">✕ ' + escapeHtml(e.message) + '</div>';
+  } finally {
+    btn.disabled = false; btn.textContent = 'Добавить';
+  }
+}
+
+// ==========================================
+// РЕНДЕР ИГРОКОВ
+// ==========================================
+function playerCardHTML(p, removeFn) {
+  const rank = parseRank(p.rank_tier);
+  const removeBtn = isAdmin() ? '<button class="remove" onclick="' + removeFn + '">×</button>' : '';
+
+  let faceitBadge = '';
+  if (p.faceitLevel && state.game === 'cs2') {
+    faceitBadge = `<span class="faceit-badge lvl-${p.faceitLevel}">LVL ${p.faceitLevel}</span>`;
+  }
+
+  const codeBtn = isAdmin()
+    ? `<button class="btn ghost" style="padding:2px 8px; font-size:10px; margin-top:5px;" onclick="event.stopPropagation(); generateAccessCode('${escapeHtml(p.name)}')">🔑 Выдать код</button>`
+    : '';
+
+  return '<div class="player" draggable="true" ondragstart="dragPlayerFromPool(event, \'' + p.account_id + '\')">' +
+    '<img src="' + p.avatar + '" alt="" onerror="this.style.display=\'none\'">' +
+    '<div>' +
+      '<div class="name">' + escapeHtml(p.name) + ' ' + faceitBadge + '</div>' +
+      '<div class="rank" style="color:' + rank.color + '">' + rank.icon + ' ' + rank.name + '</div>' +
+      codeBtn +
+    '</div>' + removeBtn +
+  '</div>';
 }
 
 function renderSolo() {
@@ -1142,9 +1128,8 @@ function renderFreeAgents() {
   const list = document.getElementById('free-agents-list');
   const empty = document.getElementById('free-agents-empty');
   if (!list || !empty) return;
-  
   if (!state.freeAgents) state.freeAgents = [];
-  
+
   if (!state.freeAgents.length) {
     list.innerHTML = '';
     empty.classList.remove('hidden');
@@ -1154,28 +1139,18 @@ function renderFreeAgents() {
   list.innerHTML = state.freeAgents.map(p => playerCardHTML(p, "removeFreeAgent('" + p.account_id + "')")).join('');
 }
 
-function removeFreeAgent(accId) {
-  if (!isAdmin()) return;
-  state.freeAgents = state.freeAgents.filter(p => p.account_id !== accId);
-  renderFreeAgents();
-  saveState();
-}
-window.removeFreeAgent = removeFreeAgent;
-
 function renderTeams() {
   const list = document.getElementById('teams-list');
   if (!list) return;
   if (!state.teams.length) { list.innerHTML = '<div class="empty">Команд пока нет</div>'; return; }
-  
+
   const isAdm = isAdmin();
-  
+
   list.innerHTML = state.teams.map(t => {
-    // Генерируем карточки игроков с учетом капитана
     const playersHTML = t.players.map(p => {
       const isCaptain = t.captainId && String(p.account_id) === String(t.captainId);
       const captainBadge = isCaptain ? '<span style="font-size:10px; color: gold; margin-left: 5px;" title="Капитан">👑</span>' : '';
-      
-      // Ранг и FACEIT
+
       const rank = parseRank(p.rank_tier);
       let faceitBadge = '';
       if (p.faceitLevel && state.game === 'cs2') {
@@ -1183,11 +1158,10 @@ function renderTeams() {
       }
 
       const removeFn = `removePlayerFromTeam('${t.id}','${p.account_id}')`;
-      const codeBtn = isAdm 
-        ? `<button class="btn ghost" style="padding:2px 8px; font-size:10px; margin-top:5px;" onclick="event.stopPropagation(); generateAccessCode('${escapeHtml(p.name)}')">🔑 Код</button>` 
+      const codeBtn = isAdm
+        ? `<button class="btn ghost" style="padding:2px 8px; font-size:10px; margin-top:5px;" onclick="event.stopPropagation(); generateAccessCode('${escapeHtml(p.name)}')">🔑 Код</button>`
         : '';
 
-      // Клик по игроку делает его капитаном
       const clickAction = isAdm ? `onclick="setCaptain('${t.id}', '${p.account_id}')" title="Сделать капитаном"` : '';
 
       return `
@@ -1208,7 +1182,6 @@ function renderTeams() {
       ? `<input value="${escapeHtml(t.name)}" onchange="renameTeam('${t.id}', this.value)" style="flex:1; font-weight:700; letter-spacing:1px;" />`
       : `<input value="${escapeHtml(t.name)}" disabled style="flex:1; font-weight:700; letter-spacing:1px;" />`;
 
-    // Блок с капитаном (подсказка для админа)
     const captain = t.captainId ? t.players.find(p => String(p.account_id) === String(t.captainId)) : null;
     const captainHint = isAdm ? `
       <div class="hint" style="margin-bottom: 10px; color: ${captain ? 'gold' : 'var(--text-dim)'};">
@@ -1216,15 +1189,14 @@ function renderTeams() {
       </div>
     ` : '';
 
-    // Обертка команды (drop-зона)
     return `
-      <div class="card team-slot" style="margin-bottom:12px;" 
-           ondragover="event.preventDefault(); this.classList.add('drag-over');" 
-           ondragleave="this.classList.remove('drag-over');" 
+      <div class="card team-slot" style="margin-bottom:12px;"
+           ondragover="event.preventDefault(); this.classList.add('drag-over');"
+           ondragleave="this.classList.remove('drag-over');"
            ondrop="handleDropOnTeam(event, '${t.id}')">
         <div class="row" style="align-items:center; margin-bottom:10px;">
-          ${nameInput} 
-          <span class="hint" style="margin:0;">${t.players.length}/5</span> 
+          ${nameInput}
+          <span class="hint" style="margin:0;">${t.players.length}/5</span>
           ${rmTeam}
         </div>
         ${captainHint}
@@ -1236,58 +1208,75 @@ function renderTeams() {
   }).join('');
 }
 
-async function handleAddPlayer() {
-  if (!isAdmin()) return;
-  const input = document.getElementById('player-input');
-  const msg = document.getElementById('input-msg');
-  const btn = document.getElementById('add-player-btn');
-  const val = input.value.trim();
-  btn.disabled = true; btn.textContent = 'Загрузка...'; msg.innerHTML = '';
-  
-  try {
-    const player = await fetchPlayer(val);
-    // Добавляем FACEIT-уровень
-    player.faceitLevel = parseInt(document.getElementById('p-faceit')?.value) || 0;
-    
-    if (state.mode === '1x1') {
-      if (state.soloPlayers.find(p => p.account_id === player.account_id)) throw new Error('Этот игрок уже добавлен');
-      state.soloPlayers.push(player);
-      renderSolo();
-    } else {
-      // В 5x5 просто добавляем в "пул свободных агентов" (мы будем рендерить их отдельно)
-      if (!state.freeAgents) state.freeAgents = [];
-      if (state.freeAgents.find(p => p.account_id === player.account_id)) throw new Error('Этот игрок уже добавлен');
-      state.freeAgents.push(player);
-      renderFreeAgents(); // Новая функция для отрисовки пула
-    }
-    
-    input.value = ''; document.getElementById('p-name').value = ''; document.getElementById('p-avatar').value = ''; document.getElementById('p-rank').value = '0';
-    if (document.getElementById('p-faceit')) document.getElementById('p-faceit').value = '0';
-    msg.innerHTML = '<div class="msg success">✓ ' + escapeHtml(player.name) + ' добавлен</div>';
-    saveState();
-  } catch (e) {
-    msg.innerHTML = '<div class="msg error">✕ ' + escapeHtml(e.message) + '</div>';
-  } finally {
-    btn.disabled = false; btn.textContent = 'Добавить';
-  }
-}
-
+// ==========================================
+// УДАЛЕНИЕ / КАПИТАН
+// ==========================================
 function removeSolo(accId) { if (!isAdmin()) return; state.soloPlayers = state.soloPlayers.filter(p => p.account_id !== accId); renderSolo(); saveState(); }
+function removeFreeAgent(accId) { if (!isAdmin()) return; state.freeAgents = state.freeAgents.filter(p => p.account_id !== accId); renderFreeAgents(); saveState(); }
 function removeTeam(id) { if (!isAdmin()) return; state.teams = state.teams.filter(t => t.id !== id); renderTeams(); saveState(); }
-  window.setCaptain = function(teamId, accountId) {
-  if (!isAdmin()) return;
-  const team = state.teams.find(t => t.id === teamId);
-  if (team) {
-    team.captainId = accountId;
-    saveState();
-    renderTeams();
-  }
-};
 function renameTeam(id, name) { if (!isAdmin()) return; const t = state.teams.find(t => t.id === id); if (t) { t.name = name; saveState(); } }
 function removePlayerFromTeam(teamId, accId) { if (!isAdmin()) return; const t = state.teams.find(t => t.id === teamId); if (t) { t.players = t.players.filter(p => p.account_id !== accId); renderTeams(); saveState(); } }
+function setCaptain(teamId, accountId) {
+  if (!isAdmin()) return;
+  const team = state.teams.find(t => t.id === teamId);
+  if (team) { team.captainId = accountId; saveState(); renderTeams(); }
+}
 
 // ==========================================
-// СЕТКА (БЕЗ ИЗМЕНЕНИЙ)
+// DRAG & DROP ИГРОКОВ В КОМАНДЫ
+// ==========================================
+let draggedItem = null;
+
+function dragPlayerFromPool(event, accountId) {
+  if (!isAdmin()) return;
+  event.dataTransfer.setData('text/plain', accountId);
+  event.dataTransfer.setData('source', 'pool');
+}
+
+function handleDropOnTeam(event, teamId) {
+  event.preventDefault();
+  const slot = event.currentTarget;
+  if (slot) slot.classList.remove('drag-over');
+
+  if (!isAdmin()) return;
+
+  const source = event.dataTransfer.getData('source');
+  const accountId = event.dataTransfer.getData('text/plain');
+  if (!accountId) return;
+
+  if (!state.freeAgents) state.freeAgents = [];
+  if (!state.teams) state.teams = [];
+
+  if (source === 'pool') {
+    const player = state.freeAgents.find(p => p.account_id === accountId);
+    if (!player) return;
+    const team = state.teams.find(t => t.id === teamId);
+    if (!team) return;
+    if (team.players.length >= 5) { alert('В команде уже 5 игроков!'); return; }
+
+    state.freeAgents = state.freeAgents.filter(p => p.account_id !== accountId);
+    team.players.push(player);
+  }
+
+  saveState();
+  renderTeams();
+  renderFreeAgents();
+}
+
+// Экспорт в window
+window.removeSolo = removeSolo;
+window.removeFreeAgent = removeFreeAgent;
+window.removeTeam = removeTeam;
+window.renameTeam = renameTeam;
+window.removePlayerFromTeam = removePlayerFromTeam;
+window.setCaptain = setCaptain;
+window.dragPlayerFromPool = dragPlayerFromPool;
+window.handleDropOnTeam = handleDropOnTeam;
+window.loginWithCode = loginWithCode;
+window.logoutPlayer = logoutPlayer;
+window.generateAccessCode = generateAccessCode;
+// ==========================================
+// СЕТКА (SINGLE ELIMINATION)
 // ==========================================
 function shuffle(arr) {
   const a = arr.slice();
@@ -1308,15 +1297,18 @@ function generateBracket() {
   }
   if (participants.length < 2) { alert('Нужно минимум 2 участника'); return; }
   if (participants.length > state.maxParticipants) participants = participants.slice(0, state.maxParticipants);
+
   const size = Math.pow(2, Math.ceil(Math.log2(participants.length)));
   const slots = shuffle(participants);
   while (slots.length < size) slots.push(null);
+
   const rounds = [];
   let current = [];
   for (let i = 0; i < slots.length; i += 2) {
     current.push({ id: 'r1-' + (i / 2), round: 0, p1: slots[i], p2: slots[i + 1], winner: null, score: null });
   }
   rounds.push(current);
+
   let rIdx = 1;
   while (current.length > 1) {
     const next = [];
@@ -1325,12 +1317,15 @@ function generateBracket() {
     }
     rounds.push(next); current = next; rIdx++;
   }
+
   state.bracket = { rounds, type: 'single', mode: state.mode };
-  saveState(); switchTab('bracket'); renderBracket();
+  saveState();
+  switchTab('bracket');
+  renderBracket();
 }
 
 function countParticipants() {
-  if (!state.bracket || !state.bracket.rounds) return 0; // защита для дабл
+  if (!state.bracket || !state.bracket.rounds) return 0;
   const r1 = state.bracket.rounds[0];
   let total = 0;
   for (const m of r1) { if (m.p1) total++; if (m.p2) total++; }
@@ -1342,9 +1337,12 @@ function matchHTML(match) {
   const p1W = match.p1 && match.winner && match.winner.id === match.p1.id;
   const p2W = match.p2 && match.winner && match.winner.id === match.p2.id;
   const score = match.score || { p1: '', p2: '' };
-  
-  let html = '<div class="match">' + slotHTML(match.p1, p1W, match.id, 'p1') + '<div class="divider"></div>' + slotHTML(match.p2, p2W, match.id, 'p2');
-  
+
+  let html = '<div class="match">'
+    + slotHTML(match.p1, p1W, match.id, 'p1')
+    + '<div class="divider"></div>'
+    + slotHTML(match.p2, p2W, match.id, 'p2');
+
   if (canPlay) {
     html += '<div class="score-box">';
     html += '<input type="number" min="0" max="2" class="score-input" id="score-' + match.id + '-1" value="' + (score.p1 !== '' ? score.p1 : '') + '" placeholder="0" />';
@@ -1352,13 +1350,10 @@ function matchHTML(match) {
     html += '<input type="number" min="0" max="2" class="score-input" id="score-' + match.id + '-2" value="' + (score.p2 !== '' ? score.p2 : '') + '" placeholder="0" />';
     html += '<button class="btn score-save" onclick="setScore(\'' + match.id + '\')">OK</button>';
     html += '</div>';
-    
-    // Проверяем, есть ли в матче "призраки"
+
     const isGhostMatch = (match.p1 && match.p1.isGhost) || (match.p2 && match.p2.isGhost);
-    
-    // Кнопка Драфт ТОЛЬКО для админа и только если нет призраков и счета
-    if (isAdmin() && !isGhostMatch && !match.winner && !match.score) {
-        html += '<button class="btn" style="width: 100%; background: #22c55e; border-radius: 0; font-size: 11px; padding: 5px;" onclick="startDraftForMatch(\'' + match.id + '\')">▶️ Драфт</button>';
+    if (!isGhostMatch && !match.winner && !match.score) {
+      html += '<button class="btn" style="width: 100%; background: #22c55e; border-radius: 0; font-size: 11px; padding: 5px;" onclick="startDraftForMatch(\'' + match.id + '\')">▶️ Драфт</button>';
     }
   } else if (match.winner && match.score) {
     html += '<div class="score-display">' + match.score.p1 + ' : ' + match.score.p2 + '</div>';
@@ -1369,24 +1364,21 @@ function matchHTML(match) {
 
 function slotHTML(player, isWinner, matchId, slotKey) {
   if (!player) {
-    // Пустой слот тоже должен принимать игроков
-    return `<div class="slot" 
-                 ondragover="event.preventDefault(); this.classList.add('drag-over');" 
-                 ondragleave="this.classList.remove('drag-over');" 
+    return `<div class="slot"
+                 ondragover="event.preventDefault(); this.classList.add('drag-over');"
+                 ondragleave="this.classList.remove('drag-over');"
                  ondrop="handleDrop(event, '${matchId}', '${slotKey}')">
               <span class="tbd">TBD</span>
             </div>`;
   }
-  
-  // Проверяем, "призрак" ли это
+
   const ghostClass = player.isGhost ? 'ghost-player' : '';
-  
-  // Слот с игроком
-  return `<div class="slot ${isWinner ? 'winner' : ''} ${ghostClass}" 
-               draggable="true" 
+
+  return `<div class="slot ${isWinner ? 'winner' : ''} ${ghostClass}"
+               draggable="true"
                ondragstart="handleDragStart(event, '${matchId}', '${slotKey}')"
-               ondragover="event.preventDefault(); this.classList.add('drag-over');" 
-               ondragleave="this.classList.remove('drag-over');" 
+               ondragover="event.preventDefault(); this.classList.add('drag-over');"
+               ondragleave="this.classList.remove('drag-over');"
                ondrop="handleDrop(event, '${matchId}', '${slotKey}')">
             ${player.avatar ? '<img src="' + player.avatar + '" onerror="this.style.display=\'none\'">' : ''}
             <span>${escapeHtml(player.name)}</span>
@@ -1398,20 +1390,23 @@ function renderBracket() {
   const empty = document.getElementById('bracket-empty');
   const info = document.getElementById('bracket-info');
   if (!wrap) return;
-  
-  // Защита: если внезапно вызвалась для дабла — перекидываем на дабл
+
   if (state.bracket && state.bracket.type === 'double') {
     renderDoubleBracket();
     return;
   }
-  
-  if (!state.bracket || !state.bracket.rounds) { 
-    wrap.innerHTML = ''; empty.classList.remove('hidden'); info.innerHTML = ''; return; 
+
+  if (!state.bracket || !state.bracket.rounds) {
+    wrap.innerHTML = '';
+    if (empty) empty.classList.remove('hidden');
+    if (info) info.innerHTML = '';
+    return;
   }
-  
-  empty.classList.add('hidden');
+
+  if (empty) empty.classList.add('hidden');
   const rounds = state.bracket.rounds;
-  info.innerHTML = 'Формат: <b>' + state.bracket.mode + '</b> · Тип: <b>Single Elimination (Bo3)</b> · Участников: <b>' + countParticipants() + '</b>';
+  if (info) info.innerHTML = 'Формат: <b>' + state.bracket.mode + '</b> · Тип: <b>Single Elimination (Bo3)</b> · Участников: <b>' + countParticipants() + '</b>';
+
   wrap.innerHTML = rounds.map((round, ri) => {
     const title = ri === rounds.length - 1 ? '🏆 Финал' : 'Раунд ' + (ri + 1);
     return '<div class="round"><div class="round-title">' + title + '</div>' + round.map(m => matchHTML(m)).join('') + '</div>';
@@ -1423,50 +1418,122 @@ function setScore(matchId) {
     return setScoreDouble(matchId);
   }
   if (!isAdmin()) return;
+
   const rounds = state.bracket.rounds;
   let match = null, rIdx = -1, mIdx = -1;
   rounds.forEach((r, ri) => r.forEach((m, mi) => { if (m.id === matchId) { match = m; rIdx = ri; mIdx = mi; } }));
   if (!match) return;
+
   const s1 = parseInt(document.getElementById('score-' + matchId + '-1').value) || 0;
   const s2 = parseInt(document.getElementById('score-' + matchId + '-2').value) || 0;
+
   if (s1 > 2 || s2 > 2) { alert('Максимум 2 карты в Bo3'); return; }
   if (s1 < 0 || s2 < 0) { alert('Счёт не может быть отрицательным'); return; }
   if (s1 === s2) { alert('Ничья невозможна в Bo3.'); return; }
   if (s1 !== 2 && s2 !== 2) { alert('Победитель должен набрать ровно 2 карты (Bo3).'); return; }
+
   match.score = { p1: s1, p2: s2 };
   const winner = s1 === 2 ? match.p1 : match.p2;
   const oldWinner = match.winner;
-  if (oldWinner && oldWinner.id !== winner.id && rIdx + 1 < rounds.length) {
+
+  if (oldWinner && winner && oldWinner.id !== winner.id && rIdx + 1 < rounds.length) {
     const nextMatch = rounds[rIdx + 1][Math.floor(mIdx / 2)];
     const slotKey = (mIdx % 2 === 0) ? 'p1' : 'p2';
-    if (nextMatch && nextMatch[slotKey] && nextMatch[slotKey].id === oldWinner.id) { nextMatch[slotKey] = null; nextMatch.winner = null; nextMatch.score = null; }
+    if (nextMatch && nextMatch[slotKey] && nextMatch[slotKey].id === oldWinner.id) {
+      nextMatch[slotKey] = null;
+      nextMatch.winner = null;
+      nextMatch.score = null;
+    }
   }
+
   match.winner = winner;
   if (rIdx + 1 < rounds.length) {
     const nextMatch = rounds[rIdx + 1][Math.floor(mIdx / 2)];
     const slotKey = (mIdx % 2 === 0) ? 'p1' : 'p2';
-    nextMatch[slotKey] = winner; nextMatch.winner = null; nextMatch.score = null;
+    nextMatch[slotKey] = winner;
+    nextMatch.winner = null;
+    nextMatch.score = null;
   } else {
     setTimeout(() => alert('🏆 Победитель турнира: ' + winner.name + ' (' + s1 + ':' + s2 + ')'), 150);
   }
-  saveState(); renderBracket();
+
+  saveState();
+  renderBracket();
 }
 
+// ==========================================
+// DRAG & DROP В СЕТКЕ
+// ==========================================
+function handleDragStart(event, matchId, slotKey) {
+  if (!isAdmin()) return;
+  draggedItem = { matchId, slotKey };
+  event.dataTransfer.effectAllowed = 'move';
+  event.target.classList.add('dragging');
+}
+
+function handleDrop(event, targetMatchId, targetSlotKey) {
+  event.preventDefault();
+  event.currentTarget.classList.remove('drag-over');
+
+  if (!isAdmin() || !draggedItem) return;
+
+  const sourceMatchId = draggedItem.matchId;
+  const sourceSlotKey = draggedItem.slotKey;
+  draggedItem = null;
+
+  if (sourceMatchId === targetMatchId && sourceSlotKey === targetSlotKey) return;
+
+  function findMatch(id) {
+    let found = null;
+    if (state.bracket.type === 'double') {
+      state.bracket.wb.forEach(r => r.forEach(m => { if (m.id === id) found = m; }));
+      state.bracket.lb.forEach(r => r.forEach(m => { if (m.id === id) found = m; }));
+      if (state.bracket.gf.id === id) found = state.bracket.gf;
+    } else {
+      state.bracket.rounds.forEach(r => r.forEach(m => { if (m.id === id) found = m; }));
+    }
+    return found;
+  }
+
+  const sourceMatch = findMatch(sourceMatchId);
+  const targetMatch = findMatch(targetMatchId);
+  if (!sourceMatch || !targetMatch) return;
+
+  const playerToMove = sourceMatch[sourceSlotKey];
+  if (!playerToMove) return;
+
+  const playerCopy = JSON.parse(JSON.stringify(playerToMove));
+  sourceMatch[sourceSlotKey].isGhost = true;
+  delete playerCopy.isGhost;
+  targetMatch[targetSlotKey] = playerCopy;
+
+  saveState();
+  if (state.bracket.type === 'double') {
+    renderDoubleBracket();
+  } else {
+    renderBracket();
+  }
+}
+
+// ==========================================
+// ТАБЫ / НАВИГАЦИЯ
+// ==========================================
 function switchTab(tab) {
   document.querySelectorAll('nav button').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
-  
-  const adminSection = document.getElementById('tab-admin');
-  const bracketSection = document.getElementById('tab-bracket');
-  const newsSection = document.getElementById('tab-news'); 
-  const scheduleSection = document.getElementById('tab-schedule'); 
-  const resultsSection = document.getElementById('tab-results');
-  
-  if (resultsSection) resultsSection.classList.toggle('hidden', tab !== 'results');
-  if (adminSection) adminSection.classList.toggle('hidden', tab !== 'admin');
-  if (bracketSection) bracketSection.classList.toggle('hidden', tab !== 'bracket');
-  if (newsSection) newsSection.classList.toggle('hidden', tab !== 'news'); 
-  if (scheduleSection) scheduleSection.classList.toggle('hidden', tab !== 'schedule'); 
-  
+
+  const sections = {
+    admin: document.getElementById('tab-admin'),
+    bracket: document.getElementById('tab-bracket'),
+    news: document.getElementById('tab-news'),
+    schedule: document.getElementById('tab-schedule'),
+    results: document.getElementById('tab-results'),
+    partners: document.getElementById('tab-partners')
+  };
+
+  for (const key in sections) {
+    if (sections[key]) sections[key].classList.toggle('hidden', tab !== key);
+  }
+
   if (tab === 'bracket') {
     if (state.bracket && state.bracket.type === 'double') {
       renderDoubleBracket();
@@ -1477,8 +1544,10 @@ function switchTab(tab) {
   if (tab === 'news') loadNews();
   if (tab === 'schedule') loadSchedule();
   if (tab === 'results') loadResults();
-  if (tab === 'admin') loadSponsorsAdmin(); 
+  if (tab === 'admin') loadSponsorsAdmin();
+  if (tab === 'partners') loadSponsors();
 }
+
 function switchSubTab(sub) {
   document.querySelectorAll('[data-sub]').forEach(b => b.classList.toggle('active', b.dataset.sub === sub));
   const solo = document.getElementById('sub-solo');
@@ -1490,7 +1559,7 @@ function switchSubTab(sub) {
 function renderAll() {
   renderSolo();
   renderTeams();
-  renderFreeAgents(); // <--- ДОБАВИТЬ ЭТО
+  renderFreeAgents();
   if (state.bracket && state.bracket.type === 'double') {
     renderDoubleBracket();
   } else {
@@ -1498,93 +1567,22 @@ function renderAll() {
   }
 }
 
-function init() {
-  document.querySelectorAll('nav button').forEach(b => b.onclick = () => switchTab(b.dataset.tab));
-  document.querySelectorAll('[data-sub]').forEach(b => b.onclick = () => switchSubTab(b.dataset.sub));
-  
-  const modeSel = document.getElementById('mode');
-  const typeSel = document.getElementById('bracket-type');
-  const maxSel = document.getElementById('max-participants');
-  
-  if (modeSel) { modeSel.value = state.mode; modeSel.onchange = e => { state.mode = e.target.value; saveState(); renderAll(); }; }
-  if (typeSel) { typeSel.value = state.bracketType; typeSel.onchange = e => { state.bracketType = e.target.value; saveState(); }; }
-  if (maxSel) { maxSel.value = state.maxParticipants; maxSel.onchange = e => { state.maxParticipants = +e.target.value; saveState(); }; }
-  const gameSel = document.getElementById('game-type');
-  if (gameSel) {
-    gameSel.value = state.game || 'dota';
-    gameSel.onchange = e => {
-      state.game = e.target.value;
-      // Если CS2, принудительно ставим 5x5 и блокируем смену формата
-      if (state.game === 'cs2') {
-        state.mode = '5x5';
-        if (modeSel) { modeSel.value = '5x5'; modeSel.disabled = true; }
-      } else {
-        if (modeSel) modeSel.disabled = false;
-      }
-      saveState();
-      renderAll();
-    };
-  }
-  
-  // При загрузке тоже проверяем, если CS2 — блокируем формат
-  if (state.game === 'cs2' && modeSel) {
-    modeSel.value = '5x5';
-    modeSel.disabled = true;
-  }
-  
-  
-  const addBtn = document.getElementById('add-player-btn');
-  const playerInput = document.getElementById('player-input');
-  if (addBtn) addBtn.onclick = handleAddPlayer;
-  if (playerInput) playerInput.addEventListener('keydown', e => { if (e.key === 'Enter') handleAddPlayer(); });
-  
-  const addTeamBtn = document.getElementById('add-team-btn');
-  const genBtn = document.getElementById('generate-bracket');
-  const resetBtn = document.getElementById('reset-all');
-  
-  if (addTeamBtn) addTeamBtn.onclick = () => { if (!isAdmin()) return; state.teams.push({ id: genId(), name: 'Team ' + (state.teams.length + 1), players: [] }); renderTeams(); saveState(); };
-  if (genBtn) genBtn.onclick = () => {
-  if (document.getElementById('bracket-type').value === 'double') {
-    generateDoubleBracket();
-  } else {
-    generateBracket();
-  }
-};
-  if (resetBtn) resetBtn.onclick = () => {
-    if (!isAdmin()) return;
-    if (!confirm('Удалить весь турнир?')) return;
-    state.soloPlayers = []; state.teams = []; state.bracket = null;
-    saveState(); renderAll(); switchTab('admin'); alert('Готово');
-  };
-  
-  // Проверка на админа (прячем кнопку)
-  if (isAdmin()) {
-    document.getElementById('admin-tab-btn').style.display = 'inline-block';
-  }
-  showAuthButtonIfNeeded();
-  renderFreeAgents(); // <--- ДОБАВИТЬ ЭТО
-  renderAll();
-}
-
-window.removeSolo = removeSolo;
-window.removeTeam = removeTeam;
-window.renameTeam = renameTeam;
-window.removePlayerFromTeam = removePlayerFromTeam;
-window.setScore = setScore;
-window.loginWithCode = loginWithCode;
-window.logoutPlayer = logoutPlayer;
-  async function showPlayerBracket() {
-  // Скрываем плашку
+// ==========================================
+// ЭКРАН ИГРОКА / ВОЗВРАТ
+// ==========================================
+async function showPlayerBracket() {
   const playerScreen = document.getElementById('player-screen');
   playerScreen.classList.add('hidden');
   playerScreen.style.display = 'none';
-  
+
   document.querySelector('main').style.display = 'block';
   document.getElementById('tab-bracket').classList.remove('hidden');
   document.getElementById('tab-admin').classList.add('hidden');
-  document.getElementById('back-to-draft-btn').style.display = 'inline-block';
 
-  const { data } = await supabaseClient.from('tournament').select('data').eq('id', 1).single();
+  const backBtn = document.getElementById('back-to-draft-btn');
+  if (backBtn) backBtn.style.display = 'inline-block';
+
+  const { data } = await supabaseClient.from('tournament').select('data').eq('id', 1).maybeSingle();
   if (data && data.data && data.data.bracket) {
     state.bracket = data.data.bracket;
     if (state.bracket.type === 'double') {
@@ -1600,21 +1598,31 @@ window.logoutPlayer = logoutPlayer;
     b.classList.toggle('active', b.dataset.tab === 'bracket');
   });
 }
+
 function backToDraft() {
   document.querySelector('main').style.display = 'none';
-  
-  // Возвращаем плашку
   const playerScreen = document.getElementById('player-screen');
   playerScreen.classList.remove('hidden');
   playerScreen.style.display = 'flex';
 }
 
+// ==========================================
+// ЭКСПОРТ В WINDOW
+// ==========================================
+window.switchTab = switchTab;
+window.switchSubTab = switchSubTab;
+window.renderBracket = renderBracket;
+window.renderAll = renderAll;
+window.setScore = setScore;
+window.handleDragStart = handleDragStart;
+window.handleDrop = handleDrop;
 window.showPlayerBracket = showPlayerBracket;
-window.generateAccessCode = generateAccessCode;
-  
-
-  let draftState = null;
- const ALL_HEROES = [
+window.backToDraft = backToDraft;
+window.generateBracket = generateBracket;
+  // ==========================================
+// ДРАФТ: ГЕРОИ / КАРТЫ
+// ==========================================
+const ALL_HEROES = [
   "abaddon", "alchemist", "ancient_apparition", "antimage", "arc_warden", "axe", "bane", "batrider", "beastmaster", "bloodseeker",
   "bounty_hunter", "brewmaster", "bristleback", "broodmother", "centaur", "chaos_knight", "chen", "clinkz", "rattletrap", "crystal_maiden",
   "dark_seer", "dark_willow", "dawnbreaker", "dazzle", "death_prophet", "disruptor", "doom_bringer", "dragon_knight", "drow_ranger", "earth_spirit",
@@ -1630,109 +1638,117 @@ window.generateAccessCode = generateAccessCode;
   "weaver", "windrunner", "winter_wyvern", "witch_doctor", "skeleton_king", "zuus"
 ];
 
-function getHeroName(id) {
-  const el = document.querySelector(`#p-hero option[value="${id}"]`);
-  return el ? el.textContent.split('/')[0].trim() : id;
-}
+let draftState = null;
 let draftSubscription = null;
 
-// 1. Подписка на драфт для ИГРОКА
+function getHeroName(id) {
+  if (!id) return '???';
+  // Для CS2 карт
+  if (id.startsWith('de_')) return id.replace('de_', '').toUpperCase();
+  // Для доты - просто возвращаем id с большой буквы
+  return id.charAt(0).toUpperCase() + id.slice(1);
+}
+
+// ==========================================
+// ПОДПИСКА НА ДРАФТ (ИГРОК)
+// ==========================================
 function startDraftListener(myUid) {
   if (draftSubscription) supabaseClient.removeChannel(draftSubscription);
-  
+
   draftSubscription = supabaseClient.channel('public:drafts')
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'drafts' }, async payload => {
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'drafts' }, payload => {
       if (payload.new && payload.new.data) {
         draftState = payload.new.data;
-        (myUid);
+        renderPlayerDraft(myUid);
       }
     }).subscribe();
-    
-  supabaseClient.from('drafts').select('*').eq('id', 1).single().then(({data}) => {
-    if (data && data.data) { draftState = data.data; (myUid); }
+
+  supabaseClient.from('drafts').select('*').eq('id', 1).maybeSingle().then(({ data }) => {
+    if (data && data.data) {
+      draftState = data.data;
+      renderPlayerDraft(myUid);
+    }
   });
 }
 
-// 2. Отрисовка экрана драфта для игрока
- // <--- ЗДЕСЬ ЗАКРЫВАЕТСЯ ФУНКЦИЯ renderPlayerDraft
-
+// ==========================================
+// BAN / PICK
+// ==========================================
 async function banHero(heroId, myRole) {
-  if (!draftState) return;
+  if (!draftState || !currentUser) return;
   if (draftState.turn !== myRole) return;
-  
+  if (draftState.phase !== 'ban') return;
+
   const newBans = JSON.parse(JSON.stringify(draftState.bans));
-  if (newBans[myRole].includes(heroId)) return; // Уже забанен
-  
+  if (newBans[myRole].includes(heroId)) return;
+
+  const oldState = JSON.parse(JSON.stringify(draftState));
+
   if (draftState.game === 'cs2') {
-    // Для CS2: добавляем 1 бан и сразу передаем ход
+    // CS2: бан 1 карты, ход переходит сопернику, пока не останется 1 карта
     newBans[myRole].push(heroId);
-    
     const totalBans = newBans.p1.length + newBans.p2.length;
     const remainingMaps = draftState.pool.length - totalBans;
-    
+
     let nextPhase = 'ban';
     let nextTurn = myRole === 'p1' ? 'p2' : 'p1';
-    
+
     if (remainingMaps <= 1) {
-      nextPhase = 'pick'; // Если осталась 1 карта, переходим к пикам
+      nextPhase = 'pick';
     }
-    
-    const oldState = JSON.parse(JSON.stringify(draftState));
+
     draftState.bans = newBans;
     draftState.turn = nextTurn;
     draftState.phase = nextPhase;
     renderPlayerDraft(currentUser.id);
-    
+
     const { error } = await supabaseClient.from('drafts').upsert({ id: 1, data: { ...oldState, bans: newBans, turn: nextTurn, phase: nextPhase } });
     if (error) {
       draftState = oldState;
       renderPlayerDraft(currentUser.id);
-      alert("Ошибка соединения.");
+      alert('Ошибка соединения.');
     }
   } else {
-    // Для Доты: старый код (баним до лимита)
+    // Dota: баним до лимита maxBans
     const maxBans = draftState.maxBans || 5;
     if (newBans[myRole].length >= maxBans) return;
-    
     newBans[myRole].push(heroId);
-    
-    const oldState = JSON.parse(JSON.stringify(draftState));
+
     draftState.bans = newBans;
     renderPlayerDraft(currentUser.id);
-    
+
     const { error } = await supabaseClient.from('drafts').upsert({ id: 1, data: { ...oldState, bans: newBans } });
     if (error) {
       draftState = oldState;
       renderPlayerDraft(currentUser.id);
-      alert("Ошибка соединения.");
+      alert('Ошибка соединения.');
     }
   }
 }
 
 async function pickHero(heroId, myRole) {
-  if (!draftState) return;
-  
-  // 1. Обновляем экран
+  if (!draftState || !currentUser) return;
+  if (draftState.phase !== 'pick') return;
+  if (draftState.is_open) return;
+  if (draftState.picks[myRole]) return; // уже выбрал
+
+  const oldState = JSON.parse(JSON.stringify(draftState));
   draftState.picks[myRole] = heroId;
   renderPlayerDraft(currentUser.id);
-  
-  // 2. Пытаемся сохранить в базу
-  const { error } = await supabaseClient.from('drafts').upsert({ 
-    id: 1, 
-    data: draftState 
-  });
-  
-  if (error) {
-    console.error("Ошибка выбора героя:", error);
-    alert("Ошибка сохранения в базу! Выбор не записан.\n" + error.message);
-  } else {
-    console.log("Герой " + heroId + " успешно сохранен в базу для " + myRole);
+
+  const { error } = await supabaseClient.from('drafts').upsert({ id: 1, data: oldState, ...{ data: draftState } });
+  // ВАЖНО: делаем upsert корректно:
+  const res = await supabaseClient.from('drafts').upsert({ id: 1, data: draftState });
+  if (res.error) {
+    draftState = oldState;
+    renderPlayerDraft(currentUser.id);
+    alert('Ошибка сохранения пика: ' + res.error.message);
   }
 }
 
-window.banHero = banHero;
-window.pickHero = pickHero;
-
+// ==========================================
+// РЕНДЕР ЭКРАНА ДРАФТА (ИГРОК)
+// ==========================================
 function renderPlayerDraft(myUid) {
   const screen = document.getElementById('player-screen');
   const nameEl = document.getElementById('player-display-name');
@@ -1765,10 +1781,10 @@ function renderPlayerDraft(myUid) {
   statusEl.textContent = `Играешь против: ${enemyName}`;
 
   const maxBans = draftState.maxBans || 5;
-  const totalBans = draftState.bans.p1.length + draftState.bans.p2.length; // Сколько всего забанено
+  const totalBans = draftState.bans.p1.length + draftState.bans.p2.length;
   const remainingMaps = draftState.pool.length - totalBans;
 
-  // === ФАЗА 1: МОНЕТКА ===
+  // === COINFLIP ===
   if (draftState.phase === 'coinflip') {
     if (draftState.first_turn) {
       const winnerName = draftState.first_turn === 'p1' ? draftState.p1_name : draftState.p2_name;
@@ -1784,7 +1800,6 @@ function renderPlayerDraft(myUid) {
           const winner = Math.random() < 0.5 ? 'p1' : 'p2';
           const newDraft = { ...draftState, first_turn: winner, phase: 'ban', turn: winner };
           await supabaseClient.from('drafts').upsert({ id: 1, data: newDraft });
-          window.dispatchEvent(new Event('storage')); 
         };
       } else {
         statusEl.innerHTML = 'Ожидание броска монетки капитаном...';
@@ -1794,41 +1809,43 @@ function renderPlayerDraft(myUid) {
     return;
   }
 
-  // === ФАЗА 2: БАНЫ ===
+  // === BAN ===
   if (draftState.phase === 'ban') {
     const turnRole = draftState.turn;
     const amIOnTurn = (isCaptain && myRole === turnRole);
-    
-    // Для CS2: баны по одной карте, пока не останется 1
+
+    // === CS2 ===
     if (draftState.game === 'cs2') {
       if (remainingMaps <= 1) {
-        // Осталась последняя карта — переходим к пикам (показываем её)
         setTimeout(async () => {
           await supabaseClient.from('drafts').upsert({ id: 1, data: { ...draftState, phase: 'pick' } });
         }, 500);
         return;
       }
-      
+
       if (amIOnTurn) {
         statusEl.innerHTML = 'Твой ход! Забань 1 карту';
       } else {
         statusEl.innerHTML = `Ход соперника (${enemyName}). Он банит...`;
       }
-      btn.style.display = 'none'; // Кнопка не нужна, бан происходит по клику
+      btn.style.display = 'none';
 
       poolEl.innerHTML = draftState.pool.map(mapName => {
         const isBanned = draftState.bans.p1.includes(mapName) || draftState.bans.p2.includes(mapName);
         const isBannedByMe = draftState.bans[myRole].includes(mapName);
         const isBannedByEnemy = draftState.bans[enemyRole].includes(mapName);
-        
+
         let style = 'cursor: pointer; border-radius: 8px; overflow: hidden; border: 2px solid transparent; height: 140px; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 20px; text-transform: uppercase; background: #1A1A1F; color: white; position: relative; transition: 0.2s;';
         let overlay = '';
-        
+
         if (isBannedByMe) { style += 'opacity: 0.2; filter: grayscale(100%);'; overlay = '❌'; }
         if (isBannedByEnemy) { style += 'opacity: 0.4; border-color: red;'; overlay = '🚫'; }
-        if (!isBanned && amIOnTurn) { style += 'cursor: pointer; border-color: var(--accent); box-shadow: 0 0 15px rgba(139,59,255,0.5);'; } 
-        else { style += 'cursor: not-allowed;'; }
-        
+        if (!isBanned && amIOnTurn) {
+          style += 'border-color: var(--accent); box-shadow: 0 0 15px rgba(139,59,255,0.5);';
+        } else {
+          style += 'cursor: not-allowed;';
+        }
+
         const mapDisplayName = mapName.replace('de_', '').toUpperCase();
         const mapImage = `https://raw.githubusercontent.com/MurkyYT/cs2-map-icons/main/images/${mapName}.png`;
 
@@ -1841,11 +1858,10 @@ function renderPlayerDraft(myUid) {
       }).join('');
       return;
     }
-    
-    // === СТАРАЯ ЛОГИКА ДЛЯ ДОТЫ ===
+
+    // === DOTA ===
     if (amIOnTurn) {
-      const itemName = 'героя';
-      statusEl.innerHTML = 'Твой ход! Забань ' + itemName + ' (осталось: ' + (maxBans - draftState.bans[myRole].length) + '/' + maxBans + ')';
+      statusEl.innerHTML = 'Твой ход! Забань героя (осталось: ' + (maxBans - draftState.bans[myRole].length) + '/' + maxBans + ')';
       btn.style.display = 'inline-block';
       btn.textContent = 'Закончить баны';
       btn.onclick = async () => {
@@ -1867,50 +1883,57 @@ function renderPlayerDraft(myUid) {
       const isBannedByMe = draftState.bans[myRole].includes(id);
       const isBannedByEnemy = draftState.bans[enemyRole].includes(id);
       const isBanned = isBannedByMe || isBannedByEnemy;
-      
+
       let style = 'cursor: pointer; border-radius: 8px; overflow: hidden; border: 2px solid transparent;';
       let overlay = '';
-      
+
       if (isBannedByMe) { style += 'opacity: 0.2; filter: grayscale(100%);'; overlay = '❌'; }
       if (isBannedByEnemy) { style += 'opacity: 0.4; border-color: red;'; overlay = '🚫'; }
-      if (!isBanned && amIOnTurn && draftState.bans[myRole].length < maxBans) { style += 'cursor: pointer;'; } 
-      else { style += 'cursor: not-allowed;'; }
+      if (!isBanned && amIOnTurn && draftState.bans[myRole].length < maxBans) {
+        style += 'border-color: var(--accent);';
+      } else {
+        style += 'cursor: not-allowed;';
+      }
 
       return `<div style="${style} position:relative;" onclick="${(!isBanned && amIOnTurn && draftState.bans[myRole].length < maxBans) ? `banHero('${id}','${myRole}')` : ''}">
         <img src="https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/heroes/${id}.png" style="width: 100%; display: block;">
-        <div style="position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:32px;">${overlay}</div>
+        <div style="position:absolute; inset:0; display:flex; align-items: center; justify-content: center; font-size:32px;">${overlay}</div>
       </div>`;
     }).join('');
     return;
   }
 
-  // === ФАЗА 3: ПИКИ (КАРТА УЖЕ ОСТАЛАСЬ) ===
+  // === PICK ===
   if (draftState.phase === 'pick') {
     const available = draftState.pool.filter(id => !draftState.bans.p1.includes(id) && !draftState.bans.p2.includes(id));
     const myPick = draftState.picks[myRole];
 
+    // === CS2 ===
     if (draftState.game === 'cs2') {
-      // Для CS2 в пиках всегда 1 карта
-      statusEl.innerHTML = `Осталась карта: <b>${getHeroName(available[0])}</b>`;
-      btn.style.display = 'none';
-      
-      if (available.length > 0) {
-        const mapName = available[0];
-        const mapDisplayName = mapName.replace('de_', '').toUpperCase();
-        const mapImage = `https://raw.githubusercontent.com/MurkyYT/cs2-map-icons/main/images/${mapName}.png`;
-        
-        poolEl.innerHTML = `<div style="grid-column: 1 / -1; display: flex; justify-content: center;">
-          <div style="border-radius: 12px; overflow: hidden; border: 3px solid var(--accent); box-shadow: 0 0 30px rgba(139,59,255,0.8); height: 200px; width: 300px; position: relative;">
-            <img src="${mapImage}" alt="${mapDisplayName}" style="width: 100%; height: 100%; object-fit: cover; position: absolute; inset: 0; z-index: 1;" onerror="this.style.display='none'">
-            <div style="position: absolute; inset: 0; background: linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0) 60%); z-index: 2;"></div>
-            <span style="position: relative; z-index: 3; display: flex; align-items: center; justify-content: center; height: 100%; font-weight: 900; font-size: 28px; text-transform: uppercase; text-shadow: 0 0 10px black, 0 0 5px black; letter-spacing: 3px;">${mapDisplayName}</span>
-          </div>
-        </div>`;
+      if (available.length === 0) {
+        statusEl.innerHTML = 'Все карты забанили. Ошибка драфта.';
+        btn.style.display = 'none';
+        poolEl.innerHTML = '';
+        return;
       }
+      const mapName = available[0];
+      const mapDisplayName = mapName.replace('de_', '').toUpperCase();
+      const mapImage = `https://raw.githubusercontent.com/MurkyYT/cs2-map-icons/main/images/${mapName}.png`;
+
+      statusEl.innerHTML = `Осталась карта: <b>${mapDisplayName}</b>`;
+      btn.style.display = 'none';
+
+      poolEl.innerHTML = `<div style="grid-column: 1 / -1; display: flex; justify-content: center;">
+        <div style="border-radius: 12px; overflow: hidden; border: 3px solid var(--accent); box-shadow: 0 0 30px rgba(139,59,255,0.8); height: 200px; width: 300px; position: relative;">
+          <img src="${mapImage}" alt="${mapDisplayName}" style="width: 100%; height: 100%; object-fit: cover; position: absolute; inset: 0; z-index: 1;" onerror="this.style.display='none'">
+          <div style="position: absolute; inset: 0; background: linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0) 60%); z-index: 2;"></div>
+          <span style="position: relative; z-index: 3; display: flex; align-items: center; justify-content: center; height: 100%; font-weight: 900; font-size: 28px; text-transform: uppercase; text-shadow: 0 0 10px black, 0 0 5px black; letter-spacing: 3px;">${mapDisplayName}</span>
+        </div>
+      </div>`;
       return;
     }
 
-    // === ПИКИ ДЛЯ ДОТЫ ===
+    // === DOTA ===
     if (draftState.is_open) {
       statusEl.innerHTML = `Пики открыты!<br>Твой герой: <b>${getHeroName(draftState.picks[myRole])}</b><br>Соперник: <b>${getHeroName(draftState.picks[enemyRole])}</b>`;
       initChat(myName);
@@ -1928,79 +1951,36 @@ function renderPlayerDraft(myUid) {
 
     if (!isCaptain) {
       statusEl.innerHTML = 'Ожидание выбора капитана...';
-      btn.style.display = 'none'; 
+      btn.style.display = 'none';
       return;
     }
 
     if (myPick) {
       statusEl.innerHTML = `Ты выбрал. Ожидай соперника...`;
-      btn.style.display = 'none'; 
+      btn.style.display = 'none';
     } else {
       statusEl.innerHTML = 'Баны завершены! Кликни на своего героя.';
-      btn.style.display = 'none'; 
+      btn.style.display = 'none';
     }
 
     poolEl.innerHTML = available.map(id => {
       const isSelected = myPick === id;
       const style = `cursor: pointer; border-radius: 8px; overflow: hidden; border: 2px solid ${isSelected ? 'var(--accent)' : 'transparent'}; box-shadow: ${isSelected ? '0 0 10px var(--accent)' : 'none'};`;
-      const clickAction = (!myPick && !draftState.isOpen) ? `onclick="pickHero('${id}','${myRole}')"` : '';
+      const clickAction = (!myPick && !draftState.is_open) ? `onclick="pickHero('${id}','${myRole}')"` : '';
       return `<div style="${style}" ${clickAction}>
         <img src="https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/heroes/${id}.png" style="width: 100%; display: block;">
       </div>`;
     }).join('');
     return;
   }
-}   
-      btn.style.display = 'none';
-      return;
-    }
-
-    if (!isCaptain) {
-      statusEl.innerHTML = 'Ожидание выбора капитана...';
-      btn.style.display = 'none'; 
-      return;
-    }
-
-    if (myPick) {
-      statusEl.innerHTML = `Ты выбрал. Ожидай соперника...`;
-      btn.style.display = 'none'; 
-    } else {
-      statusEl.innerHTML = 'Баны завершены! Кликни на своего героя.';
-      btn.style.display = 'none'; 
-    }
-
-    // --- ОТРИСОВКА ПУЛА ДО ОТКРЫТИЯ (ТОЖЕ ПРОВЕРКА) ---
-    if (draftState.game === 'cs2') {
-      poolEl.innerHTML = availableHeroes.map(mapName => {
-        const isSelected = myPick === mapName;
-        const style = `cursor: pointer; border-radius: 8px; overflow: hidden; border: 2px solid ${isSelected ? 'var(--accent)' : 'transparent'}; box-shadow: ${isSelected ? '0 0 10px var(--accent)' : 'none'}; height: 140px; position: relative;`;
-        const clickAction = (!myPick && !draftState.is_open) ? `onclick="pickHero('${mapName}','${myRole}')"` : '';
-        const mapDisplayName = mapName.replace('de_', '').toUpperCase();
-        const mapImage = `https://raw.githubusercontent.com/MurkyYT/cs2-map-icons/main/images/${mapName}.png`;
-        
-        return `<div style="${style}" ${clickAction}>
-          <img src="${mapImage}" alt="${mapDisplayName}" style="width: 100%; height: 100%; object-fit: cover; position: absolute; inset: 0; z-index: 1;" onerror="this.style.display='none'">
-          <div style="position: absolute; inset: 0; background: linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0) 60%); z-index: 2;"></div>
-          <span style="position: relative; z-index: 3; display: flex; align-items: center; justify-content: center; height: 100%; font-weight: 700; font-size: 20px; text-transform: uppercase; text-shadow: 0 0 10px black, 0 0 5px black; letter-spacing: 2px;">${mapDisplayName}</span>
-        </div>`;
-      }).join('');
-    } else {
-      poolEl.innerHTML = availableHeroes.map(id => {
-        const isSelected = myPick === id;
-        const style = `cursor: pointer; border-radius: 8px; overflow: hidden; border: 2px solid ${isSelected ? 'var(--accent)' : 'transparent'}; box-shadow: ${isSelected ? '0 0 10px var(--accent)' : 'none'};`;
-        const clickAction = (!myPick && !draftState.is_open) ? `onclick="pickHero('${id}','${myRole}')"` : '';
-        return `<div style="${style}" ${clickAction}>
-          <img src="https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/heroes/${id}.png" style="width: 100%; display: block;">
-        </div>`;
-      }).join('');
-    }
-    return;
-  }
 }
-  async function startDraftForMatch(matchId) {
+
+// ==========================================
+// ЗАПУСК ДРАФТА (АДМИН)
+// ==========================================
+async function startDraftForMatch(matchId) {
   if (!isAdmin()) return;
-  
-  // Находим матч в сетке
+
   let match = null;
   if (state.bracket.type === 'double') {
     state.bracket.wb.forEach(r => r.forEach(m => { if (m.id === matchId) match = m; }));
@@ -2009,35 +1989,21 @@ function renderPlayerDraft(myUid) {
   } else {
     state.bracket.rounds.forEach(r => r.forEach(m => { if (m.id === matchId) match = m; }));
   }
-  
+
   if (!match) return;
+  if (match.winner || match.score) { alert('Этот матч уже сыгран! Очистите счёт, чтобы запустить драфт заново.'); return; }
+  if (!match.p1 || !match.p2) { alert('В этом матче еще нет двух игроков/команд!'); return; }
+  if (match.p1.isGhost || match.p2.isGhost) { alert('Один из игроков уже покинул матч. Драфт невозможен.'); return; }
 
-  if (match.winner || match.score) {
-    alert('Этот матч уже сыгран! Очистите счёт, чтобы запустить драфт заново.');
-    return;
-  }
-
-  if (!match.p1 || !match.p2) {
-    alert('В этом матче еще нет двух игроков/команд!');
-    return;
-  }
-
-  if (match.p1.isGhost || match.p2.isGhost) {
-    alert('Один из игроков уже покинул этот матч (ушел дальше по сетке). Драфт невозможен.');
-    return;
-  }
-
-  // ФУНКЦИЯ ПОИСКА ИГРОКА (С УЧЕТОМ КОМАНД)
   async function findPlayerUidInDb(participant) {
     if (!participant) return null;
-    
-    let { data } = await supabaseClient.from('players').select('uid').eq('name', participant.name).single();
+    let { data } = await supabaseClient.from('players').select('uid').eq('name', participant.name).maybeSingle();
     if (data && data.uid) return data.uid;
 
     const team = state.teams.find(t => t.id === participant.id || t.name === participant.name);
     if (team && team.players && team.players.length > 0) {
       for (const p of team.players) {
-        let { data: pData } = await supabaseClient.from('players').select('uid').eq('name', p.name).single();
+        let { data: pData } = await supabaseClient.from('players').select('uid').eq('name', p.name).maybeSingle();
         if (pData && pData.uid) return pData.uid;
       }
     }
@@ -2047,46 +2013,37 @@ function renderPlayerDraft(myUid) {
   const p1_uid = await findPlayerUidInDb(match.p1);
   const p2_uid = await findPlayerUidInDb(match.p2);
 
-  if (!p1_uid) { 
-    alert('Никто из команды "' + match.p1.name + '" еще не заходил на сайт по коду!'); 
-    return; 
-  }
-  if (!p2_uid) { 
-    alert('Никто из команды "' + match.p2.name + '" еще не заходил на сайт по коду!'); 
-    return; 
-  }
+  if (!p1_uid) { alert('Никто из команды "' + match.p1.name + '" еще не заходил на сайт по коду!'); return; }
+  if (!p2_uid) { alert('Никто из команды "' + match.p2.name + '" еще не заходил на сайт по коду!'); return; }
 
-  // Берем капитанов
   const team1 = state.teams.find(t => t.name === match.p1.name);
   const team2 = state.teams.find(t => t.name === match.p2.name);
-  
+
   let p1_captain_uid = p1_uid;
   let p2_captain_uid = p2_uid;
 
   if (team1 && team1.captainId) {
     const cap = team1.players.find(p => String(p.account_id) === String(team1.captainId));
     if (cap) {
-      const { data } = await supabaseClient.from('players').select('uid').eq('name', cap.name).single();
+      const { data } = await supabaseClient.from('players').select('uid').eq('name', cap.name).maybeSingle();
       if (data && data.uid) p1_captain_uid = data.uid;
     }
   }
-  
   if (team2 && team2.captainId) {
     const cap = team2.players.find(p => String(p.account_id) === String(team2.captainId));
     if (cap) {
-      const { data } = await supabaseClient.from('players').select('uid').eq('name', cap.name).single();
+      const { data } = await supabaseClient.from('players').select('uid').eq('name', cap.name).maybeSingle();
       if (data && data.uid) p2_captain_uid = data.uid;
     }
   }
 
-  // Запускаем драфт
   const newDraftState = {
     phase: 'coinflip',
     first_turn: null,
     turn: null,
-    game: state.game,
-    maxBans: state.game === 'cs2' ? 6 : 5, // <--- 1 бан для CS2
-    pool: state.game === 'cs2' 
+    game: state.game || 'dota',
+    maxBans: state.game === 'cs2' ? 3 : 5,
+    pool: state.game === 'cs2'
       ? [...CS2_MAPS].sort(() => 0.5 - Math.random())
       : [...ALL_HEROES].sort(() => 0.5 - Math.random()).slice(0, 20),
     bans: { p1: [], p2: [] },
@@ -2104,33 +2061,30 @@ function renderPlayerDraft(myUid) {
   await supabaseClient.from('drafts').upsert({ id: 1, data: newDraftState });
   alert('Драфт для матча ' + match.p1.name + ' vs ' + match.p2.name + ' запущен!');
 }
-window.startDraftForMatch = startDraftForMatch;
 
+// ==========================================
+// ОТКРЫТИЕ ПИКОВ (АДМИН)
+// ==========================================
 async function openPicks() {
   if (!isAdmin()) return;
-  
-  // 1. Открываем чат СРАЗУ, не дожидаясь базы
+
   const chatContainer = document.getElementById('admin-chat-container');
   if (chatContainer) chatContainer.classList.remove('hidden');
-  
-  // 2. Пытаемся обновить базу
-  const { data, error } = await supabaseClient.from('drafts').select('*').eq('id', 1).single();
-  
+
+  const { data, error } = await supabaseClient.from('drafts').select('*').eq('id', 1).maybeSingle();
+
   if (!error && data && data.data) {
     const draft = data.data;
     draft.is_open = true;
     await supabaseClient.from('drafts').upsert({ id: 1, data: draft });
-    
-    // 3. Запускаем чат
-    if (typeof initAdminChat === 'function') initAdminChat();
-    
+    initAdminChat();
     alert('Пики открыты! Игроки теперь видят героев друг друга.');
   } else {
     alert('Чат открыт, но драфт не найден в базе. Возможно, он еще не запущен.');
   }
 }
 
-  // ==========================================
+// ==========================================
 // ЧАТ
 // ==========================================
 let chatSubscription = null;
@@ -2141,13 +2095,14 @@ function initChat(myName) {
   if (chatContainer) chatContainer.classList.remove('hidden');
 
   const chatBox = document.getElementById('chat-messages');
-  chatBox.innerHTML = ''; 
-  
+  if (!chatBox || !draftState) return;
+  chatBox.innerHTML = '';
+
   if (chatSubscription) supabaseClient.removeChannel(chatSubscription);
 
   const roomName = [draftState.p1_name, draftState.p2_name].sort().join('_vs_');
 
-  supabaseClient.from('messages').select('*').eq('match_id', roomName).order('id', { ascending: true }).then(({data}) => {
+  supabaseClient.from('messages').select('*').eq('match_id', roomName).order('id', { ascending: true }).then(({ data }) => {
     if (data) data.forEach(msg => addChatMessage(chatBox, msg));
   });
 
@@ -2161,20 +2116,16 @@ function initChat(myName) {
 function initAdminChat() {
   const chatBox = document.getElementById('admin-chat-messages');
   if (!chatBox) return;
-  
-  supabaseClient.from('drafts').select('*').eq('id', 1).single().then(({data}) => {
+
+  supabaseClient.from('drafts').select('*').eq('id', 1).maybeSingle().then(({ data }) => {
     if (!data || !data.data) return;
-    
-    // Берем ники из базы
     const roomName = [data.data.p1_name, data.data.p2_name].sort().join('_vs_');
-    
-    // Загружаем историю
-    supabaseClient.from('messages').select('*').eq('match_id', roomName).order('id').then(({data: msgs}) => {
+
+    supabaseClient.from('messages').select('*').eq('match_id', roomName).order('id').then(({ data: msgs }) => {
       chatBox.innerHTML = '';
       if (msgs) msgs.forEach(msg => addAdminChatMessage(chatBox, msg));
     });
 
-    // Подписываемся на новые
     if (adminChatSubscription) supabaseClient.removeChannel(adminChatSubscription);
     adminChatSubscription = supabaseClient.channel('admin_chat_room_' + roomName)
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages', filter: `match_id=eq.${roomName}` }, payload => {
@@ -2204,13 +2155,14 @@ function addAdminChatMessage(chatBox, msg) {
 }
 
 async function sendMessage() {
+  if (!currentUser || !draftState) return;
   const input = document.getElementById('chat-input');
   const text = input.value.trim();
-  if (!text || !draftState) return;
+  if (!text) return;
 
   const myName = document.getElementById('player-display-name').textContent;
   const roomName = [draftState.p1_name, draftState.p2_name].sort().join('_vs_');
-  
+
   const { error } = await supabaseClient.from('messages').insert({
     sender: myName,
     text: text,
@@ -2220,21 +2172,16 @@ async function sendMessage() {
   if (error) alert('Ошибка отправки: ' + error.message);
   else input.value = '';
 }
-window.sendMessage = sendMessage;
 
 async function sendAdminMessage() {
+  if (!isAdmin()) return;
   const input = document.getElementById('admin-chat-input');
   if (!input) return;
-
   const text = input.value.trim();
   if (!text) return;
 
-  // Берем данные драфта напрямую из базы, чтобы не зависеть от памяти браузера
-  const { data } = await supabaseClient.from('drafts').select('*').eq('id', 1).single();
-  if (!data || !data.data) {
-    alert('Ошибка: драфт не найден в базе!');
-    return;
-  }
+  const { data } = await supabaseClient.from('drafts').select('*').eq('id', 1).maybeSingle();
+  if (!data || !data.data) { alert('Ошибка: драфт не найден в базе!'); return; }
 
   const roomName = [data.data.p1_name, data.data.p2_name].sort().join('_vs_');
 
@@ -2248,7 +2195,6 @@ async function sendAdminMessage() {
     alert('Ошибка отправки: ' + error.message);
   } else {
     input.value = '';
-    // Очищаем и перерисовываем чат, чтобы сообщение появилось моментально
     const chatBox = document.getElementById('admin-chat-messages');
     if (chatBox) {
       chatBox.innerHTML += `<div style="margin-bottom: 5px;"><b style="color: var(--accent);">👑 Админ:</b> <span>${escapeHtml(text)}</span></div>`;
@@ -2256,79 +2202,146 @@ async function sendAdminMessage() {
     }
   }
 }
-window.sendAdminMessage = sendAdminMessage;
-  function openAuthScreen() {
-  document.getElementById('auth-screen').style.display = 'flex';
-}
 
-// Показываем кнопку входа только тем, кто не админ и не залогинен
-function showAuthButtonIfNeeded() {
-  if (!isAdmin() && !currentUser) {
-    const btn = document.getElementById('show-auth-btn');
-    if (btn) btn.style.display = 'inline-block';
-  }
-}
-window.openAuthScreen = openAuthScreen;
-  // ==========================================
-// ИНФОРМАЦИОННЫЕ ОКНА
 // ==========================================
-const INFO_TEXTS = {
-  about: {
-    title: 'О турнирной платформе ARQON',
-    text: `
-      <p><b>ARQON Esports Organization</b> — это платформа для проведения киберспортивных турниров по дисциплинам - Dota 2, CS 2 и т.д.</p>
-      <p>Наш сайт позволяет организаторам создавать турнирные сетки, проводить живые драфты (баны и пики) и общаться с участниками в реальном времени.</p>
-      <p>Мы делаем турниры доступными и удобными для всех: от новичков до профессионалов. Присоединяйтесь к нашим событиям и следите за результатами!</p>
-    `
-  },
-  faq: {
-    title: 'Часто задаваемые вопросы (FAQ)',
-    text: `
-      <p><b>Как зарегистрироваться на турнир?</b><br>Для участия необходимо получить код доступа у администратора турнира. Введите его в окне «Вход для игрока».</p>
-      <p><b>Как работает драфт?</b><br>Игроки по очереди банят героев, а затем выбирают своих персонажей.Так же банят карты, и выбирают оставшиеся. Все действия происходят в реальном времени.</p>
-      <p><b>Где посмотреть результаты?</b><br>Все результаты и сетки турнира доступны на главной странице в разделе «Сетка».</p>
-    `
-  },
-  privacy: {
-    title: 'Политика конфиденциальности',
-    text: `
-      <p>Мы уважаем вашу конфиденциальность. Сайт собирает минимальное количество данных, необходимых для проведения турниров (Steam ID, никнеймы).</p>
-      <p>Данные не передаются третьим лицам и используются исключительно для организации киберспортивных событий.</p>
-      <p>Используя наш сайт, вы соглашаетесь с условиями обработки данных.</p>
-    `
-  },
-  contact: {
-    title: 'Связаться с нами',
-    text: `
-      <p>По всем вопросам сотрудничества, проведения турниров или технических проблем обращайтесь:</p>
-      <ul style="margin-left: 20px; margin-top: 10px;">
-        <li>Email: <b>contact@arqon.gg</b></li>
-        <li>Telegram: <b>@arqon_support</b></li>
-      </ul>
-      <p style="margin-top: 15px;">Мы открыты к предложениям о партнерстве и спонсорстве!</p>
-    `
+// DOUBLE ELIMINATION
+// ==========================================
+function generateDoubleBracket() {
+  if (!isAdmin()) return;
+
+  let participants;
+  if (state.mode === '1x1') {
+    participants = state.soloPlayers.map(p => ({ id: 'p' + p.account_id, name: p.name, avatar: p.avatar }));
+  } else {
+    participants = state.teams.filter(t => t.players.length > 0).map(t => ({ id: t.id, name: t.name, avatar: t.players[0] ? t.players[0].avatar : '' }));
   }
-};
 
-function openInfoModal(key) {
-  const data = INFO_TEXTS[key];
-  if (!data) return;
-  
-  document.getElementById('info-title').textContent = data.title;
-  document.getElementById('info-content').innerHTML = data.text;
-  document.getElementById('info-modal').style.display = 'flex'; // <--- ВАЖНО: показываем
+  if (participants.length < 2) { alert('Нужно минимум 2 участника'); return; }
+  if (participants.length > state.maxParticipants) participants = participants.slice(0, state.maxParticipants);
+
+  const size = Math.pow(2, Math.ceil(Math.log2(participants.length)));
+  const slots = shuffle(participants);
+  while (slots.length < size) slots.push(null);
+
+  // WB
+  const wbRounds = [];
+  let currentWB = [];
+  for (let i = 0; i < slots.length; i += 2) {
+    currentWB.push({ id: 'wb-r1-' + (i / 2), round: 0, p1: slots[i], p2: slots[i + 1], winner: null, loser: null, score: null });
+  }
+  wbRounds.push(currentWB);
+
+  let rIdx = 1;
+  while (currentWB.length > 1) {
+    const next = [];
+    for (let i = 0; i < currentWB.length; i += 2) {
+      next.push({ id: 'wb-r' + (rIdx + 1) + '-' + (i / 2), round: rIdx, p1: null, p2: null, winner: null, loser: null, score: null });
+    }
+    wbRounds.push(next); currentWB = next; rIdx++;
+  }
+
+  // LB — количество раундов = (wbRounds - 1) * 2 - 1 (как было — оставляем)
+  const lbRoundsCount = (wbRounds.length - 1) * 2 - 1;
+  const lbRounds = [];
+
+  for (let i = 0; i < lbRoundsCount; i++) {
+    let matchesCount = wbRounds[0].length / 2;
+    if (i > 0) {
+      if (i % 2 === 1) matchesCount = matchesCount;
+      else matchesCount = matchesCount / 2;
+    }
+    const roundMatches = [];
+    for (let j = 0; j < matchesCount; j++) {
+      roundMatches.push({ id: 'lb-r' + (i + 1) + '-' + j, round: i, p1: null, p2: null, winner: null, loser: null, score: null });
+    }
+    lbRounds.push(roundMatches);
+  }
+
+  const grandFinal = { id: 'gf-0', round: 0, p1: null, p2: null, winner: null, loser: null, score: null };
+
+  state.bracket = {
+    type: 'double',
+    mode: state.mode,
+    wb: wbRounds,
+    lb: lbRounds,
+    gf: grandFinal,
+    players: participants
+  };
+
+  saveState();
+  switchTab('bracket');
+  renderDoubleBracket();
 }
 
-function closeInfoModal() {
-  document.getElementById('info-modal').style.display = 'none'; // <--- ВАЖНО: скрываем
+function renderDoubleBracket() {
+  const wrap = document.getElementById('bracket');
+  const empty = document.getElementById('bracket-empty');
+  const info = document.getElementById('bracket-info');
+
+  if (!wrap || !state.bracket || state.bracket.type !== 'double') return;
+
+  if (empty) empty.classList.add('hidden');
+  if (info) info.innerHTML = `Формат: <b>${state.bracket.mode}</b> · Тип: <b>Double Elimination (Bo3)</b>`;
+
+  let html = '<div style="display: flex; flex-direction: column; gap: 40px; min-width: max-content;">';
+
+  // WB
+  html += '<div><h3 style="color: var(--accent); margin-bottom: 15px; text-align: center;">🏆 Верхняя сетка (Winner Bracket)</h3>';
+  html += '<div class="bracket">';
+  state.bracket.wb.forEach((round, ri) => {
+    const title = ri === state.bracket.wb.length - 1 ? 'Финал WB' : 'Раунд ' + (ri + 1);
+    html += '<div class="round"><div class="round-title">' + title + '</div>' + round.map(m => matchHTML(m)).join('') + '</div>';
+  });
+  html += '</div></div>';
+
+  // LB
+  html += '<div><h3 style="color: #F59E0B; margin-bottom: 15px; text-align: center;">🛡️ Нижняя сетка (Loser Bracket)</h3>';
+  html += '<div class="bracket">';
+  state.bracket.lb.forEach((round, ri) => {
+    html += '<div class="round"><div class="round-title" style="color: #F59E0B;">Раунд LB ' + (ri + 1) + '</div>' + round.map(m => matchHTML(m)).join('') + '</div>';
+  });
+  html += '</div></div>';
+
+  // GF
+  html += '<div><h3 style="color: #FFD700; margin-bottom: 15px; text-align: center;">👑 Гранд-финал</h3>';
+  html += '<div class="bracket" style="justify-content: center;">';
+  html += '<div class="round"><div class="round-title" style="color: #FFD700;">Победитель турнира</div>' + matchHTML(state.bracket.gf) + '</div>';
+  html += '</div></div>';
+
+  html += '</div>';
+  wrap.innerHTML = html;
 }
 
-window.openInfoModal = openInfoModal;
-window.closeInfoModal = closeInfoModal;
-  // ==========================================
-// УПРАВЛЕНИЕ НОВОСТЯМИ И РАСПИСАНИЕМ
+function setScoreDouble(matchId) {
+  if (!isAdmin()) return;
+
+  let match = null;
+  state.bracket.wb.forEach(r => r.forEach(m => { if (m.id === matchId) match = m; }));
+  state.bracket.lb.forEach(r => r.forEach(m => { if (m.id === matchId) match = m; }));
+  if (state.bracket.gf.id === matchId) match = state.bracket.gf;
+
+  if (!match) return;
+
+  const s1 = parseInt(document.getElementById('score-' + matchId + '-1').value) || 0;
+  const s2 = parseInt(document.getElementById('score-' + matchId + '-2').value) || 0;
+
+  if (s1 === s2) { alert('Ничья невозможна в Bo3.'); return; }
+  if (s1 > 2 || s2 > 2) { alert('Максимум 2 карты в Bo3'); return; }
+  if (s1 !== 2 && s2 !== 2) { alert('Победитель должен набрать ровно 2 карты (Bo3).'); return; }
+
+  match.score = { p1: s1, p2: s2 };
+  match.winner = s1 > s2 ? match.p1 : match.p2;
+  match.loser = s1 > s2 ? match.p2 : match.p1;
+
+  saveState();
+  renderDoubleBracket();
+}
+
+// ==========================================
+// НОВОСТИ
 // ==========================================
 async function addNews() {
+  if (!isAdmin()) return;
   const title = document.getElementById('news-title').value.trim();
   const content = document.getElementById('news-content').value.trim();
   const msg = document.getElementById('news-msg');
@@ -2341,30 +2354,10 @@ async function addNews() {
     msg.innerHTML = '<div class="msg success">Новость опубликована!</div>';
     document.getElementById('news-title').value = '';
     document.getElementById('news-content').value = '';
-    loadNews(); // Обновляем список на вкладке
+    loadNews();
   }
 }
 
-async function addSchedule() {
-  const match_time = document.getElementById('sch-time').value.trim();
-  const tournament = document.getElementById('sch-tournament').value.trim();
-  const match_name = document.getElementById('sch-match').value.trim();
-  const msg = document.getElementById('sch-msg');
-  if (!match_time || !tournament || !match_name) { msg.innerHTML = '<div class="msg error">Заполни все поля!</div>'; return; }
-
-  const { error } = await supabaseClient.from('schedule').insert({ match_time, tournament, match_name, status: 'Ожидание' });
-  if (error) {
-    msg.innerHTML = `<div class="msg error">Ошибка: ${error.message}</div>`;
-  } else {
-    msg.innerHTML = '<div class="msg success">Матч добавлен!</div>';
-    document.getElementById('sch-time').value = '';
-    document.getElementById('sch-tournament').value = '';
-    document.getElementById('sch-match').value = '';
-    loadSchedule(); // Обновляем таблицу
-  }
-}
-
-// Загрузка новостей из базы
 async function loadNews() {
   const { data } = await supabaseClient.from('news').select('*').order('created_at', { ascending: false });
   const container = document.getElementById('tab-news');
@@ -2392,7 +2385,36 @@ async function loadNews() {
   container.innerHTML = html;
 }
 
-// Загрузка расписания из базы
+async function removeNews(id) {
+  if (!isAdmin()) return;
+  if (!confirm('Удалить эту новость?')) return;
+  await supabaseClient.from('news').delete().eq('id', id);
+  loadNews();
+}
+
+// ==========================================
+// РАСПИСАНИЕ
+// ==========================================
+async function addSchedule() {
+  if (!isAdmin()) return;
+  const match_time = document.getElementById('sch-time').value.trim();
+  const tournament = document.getElementById('sch-tournament').value.trim();
+  const match_name = document.getElementById('sch-match').value.trim();
+  const msg = document.getElementById('sch-msg');
+  if (!match_time || !tournament || !match_name) { msg.innerHTML = '<div class="msg error">Заполни все поля!</div>'; return; }
+
+  const { error } = await supabaseClient.from('schedule').insert({ match_time, tournament, match_name, status: 'Ожидание' });
+  if (error) {
+    msg.innerHTML = `<div class="msg error">Ошибка: ${error.message}</div>`;
+  } else {
+    msg.innerHTML = '<div class="msg success">Матч добавлен!</div>';
+    document.getElementById('sch-time').value = '';
+    document.getElementById('sch-tournament').value = '';
+    document.getElementById('sch-match').value = '';
+    loadSchedule();
+  }
+}
+
 async function loadSchedule() {
   const { data } = await supabaseClient.from('schedule').select('*').order('id', { ascending: true });
   const container = document.getElementById('tab-schedule');
@@ -2413,7 +2435,7 @@ async function loadSchedule() {
         </thead>
         <tbody>
   `;
-  
+
   if (!data || data.length === 0) {
     html += '<tr><td colspan="5" style="padding: 10px; text-align: center; color: var(--text-dim);">Матчей пока нет.</td></tr>';
   } else {
@@ -2433,19 +2455,18 @@ async function loadSchedule() {
   container.innerHTML = html;
 }
 
-window.addNews = addNews;
-window.addSchedule = addSchedule;
-  async function removeNews(id) {
+async function removeSchedule(id) {
   if (!isAdmin()) return;
-  if (!confirm('Удалить эту новость?')) return;
-  await supabaseClient.from('news').delete().eq('id', id);
-  loadNews();
+  if (!confirm('Удалить этот матч из расписания?')) return;
+  await supabaseClient.from('schedule').delete().eq('id', id);
+  loadSchedule();
 }
-window.removeNews = removeNews;
-  // ==========================================
-// РЕЗУЛЬТАТЫ И ПРИЗОВОЙ ФОНД
+
+// ==========================================
+// РЕЗУЛЬТАТЫ
 // ==========================================
 async function addResult() {
+  if (!isAdmin()) return;
   const tournament_name = document.getElementById('res-tournament').value.trim();
   const prize_pool = document.getElementById('res-prize').value.trim();
   const place_1 = document.getElementById('res-p1').value.trim();
@@ -2480,11 +2501,8 @@ async function loadResults() {
   const container = document.getElementById('tab-results');
   if (!container) return;
 
-  // Считаем общий призовой фонд (просто выводим текст первого турнира, либо можно сложить)
   let totalPrize = '0 ₽';
-  if (data && data.length > 0 && data[0].prize_pool) {
-    totalPrize = data[0].prize_pool;
-  }
+  if (data && data.length > 0 && data[0].prize_pool) totalPrize = data[0].prize_pool;
 
   let html = `
     <div class="card" style="text-align: center; background: linear-gradient(135deg, #1A1A1F 0%, #0B0B0D 100%); border-color: var(--accent);">
@@ -2502,7 +2520,7 @@ async function loadResults() {
     data.forEach(item => {
       html += `
         <div style="border-bottom: 1px solid var(--border); padding-bottom: 15px; margin-bottom: 15px;">
-         <div style="display: flex; justify-content: space-between; align-items: center;">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
             <h3 style="font-size: 16px; color: var(--accent); margin-bottom: 10px;">${escapeHtml(item.tournament_name)}</h3>
             ${isAdmin() ? `<button class="btn danger" style="padding: 2px 8px; font-size: 10px;" onclick="removeResult(${item.id})">Удалить</button>` : ''}
           </div>
@@ -2519,11 +2537,18 @@ async function loadResults() {
   container.innerHTML = html;
 }
 
-window.addResult = addResult;
-  // ==========================================
-// ПАРТНЕРЫ И СПОНСОРЫ
+async function removeResult(id) {
+  if (!isAdmin()) return;
+  if (!confirm('Удалить эти результаты?')) return;
+  await supabaseClient.from('results').delete().eq('id', id);
+  loadResults();
+}
+
+// ==========================================
+// ПАРТНЁРЫ
 // ==========================================
 async function addSponsor() {
+  if (!isAdmin()) return;
   const name = document.getElementById('sp-name').value.trim();
   const image_url = document.getElementById('sp-img').value.trim();
   const link_url = document.getElementById('sp-link').value.trim();
@@ -2536,7 +2561,6 @@ async function addSponsor() {
   }
 
   const { error } = await supabaseClient.from('sponsors').insert({ name, image_url, link_url, size });
-
   if (error) {
     msg.innerHTML = `<div class="msg error">Ошибка: ${error.message}</div>`;
   } else {
@@ -2544,8 +2568,8 @@ async function addSponsor() {
     document.getElementById('sp-name').value = '';
     document.getElementById('sp-img').value = '';
     document.getElementById('sp-link').value = '';
-    loadSponsors(); // Обновляем список на сайте
-    loadSponsorsAdmin(); // Обновляем список в админке
+    loadSponsors();
+    loadSponsorsAdmin();
   }
 }
 
@@ -2555,7 +2579,7 @@ async function loadSponsors() {
   if (!container) return;
 
   let html = '<div class="card"><h2 style="margin-bottom: 20px;">🤝 Наши партнеры</h2><div style="display: flex; flex-wrap: wrap; gap: 20px; align-items: center; justify-content: center;">';
-  
+
   if (!data || data.length === 0) {
     html += '<p style="color: var(--text-dim); width: 100%; text-align: center;">Пока партнеров нет.</p>';
   } else {
@@ -2563,9 +2587,9 @@ async function loadSponsors() {
       let width = '150px';
       if (sp.size === 'small') width = '100px';
       if (sp.size === 'large') width = '200px';
-      
+
       const imgTag = `<img src="${sp.image_url}" style="width: ${width}; height: auto; object-fit: contain; filter: grayscale(100%) brightness(1.5); transition: 0.3s;" onmouseover="this.style.filter='grayscale(0%) brightness(1)'" onmouseout="this.style.filter='grayscale(100%) brightness(1.5)'">`;
-      
+
       if (sp.link_url) {
         html += `<a href="${sp.link_url}" target="_blank" title="${escapeHtml(sp.name)}">${imgTag}</a>`;
       } else {
@@ -2582,10 +2606,7 @@ async function loadSponsorsAdmin() {
   const container = document.getElementById('sponsors-admin-list');
   if (!container) return;
 
-  if (!data || data.length === 0) {
-    container.innerHTML = '';
-    return;
-  }
+  if (!data || data.length === 0) { container.innerHTML = ''; return; }
 
   let html = '<h3 style="font-size: 14px; margin-bottom: 10px;">Текущие партнеры:</h3>';
   data.forEach(sp => {
@@ -2600,285 +2621,184 @@ async function loadSponsorsAdmin() {
 }
 
 async function removeSponsor(id) {
+  if (!isAdmin()) return;
   if (!confirm('Удалить партнера?')) return;
   await supabaseClient.from('sponsors').delete().eq('id', id);
   loadSponsors();
   loadSponsorsAdmin();
 }
 
-// Обновляем switchTab
-const originalSwitchTab = switchTab;
-switchTab = function(tab) {
-  originalSwitchTab(tab);
-  const partnersSection = document.getElementById('tab-partners');
-  if (partnersSection) partnersSection.classList.toggle('hidden', tab !== 'partners');
-  if (tab === 'partners') loadSponsors();
+// ==========================================
+// ИНФО-МОДАЛКИ
+// ==========================================
+const INFO_TEXTS = {
+  about: {
+    title: 'О турнирной платформе ARQON',
+    text: `
+      <p><b>ARQON Esports Organization</b> — это платформа для проведения киберспортивных турниров по дисциплинам - Dota 2, CS 2 и т.д.</p>
+      <p>Наш сайт позволяет организаторам создавать турнирные сетки, проводить живые драфты (баны и пики) и общаться с участниками в реальном времени.</p>
+      <p>Мы делаем турниры доступными и удобными для всех: от новичков до профессионалов. Присоединяйтесь к нашим событиям и следите за результатами!</p>
+    `
+  },
+  faq: {
+    title: 'Часто задаваемые вопросы (FAQ)',
+    text: `
+      <p><b>Как зарегистрироваться на турнир?</b><br>Для участия необходимо получить код доступа у администратора турнира. Введите его в окне «Вход для игрока».</p>
+      <p><b>Как работает драфт?</b><br>Игроки по очереди банят героев, а затем выбирают своих персонажей. Так же банят карты и выбирают оставшиеся. Все действия происходят в реальном времени.</p>
+      <p><b>Где посмотреть результаты?</b><br>Все результаты и сетки турнира доступны на главной странице в разделе «Сетка».</p>
+    `
+  },
+  privacy: {
+    title: 'Политика конфиденциальности',
+    text: `
+      <p>Мы уважаем вашу конфиденциальность. Сайт собирает минимальное количество данных, необходимых для проведения турниров (Steam ID, никнеймы).</p>
+      <p>Данные не передаются третьим лицам и используются исключительно для организации киберспортивных событий.</p>
+      <p>Используя наш сайт, вы соглашаетесь с условиями обработки данных.</p>
+    `
+  },
+  contact: {
+    title: 'Связаться с нами',
+    text: `
+      <p>По всем вопросам сотрудничества, проведения турниров или технических проблем обращайтесь:</p>
+      <ul style="margin-left: 20px; margin-top: 10px;">
+        <li>Email: <b>contact@arqon.gg</b></li>
+        <li>Telegram: <b>@arqon_support</b></li>
+      </ul>
+      <p style="margin-top: 15px;">Мы открыты к предложениям о партнерстве и спонсорстве!</p>
+    `
+  }
 };
 
+function openInfoModal(key) {
+  const data = INFO_TEXTS[key];
+  if (!data) return;
+  document.getElementById('info-title').textContent = data.title;
+  document.getElementById('info-content').innerHTML = data.text;
+  document.getElementById('info-modal').style.display = 'flex';
+}
+
+function closeInfoModal() {
+  document.getElementById('info-modal').style.display = 'none';
+}
+
+// ==========================================
+// INIT
+// ==========================================
+function init() {
+  document.querySelectorAll('nav button').forEach(b => b.onclick = () => switchTab(b.dataset.tab));
+  document.querySelectorAll('[data-sub]').forEach(b => b.onclick = () => switchSubTab(b.dataset.sub));
+
+  const modeSel = document.getElementById('mode');
+  const typeSel = document.getElementById('bracket-type');
+  const maxSel = document.getElementById('max-participants');
+
+  if (modeSel) { modeSel.value = state.mode; modeSel.onchange = e => { state.mode = e.target.value; saveState(); renderAll(); }; }
+  if (typeSel) { typeSel.value = state.bracketType; typeSel.onchange = e => { state.bracketType = e.target.value; saveState(); }; }
+  if (maxSel) { maxSel.value = state.maxParticipants; maxSel.onchange = e => { state.maxParticipants = +e.target.value; saveState(); }; }
+
+  const gameSel = document.getElementById('game-type');
+  if (gameSel) {
+    gameSel.value = state.game || 'dota';
+    gameSel.onchange = e => {
+      state.game = e.target.value;
+      if (state.game === 'cs2') {
+        state.mode = '5x5';
+        if (modeSel) { modeSel.value = '5x5'; modeSel.disabled = true; }
+      } else {
+        if (modeSel) modeSel.disabled = false;
+      }
+      saveState();
+      renderAll();
+    };
+  }
+
+  if (state.game === 'cs2' && modeSel) {
+    modeSel.value = '5x5';
+    modeSel.disabled = true;
+  }
+
+  const addBtn = document.getElementById('add-player-btn');
+  const playerInput = document.getElementById('player-input');
+  if (addBtn) addBtn.onclick = handleAddPlayer;
+  if (playerInput) playerInput.addEventListener('keydown', e => { if (e.key === 'Enter') handleAddPlayer(); });
+
+  const addTeamBtn = document.getElementById('add-team-btn');
+  const genBtn = document.getElementById('generate-bracket');
+  const resetBtn = document.getElementById('reset-all');
+
+  if (addTeamBtn) addTeamBtn.onclick = () => {
+    if (!isAdmin()) return;
+    state.teams.push({ id: genId(), name: 'Team ' + (state.teams.length + 1), players: [] });
+    renderTeams();
+    saveState();
+  };
+
+  if (genBtn) genBtn.onclick = () => {
+    if (!isAdmin()) return;
+    if (document.getElementById('bracket-type').value === 'double') {
+      generateDoubleBracket();
+    } else {
+      generateBracket();
+    }
+  };
+
+  if (resetBtn) resetBtn.onclick = () => {
+    if (!isAdmin()) return;
+    if (!confirm('Удалить весь турнир?')) return;
+    state.soloPlayers = [];
+    state.teams = [];
+    state.freeAgents = [];
+    state.bracket = null;
+    saveState();
+    renderAll();
+    switchTab('admin');
+    alert('Готово');
+  };
+
+  const adminTabBtn = document.getElementById('admin-tab-btn');
+  if (adminTabBtn && isAdmin()) adminTabBtn.style.display = 'inline-block';
+
+  showAuthButtonIfNeeded();
+  renderAll();
+}
+
+function showAuthButtonIfNeeded() {
+  if (!isAdmin() && !currentUser) {
+    const btn = document.getElementById('show-auth-btn');
+    if (btn) btn.style.display = 'inline-block';
+  }
+}
+
+function openAuthScreen() {
+  document.getElementById('auth-screen').style.display = 'flex';
+}
+
+// ==========================================
+// ЭКСПОРТ В WINDOW (всё что вызывается из HTML)
+// ==========================================
+window.banHero = banHero;
+window.pickHero = pickHero;
+window.sendMessage = sendMessage;
+window.sendAdminMessage = sendAdminMessage;
+window.startDraftForMatch = startDraftForMatch;
+window.openPicks = openPicks;
+window.generateDoubleBracket = generateDoubleBracket;
+window.renderDoubleBracket = renderDoubleBracket;
+window.setScoreDouble = setScoreDouble;
+window.addNews = addNews;
+window.removeNews = removeNews;
+window.addSchedule = addSchedule;
+window.removeSchedule = removeSchedule;
+window.addResult = addResult;
+window.removeResult = removeResult;
 window.addSponsor = addSponsor;
 window.removeSponsor = removeSponsor;
-// ==========================================
-// СВОЯ ЛОГИКА DOUBLE ELIMINATION
-// ==========================================
+window.openInfoModal = openInfoModal;
+window.closeInfoModal = closeInfoModal;
+window.openAuthScreen = openAuthScreen;
+window.renderPlayerDraft = renderPlayerDraft;
 
-function generateDoubleBracket() {
-  if (!isAdmin()) return;
-  
-  let participants;
-  if (state.mode === '1x1') {
-    participants = state.soloPlayers.map(p => ({ id: 'p' + p.account_id, name: p.name, avatar: p.avatar }));
-  } else {
-    participants = state.teams.filter(t => t.players.length > 0).map(t => ({ id: t.id, name: t.name, avatar: t.players[0] ? t.players[0].avatar : '' }));
-  }
-
-  if (participants.length < 2) { alert('Нужно минимум 2 участника'); return; }
-  if (participants.length > state.maxParticipants) participants = participants.slice(0, state.maxParticipants);
-  
-  const size = Math.pow(2, Math.ceil(Math.log2(participants.length)));
-  const slots = shuffle(participants);
-  while (slots.length < size) slots.push(null); // Заполняем пустыми слотами (bye)
-
-  // --- 1. СТРОИМ ВЕРХНЮЮ СЕТКУ (WB) ---
-  const wbRounds = [];
-  let currentWB = [];
-  for (let i = 0; i < slots.length; i += 2) {
-    currentWB.push({ id: 'wb-r1-' + (i / 2), round: 0, p1: slots[i], p2: slots[i + 1], winner: null, loser: null, score: null });
-  }
-  wbRounds.push(currentWB);
-  
-  let rIdx = 1;
-  while (currentWB.length > 1) {
-    const next = [];
-    for (let i = 0; i < currentWB.length; i += 2) {
-      next.push({ id: 'wb-r' + (rIdx + 1) + '-' + (i / 2), round: rIdx, p1: null, p2: null, winner: null, loser: null, score: null });
-    }
-    wbRounds.push(next); currentWB = next; rIdx++;
-  }
-
-  // --- 2. СТРОИМ НИЖНЮЮ СЕТКУ (LB) ---
-  // Количество раундов в LB обычно в 2 раза больше, чем в WB - 1
-  // --- 2. СТРОИМ НИЖНЮЮ СЕТКУ (LB) ---
-  // Количество раундов в LB = (Количество раундов в WB - 1) * 2 - 1
-  const lbRoundsCount = (wbRounds.length - 1) * 2 - 1;
-  const lbRounds = [];
-  
-  for (let i = 0; i < lbRoundsCount; i++) {
-    // В первом раунде LB матчей в 2 раза меньше, чем в первом раунде WB
-    let matchesCount = wbRounds[0].length / 2;
-    if (i > 0) {
-      // Дальше количество матчей зависит от того, четный раунд или нет
-      if (i % 2 === 1) matchesCount = matchesCount; // столько же
-      else matchesCount = matchesCount / 2; // в 2 раза меньше
-    }
-    
-    const roundMatches = [];
-    for (let j = 0; j < matchesCount; j++) {
-      roundMatches.push({ id: 'lb-r' + (i + 1) + '-' + j, round: i, p1: null, p2: null, winner: null, loser: null, score: null });
-    }
-    lbRounds.push(roundMatches);
-  }
-
-  // --- 3. ГРАНД-ФИНАЛ ---
-  const grandFinal = { id: 'gf-0', round: 0, p1: null, p2: null, winner: null, loser: null, score: null };
-
-  state.bracket = { 
-    type: 'double', 
-    mode: state.mode, 
-    wb: wbRounds, 
-    lb: lbRounds, 
-    gf: grandFinal,
-    players: participants 
-  };
-  
-  saveState(); 
-  switchTab('bracket'); 
-  renderDoubleBracket();
-}
-
-// Отрисовка всей этой красоты
-function renderDoubleBracket() {
-  const wrap = document.getElementById('bracket');
-  const empty = document.getElementById('bracket-empty');
-  const info = document.getElementById('bracket-info');
-  
-  if (!wrap || !state.bracket || state.bracket.type !== 'double') return;
-  
-  empty.classList.add('hidden');
-  info.innerHTML = `Формат: <b>${state.bracket.mode}</b> · Тип: <b>Double Elimination (Bo3)</b>`;
-
-  let html = '<div style="display: flex; flex-direction: column; gap: 40px; min-width: max-content;">';
-
-  // --- РЕНДЕР ВЕРХНЕЙ СЕТКИ (WB) ---
-  html += '<div><h3 style="color: var(--accent); margin-bottom: 15px; text-align: center;">🏆 Верхняя сетка (Winner Bracket)</h3>';
-  html += '<div class="bracket">';
-  state.bracket.wb.forEach((round, ri) => {
-    const title = ri === state.bracket.wb.length - 1 ? 'Финал WB' : 'Раунд ' + (ri + 1);
-    html += '<div class="round"><div class="round-title">' + title + '</div>' + round.map(m => matchHTML(m)).join('') + '</div>';
-  });
-  html += '</div></div>';
-
-  // --- РЕНДЕР НИЖНЕЙ СЕТКИ (LB) ---
-  html += '<div><h3 style="color: #F59E0B; margin-bottom: 15px; text-align: center;">🛡️ Нижняя сетка (Loser Bracket)</h3>';
-  html += '<div class="bracket">';
-  state.bracket.lb.forEach((round, ri) => {
-    html += '<div class="round"><div class="round-title" style="color: #F59E0B;">Раунд LB ' + (ri + 1) + '</div>' + round.map(m => matchHTML(m)).join('') + '</div>';
-  });
-  html += '</div></div>';
-
-  // --- РЕНДЕР ГРАНД-ФИНАЛА ---
-  html += '<div><h3 style="color: #FFD700; margin-bottom: 15px; text-align: center;">👑 Гранд-финал</h3>';
-  html += '<div class="bracket" style="justify-content: center;">';
-  html += '<div class="round"><div class="round-title" style="color: #FFD700;">Победитель турнира</div>' + matchHTML(state.bracket.gf) + '</div>';
-  html += '</div></div>';
-
-  html += '</div>';
-  wrap.innerHTML = html;
-}
-
-// Обработка клика по счёту (работает и для сингла, и для дабла)
-// Обработка клика по счёту (работает и для сингла, и для дабла)
-function setScoreDouble(matchId) {
-  if (!isAdmin()) return;
-  
-  let match = null;
-  state.bracket.wb.forEach(r => r.forEach(m => { if (m.id === matchId) match = m; }));
-  state.bracket.lb.forEach(r => r.forEach(m => { if (m.id === matchId) match = m; }));
-  if (state.bracket.gf.id === matchId) match = state.bracket.gf;
-  
-  if (!match) return;
-
-  const s1 = parseInt(document.getElementById('score-' + matchId + '-1').value) || 0;
-  const s2 = parseInt(document.getElementById('score-' + matchId + '-2').value) || 0;
-  
-  if (s1 === s2) { alert('Ничья невозможна в Bo3.'); return; }
-  if (s1 > 2 || s2 > 2) { alert('Максимум 2 карты в Bo3'); return; }
-
-  match.score = { p1: s1, p2: s2 };
-  match.winner = s1 > s2 ? match.p1 : match.p2;
-  match.loser = s1 > s2 ? match.p2 : match.p1;
-
-  saveState(); // <--- ВАЖНО: сохраняем счёт в базу!
-  renderDoubleBracket();
-}
-
-let draggedItem = null;
-
-window.handleDragStart = function(event, matchId, slotKey) {
-  if (!isAdmin()) return;
-  draggedItem = { matchId, slotKey };
-  event.dataTransfer.effectAllowed = 'move';
-  event.target.classList.add('dragging');
-};
-
-// ==========================================
-// DRAG & DROP ИГРОКОВ В КОМАНДЫ (5x5)
-// ==========================================
-window.dragPlayerFromPool = function(event, accountId) {
-  if (!isAdmin()) return;
-  event.dataTransfer.setData('text/plain', accountId);
-  event.dataTransfer.setData('source', 'pool');
-};
-
-window.handleDropOnTeam = function(event, teamId) {
-  event.preventDefault();
-  event.target.closest('.team-slot').classList.remove('drag-over');
-  
-  if (!isAdmin()) return;
-  
-  const source = event.dataTransfer.getData('source');
-  const accountId = event.dataTransfer.getData('text/plain');
-  if (!accountId) return;
-
-  if (!state.freeAgents) state.freeAgents = [];
-  if (!state.teams) state.teams = [];
-
-  if (source === 'pool') {
-    const player = state.freeAgents.find(p => p.account_id === accountId);
-    if (!player) return;
-    
-    const team = state.teams.find(t => t.id === teamId);
-    if (!team) return;
-    if (team.players.length >= 5) { alert('В команде уже 5 игроков!'); return; }
-    
-    state.freeAgents = state.freeAgents.filter(p => p.account_id !== accountId);
-    team.players.push(player);
-  }
-
-  saveState();
-  renderTeams();
-  renderFreeAgents();
-};
-
-window.handleDrop = function(event, targetMatchId, targetSlotKey) {
-  event.preventDefault();
-  event.target.classList.remove('drag-over');
-  
-  if (!isAdmin() || !draggedItem) return;
-  
-  const sourceMatchId = draggedItem.matchId;
-  const sourceSlotKey = draggedItem.slotKey;
-  draggedItem = null;
-
-  function findMatch(id) {
-    let found = null;
-    if (state.bracket.type === 'double') {
-      state.bracket.wb.forEach(r => r.forEach(m => { if (m.id === id) found = m; }));
-      state.bracket.lb.forEach(r => r.forEach(m => { if (m.id === id) found = m; }));
-      if (state.bracket.gf.id === id) found = state.bracket.gf;
-    } else {
-      state.bracket.rounds.forEach(r => r.forEach(m => { if (m.id === id) found = m; }));
-    }
-    return found;
-  }
-
-  const sourceMatch = findMatch(sourceMatchId);
-  const targetMatch = findMatch(targetMatchId);
-
-  if (!sourceMatch || !targetMatch) return;
-
-  const playerToMove = sourceMatch[sourceSlotKey];
-  if (!playerToMove) return;
-
-  const playerCopy = JSON.parse(JSON.stringify(playerToMove));
-  sourceMatch[sourceSlotKey].isGhost = true;
-  delete playerCopy.isGhost;
-  targetMatch[targetSlotKey] = playerCopy;
-
-  saveState();
-  if (state.bracket.type === 'double') {
-    renderDoubleBracket();
-  } else {
-    renderBracket();
-  }
-};
-
-// ==========================================
-// УДАЛЕНИЕ ЗАПИСЕЙ (НОВОСТИ, РАСПИСАНИЕ, РЕЗУЛЬТАТЫ)
-// ==========================================
-async function removeNews(id) {
-  if (!isAdmin()) return;
-  if (!confirm('Удалить эту новость?')) return;
-  await supabaseClient.from('news').delete().eq('id', id);
-  loadNews();
-}
-window.removeNews = removeNews;
-
-async function removeSchedule(id) {
-  if (!isAdmin()) return;
-  if (!confirm('Удалить этот матч из расписания?')) return;
-  await supabaseClient.from('schedule').delete().eq('id', id);
-  loadSchedule();
-}
-window.removeSchedule = removeSchedule;
-
-async function removeResult(id) {
-  if (!isAdmin()) return;
-  if (!confirm('Удалить эти результаты?')) return;
-  await supabaseClient.from('results').delete().eq('id', id);
-  loadResults();
-}
-window.removeResult = removeResult;
-  
+// Запуск
 init();
 </script>
 </body>
