@@ -941,6 +941,8 @@ async function loginWithCode() {
     }
 
     localStorage.setItem('last_login_uid_' + codeData.player_name, userId);
+    localStorage.setItem('arqon_current_uid', userId); 
+localStorage.setItem('arqon_current_name', codeData.player_name);
     await supabaseClient.from('access_codes').delete().eq('code', code);
 
     window.location.reload();
