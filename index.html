@@ -697,7 +697,7 @@
   <section id="tab-bracket">
     <div class="card" style="display: flex; justify-content: space-between; align-items: center;">
       <div id="bracket-info" class="hint" style="margin: 0;"></div>
-      <button class="btn" id="show-auth-btn" onclick="openAuthScreen()" style="display: none;">🎮 Я игрок (Вход)</button>
+      <button class="btn" id="show-auth-btn" onclick="openAuthScreen()">🎮 Я игрок (Вход)</button>
     </div>
     <div class="bracket-wrap">
       <div id="bracket" class="bracket"></div>
@@ -2808,7 +2808,11 @@ window.openAuthScreen = openAuthScreen;
 window.renderPlayerDraft = renderPlayerDraft;
 
 // Запуск
-init();
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', init);
+} else {
+  init();
+}
 </script>
 </body>
 </html>
