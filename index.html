@@ -824,24 +824,25 @@ supabaseClient.auth.onAuthStateChange((event, session) => {
 
 
 function handleNoAuth() {
+  document.getElementById('auth-screen').style.display = 'none'; 
+  
+  // Принудительно скрываем плашку игрока
+  const playerScreen = document.getElementById('player-screen');
+  if (playerScreen) {
+    playerScreen.classList.add('hidden');
+    playerScreen.style.display = 'none'; // <--- Вот эта строка скроет её навсегда
+  }
+  
   if (isAdmin()) {
-    // Если это админ — показываем админку
-    document.getElementById('auth-screen').style.display = 'none';
-    document.getElementById('player-screen').classList.add('hidden');
     document.querySelector('main').style.display = 'block';
     document.getElementById('tab-bracket').classList.remove('hidden');
     document.getElementById('tab-admin').classList.remove('hidden');
     initSupabaseSync();
   } else {
-    // Если это обычный зритель — скрываем экран входа и показываем сетку
-    document.getElementById('auth-screen').style.display = 'none'; 
-    document.getElementById('player-screen').classList.add('hidden');
     document.querySelector('main').style.display = 'block';
-    
     document.getElementById('tab-bracket').classList.remove('hidden');
     document.getElementById('tab-admin').classList.add('hidden');
     
-    // Загружаем сетку, чтобы зритель увидел результаты
     supabaseClient.from('tournament').select('data').eq('id', 1).single().then(({data}) => {
       if (data && data.data && data.data.bracket) {
         state.bracket = data.data.bracket;
@@ -860,6 +861,7 @@ async function checkUserRole(uid) {
   if (isAdmin()) {
     document.getElementById('auth-screen').style.display = 'none';
     document.querySelector('main').style.display = 'block';
+    document.getElementById('player-screen').style.display = 'none';
     document.getElementById('player-screen').classList.add('hidden');
     initSupabaseSync();
     return;
@@ -869,12 +871,14 @@ async function checkUserRole(uid) {
   
   if (data) {
     document.getElementById('auth-screen').style.display = 'none';
-    document.getElementById('player-screen').classList.remove('hidden');
-    document.getElementById('player-display-name').textContent = data.name;
-    
-    // Скрываем основную часть, но оставляем футер
     document.querySelector('main').style.display = 'none';
     
+    // Показываем плашку
+    const playerScreen = document.getElementById('player-screen');
+    playerScreen.classList.remove('hidden');
+    playerScreen.style.display = 'flex'; // <--- Возвращаем ей нормальный вид
+    
+    document.getElementById('player-display-name').textContent = data.name;
     startDraftListener(uid);
   } else {
     handleNoAuth();
@@ -1509,7 +1513,11 @@ window.setScore = setScore;
 window.loginWithCode = loginWithCode;
 window.logoutPlayer = logoutPlayer;
   async function showPlayerBracket() {
-  document.getElementById('player-screen').classList.add('hidden');
+  // Скрываем плашку
+  const playerScreen = document.getElementById('player-screen');
+  playerScreen.classList.add('hidden');
+  playerScreen.style.display = 'none';
+  
   document.querySelector('main').style.display = 'block';
   document.getElementById('tab-bracket').classList.remove('hidden');
   document.getElementById('tab-admin').classList.add('hidden');
@@ -1531,10 +1539,13 @@ window.logoutPlayer = logoutPlayer;
     b.classList.toggle('active', b.dataset.tab === 'bracket');
   });
 }
-
 function backToDraft() {
   document.querySelector('main').style.display = 'none';
-  document.getElementById('player-screen').classList.remove('hidden');
+  
+  // Возвращаем плашку
+  const playerScreen = document.getElementById('player-screen');
+  playerScreen.classList.remove('hidden');
+  playerScreen.style.display = 'flex';
 }
 
 window.showPlayerBracket = showPlayerBracket;
