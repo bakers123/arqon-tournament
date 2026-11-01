@@ -784,7 +784,7 @@ let isRealtimeActive = false;
 let state = { game: 'dota', mode: '5x5', bracketType: 'single', maxParticipants: 8, soloPlayers: [], freeAgents: [], teams: [], bracket: null };
 // Маппул CS2
 const CS2_MAPS = [
-  "de_ancient", "de_anubis", "de_dust2", "de_inferno", "de_mirage", "de_nuke", "de_vertigo"
+  "de_ancient", "de_anubis", "de_cache", "de_dust2", "de_inferno", "de_mirage", "de_nuke"
 ];
 
 function isAdmin() {
@@ -1806,7 +1806,7 @@ function renderPlayerDraft(myUid) {
         else { style += 'cursor: not-allowed;'; }
         
         const mapDisplayName = mapName.replace('de_', '').toUpperCase();
-        const mapImage = `https://cdn.cloudflare.steamstatic.com/apps/csgo/images/maps/overviews/${mapName}.png`;
+        const mapImage = `https://raw.githubusercontent.com/MurkyYT/cs2-map-icons/main/images/${mapName}.png`;
 
         return `<div style="${style}" onclick="${(!isBanned && amIOnTurn && draftState.bans[myRole].length < maxBans) ? `banHero('${mapName}','${myRole}')` : ''}">
           <img src="${mapImage}" alt="${mapDisplayName}" style="width: 100%; height: 100%; object-fit: cover; position: absolute; inset: 0; z-index: 1;" onerror="this.style.display='none'">
