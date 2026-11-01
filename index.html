@@ -1972,7 +1972,7 @@ function renderPlayerDraft(myUid) {
     first_turn: null,
     turn: null,
     game: state.game,
-    maxBans: state.game === 'cs2' ? 1 : 5, // <--- 1 бан для CS2
+    maxBans: state.game === 'cs2' ? 6 : 5, // <--- 1 бан для CS2
     pool: state.game === 'cs2' 
       ? [...CS2_MAPS].sort(() => 0.5 - Math.random())
       : [...ALL_HEROES].sort(() => 0.5 - Math.random()).slice(0, 20),
