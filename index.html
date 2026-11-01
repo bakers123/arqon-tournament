@@ -390,6 +390,94 @@
     background: var(--panel); border: 1px solid var(--accent); border-radius: 12px;
     padding: 24px; max-width: 500px; width: 90%; box-shadow: 0 0 40px rgba(122,59,255,0.4);
   }
+  /* ========================================== */
+/* АДАПТИВНОСТЬ ДЛЯ МОБИЛЬНЫХ УСТРОЙСТВ       */
+/* ========================================== */
+@media (max-width: 768px) {
+  /* Шапка */
+  header {
+    flex-direction: column;
+    padding: 10px;
+    gap: 10px;
+  }
+  nav {
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 5px;
+  }
+  nav button, .nav-social-btn {
+    padding: 6px 10px;
+    font-size: 11px;
+  }
+  .nav-social-btn {
+    margin-left: 0;
+  }
+  
+  /* Контент */
+  main {
+    padding: 15px 10px;
+  }
+  .card {
+    padding: 15px;
+  }
+  
+  /* Сетка и карточки */
+  .grid {
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  }
+  .bracket {
+    gap: 20px;
+  }
+  .match {
+    width: 240px; /* Чуть уже для мобилки */
+  }
+  
+  /* Инпуты и кнопки */
+  .row {
+    flex-direction: column;
+  }
+  .row > div {
+    flex: 1 1 100% !important;
+  }
+  button.btn {
+    width: 100%;
+    margin-bottom: 10px;
+    margin-left: 0 !important;
+  }
+  
+  /* Футер */
+  footer > div {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+  footer > div > div {
+    width: 100%;
+  }
+  
+  /* Экран игрока */
+  #player-screen {
+    padding: 20px 10px;
+  }
+  #player-screen .card {
+    flex-direction: column;
+    align-items: flex-start !important;
+    gap: 15px;
+  }
+  #player-screen .card > div:last-child {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  
+  /* Модалки */
+  .modal-content {
+    width: 95%;
+    padding: 15px;
+  }
+}
+
 </style>
 </head>
 <body>
@@ -2664,11 +2752,24 @@ const INFO_TEXTS = {
     `
   },
   privacy: {
-    title: 'Политика конфиденциальности',
+    title: 'Политика конфиденциальности и Пользовательское соглашение',
     text: `
-      <p>Мы уважаем вашу конфиденциальность. Сайт собирает минимальное количество данных, необходимых для проведения турниров (Steam ID, никнеймы).</p>
-      <p>Данные не передаются третьим лицам и используются исключительно для организации киберспортивных событий.</p>
-      <p>Используя наш сайт, вы соглашаетесь с условиями обработки данных.</p>
+      <p style="margin-bottom: 15px;"><b>1. Общие положения</b><br>
+      Используя платформу ARQON Esports, вы соглашаетесь с настоящими условиями. Платформа предназначена для организации и проведения киберспортивных турниров по Dota 2 и CS2.</p>
+      
+      <p style="margin-bottom: 15px;"><b>2. Сбор данных</b><br>
+      Мы собираем минимально необходимую информацию: игровой никнейм, Steam ID, уровень FACEIT (для CS2), а также данные об авторизации (анонимный UID). Эти данные используются исключительно для формирования турнирных сеток и проведения драфтов.</p>
+      
+      <p style="margin-bottom: 15px;"><b>3. Использование данных</b><br>
+      Ваши данные не передаются третьим лицам. Они хранятся на защищенных серверах Supabase и используются только в рамках функционала платформы. Мы не используем ваши данные для рекламы или спама.</p>
+      
+      <p style="margin-bottom: 15px;"><b>4. Ответственность игрока</b><br>
+      Игрок обязуется не передавать свой код доступа третьим лицам. Администрация не несет ответственности за действия третьих лиц, получивших доступ к вашему аккаунту по вашей вине.</p>
+      
+      <p style="margin-bottom: 15px;"><b>5. Изменение условий</b><br>
+      Администрация оставляет за собой право вносить изменения в работу платформы и настоящие условия. Продолжение использования сайта означает согласие с обновленными правилами.</p>
+      
+      <p style="color: #8A8A96; font-size: 13px; margin-top: 20px;">Последнее обновление: 2026 год.</p>
     `
   },
   contact: {
