@@ -2,18 +2,17 @@
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>ARQON — Tournament Organization</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#09090d">
+<meta name="description" content="ARQON Esports — киберспортивные турниры, матчи, результаты и прямые трансляции.">
+<title>ARQON Esports — Турниры. Матчи. Победы.</title>
   <link rel="icon" type="image/png" href="logo.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <style>
-    html {
-    overflow-x: hidden;
-    width: 100%;
-  }
+  
    /* Стильные социальные кнопки в шапке */
   .nav-social-btn {
     display: flex;
@@ -109,115 +108,6 @@
     background-image:
       radial-gradient(ellipse at top left, rgba(122,59,255,0.08), transparent 50%),
       radial-gradient(ellipse at bottom right, rgba(122,59,255,0.05), transparent 50%);
-    /* --- ФИКС ДЛЯ ТЕЛЕФОНОВ --- */
-  html, body {
-    max-width: 100vw;
-    overflow-x: hidden;
-  }
-
-  /* ========================================== */
-  /* АДАПТИВНОСТЬ ДЛЯ МОБИЛЬНЫХ УСТРОЙСТВ       */
-  /* ========================================== */
-  @media (max-width: 768px) {
-    /* Шапка */
-    header {
-      flex-direction: column;
-      padding: 10px 5px;
-      gap: 15px;
-    }
-    
-    /* Меню (кнопки) */
-    nav {
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: center;
-      gap: 6px;
-      width: 100%;
-    }
-    nav button {
-      padding: 6px 10px;
-      font-size: 11px;
-      flex: 0 0 auto;
-    }
-    .nav-social-btn {
-      margin-left: 0;
-      padding: 6px 10px;
-      font-size: 11px;
-      flex: 0 0 auto;
-    }
-    
-    /* Контент */
-    main {
-      padding: 15px 10px;
-    }
-    .card {
-      padding: 15px;
-    }
-    
-    /* Сетка и карточки */
-    .grid {
-      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-    }
-    
-    /* САМОЕ ВАЖНОЕ: Сетка в колонку на телефоне */
-    .bracket {
-      display: flex !important;
-      flex-direction: column !important;
-      gap: 15px !important;
-      min-width: 0 !important;
-    }
-    .round {
-      width: 100% !important;
-    }
-    .match {
-      width: 100% !important;
-    }
-    
-    /* Инпуты и кнопки */
-    .row {
-      flex-direction: column;
-    }
-    .row > div {
-      flex: 1 1 100% !important;
-    }
-    button.btn {
-      width: 100%;
-      margin-bottom: 10px;
-      margin-left: 0 !important;
-    }
-    
-    /* Футер */
-    footer > div {
-      flex-direction: column;
-      align-items: center;
-      text-align: center;
-    }
-    footer > div > div {
-      width: 100%;
-    }
-    
-    /* Экран игрока */
-    #player-screen {
-      padding: 20px 10px;
-    }
-    #player-screen .card {
-      flex-direction: column;
-      align-items: flex-start !important;
-      gap: 15px;
-    }
-    #player-screen .card > div:last-child {
-      width: 100%;
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-    }
-    
-    /* Модалки */
-    .modal-content {
-      width: 95%;
-      padding: 15px;
-    }
-  }
   }
   header {
     background: rgba(11,11,13,0.95);
@@ -506,16 +396,7 @@
   /* ========================================== */
 /* АДАПТИВНОСТЬ ДЛЯ МОБИЛЬНЫХ УСТРОЙСТВ       */
 /* ========================================== */
-/* ========================================== */
-/* АДАПТИВНОСТЬ ДЛЯ МОБИЛЬНЫХ УСТРОЙСТВ       */
-/* ========================================== */
 @media (max-width: 768px) {
-  /* Убираем горизонтальный скролл */
-  html, body {
-    max-width: 100vw;
-    overflow-x: hidden;
-  }
-
   /* Шапка */
   header {
     flex-direction: column;
@@ -534,7 +415,7 @@
   nav button {
     padding: 6px 10px;
     font-size: 11px;
-    flex: 0 0 auto;
+    flex: 0 0 auto; /* Кнопки не растягиваются на всю ширину */
   }
   .nav-social-btn {
     margin-left: 0;
@@ -555,19 +436,11 @@
   .grid {
     grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
   }
-  
-  /* САМОЕ ВАЖНОЕ: Сетка в колонку на телефоне */
   .bracket {
-    display: flex !important;
-    flex-direction: column !important;
-    gap: 15px !important;
-    min-width: 0 !important;
-  }
-  .round {
-    width: 100% !important;
+    gap: 20px;
   }
   .match {
-    width: 100% !important;
+    width: 240px; /* Чуть уже для мобилки */
   }
   
   /* Инпуты и кнопки */
@@ -615,6 +488,91 @@
     padding: 15px;
   }
 }
+
+
+
+  /* Главная ARQON */
+  .home-page { max-width: 1240px; margin: 0 auto; padding: 30px 22px 60px; }
+  .home-hero { position: relative; overflow: hidden; padding: clamp(28px, 6vw, 72px); border: 1px solid rgba(122,59,255,.35); border-radius: 22px; background: radial-gradient(ellipse at 85% 15%, rgba(122,59,255,.25), transparent 42%), radial-gradient(ellipse at 10% 100%, rgba(0,212,255,.10), transparent 40%), linear-gradient(135deg,#14121f,#0c0c12 70%); }
+  .home-kicker { color: #b7a1ff; font: 700 12px 'Orbitron', sans-serif; letter-spacing: 3px; text-transform: uppercase; }
+  .home-title { max-width: 780px; margin: 16px 0; font: 900 clamp(34px, 6vw, 68px)/1.02 'Orbitron', sans-serif; letter-spacing: -1.5px; }
+  .home-title span { color: var(--accent); text-shadow: 0 0 28px rgba(122,59,255,.35); }
+  .home-lead { max-width: 600px; color: var(--text-dim); font-size: 17px; line-height: 1.7; }
+  .home-actions { display:flex; flex-wrap:wrap; gap:12px; margin-top:26px; }
+  .home-section-head { display:flex; align-items:end; justify-content:space-between; gap:15px; margin:34px 0 16px; }
+  .home-section-head h2 { margin:0; font:700 19px 'Orbitron',sans-serif; }
+  .home-section-head p { margin:6px 0 0; color:var(--text-dim); font-size:13px; }
+  .home-tiles { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:14px; }
+  .home-tile { padding:22px; min-height:150px; border:1px solid var(--border); border-radius:14px; background:linear-gradient(145deg,rgba(255,255,255,.035),rgba(255,255,255,.012)); transition:transform .2s,border-color .2s; }
+  .home-tile:hover { transform:translateY(-3px); border-color:rgba(122,59,255,.65); }
+  .home-tile .tile-icon { font-size:25px; margin-bottom:14px; }
+  .home-tile h3 { margin:0 0 8px; font-size:16px; }
+  .home-tile p { margin:0; color:var(--text-dim); font-size:13px; line-height:1.6; }
+  .home-steps { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:14px; }
+  .home-step { display:flex; gap:13px; padding:18px; border-radius:12px; background:#111117; border:1px solid var(--border); }
+  .home-step-num { display:grid; place-items:center; flex:0 0 34px; height:34px; border-radius:9px; background:rgba(122,59,255,.16); color:#c8b8ff; font-weight:800; }
+  .home-step strong { display:block; margin:2px 0 6px; }
+  .home-step p { margin:0; color:var(--text-dim); font-size:13px; line-height:1.55; }
+  .home-bottom { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:18px; margin-top:26px; padding:24px; border-radius:14px; border:1px solid rgba(122,59,255,.28); background:rgba(122,59,255,.07); }
+  .home-bottom h3 { margin:0 0 7px; }
+  .home-bottom p { margin:0; color:var(--text-dim); font-size:14px; }
+  @media(max-width:760px) { .home-tiles,.home-steps { grid-template-columns:1fr; } .home-page { padding:18px 12px 38px; } .home-section-head { align-items:start; flex-direction:column; } .home-hero { border-radius:15px; } }
+
+
+  /* ARQON premium refresh */
+  :root { --accent:#9b5cff; --accent-2:#c4a4ff; --panel:#111119; --border:#292638; }
+  html { scroll-behavior:smooth; }
+  body { background-color:#08080c; background-image:radial-gradient(ellipse at 50% -10%,rgba(124,58,237,.18),transparent 42%),radial-gradient(ellipse at 100% 50%,rgba(0,190,255,.035),transparent 30%); }
+  header { padding:12px clamp(14px,3vw,38px); background:rgba(8,8,12,.86); border-bottom-color:rgba(174,140,255,.18); }
+  header .brand img { width:clamp(130px,15vw,190px)!important; }
+  nav { display:flex; align-items:center; justify-content:flex-end; flex-wrap:wrap; gap:5px; }
+  nav button { border-radius:8px; padding:10px 12px; transition:background .2s,border-color .2s,color .2s; }
+  nav button:hover, nav button.active { background:rgba(155,92,255,.12); color:#fff; border-color:rgba(155,92,255,.25); }
+  .nav-social-btn { margin-left:4px; border-radius:9px; }
+  .home-page { max-width:1320px; padding-top:34px; }
+  .home-hero { min-height:360px; display:flex; flex-direction:column; justify-content:center; border-radius:24px; border-color:rgba(164,117,255,.32); box-shadow:0 24px 90px rgba(0,0,0,.28),inset 0 1px rgba(255,255,255,.04); }
+  .home-hero:after { content:'ARQON'; position:absolute; right:-18px; bottom:-56px; font:900 clamp(90px,18vw,230px)/1 Orbitron,sans-serif; letter-spacing:-.09em; color:rgba(255,255,255,.025); pointer-events:none; }
+  .home-kicker { display:flex; align-items:center; gap:10px; }
+  .home-kicker:before { content:''; width:26px; height:2px; background:#a879ff; box-shadow:0 0 15px #9b5cff; }
+  .home-title { text-wrap:balance; }
+  .home-title span { background:linear-gradient(90deg,#a879ff,#e3d5ff 65%,#7dd3fc); -webkit-background-clip:text; background-clip:text; color:transparent; }
+  .home-lead { font-size:clamp(16px,1.5vw,19px); }
+  .home-actions .btn { min-height:46px; padding:12px 18px; }
+  .home-stream-layout { display:grid; grid-template-columns:minmax(0,1.8fr) minmax(240px,.8fr); gap:16px; }
+  .home-stream-card,.home-side-card,.home-data-card { border:1px solid var(--border); border-radius:16px; background:linear-gradient(145deg,rgba(22,20,32,.96),rgba(12,12,18,.98)); overflow:hidden; }
+  .home-stream-head { display:flex; justify-content:space-between; align-items:center; gap:12px; padding:16px 18px; border-bottom:1px solid var(--border); }
+  .home-stream-head h2,.home-data-card h3 { font:700 14px Orbitron,sans-serif; letter-spacing:1px; }
+  .home-live-label { display:inline-flex; align-items:center; gap:7px; color:#ff6b83; font:700 11px Orbitron,sans-serif; letter-spacing:1px; }
+  .home-live-label:before { content:''; width:7px; height:7px; border-radius:50%; background:#ff4267; box-shadow:0 0 12px #ff4267; }
+  .home-twitch-frame { display:block; width:100%; aspect-ratio:16/9; border:0; background:#07070a; }
+  .home-stream-foot { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px; padding:14px 18px; color:var(--text-dim); font-size:13px; }
+  .home-stream-side { display:grid; gap:16px; }
+  .home-side-card { padding:22px; display:flex; flex-direction:column; align-items:flex-start; justify-content:center; min-height:160px; }
+  .home-side-card .side-icon { font-size:25px; margin-bottom:14px; }
+  .home-side-card h3 { font:700 15px Orbitron,sans-serif; margin-bottom:8px; }
+  .home-side-card p { color:var(--text-dim); font-size:14px; line-height:1.6; margin-bottom:16px; }
+  .home-data-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; }
+  .home-data-card { padding:16px; min-width:0; }
+  .home-data-card h3 { margin-bottom:12px; }
+  .home-data-list { display:grid; gap:9px; }
+  .home-data-item { padding:10px 0; border-top:1px solid rgba(255,255,255,.06); }
+  .home-data-item:first-child { border-top:0; padding-top:0; }
+  .home-data-item strong { display:block; font-size:14px; overflow-wrap:anywhere; }
+  .home-data-item span { display:block; color:var(--text-dim); font-size:12px; margin-top:3px; }
+  .home-empty-note { color:var(--text-dim); font-size:13px; line-height:1.6; }
+  .home-tile { background:linear-gradient(145deg,rgba(23,21,33,.9),rgba(12,12,17,.92)); }
+  .home-tile .btn { font-size:12px; }
+  .home-bottom { box-shadow:inset 0 1px rgba(255,255,255,.03); }
+  footer { margin-top:30px!important; }
+  @media(max-width:900px) { header { align-items:flex-start; flex-direction:column; gap:12px; } nav { justify-content:flex-start; width:100%; } .home-stream-layout { grid-template-columns:1fr; } .home-stream-side { grid-template-columns:repeat(2,minmax(0,1fr)); } }
+  @media(max-width:560px) { header { padding:12px; } nav { gap:4px; } nav button { padding:8px 9px; font-size:12px; } .nav-social-btn { padding:8px 10px; font-size:10px; } .home-hero { min-height:330px; padding:25px 20px; } .home-title { letter-spacing:-1px; } .home-stream-side,.home-data-grid { grid-template-columns:1fr; } .home-stream-head { padding:13px; } .home-stream-foot { padding:12px 13px; } footer { padding:28px 16px!important; } }
+
+
+  .portal-heading{padding:28px 0 18px}.portal-heading .home-title{font-size:clamp(34px,5vw,64px);margin:10px 0}.portal-heading .home-title span{color:var(--accent,#9b6bff)}
+  .portal-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(245px,1fr));gap:16px;margin:16px 0 28px}
+  .portal-card{position:relative;overflow:hidden;border:1px solid var(--border);border-radius:14px;background:linear-gradient(145deg,rgba(30,25,44,.96),rgba(13,13,19,.98));padding:20px;min-height:180px;transition:transform .2s,border-color .2s}
+  .portal-card:hover{transform:translateY(-3px);border-color:var(--accent,#8b5cf6)}.portal-card h3{margin:8px 0 10px;font-size:22px}.portal-card p{color:var(--text-dim);line-height:1.5}.portal-pill{display:inline-flex;border:1px solid rgba(167,139,250,.45);color:#c4b5fd;border-radius:999px;padding:4px 9px;font-size:11px;letter-spacing:1px;text-transform:uppercase}.portal-toolbar{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin:18px 0}.portal-toolbar input{max-width:420px;width:100%}.portal-stat{font-family:Orbitron,sans-serif;color:#c4b5fd;font-size:26px}.portal-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:16px}.portal-profile-top{display:flex;gap:16px;align-items:center;flex-wrap:wrap}.portal-avatar{width:68px;height:68px;border-radius:16px;background:linear-gradient(135deg,#6d28d9,#171321);display:grid;place-items:center;font-size:28px;font-weight:900;border:1px solid #8b5cf6}.portal-detail-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-top:16px}.portal-detail-stat{padding:14px;border:1px solid var(--border);border-radius:10px;background:rgba(255,255,255,.025)}.portal-detail-stat small{display:block;color:var(--text-dim);margin-bottom:6px}
+  @media(max-width:700px){.portal-card{padding:16px}.portal-heading{padding-top:12px}}
 
 </style>
 </head>
@@ -682,7 +640,10 @@
     <img src="logo.png" alt="ARQON Logo" style="width: 220px; height: auto; filter: drop-shadow(0 0 10px rgba(122,59,255,0.8));">
   </div>
   <nav>
-    <button data-tab="bracket" class="active">Сетка</button>
+    <button data-tab="home" class="active">Главная</button>
+    <button data-tab="bracket">Сетка</button>
+    <button data-tab="tournaments">Турниры</button>
+    <button data-tab="players">Игроки</button>
     <button data-tab="news">Новости</button>
     <button data-tab="schedule">Расписание</button>
     <button data-tab="results">🏆 Результаты</button>
@@ -691,13 +652,13 @@
     
     <!-- Кнопка ТГ -->
     <!-- Стильная кнопка Telegram -->
-    <a href="https://t.me/ARQON_Esports" target="_blank" class="nav-social-btn nav-telegram">
+    <a href="https://t.me/ARQON_Esports" target="_blank" rel="noopener noreferrer" class="nav-social-btn nav-telegram">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/></svg>
       Telegram
     </a>
 
     <!-- Стильная кнопка Донат -->
-    <a href="https://www.donationalerts.com/r/arqon_esports" target="_blank" class="nav-social-btn nav-donate">
+    <a href="https://www.donationalerts.com/r/arqon_esports" target="_blank" rel="noopener noreferrer" class="nav-social-btn nav-donate">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1.41 16.09V20h-2.67v-1.93c-1.71-.36-3.16-1.46-3.27-3.4h1.96c.1 1.05.82 1.87 2.65 1.87 1.96 0 2.4-.98 2.4-1.59 0-.83-.44-1.61-2.67-2.14-2.48-.6-4.18-1.62-4.18-3.67 0-1.72 1.39-2.84 3.11-3.21V4h2.67v1.95c1.86.45 2.79 1.86 2.85 3.39H14.3c-.05-1.11-.64-1.87-2.22-1.87-1.5 0-2.4.68-2.4 1.64 0 .84.65 1.39 2.67 1.91s4.18 1.39 4.18 3.91c-.01 1.83-1.38 2.83-3.12 3.16z"/></svg>
       Поддержать
     </a>
@@ -919,8 +880,78 @@
     </div>
   </section>
 
+  <!-- ГЛАВНАЯ СТРАНИЦА -->
+  <section id="tab-home">
+    <div class="home-page">
+      <div class="home-hero">
+        <div class="home-kicker">ARQON ESPORTS · PLAY TO WIN</div>
+        <h1 class="home-title">ТВОЯ ИГРА.<br><span>ТВОЯ ПОБЕДА.</span></h1>
+        <p class="home-lead">Турниры, честное соперничество и путь к вершине. Следи за матчами, изучай результаты и участвуй в событиях ARQON.</p>
+        <div class="home-actions">
+          <button class="btn" onclick="switchTab('bracket')">🏆 Открыть турнирную сетку</button>
+          <button class="btn ghost" onclick="switchTab('schedule')">📅 Смотреть расписание</button>
+        </div>
+      </div>
+
+      <div class="home-section-head"><div><h2>СМОТРИ ARQON LIVE</h2><p>Трансляции турниров и игровые моменты на нашем Twitch-канале.</p></div><span class="home-live-label">TWITCH CHANNEL</span></div>
+      <div class="home-stream-layout">
+        <div class="home-stream-card">
+          <div class="home-stream-head"><h2>ARQON ESPORTS BROADCAST</h2><span class="home-live-label">LIVE / VOD</span></div>
+          <iframe id="arqon-twitch-player" class="home-twitch-frame" title="ARQON Esports на Twitch" loading="lazy" allowfullscreen allow="autoplay; fullscreen" referrerpolicy="strict-origin-when-cross-origin" src="about:blank"></iframe>
+          <div class="home-stream-foot"><span>Если эфир не отображается, открой Twitch напрямую.</span><a class="nav-social-btn nav-telegram" href="https://www.twitch.tv/arqon_esports" target="_blank" rel="noopener noreferrer">Открыть Twitch ↗</a></div>
+        </div>
+        <div class="home-stream-side">
+          <article class="home-side-card"><div class="side-icon">📡</div><h3>НЕ ПРОПУСТИ ЭФИР</h3><p>Подпишись на канал, чтобы узнавать о новых трансляциях турниров ARQON.</p><a class="nav-social-btn nav-telegram" href="https://www.twitch.tv/arqon_esports" target="_blank" rel="noopener noreferrer">Перейти на Twitch ↗</a></article>
+          <article class="home-side-card"><div class="side-icon">💜</div><h3>ПОДДЕРЖИ ARQON</h3><p>Твоя поддержка помогает развивать турниры, трансляции и игровое сообщество.</p><a class="nav-social-btn nav-donate" href="https://www.donationalerts.com/r/arqon_esports" target="_blank" rel="noopener noreferrer">Поддержать проект ↗</a></article>
+        </div>
+      </div>
+
+      <div class="home-section-head"><div><h2>СЛЕДУЮЩИЕ МАТЧИ</h2><p>Информация загружается из расписания ARQON.</p></div><button class="btn ghost" onclick="switchTab('schedule')">Всё расписание →</button></div>
+      <div class="home-data-grid">
+        <div class="home-data-card"><h3>📅 БЛИЖАЙШИЕ МАТЧИ</h3><div id="home-upcoming-list" class="home-data-list"><p class="home-empty-note">Загружаем расписание…</p></div></div>
+        <div class="home-data-card"><h3>🏆 ПОСЛЕДНИЕ РЕЗУЛЬТАТЫ</h3><div id="home-results-list" class="home-data-list"><p class="home-empty-note">Загружаем результаты…</p></div></div>
+      </div>
+
+      <div class="home-section-head">
+        <div><h2>ВСЁ ДЛЯ ТВОЕЙ ИГРЫ</h2><p>Главное о турнирах ARQON — в одном месте.</p></div>
+      </div>
+      <div class="home-tiles">
+        <article class="home-tile"><div class="tile-icon">⚔️</div><h3>Турнирная сетка</h3><p>Следи за ходом турнира, парами участников и продвижением к финалу.</p><button class="btn ghost" style="margin-top:16px" onclick="switchTab('bracket')">Перейти к сетке →</button></article>
+        <article class="home-tile"><div class="tile-icon">🗓️</div><h3>Матчи и расписание</h3><p>Проверяй запланированные встречи и не пропускай важные игры.</p><button class="btn ghost" style="margin-top:16px" onclick="switchTab('schedule')">Все матчи →</button></article>
+        <article class="home-tile"><div class="tile-icon">🏅</div><h3>Результаты</h3><p>Узнавай, кто занял призовые места и кто стал чемпионом.</p><button class="btn ghost" style="margin-top:16px" onclick="switchTab('results')">Смотреть результаты →</button></article>
+        <article class="home-tile"><div class="tile-icon">📰</div><h3>Новости сообщества</h3><p>Анонсы, итоги турниров и важные обновления платформы.</p><button class="btn ghost" style="margin-top:16px" onclick="switchTab('news')">Читать новости →</button></article>
+        <article class="home-tile"><div class="tile-icon">🎮</div><h3>Участникам</h3><p>Если организатор выдал тебе код доступа, войди в кабинет игрока и следи за своим драфтом.</p><button class="btn ghost" style="margin-top:16px" onclick="openAuthScreen()">Войти как игрок →</button></article>
+        <article class="home-tile"><div class="tile-icon">🤝</div><h3>Партнёры ARQON</h3><p>Компании и сообщества, которые помогают развивать киберспорт вместе с нами.</p><button class="btn ghost" style="margin-top:16px" onclick="switchTab('partners')">Наши партнёры →</button></article>
+      </div>
+
+      <div class="home-section-head"><div><h2>КАК ПРИСОЕДИНИТЬСЯ</h2><p>Три простых шага, чтобы быть в игре.</p></div></div>
+      <div class="home-steps">
+        <div class="home-step"><div class="home-step-num">01</div><div><strong>Следи за анонсами</strong><p>Проверяй новости и расписание, чтобы узнать о новых турнирах.</p></div></div>
+        <div class="home-step"><div class="home-step-num">02</div><div><strong>Получи доступ</strong><p>Свяжись с организаторами и получи код, если участие требует приглашения.</p></div></div>
+        <div class="home-step"><div class="home-step-num">03</div><div><strong>Выходи на матч</strong><p>Следи за сеткой, выполняй действия в драфте и борись за победу.</p></div></div>
+      </div>
+
+      <div class="home-bottom"><div><h3>Не пропускай события ARQON</h3><p>Анонсы и новости сообщества публикуются в нашем Telegram.</p></div><a class="nav-social-btn nav-telegram" href="https://t.me/ARQON_Esports" target="_blank" rel="noopener noreferrer">Открыть Telegram ↗</a></div>
+    </div>
+  </section>
+
+  <!-- КАТАЛОГ ТУРНИРОВ -->
+  <section id="tab-tournaments" class="hidden">
+    <div class="portal-heading"><div class="home-kicker">ARQON COMPETITIVE</div><h1 class="home-title">ТУРНИРЫ <span>ARQON</span></h1><p class="home-lead">Страница каждого события: расписание, статус и итоги. Данные загружаются из базы турниров.</p></div>
+    <div id="tournament-list" class="portal-grid"><div class="home-data-card">Загружаем турниры…</div></div>
+    <div id="tournament-detail" class="home-data-card hidden" style="margin-top:20px"></div>
+  </section>
+
+  <!-- РЕЙТИНГ И ПРОФИЛИ ИГРОКОВ -->
+  <section id="tab-players" class="hidden">
+    <div class="portal-heading"><div class="home-kicker">PLAYER HUB</div><h1 class="home-title">ИГРОКИ <span>ARQON</span></h1><p class="home-lead">Участники сообщества и рейтинг по опубликованным результатам. Очки начисляются только за места, указанные в результатах турниров.</p></div>
+    <div class="portal-toolbar"><input id="player-search" placeholder="Найти игрока…" aria-label="Найти игрока" /><span id="players-count" class="hint"></span></div>
+    <div id="player-list" class="portal-grid"><div class="home-data-card">Загружаем игроков…</div></div>
+    <div id="player-detail" class="home-data-card hidden" style="margin-top:20px"></div>
+  </section>
+
   <!-- ВКЛАДКА СЕТКА -->
-  <section id="tab-bracket">
+  <section id="tab-bracket" class="hidden">
     <div class="card" style="display: flex; justify-content: space-between; align-items: center;">
       <div id="bracket-info" class="hint" style="margin: 0;"></div>
       <button class="btn" id="show-auth-btn" onclick="openAuthScreen()">🎮 Я игрок (Вход)</button>
@@ -1057,12 +1088,14 @@ function handleNoAuth() {
 
   if (isAdmin()) {
     document.querySelector('main').style.display = 'block';
-    document.getElementById('tab-bracket').classList.remove('hidden');
+    document.getElementById('tab-home').classList.remove('hidden');
+    document.getElementById('tab-bracket').classList.add('hidden');
     document.getElementById('tab-admin').classList.remove('hidden');
     initSupabaseSync();
   } else {
     document.querySelector('main').style.display = 'block';
-    document.getElementById('tab-bracket').classList.remove('hidden');
+    document.getElementById('tab-home').classList.remove('hidden');
+    document.getElementById('tab-bracket').classList.add('hidden');
     document.getElementById('tab-admin').classList.add('hidden');
 
     supabaseClient.from('tournament').select('data').eq('id', 1).maybeSingle().then(({ data }) => {
@@ -1747,6 +1780,84 @@ function handleDrop(event, targetMatchId, targetSlotKey) {
   }
 }
 
+// Главная: встроенный Twitch и актуальные данные из Supabase.
+function setupArqonTwitch() {
+  const frame = document.getElementById('arqon-twitch-player');
+  if (!frame) return;
+  const host = window.location.hostname;
+  if (!host || host === 'about:blank') return;
+  const params = new URLSearchParams({ channel: 'arqon_esports', parent: host, muted: 'true' });
+  frame.src = 'https://player.twitch.tv/?' + params.toString();
+}
+
+async function loadHomeHighlights() {
+  const upcoming = document.getElementById('home-upcoming-list');
+  const resultsBox = document.getElementById('home-results-list');
+  if (!upcoming || !resultsBox) return;
+  try {
+    const [{ data: schedule, error: scheduleError }, { data: results, error: resultsError }] = await Promise.all([
+      supabaseClient.from('schedule').select('*').order('id', { ascending: true }).limit(3),
+      supabaseClient.from('results').select('*').order('created_at', { ascending: false }).limit(3)
+    ]);
+    if (scheduleError) throw scheduleError;
+    upcoming.innerHTML = schedule && schedule.length ? schedule.map(item => `<div class="home-data-item"><strong>${escapeHtml(item.match_name || 'Матч')}</strong><span>${escapeHtml(item.tournament || 'Турнир ARQON')} · ${escapeHtml(item.match_time || 'Время уточняется')} · ${escapeHtml(item.status || 'Запланирован')}</span></div>`).join('') : '<p class="home-empty-note">Пока нет опубликованных матчей. Следи за анонсами в Telegram.</p>';
+    if (resultsError) throw resultsError;
+    resultsBox.innerHTML = results && results.length ? results.map(item => `<div class="home-data-item"><strong>${escapeHtml(item.tournament_name || 'Турнир ARQON')}</strong><span>🥇 ${escapeHtml(item.place_1 || 'Победитель не указан')}${item.place_2 ? ' · 🥈 ' + escapeHtml(item.place_2) : ''}</span></div>`).join('') : '<p class="home-empty-note">Результаты появятся здесь после завершения турниров.</p>';
+  } catch (err) {
+    upcoming.innerHTML = '<p class="home-empty-note">Не удалось загрузить расписание. Открой соответствующий раздел или загляни позже.</p>';
+    resultsBox.innerHTML = '<p class="home-empty-note">Не удалось загрузить результаты. Попробуй обновить страницу позже.</p>';
+    console.warn('Home highlights could not be loaded:', err);
+  }
+}
+
+// Публичный каталог турниров и профили. Рейтинг — прозрачные очки за опубликованные места.
+let arqonPlayersCache = [];
+let arqonResultsCache = [];
+let arqonScheduleCache = [];
+function safeText(value, fallback='Не указано') { return value === null || value === undefined || String(value).trim()==='' ? fallback : String(value); }
+function pointsForPlayer(name, results) {
+  let points=0, wins=0, podiums=0, events=0;
+  const target=String(name||'').trim().toLocaleLowerCase();
+  for (const r of results||[]) {
+    let place=0;
+    if (String(r.place_1||'').trim().toLocaleLowerCase()===target) place=1;
+    else if (String(r.place_2||'').trim().toLocaleLowerCase()===target) place=2;
+    else if (String(r.place_3||'').trim().toLocaleLowerCase()===target) place=3;
+    if(place){events++; if(place===1)wins++; if(place<=3)podiums++; points += place===1?3:place===2?2:1;}
+  }
+  return {points,wins,podiums,events};
+}
+async function loadTournamentHub() {
+  const box=document.getElementById('tournament-list'); if(!box)return;
+  box.innerHTML='<div class="home-data-card">Загружаем данные…</div>';
+  try {
+    const [sr,rr]=await Promise.all([
+      supabaseClient.from('schedule').select('*').order('id',{ascending:false}).limit(100),
+      supabaseClient.from('results').select('*').order('created_at',{ascending:false}).limit(100)
+    ]);
+    if(sr.error) throw sr.error; if(rr.error) throw rr.error;
+    arqonScheduleCache=sr.data||[]; arqonResultsCache=rr.data||[];
+    const map=new Map();
+    arqonScheduleCache.forEach(m=>{const n=safeText(m.tournament,'Турнир ARQON'); if(!map.has(n))map.set(n,{name:n,matches:[],results:[]});map.get(n).matches.push(m)});
+    arqonResultsCache.forEach(r=>{const n=safeText(r.tournament_name,'Турнир ARQON');if(!map.has(n))map.set(n,{name:n,matches:[],results:[]});map.get(n).results.push(r)});
+    const events=[...map.values()];
+    box.innerHTML=events.length?events.map((e,i)=>`<article class="portal-card"><span class="portal-pill">${e.results.length?'Результаты опубликованы':e.matches.length?'В расписании':'ARQON EVENT'}</span><h3>${escapeHtml(e.name)}</h3><p>${e.matches.length} матч(ей) в расписании · ${e.results.length} запись(ей) результатов</p><p>${escapeHtml(safeText(e.matches[0]?.match_time,e.results[0]?.created_at?new Date(e.results[0].created_at).toLocaleDateString('ru-RU'):'Дата уточняется'))}</p><div class="portal-actions"><button class="btn" onclick="openTournamentDetail(${i})">Открыть турнир →</button></div></article>`).join(''):'<div class="home-data-card">Пока нет опубликованных турниров. Как только организаторы добавят матчи или результаты, они появятся здесь.</div>';
+    window.arqonTournamentEvents=events;
+  } catch(e) { console.warn('Tournament hub:',e);box.innerHTML='<div class="home-data-card">Не удалось загрузить турниры. Проверь доступ на чтение таблиц schedule и results в Supabase.</div>'; }
+}
+function openTournamentDetail(index){
+  const e=(window.arqonTournamentEvents||[])[index];const box=document.getElementById('tournament-detail');if(!e||!box)return;
+  box.classList.remove('hidden');box.innerHTML=`<div class="portal-profile-top"><div class="portal-avatar">🏆</div><div><span class="portal-pill">ARQON TOURNAMENT</span><h2>${escapeHtml(e.name)}</h2><p class="hint">Данные из расписания и опубликованных результатов</p></div></div><div class="portal-detail-grid"><div class="portal-detail-stat"><small>Матчи в расписании</small><strong class="portal-stat">${e.matches.length}</strong></div><div class="portal-detail-stat"><small>Записи результатов</small><strong class="portal-stat">${e.results.length}</strong></div></div><h3 style="margin-top:22px">Матчи</h3>${e.matches.length?e.matches.map(m=>`<div class="home-data-item"><strong>${escapeHtml(safeText(m.match_name,'Матч'))}</strong><span>${escapeHtml(safeText(m.match_time,'Время уточняется'))} · ${escapeHtml(safeText(m.status,'Статус не указан'))}</span></div>`).join(''):'<p class="hint">Для этого турнира пока нет матчей в расписании.</p>'}<h3 style="margin-top:22px">Итоги</h3>${e.results.length?e.results.map(r=>`<div class="home-data-item"><strong>${escapeHtml(safeText(r.tournament_name,e.name))}</strong><span>🥇 ${escapeHtml(safeText(r.place_1))}${r.place_2?' · 🥈 '+escapeHtml(r.place_2):''}${r.place_3?' · 🥉 '+escapeHtml(r.place_3):''}</span></div>`).join(''):'<p class="hint">Итоги появятся после публикации организатором.</p>'}<div class="portal-actions"><button class="btn ghost" onclick="document.getElementById('tournament-detail').classList.add('hidden')">Свернуть</button><button class="btn" onclick="switchTab('bracket')">Открыть сетку →</button></div>`;
+  box.scrollIntoView({behavior:'smooth',block:'start'});
+}
+async function loadPlayerHub(){
+ const box=document.getElementById('player-list');if(!box)return;box.innerHTML='<div class="home-data-card">Загружаем игроков…</div>';
+ try{const [pr,rr]=await Promise.all([supabaseClient.from('players').select('*').limit(500),supabaseClient.from('results').select('*').order('created_at',{ascending:false}).limit(500)]);if(pr.error)throw pr.error;if(rr.error)throw rr.error;arqonPlayersCache=pr.data||[];arqonResultsCache=rr.data||[];renderPlayerCards();}
+ catch(e){console.warn('Player hub:',e);box.innerHTML='<div class="home-data-card">Не удалось загрузить игроков. Проверь RLS и разрешение SELECT для таблицы players.</div>';}
+}
+function renderPlayerCards(){const box=document.getElementById('player-list');if(!box)return;const q=(document.getElementById('player-search')?.value||'').trim().toLocaleLowerCase();const players=arqonPlayersCache.map(p=>({...p,stats:pointsForPlayer(p.name,arqonResultsCache)})).filter(p=>String(p.name||'').toLocaleLowerCase().includes(q)).sort((a,b)=>b.stats.points-a.stats.points||String(a.name).localeCompare(String(b.name)));const count=document.getElementById('players-count');if(count)count.textContent=`${players.length} игроков`;box.innerHTML=players.length?players.map((p,i)=>`<article class="portal-card"><span class="portal-pill">${i===0&&p.stats.points>0?'Лидер рейтинга':'Игрок ARQON'}</span><div class="portal-profile-top" style="margin-top:14px"><div class="portal-avatar">${escapeHtml((p.name||'?').trim().slice(0,1).toUpperCase())}</div><div><h3>${escapeHtml(safeText(p.name,'Игрок без имени'))}</h3><p>${p.stats.events} турниров с опубликованным результатом</p></div></div><div class="portal-detail-grid"><div class="portal-detail-stat"><small>Очки</small><strong class="portal-stat">${p.stats.points}</strong></div><div class="portal-detail-stat"><small>Победы</small><strong class="portal-stat">${p.stats.wins}</strong></div><div class="portal-detail-stat"><small>Топ-3</small><strong class="portal-stat">${p.stats.podiums}</strong></div></div><div class="portal-actions"><button class="btn" onclick="openPlayerDetail(${i})">Профиль игрока →</button></div></article>`).join(''):'<div class="home-data-card">Игроков не найдено.</div>';window.arqonRankedPlayers=players;}
+function openPlayerDetail(index){const p=(window.arqonRankedPlayers||[])[index];const box=document.getElementById('player-detail');if(!p||!box)return;const stats=p.stats;const entries=arqonResultsCache.filter(r=>[r.place_1,r.place_2,r.place_3].some(n=>String(n||'').trim().toLocaleLowerCase()===String(p.name||'').trim().toLocaleLowerCase()));box.classList.remove('hidden');box.innerHTML=`<div class="portal-profile-top"><div class="portal-avatar">${escapeHtml(String(p.name||'?').trim().slice(0,1).toUpperCase())}</div><div><span class="portal-pill">PLAYER PROFILE</span><h2>${escapeHtml(safeText(p.name,'Игрок'))}</h2><p class="hint">Профиль построен по публичным данным ARQON.</p></div></div><div class="portal-detail-grid"><div class="portal-detail-stat"><small>Рейтинг ARQON</small><strong class="portal-stat">${stats.points} очк.</strong></div><div class="portal-detail-stat"><small>Победы</small><strong class="portal-stat">${stats.wins}</strong></div><div class="portal-detail-stat"><small>Призовые места</small><strong class="portal-stat">${stats.podiums}</strong></div><div class="portal-detail-stat"><small>Турниры с результатом</small><strong class="portal-stat">${stats.events}</strong></div></div><h3 style="margin-top:22px">История результатов</h3>${entries.length?entries.map(r=>{const place=String(r.place_1||'').trim().toLowerCase()===String(p.name||'').trim().toLowerCase()?1:String(r.place_2||'').trim().toLowerCase()===String(p.name||'').trim().toLowerCase()?2:3;return `<div class="home-data-item"><strong>${place===1?'🥇 1-е место':place===2?'🥈 2-е место':'🥉 3-е место'}</strong><span>${escapeHtml(safeText(r.tournament_name,'Турнир ARQON'))}</span></div>`}).join(''):'<p class="hint">Пока нет опубликованных призовых мест для этого игрока.</p>'}<div class="portal-actions"><button class="btn ghost" onclick="document.getElementById('player-detail').classList.add('hidden')">Свернуть профиль</button></div>`;box.scrollIntoView({behavior:'smooth',block:'start'});}
+
 // ==========================================
 // ТАБЫ / НАВИГАЦИЯ
 // ==========================================
@@ -1754,8 +1865,11 @@ function switchTab(tab) {
   document.querySelectorAll('nav button').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
 
   const sections = {
+    home: document.getElementById('tab-home'),
     admin: document.getElementById('tab-admin'),
     bracket: document.getElementById('tab-bracket'),
+    tournaments: document.getElementById('tab-tournaments'),
+    players: document.getElementById('tab-players'),
     news: document.getElementById('tab-news'),
     schedule: document.getElementById('tab-schedule'),
     results: document.getElementById('tab-results'),
@@ -1773,6 +1887,8 @@ function switchTab(tab) {
       renderBracket();
     }
   }
+  if (tab === 'tournaments') loadTournamentHub();
+  if (tab === 'players') loadPlayerHub();
   if (tab === 'news') loadNews();
   if (tab === 'schedule') loadSchedule();
   if (tab === 'results') loadResults();
@@ -2898,8 +3014,8 @@ const INFO_TEXTS = {
       <p style="margin-bottom: 15px;"><b>2. Сбор данных</b><br>
       Мы собираем минимально необходимую информацию: игровой никнейм, Steam ID, уровень FACEIT (для CS2), а также данные об авторизации (анонимный UID). Эти данные используются исключительно для формирования турнирных сеток и проведения драфтов.</p>
       
-      <p style="margin-bottom: 15px;"><b>3. Использование данных</b><br>
-      Ваши данные не передаются третьим лицам. Они хранятся на защищенных серверах Supabase и используются только в рамках функционала платформы. Мы не используем ваши данные для рекламы или спама.</p>
+      <p style="margin-bottom: 15px;"><b>3. Использование данных и сторонние сервисы</b><br>
+      Данные платформы хранятся в Supabase и используются для работы турниров. На главной странице может быть встроен видеоплеер Twitch; при его загрузке Twitch может получать технические данные о соединении и использовать собственные cookies в соответствии со своей политикой конфиденциальности. Ссылки на Telegram и DonationAlerts ведут на внешние сервисы, которые обрабатывают данные по собственным правилам. Мы не используем данные игроков для рекламной рассылки.</p>
       
       <p style="margin-bottom: 15px;"><b>4. Ответственность игрока</b><br>
       Игрок обязуется не передавать свой код доступа третьим лицам. Администрация не несет ответственности за действия третьих лиц, получивших доступ к вашему аккаунту по вашей вине.</p>
@@ -2939,7 +3055,10 @@ function closeInfoModal() {
 // INIT
 // ==========================================
 function init() {
+  setupArqonTwitch();
+  loadHomeHighlights();
   document.querySelectorAll('nav button').forEach(b => b.onclick = () => switchTab(b.dataset.tab));
+  const playerSearch = document.getElementById('player-search'); if (playerSearch) playerSearch.addEventListener('input', renderPlayerCards);
   document.querySelectorAll('[data-sub]').forEach(b => b.onclick = () => switchSubTab(b.dataset.sub));
 
   const modeSel = document.getElementById('mode');
