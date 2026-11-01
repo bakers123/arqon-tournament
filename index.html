@@ -919,14 +919,17 @@ async function loginWithCode() {
       userId = authData.user.id;
     }
 
-    // 3. Записываем или ОБНОВЛЯЕМ игрока (используем upsert!)
-    // onConflict: 'name' — если ник уже есть, просто обновим его UID
-    const { error: upsertError } = await supabaseClient.from('players').upsert(
-      { uid: userId, name: codeData.player_name },
-      { onConflict: 'name' } 
-    );
+    // 3. Проверяем, есть ли уже такой игрок
+    const { data: existingPlayers } = await supabaseClient
+      .from('players').select('uid').eq('name', codeData.player_name);
 
-    if (upsertError) throw new Error('Ошибка записи: ' + upsertError.message);
+    if (existingPlayers && existingPlayers.length > 0) {
+      // Если есть — обновляем UID
+      await supabaseClient.from('players').update({ uid: userId }).eq('name', codeData.player_name);
+    } else {
+      // Если нет — создаем
+      await supabaseClient.from('players').insert({ uid: userId, name: codeData.player_name });
+    }
 
     // 4. Сохраняем в кэш и удаляем код
     localStorage.setItem('arqon_current_uid', userId); 
@@ -946,7 +949,6 @@ async function loginWithCode() {
     if (btn) { btn.disabled = false; btn.textContent = oldText; }
   }
 }
-
 function logoutPlayer() {
   localStorage.removeItem('arqon_current_uid');
   localStorage.removeItem('arqon_current_name');
