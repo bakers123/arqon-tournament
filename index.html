@@ -574,7 +574,21 @@
   .portal-card:hover{transform:translateY(-3px);border-color:var(--accent,#8b5cf6)}.portal-card h3{margin:8px 0 10px;font-size:22px}.portal-card p{color:var(--text-dim);line-height:1.5}.portal-pill{display:inline-flex;border:1px solid rgba(167,139,250,.45);color:#c4b5fd;border-radius:999px;padding:4px 9px;font-size:11px;letter-spacing:1px;text-transform:uppercase}.portal-toolbar{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin:18px 0}.portal-toolbar input{max-width:420px;width:100%}.portal-stat{font-family:Orbitron,sans-serif;color:#c4b5fd;font-size:26px}.portal-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:16px}.portal-profile-top{display:flex;gap:16px;align-items:center;flex-wrap:wrap}.portal-avatar{width:68px;height:68px;border-radius:16px;background:linear-gradient(135deg,#6d28d9,#171321);display:grid;place-items:center;font-size:28px;font-weight:900;border:1px solid #8b5cf6}.portal-detail-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-top:16px}.portal-detail-stat{padding:14px;border:1px solid var(--border);border-radius:10px;background:rgba(255,255,255,.025)}.portal-detail-stat small{display:block;color:var(--text-dim);margin-bottom:6px}
   @media(max-width:700px){.portal-card{padding:16px}.portal-heading{padding-top:12px}}
 
-</style>
+\n\n  /* ARQON admin UX improvements — keeps the existing Supabase data model */
+.admin-overview{display:grid;grid-template-columns:repeat(4,minmax(140px,1fr));gap:12px;margin-bottom:16px}
+.admin-stat{background:#101014;border:1px solid var(--border);border-radius:9px;padding:16px;min-height:92px}
+.admin-stat strong{display:block;font:700 25px Orbitron,sans-serif;color:var(--accent-2);margin-top:8px}
+.admin-stat span{font-size:11px;letter-spacing:1.5px;color:var(--text-dim);text-transform:uppercase}
+.admin-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+.admin-actions .btn{width:auto!important;margin:0!important}
+.bracket-guide{border:1px solid rgba(139,59,255,.35);background:rgba(139,59,255,.07);padding:14px;border-radius:8px;margin-top:14px;line-height:1.5}
+.code-modal-card{max-width:480px;text-align:center}
+.code-value{font:900 30px Orbitron,sans-serif;letter-spacing:5px;color:#fff;background:#09090b;border:1px dashed var(--accent);border-radius:8px;padding:18px 12px;margin:16px 0;user-select:all;overflow-wrap:anywhere}
+.code-modal-actions{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+.code-modal-actions .btn{width:auto!important;margin:0!important}
+.admin-live-row{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
+@media(max-width:900px){.admin-overview{grid-template-columns:repeat(2,minmax(120px,1fr))}}
+@media(max-width:520px){.admin-overview{grid-template-columns:1fr 1fr}.admin-stat{padding:12px}.admin-stat strong{font-size:20px}.code-value{font-size:22px;letter-spacing:3px}}\n</style>
 </head>
 <body>
 
@@ -669,6 +683,27 @@
   <!-- АДМИН ПАНЕЛЬ -->
   <section id="tab-admin" class="hidden">
     <div class="card">
+      <h2>⚡ Панель управления ARQON</h2>
+      <div class="admin-overview">
+        <div class="admin-stat"><span>Игроки 1x1</span><strong id="adm-solo-count">—</strong></div>
+        <div class="admin-stat"><span>Команды</span><strong id="adm-team-count">—</strong></div>
+        <div class="admin-stat"><span>Участники сетки</span><strong id="adm-bracket-count">—</strong></div>
+        <div class="admin-stat"><span>Формат</span><strong id="adm-format" style="font-size:16px">—</strong></div>
+      </div>
+      <div class="admin-actions">
+        <button class="btn" type="button" onclick="switchTab('bracket')">Открыть сетку</button>
+        <button class="btn ghost" type="button" onclick="switchTab('results')">Результаты</button>
+        <button class="btn ghost" type="button" onclick="window.open('https://www.twitch.tv/arqon_esports','_blank','noopener')">Открыть Twitch ↗</button>
+      </div>
+    </div>
+    <div class="card">
+      <div class="admin-live-row">
+        <div><h2 style="margin-bottom:6px">🔴 ARQON Esports LIVE</h2>
+        <div class="hint" style="margin-top:0">Быстрый переход на канал трансляции. Статус эфира здесь не проверяется.</div></div>
+        <button class="btn" type="button" onclick="window.open('https://www.twitch.tv/arqon_esports','_blank','noopener')">Перейти на Twitch ↗</button>
+      </div>
+    </div>
+    <div class="card">
       <h2>🤝 Добавить партнера</h2>
       <div class="row" style="flex-direction: column; gap: 10px;">
         <input id="sp-name" placeholder="Название (например: Namecheap)" />
@@ -716,6 +751,11 @@
             <option>16</option><option>32</option>
           </select>
         </div>
+      </div>
+      <div class="bracket-guide">
+        <strong>Перед генерацией сетки</strong>
+        <div id="bracket-config-summary" style="margin-top:5px">Выбери игру, формат, тип сетки и лимит участников.</div>
+        <div class="hint">Single Elimination: вылет после одного поражения. Double Elimination: верхняя и нижняя сетки, вылет после второго поражения. Генерация заменяет текущую сетку; результаты текущей сетки не переносятся.</div>
       </div>
     </div>
 
@@ -973,7 +1013,20 @@
     <!-- Сюда скрипт вставит результаты -->
   </section>
 </main>
-  <footer style="margin-top: 50px; padding: 40px 32px; border-top: 1px solid var(--border); background: rgba(11,11,13,0.95);">
+<div id="access-code-modal" class="modal" style="display:none" role="dialog" aria-modal="true" aria-labelledby="access-code-title">
+  <div class="modal-content code-modal-card">
+    <h2 id="access-code-title">🔑 Код доступа создан</h2>
+    <div id="access-code-player" class="hint"></div>
+    <div id="access-code-value" class="code-value" tabindex="0"></div>
+    <div id="access-code-note" class="hint" style="margin-bottom:16px">Передай код игроку. После использования он привяжет доступ к своему аккаунту.</div>
+    <div class="code-modal-actions">
+      <button class="btn" type="button" id="copy-access-code-btn">📋 Скопировать код</button>
+      <button class="btn ghost" type="button" id="select-access-code-btn">Выделить</button>
+      <button class="btn ghost" type="button" id="close-access-code-btn">Закрыть</button>
+    </div>
+    <div id="access-code-copy-status" class="msg success hidden" role="status"></div>
+  </div>
+</div>\n  <footer style="margin-top: 50px; padding: 40px 32px; border-top: 1px solid var(--border); background: rgba(11,11,13,0.95);">
   <div style="max-width: 1200px; margin: 0 auto; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 30px;">
     
     <!-- Левая часть: Логотип и копирайт -->
@@ -1007,7 +1060,7 @@
         <h4 style="color: var(--text); font-family: 'Orbitron', sans-serif; font-size: 12px; letter-spacing: 2px; margin-bottom: 15px; text-transform: uppercase;">Контакты</h4>
         <ul style="list-style: none; padding: 0; display: flex; flex-direction: column; gap: 10px;">
           <li><a href="#" onclick="openInfoModal('contact'); return false;" style="color: var(--text-dim); text-decoration: none; font-size: 14px; transition: 0.2s;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text-dim)'">Связаться с нами</a></li>
-          <li><a href="https://t.me/ARQON_Esports" target="_blank" style="color: var(--text-dim); text-decoration: none; font-size: 14px; transition: 0.2s;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text-dim)'">Telegram</a></li>
+          <li><a href="https://t.me/arqon_support" target="_blank" style="color: var(--text-dim); text-decoration: none; font-size: 14px; transition: 0.2s;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text-dim)'">Telegram</a></li>
           <li><a href="mailto:contact@arqon.gg" style="color: var(--text-dim); text-decoration: none; font-size: 14px; transition: 0.2s;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text-dim)'">contact@arqon.gg</a></li>
         </ul>
       </div>
@@ -1246,6 +1299,7 @@ async function initSupabaseSync() {
 }
 
 function saveState() {
+  updateAdminOverview();
   supabaseClient.from('tournament').upsert({ id: 1, data: state }).then(({ error }) => {
     if (error) console.error('Ошибка сохранения:', error);
   });
@@ -1279,32 +1333,108 @@ function parseRank(rankTier) {
 // ==========================================
 async function generateAccessCode(playerName) {
   if (!isAdmin()) return;
-  let code = "";
+  const safeName = String(playerName || '').trim();
+  if (!safeName) { alert('Не найден ник игрока.'); return; }
+  let code = '';
   let isUnique = false;
-
-  while (!isUnique) {
-    code = Math.random().toString(36).substring(2, 8).toUpperCase();
-    const { data } = await supabaseClient.from('access_codes').select('code').eq('code', code);
+  // Use Web Crypto when available; keep the existing 6-character alphanumeric code format.
+  for (let attempt = 0; attempt < 12 && !isUnique; attempt++) {
+    const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    const bytes = new Uint8Array(6);
+    if (window.crypto && window.crypto.getRandomValues) window.crypto.getRandomValues(bytes);
+    else for (let i = 0; i < bytes.length; i++) bytes[i] = Math.floor(Math.random() * 256);
+    code = Array.from(bytes, b => alphabet[b % alphabet.length]).join('');
+    const { data, error } = await supabaseClient.from('access_codes').select('code').eq('code', code);
+    if (error) { alert('Не удалось проверить уникальность кода: ' + error.message); return; }
     if (!data || data.length === 0) isUnique = true;
   }
+  if (!isUnique) { alert('Не получилось создать уникальный код. Попробуй ещё раз.'); return; }
+  const { error } = await supabaseClient.from('access_codes').insert({ code: code, player_name: safeName });
+  if (error) { alert('Ошибка создания кода: ' + error.message); return; }
+  const { data: dbPlayer } = await supabaseClient.from('players').select('uid').eq('name', safeName).maybeSingle();
+  showAccessCodeModal(safeName, code, dbPlayer && dbPlayer.uid ? dbPlayer.uid : null);
+}
 
-  const { error } = await supabaseClient.from('access_codes').insert({ code: code, player_name: playerName });
-
-  if (error) {
-    alert('Ошибка создания кода: ' + error.message);
-  } else {
-    const { data: dbPlayer } = await supabaseClient.from('players').select('uid').eq('name', playerName).maybeSingle();
-    let msg = `Код для игрока ${playerName}:\n\n${code}\n\nПередайте его игроку.`;
-    if (dbPlayer && dbPlayer.uid) {
-      msg += `\n\n(Его текущий UID уже в базе: ${dbPlayer.uid})`;
+function showAccessCodeModal(playerName, code, uid) {
+  const modal = document.getElementById('access-code-modal');
+  const value = document.getElementById('access-code-value');
+  const status = document.getElementById('access-code-copy-status');
+  if (!modal || !value) { prompt('Скопируй код доступа:', code); return; }
+  document.getElementById('access-code-player').textContent = 'Игрок: ' + playerName + (uid ? ' · UID уже есть в базе' : '');
+  value.textContent = code;
+  status.classList.add('hidden'); status.textContent = '';
+  modal.style.display = 'flex';
+  document.getElementById('copy-access-code-btn').onclick = async () => {
+    try {
+      if (navigator.clipboard && window.isSecureContext) await navigator.clipboard.writeText(code);
+      else {
+        const range = document.createRange(); range.selectNodeContents(value);
+        const selection = window.getSelection(); selection.removeAllRanges(); selection.addRange(range);
+        const ok = document.execCommand('copy'); selection.removeAllRanges();
+        if (!ok) throw new Error('Буфер обмена недоступен');
+      }
+      status.textContent = 'Код скопирован — можно вставить в чат игроку.'; status.classList.remove('hidden');
+    } catch (e) {
+      selectAccessCodeText();
+      status.textContent = 'Автокопирование заблокировано браузером. Код выделен — нажми Ctrl+C.'; status.classList.remove('hidden');
     }
-    alert(msg);
+  };
+  document.getElementById('select-access-code-btn').onclick = selectAccessCodeText;
+  document.getElementById('close-access-code-btn').onclick = () => { modal.style.display = 'none'; };
+  modal.onclick = e => { if (e.target === modal) modal.style.display = 'none'; };
+}
+function selectAccessCodeText() {
+  const value = document.getElementById('access-code-value');
+  if (!value) return;
+  const range = document.createRange(); range.selectNodeContents(value);
+  const selection = window.getSelection(); selection.removeAllRanges(); selection.addRange(range); value.focus();
+}
+function updateAdminOverview() {
+  const set = (id, value) => { const el = document.getElementById(id); if (el) el.textContent = value; };
+  set('adm-solo-count', (state.soloPlayers || []).length);
+  set('adm-team-count', (state.teams || []).filter(t => t.players && t.players.length > 0).length);
+  let count = 0;
+  if (state.bracket) {
+    if (state.bracket.type === 'double') {
+      ((state.bracket.wb || [])[0] || []).forEach(m => { if (m.p1) count++; if (m.p2) count++; });
+    } else (state.bracket.rounds || []).slice(0,1).forEach(r => r.forEach(m => { if (m.p1) count++; if (m.p2) count++; }));
+  }
+  set('adm-bracket-count', count || '—');
+  set('adm-format', (state.game === 'cs2' ? 'CS2' : 'DOTA 2') + ' / ' + (state.mode || '5x5'));
+  const summary = document.getElementById('bracket-config-summary');
+  if (summary) {
+    const participants = state.mode === '1x1' ? (state.soloPlayers || []).length : (state.teams || []).filter(t => t.players && t.players.length > 0).length;
+    const type = state.bracketType === 'double' ? 'Double Elimination' : 'Single Elimination';
+    summary.textContent = `${state.game === 'cs2' ? 'CS2' : 'Dota 2'} · ${state.mode || '5x5'} · ${type} · ${participants} участн. сейчас / лимит ${state.maxParticipants || 8}`;
   }
 }
+
 
 // ==========================================
 // ДОБАВЛЕНИЕ ИГРОКА
 // ==========================================
+function updateAdminOverview() {
+  const set = (id, value) => { const el = document.getElementById(id); if (el) el.textContent = value; };
+  set('adm-solo-count', (state.soloPlayers || []).length);
+  set('adm-team-count', (state.teams || []).filter(t => t.players && t.players.length > 0).length);
+  let count = 0;
+  if (state.bracket) {
+    if (state.bracket.type === 'double') {
+      ((state.bracket.wb || [])[0] || []).forEach(m => { if (m.p1) count++; if (m.p2) count++; });
+    } else (state.bracket.rounds || []).slice(0,1).forEach(r => r.forEach(m => { if (m.p1) count++; if (m.p2) count++; }));
+  }
+  set('adm-bracket-count', count || '—');
+  set('adm-format', (state.game === 'cs2' ? 'CS2' : 'DOTA 2') + ' / ' + (state.mode || '5x5'));
+  const summary = document.getElementById('bracket-config-summary');
+  if (summary) {
+    const participants = state.mode === '1x1' ? (state.soloPlayers || []).length : (state.teams || []).filter(t => t.players && t.players.length > 0).length;
+    const type = state.bracketType === 'double' ? 'Double Elimination' : 'Single Elimination';
+    summary.textContent = `${state.game === 'cs2' ? 'CS2' : 'Dota 2'} · ${state.mode || '5x5'} · ${type} · ${participants} участн. сейчас / лимит ${state.maxParticipants || 8}`;
+  }
+}
+
+
+
 async function fetchPlayer(steamIdInput) {
   const name = document.getElementById('p-name').value.trim();
   const avatar = document.getElementById('p-avatar').value.trim();
@@ -3130,6 +3260,7 @@ function init() {
 
   const adminTabBtn = document.getElementById('admin-tab-btn');
   if (adminTabBtn && isAdmin()) adminTabBtn.style.display = 'inline-block';
+  updateAdminOverview();
 }
 
 function showAuthButtonIfNeeded() {
