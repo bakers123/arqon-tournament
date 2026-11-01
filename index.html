@@ -1663,7 +1663,7 @@ function renderPlayerDraft(myUid) {
 
   if (!draftState) return;
 
-  // === ПРОВЕРКА: УЧАСТВУЕТ ЛИ ЭТОТ ИГРОК В МАТЧЕ? ===
+  // Проверка участия
   const isP1 = draftState.p1_uid === myUid;
   const isP2 = draftState.p2_uid === myUid;
 
@@ -1674,14 +1674,11 @@ function renderPlayerDraft(myUid) {
     return;
   }
 
-  // === ПРОВЕРКА: ЯВЛЯЕТСЯ ЛИ ЭТОТ ИГРОК КАПИТАНОМ? ===
-  // Если в драфте нет p1_captain_uid (старый формат), то считаем, что банит p1_uid
+  // Проверка на капитана
   const p1Captain = draftState.p1_captain_uid || draftState.p1_uid;
   const p2Captain = draftState.p2_captain_uid || draftState.p2_uid;
-  
   const isCaptain = (myUid === p1Captain) || (myUid === p2Captain);
 
-  // Определяем роли
   const myRole = (myUid === p1Captain) ? 'p1' : (myUid === p2Captain ? 'p2' : (isP1 ? 'p1' : 'p2'));
   const enemyRole = myRole === 'p1' ? 'p2' : 'p1';
   const myName = myRole === 'p1' ? draftState.p1_name : draftState.p2_name;
@@ -1723,7 +1720,7 @@ function renderPlayerDraft(myUid) {
     
     if (amIOnTurn) {
       const itemName = state.game === 'cs2' ? 'карту' : 'героя';
-      statusEl.innerHTML = 'Твой ход! Забань ' + itemName + ' (осталось банов: ' + (5 - draftState.bans[myRole].length) + ')';
+      statusEl.innerHTML = 'Твой ход! Забань ' + itemName + ' (осталось: ' + (5 - draftState.bans[myRole].length) + '/5)';
       btn.style.display = 'inline-block';
       btn.textContent = 'Закончить баны';
       btn.onclick = async () => {
@@ -1743,34 +1740,37 @@ function renderPlayerDraft(myUid) {
 
     // Отрисовка пула
     if (state.game === 'cs2') {
-      // --- ОТРИСОВКА КАРТ CS2 (С КАРТИНКАМИ) ---
+      // --- ОТРИСОВКА КАРТ CS2 ---
       poolEl.innerHTML = draftState.pool.map(mapName => {
-        const isBannedByMe = draftState.bans[myRole] ? draftState.bans[myRole].includes(mapName) : false;
-        const isBannedByEnemy = draftState.bans[enemyRole] ? draftState.bans[enemyRole].includes(mapName) : false;
+        const isBannedByMe = draftState.bans[myRole].includes(mapName);
+        const isBannedByEnemy = draftState.bans[enemyRole].includes(mapName);
         const isBanned = isBannedByMe || isBannedByEnemy;
         
-        let style = 'cursor: pointer; border-radius: 8px; overflow: hidden; border: 2px solid transparent; height: 100px; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 16px; text-transform: uppercase; background: #1A1A1F; color: white; position: relative;';
+        let style = 'cursor: pointer; border-radius: 8px; overflow: hidden; border: 2px solid transparent; height: 140px; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 20px; text-transform: uppercase; background: #1A1A1F; color: white; position: relative; transition: 0.2s;';
         let overlay = '';
         
         if (isBannedByMe) { style += 'opacity: 0.2; filter: grayscale(100%);'; overlay = '❌'; }
         if (isBannedByEnemy) { style += 'opacity: 0.4; border-color: red;'; overlay = '🚫'; }
-        if (!isBanned && amIOnTurn && draftState.bans[myRole].length < 5) { style += 'cursor: pointer; border-color: var(--accent);'; } 
+        if (!isBanned && amIOnTurn && draftState.bans[myRole].length < 5) { style += 'cursor: pointer; border-color: var(--accent); box-shadow: 0 0 15px rgba(139,59,255,0.5);'; } 
         else { style += 'cursor: not-allowed;'; }
         
         const mapDisplayName = mapName.replace('de_', '').toUpperCase();
+        
+        // Надежные ссылки на картинки карт (используем Steam CDN)
         const mapImage = `https://raw.githubusercontent.com/ByMykel/CSGO-API/main/public/images/maps/${mapName}.png`;
 
         return `<div style="${style}" onclick="${(!isBanned && amIOnTurn && draftState.bans[myRole].length < 5) ? `banHero('${mapName}','${myRole}')` : ''}">
-          <img src="${mapImage}" alt="${mapDisplayName}" style="width: 100%; height: 100%; object-fit: cover; position: absolute; inset: 0; opacity: 0.6;" onerror="this.style.display='none'">
-          <span style="position: relative; z-index: 2; text-shadow: 0 0 5px black;">${mapDisplayName}</span>
-          <div style="position:absolute; inset:0; display:flex; align-items: center; justify-content: center; font-size: 32px; z-index: 3;">${overlay}</div>
+          <img src="${mapImage}" alt="${mapDisplayName}" style="width: 100%; height: 100%; object-fit: cover; position: absolute; inset: 0; z-index: 1;" onerror="this.style.display='none'">
+          <div style="position: absolute; inset: 0; background: linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0) 60%); z-index: 2;"></div>
+          <span style="position: relative; z-index: 3; text-shadow: 0 0 10px black, 0 0 5px black; letter-spacing: 2px;">${mapDisplayName}</span>
+          <div style="position:absolute; inset:0; display:flex; align-items: center; justify-content: center; font-size: 48px; z-index: 4;">${overlay}</div>
         </div>`;
       }).join('');
     } else {
       // --- ОТРИСОВКА ГЕРОЕВ ДОТА 2 ---
       poolEl.innerHTML = draftState.pool.map(id => {
-        const isBannedByMe = draftState.bans[myRole] ? draftState.bans[myRole].includes(id) : false;
-        const isBannedByEnemy = draftState.bans[enemyRole] ? draftState.bans[enemyRole].includes(id) : false;
+        const isBannedByMe = draftState.bans[myRole].includes(id);
+        const isBannedByEnemy = draftState.bans[enemyRole].includes(id);
         const isBanned = isBannedByMe || isBannedByEnemy;
         
         let style = 'cursor: pointer; border-radius: 8px; overflow: hidden; border: 2px solid transparent;';
