@@ -2048,13 +2048,17 @@ async function startDraftForMatch(matchId) {
     }
   }
 
+  // Берем игру прямо из выпадающего списка в админке, а не из стейта
+  const gameSelect = document.getElementById('game-type');
+  const currentGame = gameSelect ? gameSelect.value : (state.game || 'dota');
+
   const newDraftState = {
     phase: 'coinflip',
     first_turn: null,
     turn: null,
-    game: state.game || 'dota',
-    maxBans: state.game === 'cs2' ? 3 : 5,
-    pool: state.game === 'cs2'
+    game: currentGame, // <--- ИСПОЛЬЗУЕМ СВЕЖЕЕ ЗНАЧЕНИЕ
+    maxBans: currentGame === 'cs2' ? 3 : 5,
+    pool: currentGame === 'cs2'
       ? [...CS2_MAPS].sort(() => 0.5 - Math.random())
       : [...ALL_HEROES].sort(() => 0.5 - Math.random()).slice(0, 20),
     bans: { p1: [], p2: [] },
