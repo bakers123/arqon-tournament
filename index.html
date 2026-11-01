@@ -871,12 +871,23 @@ async function checkUserRole(uid) {
     return;
   }
 
+  // Если это тот же пользователь что уже был — не трогаем UI
+  const isSameUser = currentUser && currentUser.id === uid;
+  
   const { data } = await supabaseClient.from('players').select('*').eq('uid', uid).maybeSingle();
 
   if (data) {
     document.getElementById('auth-screen').style.display = 'none';
-    document.querySelector('main').style.display = 'none';
 
+    // Если пользователь тот же и уже на экране (или на сетке) — не трогаем
+    if (isSameUser) {
+      // Просто обновим имя если надо
+      document.getElementById('player-display-name').textContent = data.name;
+      return;
+    }
+
+    // Первый вход — показываем драфт
+    document.querySelector('main').style.display = 'none';
     const playerScreen = document.getElementById('player-screen');
     playerScreen.classList.remove('hidden');
     playerScreen.style.display = 'flex';
@@ -887,7 +898,6 @@ async function checkUserRole(uid) {
     handleNoAuth();
   }
 }
-
 async function loginWithCode() {
   const code = document.getElementById('auth-code').value.trim().toUpperCase();
   if (!code) return;
