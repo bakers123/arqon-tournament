@@ -1819,9 +1819,8 @@ async function startDraftForMatch(matchId) {
     return;
   }
 
-  // ЗАЩИТА: Если один из игроков — "призрак" или TBD, драфт не запустится
   if (!match.p1 || !match.p2) {
-    alert('В этом матче еще нет двух игроков!');
+    alert('В этом матче еще нет двух игроков/команд!');
     return;
   }
 
@@ -1830,17 +1829,41 @@ async function startDraftForMatch(matchId) {
     return;
   }
 
-  const p1 = match.p1;
-  const p2 = match.p2;
-  // Ищем их UID в базе (по никам)
-  const { data: dbPlayers, error } = await supabaseClient.from('players').select('*');
-  if (error || !dbPlayers) { alert('Ошибка базы данных'); return; }
+  // ФУНКЦИЯ ПОИСКА ИГРОКА (С УЧЕТОМ КОМАНД)
+  async function findPlayerUidInDb(participant) {
+    if (!participant) return null;
+    
+    // Пытаемся найти по имени (для 1х1)
+    let { data } = await supabaseClient.from('players').select('uid').eq('name', participant.name).single();
+    if (data && data.uid) return data.uid;
 
-  const dbP1 = dbPlayers.find(p => p.name === p1.name);
-  const dbP2 = dbPlayers.find(p => p.name === p2.name);
+    // Если не нашли, ищем в командах (для 5х5)
+    // Ищем команду в state.teams по ID
+    const team = state.teams.find(t => t.id === participant.id || t.name === participant.name);
+    if (team && team.players && team.players.length > 0) {
+      // Ищем любого игрока в команде, у которого есть UID в базе
+      for (const p of team.players) {
+        let { data: pData } = await supabaseClient.from('players').select('uid').eq('name', p.name).single();
+        if (pData && pData.uid) return pData.uid; // Возвращаем UID первого найденного игрока (капитана)
+      }
+    }
+    return null;
+  }
 
-  if (!dbP1) { alert('Игрок ' + p1.name + ' еще не заходил на сайт по коду!'); return; }
-  if (!dbP2) { alert('Игрок ' + p2.name + ' еще не заходил на сайт по коду!'); return; }
+  // Получаем UID для обеих сторон
+  const p1_uid = await findPlayerUidInDb(match.p1);
+  const p2_uid = await findPlayerUidInDb(match.p2);
+
+  if (!p1_uid) { 
+    const teamName = match.p1.name;
+    alert('Никто из команды "' + teamName + '" еще не заходил на сайт по коду! Попросите любого игрока из этой команды ввести код.'); 
+    return; 
+  }
+  if (!p2_uid) { 
+    const teamName = match.p2.name;
+    alert('Никто из команды "' + teamName + '" еще не заходил на сайт по коду! Попросите любого игрока из этой команды ввести код.'); 
+    return; 
+  }
 
   // Запускаем драфт
   const newDraftState = {
@@ -1848,20 +1871,20 @@ async function startDraftForMatch(matchId) {
     first_turn: null,
     turn: null,
     pool: state.game === 'cs2' 
-  ? [...CS2_MAPS].sort(() => 0.5 - Math.random()) // Для CS2 отдаем все карты
-  : [...ALL_HEROES].sort(() => 0.5 - Math.random()).slice(0, 20),
+      ? [...CS2_MAPS].sort(() => 0.5 - Math.random())
+      : [...ALL_HEROES].sort(() => 0.5 - Math.random()).slice(0, 20),
     bans: { p1: [], p2: [] },
     picks: { p1: null, p2: null },
-    p1_uid: dbP1.uid,
-    p1_name: p1.name,
-    p2_uid: dbP2.uid,
-    p2_name: p2.name,
-    match_id: matchId, // <--- ЗАПОМИНАЕМ, ДЛЯ КАКОГО ЭТО МАТЧА
+    p1_uid: p1_uid,
+    p1_name: match.p1.name,
+    p2_uid: p2_uid,
+    p2_name: match.p2.name,
+    match_id: matchId,
     is_open: false
   };
 
   await supabaseClient.from('drafts').upsert({ id: 1, data: newDraftState });
-  alert('Драфт для матча ' + p1.name + ' vs ' + p2.name + ' запущен!');
+  alert('Драфт для матча ' + match.p1.name + ' vs ' + match.p2.name + ' запущен!');
 }
 window.startDraftForMatch = startDraftForMatch;
 
