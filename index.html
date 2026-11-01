@@ -2773,10 +2773,9 @@ function init() {
 }
 
 function showAuthButtonIfNeeded() {
-  if (!isAdmin() && !currentUser) {
-    const btn = document.getElementById('show-auth-btn');
-    if (btn) btn.style.display = 'inline-block';
-  }
+  // Всегда показываем кнопку, чтобы можно было войти/переключиться
+  const btn = document.getElementById('show-auth-btn');
+  if (btn) btn.style.display = 'inline-block';
 }
 
 function openAuthScreen() {
