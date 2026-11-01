@@ -707,6 +707,48 @@
     <!-- Сюда скрипт вставит результаты -->
   </section>
 </main>
+  <footer style="margin-top: 50px; padding: 40px 32px; border-top: 1px solid var(--border); background: rgba(11,11,13,0.95);">
+  <div style="max-width: 1200px; margin: 0 auto; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 30px;">
+    
+    <!-- Левая часть: Логотип и копирайт -->
+    <div style="flex: 1; min-width: 250px;">
+      <div class="brand" style="margin-bottom: 15px;">
+        <img src="logo.png" alt="ARQON Logo" style="width: 150px; height: auto; filter: drop-shadow(0 0 8px rgba(122,59,255,0.6));">
+      </div>
+      <p style="color: var(--text-dim); font-size: 13px; line-height: 1.6; margin-bottom: 15px;">
+        Платформа для проведения киберспортивных турниров по Dota 2 и CS2. Создавай сетки, проводи драфты и следи за результатами в реальном времени.
+      </p>
+      <p style="color: var(--text-dim); font-size: 12px;">
+        © 2026 ARQON Esports. Все права защищены.
+      </p>
+    </div>
+
+    <!-- Правая часть: Ссылки -->
+    <div style="display: flex; gap: 60px; flex-wrap: wrap;">
+      
+      <!-- Колонка 1 -->
+      <div>
+        <h4 style="color: var(--text); font-family: 'Orbitron', sans-serif; font-size: 12px; letter-spacing: 2px; margin-bottom: 15px; text-transform: uppercase;">Информация</h4>
+        <ul style="list-style: none; padding: 0; display: flex; flex-direction: column; gap: 10px;">
+          <li><a href="#" onclick="openInfoModal('about'); return false;" style="color: var(--text-dim); text-decoration: none; font-size: 14px; transition: 0.2s;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text-dim)'">О платформе</a></li>
+          <li><a href="#" onclick="openInfoModal('faq'); return false;" style="color: var(--text-dim); text-decoration: none; font-size: 14px; transition: 0.2s;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text-dim)'">FAQ</a></li>
+          <li><a href="#" onclick="openInfoModal('privacy'); return false;" style="color: var(--text-dim); text-decoration: none; font-size: 14px; transition: 0.2s;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text-dim)'">Политика конфиденциальности</a></li>
+        </ul>
+      </div>
+
+      <!-- Колонка 2 -->
+      <div>
+        <h4 style="color: var(--text); font-family: 'Orbitron', sans-serif; font-size: 12px; letter-spacing: 2px; margin-bottom: 15px; text-transform: uppercase;">Контакты</h4>
+        <ul style="list-style: none; padding: 0; display: flex; flex-direction: column; gap: 10px;">
+          <li><a href="#" onclick="openInfoModal('contact'); return false;" style="color: var(--text-dim); text-decoration: none; font-size: 14px; transition: 0.2s;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text-dim)'">Связаться с нами</a></li>
+          <li><a href="https://t.me/ARQON_Esports" target="_blank" style="color: var(--text-dim); text-decoration: none; font-size: 14px; transition: 0.2s;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text-dim)'">Telegram</a></li>
+          <li><a href="mailto:contact@arqon.gg" style="color: var(--text-dim); text-decoration: none; font-size: 14px; transition: 0.2s;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text-dim)'">contact@arqon.gg</a></li>
+        </ul>
+      </div>
+
+    </div>
+  </div>
+</footer>
 <!-- УНИВЕРСАЛЬНОЕ ОКНО ДЛЯ ИНФОРМАЦИИ -->
 <div id="info-modal" class="modal" style="display: none; z-index: 1000;">
   <div class="modal-content" style="max-width: 700px; max-height: 80vh; overflow-y: auto; position: relative;">
