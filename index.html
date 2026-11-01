@@ -100,6 +100,8 @@
     background: var(--bg);
     color: var(--text);
     min-height: 100vh;
+    display: flex;
+    flex-direction: column;
     background-image:
       radial-gradient(ellipse at top left, rgba(122,59,255,0.08), transparent 50%),
       radial-gradient(ellipse at bottom right, rgba(122,59,255,0.05), transparent 50%);
@@ -469,7 +471,7 @@
   </nav>
 </header>
 
-<main style="display: none;">
+<main style="display: none; flex: 1;">
   <!-- АДМИН ПАНЕЛЬ -->
   <section id="tab-admin" class="hidden">
     <div class="card">
