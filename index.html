@@ -805,6 +805,9 @@ function isAdmin() {
 // ==========================================
 // АВТОРИЗАЦИЯ
 // ==========================================
+// ==========================================
+// АВТОРИЗАЦИЯ И ЗАПУСК
+// ==========================================
 supabaseClient.auth.getSession().then(({ data: { session } }) => {
   const savedUid = localStorage.getItem('arqon_current_uid');
   const savedName = localStorage.getItem('arqon_current_name');
@@ -813,22 +816,29 @@ supabaseClient.auth.getSession().then(({ data: { session } }) => {
     document.getElementById('auth-screen').style.display = 'none';
     document.querySelector('main').style.display = 'block';
     initSupabaseSync();
+    init(); // Запускаем инициализацию для админа
   } else if (session) {
     currentUser = session.user;
     checkUserRole(session.user.id);
   } else if (savedUid && savedName) {
-    // Если сессии нет, но мы только что входили — принудительно пускаем
+    // Принудительный вход по сохраненному UID
     console.log("Используем сохраненный UID:", savedUid);
-    currentUser = { id: savedUid }; // Создаем фейковый объект юзера для скрипта
+    currentUser = { id: savedUid }; 
+    
     document.getElementById('auth-screen').style.display = 'none';
     document.querySelector('main').style.display = 'none';
+    
     const playerScreen = document.getElementById('player-screen');
     playerScreen.classList.remove('hidden');
     playerScreen.style.display = 'flex';
+    
     document.getElementById('player-display-name').textContent = savedName;
+    
     startDraftListener(savedUid);
+    init(); // Инициализируем кнопки (но renderAll не тронет player-screen)
   } else {
     handleNoAuth();
+    init(); // Инициализируем для обычного гостя
   }
 });
 
@@ -1585,6 +1595,11 @@ function switchSubTab(sub) {
 }
 
 function renderAll() {
+  // Если мы на экране игрока — не трогаем сетку!
+  const playerScreen = document.getElementById('player-screen');
+  if (playerScreen && playerScreen.style.display === 'flex') {
+    return; 
+  }
   renderSolo();
   renderTeams();
   renderFreeAgents();
@@ -2829,7 +2844,7 @@ window.renderPlayerDraft = renderPlayerDraft;
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', init);
 } else {
-  init();
+  
 }
 </script>
 </body>
