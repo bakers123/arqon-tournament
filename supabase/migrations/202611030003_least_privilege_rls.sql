@@ -120,18 +120,45 @@ for select to anon, authenticated using (true);
 create policy drafts_organizer_insert on public.drafts
 for insert to authenticated
 with check (public.has_organizer_role('editor'));
-create policy drafts_participant_or_organizer_update on public.drafts
+create policy drafts_organizer_update on public.drafts
 for update to authenticated
-using (
-  public.has_organizer_role('editor')
-  or data->>'p1_captain_uid' = (select auth.uid())::text
-  or data->>'p2_captain_uid' = (select auth.uid())::text
-)
-with check (
-  public.has_organizer_role('editor')
-  or data->>'p1_captain_uid' = (select auth.uid())::text
-  or data->>'p2_captain_uid' = (select auth.uid())::text
-);
+using (public.has_organizer_role('editor'))
+with check (public.has_organizer_role('editor'));
+
+create or replace function public.update_player_draft(p_data jsonb)
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $
+declare
+  v_old jsonb;
+begin
+  if jsonb_typeof(p_data) <> 'object' then
+    raise exception 'invalid draft payload' using errcode = '22023';
+  end if;
+  select data into v_old from public.drafts where id = 1 for update;
+  if v_old is null then
+    raise exception 'draft not found' using errcode = 'P0002';
+  end if;
+  if not (
+    v_old->>'p1_captain_uid' = (select auth.uid())::text
+    or v_old->>'p2_captain_uid' = (select auth.uid())::text
+  ) then
+    raise exception 'not an assigned draft captain' using errcode = '42501';
+  end if;
+  if p_data->>'p1_uid' is distinct from v_old->>'p1_uid'
+    or p_data->>'p2_uid' is distinct from v_old->>'p2_uid'
+    or p_data->>'p1_captain_uid' is distinct from v_old->>'p1_captain_uid'
+    or p_data->>'p2_captain_uid' is distinct from v_old->>'p2_captain_uid'
+    or p_data->>'match_id' is distinct from v_old->>'match_id' then
+    raise exception 'draft participant assignments are immutable' using errcode = '42501';
+  end if;
+  update public.drafts set data = p_data where id = 1;
+end;
+$;
+revoke all on function public.update_player_draft(jsonb) from public, anon;
+grant execute on function public.update_player_draft(jsonb) to authenticated;
 create policy drafts_organizer_delete on public.drafts
 for delete to authenticated
 using (public.has_organizer_role('editor'));
