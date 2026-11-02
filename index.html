@@ -1086,7 +1086,6 @@ const SUPABASE_URL = 'https://uscnaqcvuwjrmkjyuklp.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_oE2Bc1wPAcDt6HE8bOUj3Q_0-2FfIxB';
 const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-const ADMIN_KEY = 'ARQON2026123123123123123';
 let currentUser = null;
 let isRealtimeActive = false;
 
@@ -1107,10 +1106,6 @@ let state = {
   bracket: null
 };
 
-function isAdmin() {
-  const params = new URLSearchParams(window.location.search);
-  return params.get('admin') === ADMIN_KEY;
-}
 
 // ==========================================
 // АВТОРИЗАЦИЯ
