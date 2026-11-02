@@ -2066,6 +2066,10 @@ function startDraftListener(myUid) {
 // ==========================================
 // BAN / PICK
 // ==========================================
+async function savePlayerDraft(nextDraft) {
+  return await supabaseClient.rpc('update_player_draft', { p_data: nextDraft });
+}
+
 async function banHero(heroId, myRole) {
   if (!draftState || !currentUser) return;
   if (draftState.turn !== myRole) return;
@@ -2094,7 +2098,7 @@ async function banHero(heroId, myRole) {
     draftState.phase = nextPhase;
     renderPlayerDraft(currentUser.id);
 
-    const { error } = await supabaseClient.from('drafts').upsert({ id: 1, data: { ...oldState, bans: newBans, turn: nextTurn, phase: nextPhase } });
+    const { error } = await savePlayerDraft({ ...oldState, bans: newBans, turn: nextTurn, phase: nextPhase });
     if (error) {
       draftState = oldState;
       renderPlayerDraft(currentUser.id);
@@ -2109,7 +2113,7 @@ async function banHero(heroId, myRole) {
     draftState.bans = newBans;
     renderPlayerDraft(currentUser.id);
 
-    const { error } = await supabaseClient.from('drafts').upsert({ id: 1, data: { ...oldState, bans: newBans } });
+    const { error } = await savePlayerDraft({ ...oldState, bans: newBans });
     if (error) {
       draftState = oldState;
       renderPlayerDraft(currentUser.id);
@@ -2191,7 +2195,7 @@ function renderPlayerDraft(myUid) {
         btn.onclick = async () => {
           const winner = Math.random() < 0.5 ? 'p1' : 'p2';
           const newDraft = { ...draftState, first_turn: winner, phase: 'ban', turn: winner };
-          await supabaseClient.from('drafts').upsert({ id: 1, data: newDraft });
+          await savePlayerDraft(newDraft);
         };
       } else {
         statusEl.innerHTML = 'Ожидание броска монетки капитаном...';
@@ -2210,7 +2214,7 @@ function renderPlayerDraft(myUid) {
     if (draftState.game === 'cs2') {
       if (remainingMaps <= 1) {
         setTimeout(async () => {
-          await supabaseClient.from('drafts').upsert({ id: 1, data: { ...draftState, phase: 'pick' } });
+          await savePlayerDraft({ ...draftState, phase: 'pick' });
         }, 500);
         return;
       }
@@ -2260,7 +2264,7 @@ function renderPlayerDraft(myUid) {
         if (new Set(draftState.bans[myRole]).size < maxBans) { alert('Забань ровно ' + maxBans + ' героев'); return; }
         const nextTurn = turnRole === 'p1' ? 'p2' : 'p1';
         const nextPhase = (draftState.bans[nextTurn].length >= maxBans) ? 'pick' : 'ban';
-        await supabaseClient.from('drafts').upsert({ id: 1, data: { ...draftState, turn: nextTurn, phase: nextPhase } });
+        await savePlayerDraft({ ...draftState, turn: nextTurn, phase: nextPhase });
       };
     } else {
       if (isCaptain) {
