@@ -87,12 +87,19 @@
       setVisible(byId('tab-admin'), true);
       setVisible(byId('tab-bracket'), false);
       const adminButton = byId('admin-tab-btn');
-      if (adminButton) adminButton.classList.remove('hidden');
+      if (adminButton) { adminButton.classList.remove('hidden'); adminButton.style.display = 'inline-block'; }
       if (typeof initSupabaseSync === 'function') initSupabaseSync();
       if (typeof loadLeague === 'function') loadLeague(true);
       const loginButton = byId('organizer-login-btn');
-      if (loginButton) loginButton.textContent = 'Выйти из панели';
-      if (loginButton) loginButton.onclick = async () => { await supabaseClient.auth.signOut(); window.location.reload(); };
+      if (loginButton) {
+        const activeButton = loginButton.cloneNode(true);
+        activeButton.textContent = 'Выйти из панели';
+        loginButton.replaceWith(activeButton);
+        activeButton.addEventListener('click', async () => {
+          await supabaseClient.auth.signOut();
+          window.location.reload();
+        });
+      }
       return;
     }
 
@@ -110,6 +117,10 @@
       handleNoAuth();
     }
   };
+
+  supabaseClient.auth.getSession().then(({ data }) => {
+    if (data?.session?.user) window.checkUserRole(data.session.user.id);
+  }).catch((error) => console.error('Session restore failed:', error));
 
   window.loginWithCode = async function() {
     const code = (byId('auth-code')?.value || '').trim().toUpperCase();
