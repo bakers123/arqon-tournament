@@ -1086,7 +1086,6 @@ const SUPABASE_URL = 'https://uscnaqcvuwjrmkjyuklp.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_oE2Bc1wPAcDt6HE8bOUj3Q_0-2FfIxB';
 const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-const ADMIN_KEY = 'ARQON2026123123123123123';
 let currentUser = null;
 let isRealtimeActive = false;
 
@@ -1094,6 +1093,9 @@ let isRealtimeActive = false;
 const CS2_MAPS = [
   "de_ancient", "de_anubis", "de_cache", "de_dust2", "de_inferno", "de_mirage", "de_nuke"
 ];
+
+// Organizer auth is installed by js/organizer-auth.js after this inline bundle loads.
+function isAdmin() { return false; }
 
 // Состояние турнира
 let state = {
@@ -1107,10 +1109,6 @@ let state = {
   bracket: null
 };
 
-function isAdmin() {
-  const params = new URLSearchParams(window.location.search);
-  return params.get('admin') === ADMIN_KEY;
-}
 
 // ==========================================
 // АВТОРИЗАЦИЯ
@@ -1204,64 +1202,7 @@ async function checkUserRole(uid) {
   }
 }
 async function loginWithCode() {
-  const code = document.getElementById('auth-code').value.trim().toUpperCase();
-  if (!code) return;
-
-  const btn = document.getElementById('login-btn');
-  const oldText = btn ? btn.textContent : 'Войти';
-  const errorDiv = document.getElementById('auth-error');
-
-  if (btn) { btn.disabled = true; btn.textContent = 'Подключение...'; }
-  if (errorDiv) { errorDiv.classList.add('hidden'); errorDiv.textContent = ''; }
-
-  try {
-    // 1. Ищем код
-    const { data: codeData, error: codeError } = await supabaseClient
-      .from('access_codes').select('*').eq('code', code).maybeSingle();
-
-    if (codeError || !codeData) throw new Error('Неверный код доступа');
-
-    // 2. Создаем сессию
-    const { data: { session: existingSession } } = await supabaseClient.auth.getSession();
-    let userId = null;
-
-    if (existingSession && existingSession.user) {
-      userId = existingSession.user.id;
-    } else {
-      const { data: authData, error: authError } = await supabaseClient.auth.signInAnonymously();
-      if (authError) throw new Error('Ошибка входа: ' + authError.message);
-      userId = authData.user.id;
-    }
-
-    // 3. Проверяем, есть ли уже такой игрок
-    const { data: existingPlayers } = await supabaseClient
-      .from('players').select('uid').eq('name', codeData.player_name);
-
-    if (existingPlayers && existingPlayers.length > 0) {
-      // Если есть — обновляем UID
-      await supabaseClient.from('players').update({ uid: userId }).eq('name', codeData.player_name);
-    } else {
-      // Если нет — создаем
-      await supabaseClient.from('players').insert({ uid: userId, name: codeData.player_name });
-    }
-
-    // 4. Сохраняем в кэш и удаляем код
-    localStorage.setItem('arqon_current_uid', userId); 
-    localStorage.setItem('arqon_current_name', codeData.player_name);
-    await supabaseClient.from('access_codes').delete().eq('code', code);
-
-    // 5. Перезагружаем страницу
-    window.location.reload();
-    
-  } catch (err) {
-    if (errorDiv) {
-      errorDiv.textContent = err.message;
-      errorDiv.classList.remove('hidden');
-    } else {
-      alert(err.message);
-    }
-    if (btn) { btn.disabled = false; btn.textContent = oldText; }
-  }
+  throw new Error('Модуль защищённого входа не загружен. Обнови страницу.');
 }
 function logoutPlayer() {
   localStorage.removeItem('arqon_current_uid');
@@ -1334,27 +1275,14 @@ function parseRank(rankTier) {
 // ==========================================
 async function generateAccessCode(playerName) {
   if (!isAdmin()) return;
-  let code = "";
-  let isUnique = false;
-
-  while (!isUnique) {
-    code = Math.random().toString(36).substring(2, 8).toUpperCase();
-    const { data } = await supabaseClient.from('access_codes').select('code').eq('code', code);
-    if (!data || data.length === 0) isUnique = true;
-  }
-
-  const { error } = await supabaseClient.from('access_codes').insert({ code: code, player_name: playerName });
-
+  const { data: code, error } = await supabaseClient.rpc('create_player_access_code', {
+    p_player_name: playerName
+  });
   if (error) {
     alert('Ошибка создания кода: ' + error.message);
-  } else {
-    const { data: dbPlayer } = await supabaseClient.from('players').select('uid').eq('name', playerName).maybeSingle();
-    let msg = `Код для игрока ${playerName}:\n\n${code}\n\nПередайте его игроку.`;
-    if (dbPlayer && dbPlayer.uid) {
-      msg += `\n\n(Его текущий UID уже в базе: ${dbPlayer.uid})`;
-    }
-    alert(msg);
+    return;
   }
+  alert(`Код для игрока ${playerName}:\n\n${code}\n\nПередайте его игроку.`);
 }
 
 // ==========================================
@@ -1907,7 +1835,7 @@ function openTournamentDetail(index){
 }
 async function loadPlayerHub(){
  const box=document.getElementById('player-list');if(!box)return;box.innerHTML='<div class="home-data-card">Загружаем игроков…</div>';
- try{const [pr,rr]=await Promise.all([supabaseClient.from('players').select('*').limit(500),supabaseClient.from('results').select('*').order('created_at',{ascending:false}).limit(500)]);if(pr.error)throw pr.error;if(rr.error)throw rr.error;arqonPlayersCache=pr.data||[];arqonResultsCache=rr.data||[];renderPlayerCards();}
+ try{const [pr,rr]=await Promise.all([supabaseClient.from('player_directory').select('name').limit(500),supabaseClient.from('results').select('*').order('created_at',{ascending:false}).limit(500)]);if(pr.error)throw pr.error;if(rr.error)throw rr.error;arqonPlayersCache=pr.data||[];arqonResultsCache=rr.data||[];renderPlayerCards();}
  catch(e){console.warn('Player hub:',e);box.innerHTML='<div class="home-data-card">Не удалось загрузить игроков. Проверь RLS и разрешение SELECT для таблицы players.</div>';}
 }
 function renderPlayerCards(){const box=document.getElementById('player-list');if(!box)return;const q=(document.getElementById('player-search')?.value||'').trim().toLocaleLowerCase();const players=arqonPlayersCache.map(p=>({...p,stats:pointsForPlayer(p.name,arqonResultsCache)})).filter(p=>String(p.name||'').toLocaleLowerCase().includes(q)).sort((a,b)=>b.stats.points-a.stats.points||String(a.name).localeCompare(String(b.name)));const count=document.getElementById('players-count');if(count)count.textContent=`${players.length} игроков`;box.innerHTML=players.length?players.map((p,i)=>`<article class="portal-card"><span class="portal-pill">${i===0&&p.stats.points>0?'Лидер рейтинга':'Игрок ARQON'}</span><div class="portal-profile-top" style="margin-top:14px"><div class="portal-avatar">${escapeHtml((p.name||'?').trim().slice(0,1).toUpperCase())}</div><div><h3>${escapeHtml(safeText(p.name,'Игрок без имени'))}</h3><p>${p.stats.events} турниров с опубликованным результатом</p></div></div><div class="portal-detail-grid"><div class="portal-detail-stat"><small>Очки</small><strong class="portal-stat">${p.stats.points}</strong></div><div class="portal-detail-stat"><small>Победы</small><strong class="portal-stat">${p.stats.wins}</strong></div><div class="portal-detail-stat"><small>Топ-3</small><strong class="portal-stat">${p.stats.podiums}</strong></div></div><div class="portal-actions"><button class="btn" onclick="openPlayerDetail(${i})">Профиль игрока →</button></div></article>`).join(''):'<div class="home-data-card">Игроков не найдено.</div>';window.arqonRankedPlayers=players;}
@@ -2084,6 +2012,10 @@ function startDraftListener(myUid) {
 // ==========================================
 // BAN / PICK
 // ==========================================
+async function savePlayerDraft(nextDraft) {
+  return await supabaseClient.rpc('update_player_draft', { p_data: nextDraft });
+}
+
 async function banHero(heroId, myRole) {
   if (!draftState || !currentUser) return;
   if (draftState.turn !== myRole) return;
@@ -2112,7 +2044,7 @@ async function banHero(heroId, myRole) {
     draftState.phase = nextPhase;
     renderPlayerDraft(currentUser.id);
 
-    const { error } = await supabaseClient.from('drafts').upsert({ id: 1, data: { ...oldState, bans: newBans, turn: nextTurn, phase: nextPhase } });
+    const { error } = await savePlayerDraft({ ...oldState, bans: newBans, turn: nextTurn, phase: nextPhase });
     if (error) {
       draftState = oldState;
       renderPlayerDraft(currentUser.id);
@@ -2127,7 +2059,7 @@ async function banHero(heroId, myRole) {
     draftState.bans = newBans;
     renderPlayerDraft(currentUser.id);
 
-    const { error } = await supabaseClient.from('drafts').upsert({ id: 1, data: { ...oldState, bans: newBans } });
+    const { error } = await savePlayerDraft({ ...oldState, bans: newBans });
     if (error) {
       draftState = oldState;
       renderPlayerDraft(currentUser.id);
@@ -2209,7 +2141,7 @@ function renderPlayerDraft(myUid) {
         btn.onclick = async () => {
           const winner = Math.random() < 0.5 ? 'p1' : 'p2';
           const newDraft = { ...draftState, first_turn: winner, phase: 'ban', turn: winner };
-          await supabaseClient.from('drafts').upsert({ id: 1, data: newDraft });
+          await savePlayerDraft(newDraft);
         };
       } else {
         statusEl.innerHTML = 'Ожидание броска монетки капитаном...';
@@ -2228,7 +2160,7 @@ function renderPlayerDraft(myUid) {
     if (draftState.game === 'cs2') {
       if (remainingMaps <= 1) {
         setTimeout(async () => {
-          await supabaseClient.from('drafts').upsert({ id: 1, data: { ...draftState, phase: 'pick' } });
+          await savePlayerDraft({ ...draftState, phase: 'pick' });
         }, 500);
         return;
       }
@@ -2278,7 +2210,7 @@ function renderPlayerDraft(myUid) {
         if (new Set(draftState.bans[myRole]).size < maxBans) { alert('Забань ровно ' + maxBans + ' героев'); return; }
         const nextTurn = turnRole === 'p1' ? 'p2' : 'p1';
         const nextPhase = (draftState.bans[nextTurn].length >= maxBans) ? 'pick' : 'ban';
-        await supabaseClient.from('drafts').upsert({ id: 1, data: { ...draftState, turn: nextTurn, phase: nextPhase } });
+        await savePlayerDraft({ ...draftState, turn: nextTurn, phase: nextPhase });
       };
     } else {
       if (isCaptain) {
@@ -3397,5 +3329,6 @@ async function startApp() {
   startApp();
 }
 </script>
+  <script src="js/organizer-auth.js"></script>
 </body>
 </html>
