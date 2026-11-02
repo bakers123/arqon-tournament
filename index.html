@@ -1329,27 +1329,14 @@ function parseRank(rankTier) {
 // ==========================================
 async function generateAccessCode(playerName) {
   if (!isAdmin()) return;
-  let code = "";
-  let isUnique = false;
-
-  while (!isUnique) {
-    code = Math.random().toString(36).substring(2, 8).toUpperCase();
-    const { data } = await supabaseClient.from('access_codes').select('code').eq('code', code);
-    if (!data || data.length === 0) isUnique = true;
-  }
-
-  const { error } = await supabaseClient.from('access_codes').insert({ code: code, player_name: playerName });
-
+  const { data: code, error } = await supabaseClient.rpc('create_player_access_code', {
+    p_player_name: playerName
+  });
   if (error) {
     alert('Ошибка создания кода: ' + error.message);
-  } else {
-    const { data: dbPlayer } = await supabaseClient.from('players').select('uid').eq('name', playerName).maybeSingle();
-    let msg = `Код для игрока ${playerName}:\n\n${code}\n\nПередайте его игроку.`;
-    if (dbPlayer && dbPlayer.uid) {
-      msg += `\n\n(Его текущий UID уже в базе: ${dbPlayer.uid})`;
-    }
-    alert(msg);
+    return;
   }
+  alert(`Код для игрока ${playerName}:\n\n${code}\n\nПередайте его игроку.`);
 }
 
 // ==========================================
@@ -1902,7 +1889,7 @@ function openTournamentDetail(index){
 }
 async function loadPlayerHub(){
  const box=document.getElementById('player-list');if(!box)return;box.innerHTML='<div class="home-data-card">Загружаем игроков…</div>';
- try{const [pr,rr]=await Promise.all([supabaseClient.from('players').select('*').limit(500),supabaseClient.from('results').select('*').order('created_at',{ascending:false}).limit(500)]);if(pr.error)throw pr.error;if(rr.error)throw rr.error;arqonPlayersCache=pr.data||[];arqonResultsCache=rr.data||[];renderPlayerCards();}
+ try{const [pr,rr]=await Promise.all([supabaseClient.from('player_directory').select('name').limit(500),supabaseClient.from('results').select('*').order('created_at',{ascending:false}).limit(500)]);if(pr.error)throw pr.error;if(rr.error)throw rr.error;arqonPlayersCache=pr.data||[];arqonResultsCache=rr.data||[];renderPlayerCards();}
  catch(e){console.warn('Player hub:',e);box.innerHTML='<div class="home-data-card">Не удалось загрузить игроков. Проверь RLS и разрешение SELECT для таблицы players.</div>';}
 }
 function renderPlayerCards(){const box=document.getElementById('player-list');if(!box)return;const q=(document.getElementById('player-search')?.value||'').trim().toLocaleLowerCase();const players=arqonPlayersCache.map(p=>({...p,stats:pointsForPlayer(p.name,arqonResultsCache)})).filter(p=>String(p.name||'').toLocaleLowerCase().includes(q)).sort((a,b)=>b.stats.points-a.stats.points||String(a.name).localeCompare(String(b.name)));const count=document.getElementById('players-count');if(count)count.textContent=`${players.length} игроков`;box.innerHTML=players.length?players.map((p,i)=>`<article class="portal-card"><span class="portal-pill">${i===0&&p.stats.points>0?'Лидер рейтинга':'Игрок ARQON'}</span><div class="portal-profile-top" style="margin-top:14px"><div class="portal-avatar">${escapeHtml((p.name||'?').trim().slice(0,1).toUpperCase())}</div><div><h3>${escapeHtml(safeText(p.name,'Игрок без имени'))}</h3><p>${p.stats.events} турниров с опубликованным результатом</p></div></div><div class="portal-detail-grid"><div class="portal-detail-stat"><small>Очки</small><strong class="portal-stat">${p.stats.points}</strong></div><div class="portal-detail-stat"><small>Победы</small><strong class="portal-stat">${p.stats.wins}</strong></div><div class="portal-detail-stat"><small>Топ-3</small><strong class="portal-stat">${p.stats.podiums}</strong></div></div><div class="portal-actions"><button class="btn" onclick="openPlayerDetail(${i})">Профиль игрока →</button></div></article>`).join(''):'<div class="home-data-card">Игроков не найдено.</div>';window.arqonRankedPlayers=players;}
