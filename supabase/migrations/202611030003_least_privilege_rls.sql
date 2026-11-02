@@ -141,10 +141,8 @@ begin
   if v_old is null then
     raise exception 'draft not found' using errcode = 'P0002';
   end if;
-  if not (
-    v_old->>'p1_captain_uid' = (select auth.uid())::text
-    or v_old->>'p2_captain_uid' = (select auth.uid())::text
-  ) then
+  if (v_old->>'p1_captain_uid') is distinct from (select auth.uid())::text
+    and (v_old->>'p2_captain_uid') is distinct from (select auth.uid())::text then
     raise exception 'not an assigned draft captain' using errcode = '42501';
   end if;
   if p_data->>'p1_uid' is distinct from v_old->>'p1_uid'
