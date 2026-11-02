@@ -574,21 +574,42 @@
   .portal-card:hover{transform:translateY(-3px);border-color:var(--accent,#8b5cf6)}.portal-card h3{margin:8px 0 10px;font-size:22px}.portal-card p{color:var(--text-dim);line-height:1.5}.portal-pill{display:inline-flex;border:1px solid rgba(167,139,250,.45);color:#c4b5fd;border-radius:999px;padding:4px 9px;font-size:11px;letter-spacing:1px;text-transform:uppercase}.portal-toolbar{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin:18px 0}.portal-toolbar input{max-width:420px;width:100%}.portal-stat{font-family:Orbitron,sans-serif;color:#c4b5fd;font-size:26px}.portal-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:16px}.portal-profile-top{display:flex;gap:16px;align-items:center;flex-wrap:wrap}.portal-avatar{width:68px;height:68px;border-radius:16px;background:linear-gradient(135deg,#6d28d9,#171321);display:grid;place-items:center;font-size:28px;font-weight:900;border:1px solid #8b5cf6}.portal-detail-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-top:16px}.portal-detail-stat{padding:14px;border:1px solid var(--border);border-radius:10px;background:rgba(255,255,255,.025)}.portal-detail-stat small{display:block;color:var(--text-dim);margin-bottom:6px}
   @media(max-width:700px){.portal-card{padding:16px}.portal-heading{padding-top:12px}}
 
-\n\n  /* ARQON admin UX improvements — keeps the existing Supabase data model */
-.admin-overview{display:grid;grid-template-columns:repeat(4,minmax(140px,1fr));gap:12px;margin-bottom:16px}
-.admin-stat{background:#101014;border:1px solid var(--border);border-radius:9px;padding:16px;min-height:92px}
-.admin-stat strong{display:block;font:700 25px Orbitron,sans-serif;color:var(--accent-2);margin-top:8px}
-.admin-stat span{font-size:11px;letter-spacing:1.5px;color:var(--text-dim);text-transform:uppercase}
-.admin-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
-.admin-actions .btn{width:auto!important;margin:0!important}
-.bracket-guide{border:1px solid rgba(139,59,255,.35);background:rgba(139,59,255,.07);padding:14px;border-radius:8px;margin-top:14px;line-height:1.5}
-.code-modal-card{max-width:480px;text-align:center}
-.code-value{font:900 30px Orbitron,sans-serif;letter-spacing:5px;color:#fff;background:#09090b;border:1px dashed var(--accent);border-radius:8px;padding:18px 12px;margin:16px 0;user-select:all;overflow-wrap:anywhere}
-.code-modal-actions{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
-.code-modal-actions .btn{width:auto!important;margin:0!important}
-.admin-live-row{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
-@media(max-width:900px){.admin-overview{grid-template-columns:repeat(2,minmax(120px,1fr))}}
-@media(max-width:520px){.admin-overview{grid-template-columns:1fr 1fr}.admin-stat{padding:12px}.admin-stat strong{font-size:20px}.code-value{font-size:22px;letter-spacing:3px}}\n</style>
+
+/* ARQON League table */
+.league-wrap{max-width:1200px;margin:0 auto;padding:22px 16px 48px}
+.league-hero{padding:26px;border:1px solid rgba(122,59,255,.45);border-radius:14px;background:linear-gradient(135deg,rgba(122,59,255,.15),rgba(12,12,18,.96));margin-bottom:18px}
+.league-kicker{font-size:11px;letter-spacing:3px;color:#a78bfa;font-weight:800}
+.league-title{font-family:Orbitron,sans-serif;font-size:clamp(25px,4vw,38px);margin:8px 0;color:#fff}
+.league-sub{color:var(--text-dim);margin:0;line-height:1.5}
+.league-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:16px 0}
+.league-stat{background:#111118;border:1px solid var(--border);border-radius:10px;padding:14px}
+.league-stat small{display:block;color:var(--text-dim);font-size:11px;text-transform:uppercase;letter-spacing:1px}
+.league-stat strong{font-size:25px;color:#fff;font-family:Orbitron,sans-serif}
+.league-panel{background:rgba(17,17,24,.92);border:1px solid var(--border);border-radius:12px;padding:18px;margin:14px 0;overflow:hidden}
+.league-panel h2{font-size:18px;color:var(--accent);margin:0 0 14px}
+.league-table-scroll{overflow-x:auto}
+.league-table{width:100%;border-collapse:collapse;min-width:690px}
+.league-table th,.league-table td{padding:11px 9px;border-bottom:1px solid var(--border);text-align:left;white-space:nowrap}
+.league-table th{color:#a78bfa;font-size:11px;text-transform:uppercase;letter-spacing:1px}
+.league-table td{font-size:14px}
+.league-rank{color:#a78bfa;font-family:Orbitron,sans-serif;font-weight:900}
+.league-team-name{font-weight:800;color:#fff}
+.league-dq{color:#fb7185;font-size:10px;font-weight:900;letter-spacing:1px;margin-left:6px}
+.league-match-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.league-match{background:#0d0d13;border:1px solid var(--border);border-radius:10px;padding:13px;min-width:0}
+.league-match-top{display:flex;justify-content:space-between;gap:10px;color:var(--text-dim);font-size:12px;margin-bottom:8px}
+.league-match-teams{font-weight:800;color:#fff;line-height:1.45}
+.league-match-meta{color:var(--text-dim);font-size:12px;margin-top:6px}
+.league-result{color:#a78bfa;font-weight:800;margin-top:8px}
+.league-admin-row{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:10px}
+.league-admin-row input,.league-admin-row select{width:100%;min-width:0;background:#171720;border:1px solid #383344;color:#fff;padding:9px;border-radius:6px;font:inherit}
+.league-admin-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.league-muted{color:var(--text-dim);font-size:12px;line-height:1.5}
+.league-status{font-size:11px;font-weight:800;letter-spacing:.7px;color:#a78bfa}
+.league-status.done{color:#4ade80}.league-status.dq{color:#fb7185}
+@media(max-width:700px){.league-stats{grid-template-columns:repeat(2,minmax(0,1fr))}.league-match-grid{grid-template-columns:1fr}.league-hero{padding:19px}.league-panel{padding:13px}}
+
+</style>
 </head>
 <body>
 
@@ -661,6 +682,7 @@
     <button data-tab="news">Новости</button>
     <button data-tab="schedule">Расписание</button>
     <button data-tab="results">🏆 Результаты</button>
+    <button data-tab="league">🏅 Лига</button>
     <button data-tab="partners">🤝 Партнеры</button>
     <button data-tab="admin" id="admin-tab-btn" style="display:none;">Админ-панель</button>
     
@@ -682,27 +704,6 @@
 <main style="flex: 1;">
   <!-- АДМИН ПАНЕЛЬ -->
   <section id="tab-admin" class="hidden">
-    <div class="card">
-      <h2>⚡ Панель управления ARQON</h2>
-      <div class="admin-overview">
-        <div class="admin-stat"><span>Игроки 1x1</span><strong id="adm-solo-count">—</strong></div>
-        <div class="admin-stat"><span>Команды</span><strong id="adm-team-count">—</strong></div>
-        <div class="admin-stat"><span>Участники сетки</span><strong id="adm-bracket-count">—</strong></div>
-        <div class="admin-stat"><span>Формат</span><strong id="adm-format" style="font-size:16px">—</strong></div>
-      </div>
-      <div class="admin-actions">
-        <button class="btn" type="button" onclick="switchTab('bracket')">Открыть сетку</button>
-        <button class="btn ghost" type="button" onclick="switchTab('results')">Результаты</button>
-        <button class="btn ghost" type="button" onclick="window.open('https://www.twitch.tv/arqon_esports','_blank','noopener')">Открыть Twitch ↗</button>
-      </div>
-    </div>
-    <div class="card">
-      <div class="admin-live-row">
-        <div><h2 style="margin-bottom:6px">🔴 ARQON Esports LIVE</h2>
-        <div class="hint" style="margin-top:0">Быстрый переход на канал трансляции. Статус эфира здесь не проверяется.</div></div>
-        <button class="btn" type="button" onclick="window.open('https://www.twitch.tv/arqon_esports','_blank','noopener')">Перейти на Twitch ↗</button>
-      </div>
-    </div>
     <div class="card">
       <h2>🤝 Добавить партнера</h2>
       <div class="row" style="flex-direction: column; gap: 10px;">
@@ -751,11 +752,6 @@
             <option>16</option><option>32</option>
           </select>
         </div>
-      </div>
-      <div class="bracket-guide">
-        <strong>Перед генерацией сетки</strong>
-        <div id="bracket-config-summary" style="margin-top:5px">Выбери игру, формат, тип сетки и лимит участников.</div>
-        <div class="hint">Single Elimination: вылет после одного поражения. Double Elimination: верхняя и нижняя сетки, вылет после второго поражения. Генерация заменяет текущую сетку; результаты текущей сетки не переносятся.</div>
       </div>
     </div>
 
@@ -918,6 +914,17 @@
       </div>
       <div id="res-msg"></div>
     </div>
+    <div class="card" id="league-admin-card">
+      <h2>🏅 Управление турниром «Лига» · CS2 5×5</h2>
+      <p class="hint">Внеси результат каждого матча. Победа — 3 очка, обычное поражение — 1, техническое поражение — 0. Три техлуза автоматически дают статус дисквалификации.</p>
+      <div id="league-admin-status" class="hint" style="margin:10px 0">Загружаем матчи Лиги…</div>
+      <div class="row" style="gap:8px;flex-wrap:wrap;margin-bottom:12px">
+        <button class="btn" onclick="loadLeague(true)">↻ Обновить матчи</button>
+        <button class="btn ghost" onclick="leagueAddMatch()">＋ Добавить матч</button>
+        <button class="btn ghost" onclick="leagueExportBackup()">⇩ Экспорт JSON</button>
+      </div>
+      <div id="league-admin-matches"></div>
+    </div>
   </section>
 
   <!-- ГЛАВНАЯ СТРАНИЦА -->
@@ -1012,21 +1019,14 @@
   <section id="tab-results" class="hidden">
     <!-- Сюда скрипт вставит результаты -->
   </section>
-</main>
-<div id="access-code-modal" class="modal" style="display:none" role="dialog" aria-modal="true" aria-labelledby="access-code-title">
-  <div class="modal-content code-modal-card">
-    <h2 id="access-code-title">🔑 Код доступа создан</h2>
-    <div id="access-code-player" class="hint"></div>
-    <div id="access-code-value" class="code-value" tabindex="0"></div>
-    <div id="access-code-note" class="hint" style="margin-bottom:16px">Передай код игроку. После использования он привяжет доступ к своему аккаунту.</div>
-    <div class="code-modal-actions">
-      <button class="btn" type="button" id="copy-access-code-btn">📋 Скопировать код</button>
-      <button class="btn ghost" type="button" id="select-access-code-btn">Выделить</button>
-      <button class="btn ghost" type="button" id="close-access-code-btn">Закрыть</button>
+  <section id="tab-league" class="hidden">
+    <div class="league-wrap">
+      <div class="league-hero"><div class="league-kicker">ARQON ESPORTS · CS2 5×5</div><h1 class="league-title">ЛИГА ARQON</h1><p class="league-sub">Круговой турнир. Все команды играют друг с другом. Победа — 3 очка · обычное поражение — 1 очко · техническое поражение — 0 очков.</p></div>
+      <div id="league-public-content"><div class="league-panel">Загружаем турнирную таблицу…</div></div>
     </div>
-    <div id="access-code-copy-status" class="msg success hidden" role="status"></div>
-  </div>
-</div>\n  <footer style="margin-top: 50px; padding: 40px 32px; border-top: 1px solid var(--border); background: rgba(11,11,13,0.95);">
+  </section>
+</main>
+  <footer style="margin-top: 50px; padding: 40px 32px; border-top: 1px solid var(--border); background: rgba(11,11,13,0.95);">
   <div style="max-width: 1200px; margin: 0 auto; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 30px;">
     
     <!-- Левая часть: Логотип и копирайт -->
@@ -1060,7 +1060,7 @@
         <h4 style="color: var(--text); font-family: 'Orbitron', sans-serif; font-size: 12px; letter-spacing: 2px; margin-bottom: 15px; text-transform: uppercase;">Контакты</h4>
         <ul style="list-style: none; padding: 0; display: flex; flex-direction: column; gap: 10px;">
           <li><a href="#" onclick="openInfoModal('contact'); return false;" style="color: var(--text-dim); text-decoration: none; font-size: 14px; transition: 0.2s;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text-dim)'">Связаться с нами</a></li>
-          <li><a href="https://t.me/arqon_support" target="_blank" style="color: var(--text-dim); text-decoration: none; font-size: 14px; transition: 0.2s;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text-dim)'">Telegram</a></li>
+          <li><a href="https://t.me/support_arqon" target="_blank" style="color: var(--text-dim); text-decoration: none; font-size: 14px; transition: 0.2s;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text-dim)'">Telegram</a></li>
           <li><a href="mailto:contact@arqon.gg" style="color: var(--text-dim); text-decoration: none; font-size: 14px; transition: 0.2s;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text-dim)'">contact@arqon.gg</a></li>
         </ul>
       </div>
@@ -1145,6 +1145,7 @@ function handleNoAuth() {
     document.getElementById('tab-bracket').classList.add('hidden');
     document.getElementById('tab-admin').classList.remove('hidden');
     initSupabaseSync();
+    loadLeague(true);
   } else {
     document.querySelector('main').style.display = 'block';
     document.getElementById('tab-home').classList.remove('hidden');
@@ -1171,6 +1172,7 @@ async function checkUserRole(uid) {
     const ps = document.getElementById('player-screen');
     if (ps) { ps.style.display = 'none'; ps.classList.add('hidden'); }
     initSupabaseSync();
+    loadLeague(true);
     return;
   }
 
@@ -1299,7 +1301,6 @@ async function initSupabaseSync() {
 }
 
 function saveState() {
-  updateAdminOverview();
   supabaseClient.from('tournament').upsert({ id: 1, data: state }).then(({ error }) => {
     if (error) console.error('Ошибка сохранения:', error);
   });
@@ -1333,108 +1334,32 @@ function parseRank(rankTier) {
 // ==========================================
 async function generateAccessCode(playerName) {
   if (!isAdmin()) return;
-  const safeName = String(playerName || '').trim();
-  if (!safeName) { alert('Не найден ник игрока.'); return; }
-  let code = '';
+  let code = "";
   let isUnique = false;
-  // Use Web Crypto when available; keep the existing 6-character alphanumeric code format.
-  for (let attempt = 0; attempt < 12 && !isUnique; attempt++) {
-    const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-    const bytes = new Uint8Array(6);
-    if (window.crypto && window.crypto.getRandomValues) window.crypto.getRandomValues(bytes);
-    else for (let i = 0; i < bytes.length; i++) bytes[i] = Math.floor(Math.random() * 256);
-    code = Array.from(bytes, b => alphabet[b % alphabet.length]).join('');
-    const { data, error } = await supabaseClient.from('access_codes').select('code').eq('code', code);
-    if (error) { alert('Не удалось проверить уникальность кода: ' + error.message); return; }
+
+  while (!isUnique) {
+    code = Math.random().toString(36).substring(2, 8).toUpperCase();
+    const { data } = await supabaseClient.from('access_codes').select('code').eq('code', code);
     if (!data || data.length === 0) isUnique = true;
   }
-  if (!isUnique) { alert('Не получилось создать уникальный код. Попробуй ещё раз.'); return; }
-  const { error } = await supabaseClient.from('access_codes').insert({ code: code, player_name: safeName });
-  if (error) { alert('Ошибка создания кода: ' + error.message); return; }
-  const { data: dbPlayer } = await supabaseClient.from('players').select('uid').eq('name', safeName).maybeSingle();
-  showAccessCodeModal(safeName, code, dbPlayer && dbPlayer.uid ? dbPlayer.uid : null);
-}
 
-function showAccessCodeModal(playerName, code, uid) {
-  const modal = document.getElementById('access-code-modal');
-  const value = document.getElementById('access-code-value');
-  const status = document.getElementById('access-code-copy-status');
-  if (!modal || !value) { prompt('Скопируй код доступа:', code); return; }
-  document.getElementById('access-code-player').textContent = 'Игрок: ' + playerName + (uid ? ' · UID уже есть в базе' : '');
-  value.textContent = code;
-  status.classList.add('hidden'); status.textContent = '';
-  modal.style.display = 'flex';
-  document.getElementById('copy-access-code-btn').onclick = async () => {
-    try {
-      if (navigator.clipboard && window.isSecureContext) await navigator.clipboard.writeText(code);
-      else {
-        const range = document.createRange(); range.selectNodeContents(value);
-        const selection = window.getSelection(); selection.removeAllRanges(); selection.addRange(range);
-        const ok = document.execCommand('copy'); selection.removeAllRanges();
-        if (!ok) throw new Error('Буфер обмена недоступен');
-      }
-      status.textContent = 'Код скопирован — можно вставить в чат игроку.'; status.classList.remove('hidden');
-    } catch (e) {
-      selectAccessCodeText();
-      status.textContent = 'Автокопирование заблокировано браузером. Код выделен — нажми Ctrl+C.'; status.classList.remove('hidden');
+  const { error } = await supabaseClient.from('access_codes').insert({ code: code, player_name: playerName });
+
+  if (error) {
+    alert('Ошибка создания кода: ' + error.message);
+  } else {
+    const { data: dbPlayer } = await supabaseClient.from('players').select('uid').eq('name', playerName).maybeSingle();
+    let msg = `Код для игрока ${playerName}:\n\n${code}\n\nПередайте его игроку.`;
+    if (dbPlayer && dbPlayer.uid) {
+      msg += `\n\n(Его текущий UID уже в базе: ${dbPlayer.uid})`;
     }
-  };
-  document.getElementById('select-access-code-btn').onclick = selectAccessCodeText;
-  document.getElementById('close-access-code-btn').onclick = () => { modal.style.display = 'none'; };
-  modal.onclick = e => { if (e.target === modal) modal.style.display = 'none'; };
-}
-function selectAccessCodeText() {
-  const value = document.getElementById('access-code-value');
-  if (!value) return;
-  const range = document.createRange(); range.selectNodeContents(value);
-  const selection = window.getSelection(); selection.removeAllRanges(); selection.addRange(range); value.focus();
-}
-function updateAdminOverview() {
-  const set = (id, value) => { const el = document.getElementById(id); if (el) el.textContent = value; };
-  set('adm-solo-count', (state.soloPlayers || []).length);
-  set('adm-team-count', (state.teams || []).filter(t => t.players && t.players.length > 0).length);
-  let count = 0;
-  if (state.bracket) {
-    if (state.bracket.type === 'double') {
-      ((state.bracket.wb || [])[0] || []).forEach(m => { if (m.p1) count++; if (m.p2) count++; });
-    } else (state.bracket.rounds || []).slice(0,1).forEach(r => r.forEach(m => { if (m.p1) count++; if (m.p2) count++; }));
-  }
-  set('adm-bracket-count', count || '—');
-  set('adm-format', (state.game === 'cs2' ? 'CS2' : 'DOTA 2') + ' / ' + (state.mode || '5x5'));
-  const summary = document.getElementById('bracket-config-summary');
-  if (summary) {
-    const participants = state.mode === '1x1' ? (state.soloPlayers || []).length : (state.teams || []).filter(t => t.players && t.players.length > 0).length;
-    const type = state.bracketType === 'double' ? 'Double Elimination' : 'Single Elimination';
-    summary.textContent = `${state.game === 'cs2' ? 'CS2' : 'Dota 2'} · ${state.mode || '5x5'} · ${type} · ${participants} участн. сейчас / лимит ${state.maxParticipants || 8}`;
+    alert(msg);
   }
 }
-
 
 // ==========================================
 // ДОБАВЛЕНИЕ ИГРОКА
 // ==========================================
-function updateAdminOverview() {
-  const set = (id, value) => { const el = document.getElementById(id); if (el) el.textContent = value; };
-  set('adm-solo-count', (state.soloPlayers || []).length);
-  set('adm-team-count', (state.teams || []).filter(t => t.players && t.players.length > 0).length);
-  let count = 0;
-  if (state.bracket) {
-    if (state.bracket.type === 'double') {
-      ((state.bracket.wb || [])[0] || []).forEach(m => { if (m.p1) count++; if (m.p2) count++; });
-    } else (state.bracket.rounds || []).slice(0,1).forEach(r => r.forEach(m => { if (m.p1) count++; if (m.p2) count++; }));
-  }
-  set('adm-bracket-count', count || '—');
-  set('adm-format', (state.game === 'cs2' ? 'CS2' : 'DOTA 2') + ' / ' + (state.mode || '5x5'));
-  const summary = document.getElementById('bracket-config-summary');
-  if (summary) {
-    const participants = state.mode === '1x1' ? (state.soloPlayers || []).length : (state.teams || []).filter(t => t.players && t.players.length > 0).length;
-    const type = state.bracketType === 'double' ? 'Double Elimination' : 'Single Elimination';
-    summary.textContent = `${state.game === 'cs2' ? 'CS2' : 'Dota 2'} · ${state.mode || '5x5'} · ${type} · ${participants} участн. сейчас / лимит ${state.maxParticipants || 8}`;
-  }
-}
-
-
-
 async function fetchPlayer(steamIdInput) {
   const name = document.getElementById('p-name').value.trim();
   const avatar = document.getElementById('p-avatar').value.trim();
@@ -2003,6 +1928,7 @@ function switchTab(tab) {
     news: document.getElementById('tab-news'),
     schedule: document.getElementById('tab-schedule'),
     results: document.getElementById('tab-results'),
+    league: document.getElementById('tab-league'),
     partners: document.getElementById('tab-partners')
   };
 
@@ -2022,7 +1948,8 @@ function switchTab(tab) {
   if (tab === 'news') loadNews();
   if (tab === 'schedule') loadSchedule();
   if (tab === 'results') loadResults();
-  if (tab === 'admin') loadSponsorsAdmin();
+  if (tab === 'league') loadLeague(false);
+  if (tab === 'admin') { loadSponsorsAdmin(); loadLeague(true); }
   if (tab === 'partners') loadSponsors();
 }
 
@@ -2879,6 +2806,130 @@ async function removeNews(id) {
   loadNews();
 }
 
+
+// ==========================================
+// ARQON LEAGUE · CS2 5x5
+// Хранение: отдельная строка id=1 в таблице league_data (JSONB payload).
+// ==========================================
+const LEAGUE_SEED = {"teams":["B I G XANTARES","TymGok","PARADOX TEAM","YADADA","Inputlagmonstrs","Ешкерики","S1NYAK1 TEAM","zvёzds","Allinpuni","tixonya","Zews team","RC I Team"],"matches":[{"id":"league-1","match_no":1,"date":"24.10.2026","time":"12:00","team1":"B I G XANTARES","team2":"TymGok","venue":"Games Republic","result_type":"pending","winner":"","score":"","tech_loss_team":""},{"id":"league-2","match_no":2,"date":"24.10.2026","time":"13:00","team1":"PARADOX TEAM","team2":"YADADA","venue":"","result_type":"pending","winner":"","score":"","tech_loss_team":""},{"id":"league-3","match_no":3,"date":"24.10.2026","time":"14:00","team1":"B I G XANTARES","team2":"PARADOX TEAM","venue":"","result_type":"pending","winner":"","score":"","tech_loss_team":""},{"id":"league-4","match_no":4,"date":"24.10.2026","time":"15:00","team1":"TymGok","team2":"YADADA","venue":"","result_type":"pending","winner":"","score":"","tech_loss_team":""},{"id":"league-5","match_no":5,"date":"25.10.2026","time":"10:00","team1":"Inputlagmonstrs","team2":"Ешкерики","venue":"Games Republic","result_type":"pending","winner":"","score":"","tech_loss_team":""},{"id":"league-6","match_no":6,"date":"25.10.2026","time":"11:00","team1":"S1NYAK1 TEAM","team2":"zvёzds","venue":"","result_type":"pending","winner":"","score":"","tech_loss_team":""},{"id":"league-7","match_no":7,"date":"25.10.2026","time":"12:00","team1":"Inputlagmonstrs","team2":"S1NYAK1 TEAM","venue":"","result_type":"pending","winner":"","score":"","tech_loss_team":""},{"id":"league-8","match_no":8,"date":"25.10.2026","time":"13:00","team1":"Ешкерики","team2":"zvёzds","venue":"","result_type":"pending","winner":"","score":"","tech_loss_team":""},{"id":"league-9","match_no":9,"date":"31.10.2026","time":"12:00","team1":"Allinpuni","team2":"tixonya","venue":"Games Republic","result_type":"pending","winner":"","score":"","tech_loss_team":""},{"id":"league-10","match_no":10,"date":"31.10.2026","time":"13:00","team1":"Zews team","team2":"RC I Team","venue":"","result_type":"pending","winner":"","score":"","tech_loss_team":""},{"id":"league-11","match_no":11,"date":"31.10.2026","time":"14:00","team1":"Allinpuni","team2":"Zews team","venue":"","result_type":"pending","winner":"","score":"","tech_loss_team":""},{"id":"league-12","match_no":12,"date":"31.10.2026","time":"15:00","team1":"tixonya","team2":"RC I Team","venue":"","result_type":"pending","winner":"","score":"","tech_loss_team":""},{"id":"league-13","match_no":13,"date":"31.10.2026","time":"10:00","team1":"B I G XANTARES","team2":"S1NYAK1 TEAM","venue":"Rammpage","result_type":"pending","winner":"","score":"","tech_loss_team":""},{"id":"league-14","match_no":14,"date":"31.10.2026","time":"11:00","team1":"TymGok","team2":"Inputlagmonstrs","venue":"","result_type":"pending","winner":"","score":"","tech_loss_team":""},{"id":"league-15","match_no":15,"date":"31.10.2026","time":"12:00","team1":"B I G XANTARES","team2":"Inputlagmonstrs","venue":"","result_type":"pending","winner":"","score":"","tech_loss_team":""},{"id":"league-16","match_no":16,"date":"31.10.2026","time":"13:00","team1":"S1NYAK1 TEAM","team2":"TymGok","venue":"","result_type":"pending","winner":"","score":"","tech_loss_team":""},{"id":"league-17","match_no":17,"date":"01.11.2026","time":"12:00","team1":"PARADOX TEAM","team2":"Zews team","venue":"Games Republic","result_type":"pending","winner":"","score":"","tech_loss_team":""},{"id":"league-18","match_no":18,"date":"01.11.2026","time":"13:00","team1":"YADADA","team2":"RC I Team","venue":"","result_type":"pending","winner":"","score":"","tech_loss_team":""},{"id":"league-19","match_no":19,"date":"01.11.2026","time":"14:00","team1":"PARADOX TEAM","team2":"RC I Team","venue":"","result_type":"pending","winner":"","score":"","tech_loss_team":""},{"id":"league-20","match_no":20,"date":"01.11.2026","time":"15:00","team1":"Zews team","team2":"YADADA","venue":"","result_type":"pending","winner":"","score":"","tech_loss_team":""},{"id":"league-21","match_no":21,"date":"01.11.2026","time":"10:00","team1":"zvёzds","team2":"Allinpuni","venue":"Rammpage","result_type":"pending","winner":"","score":"","tech_loss_team":""},{"id":"league-22","match_no":22,"date":"01.11.2026","time":"11:00","team1":"tixonya","team2":"Ешкерики","venue":"","result_type":"pending","winner":"","score":"","tech_loss_team":""},{"id":"league-23","match_no":23,"date":"01.11.2026","time":"12:00","team1":"zvёzds","team2":"tixonya","venue":"","result_type":"pending","winner":"","score":"","tech_loss_team":""},{"id":"league-24","match_no":24,"date":"01.11.2026","time":"13:00","team1":"Allinpuni","team2":"Ешкерики","venue":"","result_type":"pending","winner":"","score":"","tech_loss_team":""},{"id":"league-25","match_no":25,"date":"07.11.2026","time":"12:00","team1":"B I G XANTARES","team2":"zvёzds","venue":"Games Republic","result_type":"pending","winner":"","score":"","tech_loss_team":""},{"id":"league-26","match_no":26,"date":"07.11.2026","time":"13:00","team1":"Ешкерики","team2":"TymGok","venue":"","result_type":"pending","winner":"","score":"","tech_loss_team":""},{"id":"league-27","match_no":27,"date":"07.11.2026","time":"14:00","team1":"B I G XANTARES","team2":"Ешкерики","venue":"","result_type":"pending","winner":"","score":"","tech_loss_team":""},{"id":"league-28","match_no":28,"date":"07.11.2026","time":"15:00","team1":"TymGok","team2":"zvёzds","venue":"","result_type":"pending","winner":"","score":"","tech_loss_team":""},{"id":"league-29","match_no":29,"date":"07.11.2026","time":"10:00","team1":"PARADOX TEAM","team2":"Allinpuni","venue":"Rammpage","result_type":"pending","winner":"","score":"","tech_loss_team":""},{"id":"league-30","match_no":30,"date":"07.11.2026","time":"11:00","team1":"tixonya","team2":"YADADA","venue":"","result_type":"pending","winner":"","score":"","tech_loss_team":""},{"id":"league-31","match_no":31,"date":"07.11.2026","time":"12:00","team1":"PARADOX TEAM","team2":"tixonya","venue":"","result_type":"pending","winner":"","score":"","tech_loss_team":""},{"id":"league-32","match_no":32,"date":"07.11.2026","time":"13:00","team1":"Allinpuni","team2":"YADADA","venue":"","result_type":"pending","winner":"","score":"","tech_loss_team":""},{"id":"league-33","match_no":33,"date":"08.11.2026","time":"12:00","team1":"Inputlagmonstrs","team2":"PARADOX TEAM","venue":"Games Republic","result_type":"pending","winner":"","score":"","tech_loss_team":""},{"id":"league-34","match_no":34,"date":"08.11.2026","time":"13:00","team1":"YADADA","team2":"S1NYAK1 TEAM","venue":"","result_type":"pending","winner":"","score":"","tech_loss_team":""},{"id":"league-35","match_no":35,"date":"08.11.2026","time":"14:00","team1":"Inputlagmonstrs","team2":"S1NYAK1 TEAM","venue":"","result_type":"pending","winner":"","score":"","tech_loss_team":""},{"id":"league-36","match_no":36,"date":"08.11.2026","time":"15:00","team1":"PARADOX TEAM","team2":"YADADA","venue":"","result_type":"pending","winner":"","score":"","tech_loss_team":""},{"id":"league-37","match_no":37,"date":"08.11.2026","time":"10:00","team1":"B I G XANTARES","team2":"RC I Team","venue":"Rammpage","result_type":"pending","winner":"","score":"","tech_loss_team":""},{"id":"league-38","match_no":38,"date":"08.11.2026","time":"11:00","team1":"Zews team","team2":"TymGok","venue":"","result_type":"pending","winner":"","score":"","tech_loss_team":""},{"id":"league-39","match_no":39,"date":"08.11.2026","time":"12:00","team1":"B I G XANTARES","team2":"Zews team","venue":"","result_type":"pending","winner":"","score":"","tech_loss_team":""},{"id":"league-40","match_no":40,"date":"08.11.2026","time":"13:00","team1":"RC I Team","team2":"TymGok","venue":"","result_type":"pending","winner":"","score":"","tech_loss_team":""},{"id":"league-41","match_no":41,"date":"14.11.2026","time":"12:00","team1":"zvёzds","team2":"RC I Team","venue":"Games Republic","result_type":"pending","winner":"","score":"","tech_loss_team":""},{"id":"league-42","match_no":42,"date":"14.11.2026","time":"13:00","team1":"RC I Team","team2":"Ешкерики","venue":"","result_type":"pending","winner":"","score":"","tech_loss_team":""},{"id":"league-43","match_no":43,"date":"14.11.2026","time":"14:00","team1":"zvёzds","team2":"Zews team","venue":"","result_type":"pending","winner":"","score":"","tech_loss_team":""},{"id":"league-44","match_no":44,"date":"14.11.2026","time":"15:00","team1":"Ешкерики","team2":"Zews team","venue":"","result_type":"pending","winner":"","score":"","tech_loss_team":""},{"id":"league-45","match_no":45,"date":"14.11.2026","time":"10:00","team1":"Inputlagmonstrs","team2":"Allinpuni","venue":"Rammpage","result_type":"pending","winner":"","score":"","tech_loss_team":""},{"id":"league-46","match_no":46,"date":"14.11.2026","time":"11:00","team1":"Allinpuni","team2":"tixonya","venue":"","result_type":"pending","winner":"","score":"","tech_loss_team":""},{"id":"league-47","match_no":47,"date":"14.11.2026","time":"12:00","team1":"Inputlagmonstrs","team2":"S1NYAK1 TEAM","venue":"","result_type":"pending","winner":"","score":"","tech_loss_team":""},{"id":"league-48","match_no":48,"date":"14.11.2026","time":"13:00","team1":"S1NYAK1 TEAM","team2":"tixonya","venue":"","result_type":"pending","winner":"","score":"","tech_loss_team":""},{"id":"league-49","match_no":49,"date":"15.11.2026","time":"12:00","team1":"zvёzds","team2":"YADADA","venue":"Games Republic","result_type":"pending","winner":"","score":"","tech_loss_team":""},{"id":"league-50","match_no":50,"date":"15.11.2026","time":"13:00","team1":"PARADOX TEAM","team2":"zvёzds","venue":"","result_type":"pending","winner":"","score":"","tech_loss_team":""},{"id":"league-51","match_no":51,"date":"15.11.2026","time":"14:00","team1":"YADADA","team2":"Ешкерики","venue":"","result_type":"pending","winner":"","score":"","tech_loss_team":""},{"id":"league-52","match_no":52,"date":"15.11.2026","time":"15:00","team1":"PARADOX TEAM","team2":"Ешкерики","venue":"","result_type":"pending","winner":"","score":"","tech_loss_team":""},{"id":"league-53","match_no":53,"date":"15.11.2026","time":"10:00","team1":"Inputlagmonstrs","team2":"Zews team","venue":"Rammpage","result_type":"pending","winner":"","score":"","tech_loss_team":""},{"id":"league-54","match_no":54,"date":"15.11.2026","time":"11:00","team1":"Inputlagmonstrs","team2":"RC I Team","venue":"","result_type":"pending","winner":"","score":"","tech_loss_team":""},{"id":"league-55","match_no":55,"date":"15.11.2026","time":"12:00","team1":"Zews team","team2":"S1NYAK1 TEAM","venue":"","result_type":"pending","winner":"","score":"","tech_loss_team":""},{"id":"league-56","match_no":56,"date":"15.11.2026","time":"13:00","team1":"RC I Team","team2":"S1NYAK1 TEAM","venue":"","result_type":"pending","winner":"","score":"","tech_loss_team":""},{"id":"league-57","match_no":57,"date":"21.11.2026","time":"12:00","team1":"Allinpuni","team2":"B I G XANTARES","venue":"Games Republic","result_type":"pending","winner":"","score":"","tech_loss_team":""},{"id":"league-58","match_no":58,"date":"21.11.2026","time":"13:00","team1":"Allinpuni","team2":"TymGok","venue":"","result_type":"pending","winner":"","score":"","tech_loss_team":""},{"id":"league-59","match_no":59,"date":"21.11.2026","time":"14:00","team1":"B I G XANTARES","team2":"tixonya","venue":"","result_type":"pending","winner":"","score":"","tech_loss_team":""},{"id":"league-60","match_no":60,"date":"21.11.2026","time":"15:00","team1":"TymGok","team2":"tixonya","venue":"","result_type":"pending","winner":"","score":"","tech_loss_team":""},{"id":"league-61","match_no":61,"date":"21.11.2026","time":"10:00","team1":"","team2":"","venue":"Rammpage","result_type":"pending","winner":"","score":"","tech_loss_team":""},{"id":"league-62","match_no":62,"date":"21.11.2026","time":"11:00","team1":"","team2":"","venue":"","result_type":"pending","winner":"","score":"","tech_loss_team":""},{"id":"league-63","match_no":63,"date":"21.11.2026","time":"12:00","team1":"Inputlagmonstrs","team2":"zvёzds","venue":"","result_type":"pending","winner":"","score":"","tech_loss_team":""},{"id":"league-64","match_no":64,"date":"21.11.2026","time":"13:00","team1":"Ешкерики","team2":"S1NYAK1 TEAM","venue":"","result_type":"pending","winner":"","score":"","tech_loss_team":""},{"id":"league-65","match_no":65,"date":"22.12.2026","time":"12:00","team1":"YADADA","team2":"B I G XANTARES","venue":"Rammpage","result_type":"pending","winner":"","score":"","tech_loss_team":""},{"id":"league-66","match_no":66,"date":"22.12.2026","time":"13:00","team1":"PARADOX TEAM","team2":"TymGok","venue":"Rammpage","result_type":"pending","winner":"","score":"","tech_loss_team":""},{"id":"league-67","match_no":67,"date":"22.11.2026","time":"14:00","team1":"RC I Team","team2":"Allinpuni","venue":"Rammpage","result_type":"pending","winner":"","score":"","tech_loss_team":""},{"id":"league-68","match_no":68,"date":"22.11.2026","time":"15:00","team1":"Zews team","team2":"tixonya","venue":"Rammpage","result_type":"pending","winner":"","score":"","tech_loss_team":""}]};
+let leagueData = null;
+let leagueBusy = false;
+function leagueEscape(v){ return escapeHtml(v == null ? '' : String(v)); }
+function leagueNormalizeData(raw){
+  const d = raw && typeof raw === 'object' ? raw : {};
+  d.teams = Array.isArray(d.teams) ? d.teams : [...LEAGUE_SEED.teams];
+  d.matches = Array.isArray(d.matches) ? d.matches : LEAGUE_SEED.matches.map(x=>({...x}));
+  d.matches.forEach((m,i)=>{ if(!m.id)m.id='league-'+(m.match_no||i+1); if(!m.result_type)m.result_type='pending'; });
+  return d;
+}
+async function leagueFetch(){
+  const {data,error}=await supabaseClient.from('league_data').select('payload').eq('id',1).maybeSingle();
+  if(error) throw error;
+  if(data && data.payload){ leagueData=leagueNormalizeData(data.payload); return; }
+  leagueData=leagueNormalizeData({teams:[...LEAGUE_SEED.teams],matches:LEAGUE_SEED.matches.map(x=>({...x}))});
+  const {error:saveError}=await supabaseClient.from('league_data').upsert({id:1,payload:leagueData,updated_at:new Date().toISOString()});
+  if(saveError) throw saveError;
+}
+async function leaguePersist(){
+  if(!isAdmin()) throw new Error('Сохранение доступно только администратору.');
+  const {error}=await supabaseClient.from('league_data').upsert({id:1,payload:leagueData,updated_at:new Date().toISOString()});
+  if(error) throw error;
+}
+function leagueStandings(){
+  const stats=new Map();
+  (leagueData?.teams||[]).forEach(t=>stats.set(t,{team:t,played:0,wins:0,losses:0,tech:0,points:0,dq:false}));
+  (leagueData?.matches||[]).forEach(m=>{
+    const a=String(m.team1||'').trim(), b=String(m.team2||'').trim();
+    if(!a||!b||m.result_type==='pending') return;
+    if(!stats.has(a))stats.set(a,{team:a,played:0,wins:0,losses:0,tech:0,points:0,dq:false});
+    if(!stats.has(b))stats.set(b,{team:b,played:0,wins:0,losses:0,tech:0,points:0,dq:false});
+    const A=stats.get(a),B=stats.get(b); A.played++;B.played++;
+    if(m.result_type==='tech'){
+      const loser=m.tech_loss_team;
+      if(loser===a){A.tech++;A.losses++;B.wins++;B.points+=3;}
+      else if(loser===b){B.tech++;B.losses++;A.wins++;A.points+=3;}
+    } else if(m.result_type==='normal'){
+      if(m.winner===a){A.wins++;A.points+=3;B.losses++;B.points+=1;}
+      else if(m.winner===b){B.wins++;B.points+=3;A.losses++;A.points+=1;}
+    }
+  });
+  return [...stats.values()].map(x=>({...x,dq:x.tech>=3})).sort((a,b)=>b.points-a.points||b.wins-a.wins||a.tech-b.tech||a.team.localeCompare(b.team,'ru'));
+}
+function leagueRenderPublic(){
+  const box=document.getElementById('league-public-content'); if(!box||!leagueData)return;
+  const standings=leagueStandings();
+  const played=(leagueData.matches||[]).filter(m=>m.result_type!=='pending'&&m.team1&&m.team2).length;
+  const total=(leagueData.matches||[]).filter(m=>m.team1&&m.team2).length;
+  const upcoming=(leagueData.matches||[]).filter(m=>m.result_type==='pending');
+  const done=(leagueData.matches||[]).filter(m=>m.result_type!=='pending'&&m.team1&&m.team2);
+  box.innerHTML=`
+    <div class="league-stats">
+      <div class="league-stat"><small>Команд</small><strong>${standings.length}</strong></div>
+      <div class="league-stat"><small>Сыграно матчей</small><strong>${played}</strong></div>
+      <div class="league-stat"><small>Всего матчей</small><strong>${total}</strong></div>
+      <div class="league-stat"><small>Осталось</small><strong>${Math.max(0,total-played)}</strong></div>
+    </div>
+    <div class="league-panel"><h2>🏆 Турнирная таблица</h2><div class="league-table-scroll"><table class="league-table"><thead><tr><th>#</th><th>Команда</th><th>И</th><th>В</th><th>П</th><th>ТЛ</th><th>О</th><th>Статус</th></tr></thead><tbody>${standings.map((t,i)=>`<tr><td class="league-rank">${i+1}</td><td class="league-team-name">${leagueEscape(t.team)}${t.dq?'<span class="league-dq">DQ</span>':''}</td><td>${t.played}</td><td>${t.wins}</td><td>${t.losses}</td><td>${t.tech}</td><td><b>${t.points}</b></td><td>${t.dq?'<span class="league-status dq">ДИСКВАЛИФИКАЦИЯ</span>':'<span class="league-status">В турнире</span>'}</td></tr>`).join('')}</tbody></table></div><p class="league-muted" style="margin-top:10px">И — игры, В — победы, П — поражения, ТЛ — технические поражения, О — очки. При 3 технических поражениях команда автоматически получает статус DQ.</p></div>
+    <div class="league-panel"><h2>Последние результаты</h2>${done.length?`<div class="league-match-grid">${done.slice().reverse().slice(0,12).map(m=>`<article class="league-match"><div class="league-match-top"><span>Матч №${m.match_no||'—'}</span><span>${leagueEscape(m.date)} ${leagueEscape(m.time)}</span></div><div class="league-match-teams">${leagueEscape(m.team1)} <span style="color:var(--text-dim)">vs</span> ${leagueEscape(m.team2)}</div><div class="league-result">${m.result_type==='tech'?'Тех. поражение: '+leagueEscape(m.tech_loss_team):'Победитель: '+leagueEscape(m.winner)}${m.score?' · '+leagueEscape(m.score):''}</div></article>`).join('')}</div>`:'<p class="league-muted">Результаты ещё не внесены. Они появятся здесь после сохранения администратором.</p>'}</div>
+    <div class="league-panel"><h2>Расписание матчей</h2><div class="league-match-grid">${upcoming.filter(m=>m.team1&&m.team2).map(m=>`<article class="league-match"><div class="league-match-top"><span>Матч №${m.match_no||'—'}</span><span>${leagueEscape(m.date)} ${leagueEscape(m.time)}</span></div><div class="league-match-teams">${leagueEscape(m.team1)} <span style="color:var(--text-dim)">vs</span> ${leagueEscape(m.team2)}</div><div class="league-match-meta">${leagueEscape(m.venue||'Место не указано')} · <span class="league-status">ОЖИДАЕТСЯ</span></div></article>`).join('')||'<p class="league-muted">Нет матчей с заполненными командами.</p>'}</div></div>`;
+}
+function leagueMatchCard(m,i){
+  const t1=leagueEscape(m.team1),t2=leagueEscape(m.team2);
+  const opt=(v,label)=>`<option value="${leagueEscape(v)}" ${m.winner===v?'selected':''}>${leagueEscape(label)}</option>`;
+  return `<article class="league-match" id="league-match-${i}"><div class="league-match-top"><b>Матч №${m.match_no||'—'}</b><span>${leagueEscape(m.date)} · ${leagueEscape(m.time)}</span></div>
+    <div class="league-match-teams">${t1||'Команда не указана'} <span style="color:var(--text-dim)">vs</span> ${t2||'Команда не указана'}</div>
+    <div class="league-match-meta">${leagueEscape(m.venue||'Место не указано')}</div>
+    <div class="league-admin-row"><input id="lm-t1-${i}" value="${t1}" placeholder="Команда 1" aria-label="Команда 1" oninput="leagueUpdateTeams(${i})"><input id="lm-t2-${i}" value="${t2}" placeholder="Команда 2" aria-label="Команда 2" oninput="leagueUpdateTeams(${i})"></div>
+    <div class="league-admin-row"><select id="lm-type-${i}" onchange="leagueToggleResult(${i})"><option value="pending" ${m.result_type==='pending'?'selected':''}>Результат не внесён</option><option value="normal" ${m.result_type==='normal'?'selected':''}>Обычный матч</option><option value="tech" ${m.result_type==='tech'?'selected':''}>Техническое поражение</option></select><input id="lm-score-${i}" value="${leagueEscape(m.score)}" placeholder="Счёт (например 13:9)"></div>
+    <div class="league-admin-row" id="lm-winner-wrap-${i}" style="${m.result_type==='normal'?'':'display:none'}"><select id="lm-winner-${i}"><option value="">Выбери победителя</option>${opt(m.team1,m.team1||'Команда 1')}${opt(m.team2,m.team2||'Команда 2')}</select><span class="league-muted" style="align-self:center">Победа 3 очка · поражение 1</span></div>
+    <div class="league-admin-row" id="lm-tech-wrap-${i}" style="${m.result_type==='tech'?'':'display:none'}"><select id="lm-tech-${i}"><option value="">Кто получил техлуз?</option><option value="${t1}" ${m.tech_loss_team===m.team1?'selected':''}>${t1||'Команда 1'}</option><option value="${t2}" ${m.tech_loss_team===m.team2?'selected':''}>${t2||'Команда 2'}</option></select><span class="league-muted" style="align-self:center">Техлуз 0 очков · сопернику 3</span></div>
+    <div class="league-admin-actions"><button class="btn" onclick="leagueSaveMatch(${i})">Сохранить результат</button><button class="btn ghost" onclick="leagueClearMatch(${i})">Сбросить</button></div></article>`;
+}
+function leagueUpdateTeams(i){
+  const a=document.getElementById('lm-t1-'+i)?.value.trim()||'Команда 1',b=document.getElementById('lm-t2-'+i)?.value.trim()||'Команда 2';
+  for(const [id,placeholder] of [['lm-winner-'+i,'Выбери победителя'],['lm-tech-'+i,'Кто получил техлуз?']]){
+    const el=document.getElementById(id);if(!el)continue;const old=el.value;
+    el.innerHTML=`<option value="">${placeholder}</option><option value="${leagueEscape(a)}">${leagueEscape(a)}</option><option value="${leagueEscape(b)}">${leagueEscape(b)}</option>`;
+    if(old===a||old===b)el.value=old;
+  }
+}
+function leagueToggleResult(i){const type=document.getElementById('lm-type-'+i)?.value;const w=document.getElementById('lm-winner-wrap-'+i),t=document.getElementById('lm-tech-wrap-'+i);if(w)w.style.display=type==='normal'?'':'none';if(t)t.style.display=type==='tech'?'':'none';}
+function leagueRenderAdmin(){
+  const box=document.getElementById('league-admin-matches'); if(!box||!leagueData)return;
+  const filter=document.getElementById('league-admin-filter')?.value||'all';
+  const list=(leagueData.matches||[]).map((m,i)=>({m,i})).filter(x=>filter==='all'||(filter==='pending'?x.m.result_type==='pending':x.m.result_type!=='pending'));
+  box.innerHTML=`<div class="league-admin-row" style="margin-bottom:12px"><select id="league-admin-filter" onchange="leagueRenderAdmin()"><option value="all" ${filter==='all'?'selected':''}>Все матчи</option><option value="pending" ${filter==='pending'?'selected':''}>Без результата</option><option value="done" ${filter==='done'?'selected':''}>С результатом</option></select><div class="league-muted" style="align-self:center">Всего строк: ${leagueData.matches.length}</div></div><div class="league-match-grid">${list.map(x=>leagueMatchCard(x.m,x.i)).join('')}</div>`;
+}
+async function loadLeague(adminView=false){
+  const status=document.getElementById('league-admin-status');
+  if(leagueBusy)return; leagueBusy=true;
+  if(status)status.textContent='Загружаем данные Лиги…';
+  try{
+    await leagueFetch(); leagueRenderPublic(); if(adminView)leagueRenderAdmin();
+    if(status)status.textContent=`Загружено ${leagueData.matches.length} матчей и ${leagueData.teams.length} команд. Изменения сохраняются в Supabase.`;
+  }catch(e){
+    const msg=`Не удалось загрузить Лигу: ${e.message||e}. Проверь, что создана таблица league_data (SQL-файл league_data_setup.sql).`;
+    if(status)status.innerHTML=leagueEscape(msg);
+    const pub=document.getElementById('league-public-content');if(pub)pub.innerHTML=`<div class="league-panel"><h2>Таблица пока недоступна</h2><p class="league-muted">${leagueEscape(msg)}</p></div>`;
+    const adm=document.getElementById('league-admin-matches');if(adm)adm.innerHTML=`<p class="hint">${leagueEscape(msg)}</p>`;
+  }finally{leagueBusy=false;}
+}
+async function leagueSaveMatch(i){
+  if(!isAdmin())return; const m=leagueData?.matches?.[i];if(!m)return;
+  const t1=document.getElementById('lm-t1-'+i).value.trim(),t2=document.getElementById('lm-t2-'+i).value.trim();
+  const type=document.getElementById('lm-type-'+i).value,score=document.getElementById('lm-score-'+i).value.trim();
+  if(!t1||!t2||t1.toLocaleLowerCase()===t2.toLocaleLowerCase()){alert('Укажи две разные команды.');return;}
+  let winner='',tech='';
+  if(type==='normal'){winner=document.getElementById('lm-winner-'+i).value;if(!winner){alert('Выбери победителя матча.');return;}}
+  if(type==='tech'){tech=document.getElementById('lm-tech-'+i).value;if(!tech){alert('Укажи команду, получившую техническое поражение.');return;}}
+  m.team1=t1;m.team2=t2;m.result_type=type;m.winner=winner;m.score=score;m.tech_loss_team=tech;
+  [t1,t2].forEach(t=>{if(!leagueData.teams.includes(t))leagueData.teams.push(t);});
+  try{await leaguePersist();leagueRenderPublic();leagueRenderAdmin();const s=document.getElementById('league-admin-status');if(s)s.textContent=`Матч №${m.match_no||'—'} сохранён.`;}catch(e){alert('Не удалось сохранить: '+e.message);}
+}
+async function leagueClearMatch(i){if(!isAdmin())return;const m=leagueData.matches[i];if(!confirm(`Сбросить результат матча №${m.match_no||'—'}?`))return;m.result_type='pending';m.winner='';m.score='';m.tech_loss_team='';try{await leaguePersist();leagueRenderPublic();leagueRenderAdmin();}catch(e){alert('Ошибка сохранения: '+e.message);}}
+async function leagueAddMatch(){if(!isAdmin()||!leagueData)return;const next=Math.max(0,...leagueData.matches.map(m=>Number(m.match_no)||0))+1;leagueData.matches.push({id:'league-'+next+'-'+Date.now(),match_no:next,date:'',time:'',team1:'',team2:'',venue:'',result_type:'pending',winner:'',score:'',tech_loss_team:''});try{await leaguePersist();leagueRenderAdmin();}catch(e){alert('Ошибка добавления матча: '+e.message);}}
+function leagueExportBackup(){if(!isAdmin()||!leagueData)return;const blob=new Blob([JSON.stringify(leagueData,null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='ARQON_Liga_backup.json';a.click();URL.revokeObjectURL(a.href);}
+
 // ==========================================
 // РАСПИСАНИЕ
 // ==========================================
@@ -3260,7 +3311,6 @@ function init() {
 
   const adminTabBtn = document.getElementById('admin-tab-btn');
   if (adminTabBtn && isAdmin()) adminTabBtn.style.display = 'inline-block';
-  updateAdminOverview();
 }
 
 function showAuthButtonIfNeeded() {
@@ -3333,6 +3383,7 @@ async function startApp() {
     document.getElementById('auth-screen').style.display = 'none';
     document.querySelector('main').style.display = 'block';
     initSupabaseSync();
+    loadLeague(true);
   } else if (session) {
     currentUser = session.user;
     checkUserRole(session.user.id);
