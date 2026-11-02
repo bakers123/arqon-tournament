@@ -130,7 +130,7 @@ returns void
 language plpgsql
 security definer
 set search_path = ''
-as $
+as $function$
 declare
   v_old jsonb;
 begin
@@ -156,7 +156,7 @@ begin
   end if;
   update public.drafts set data = p_data where id = 1;
 end;
-$;
+$function$;
 revoke all on function public.update_player_draft(jsonb) from public, anon;
 grant execute on function public.update_player_draft(jsonb) to authenticated;
 create policy drafts_organizer_delete on public.drafts
