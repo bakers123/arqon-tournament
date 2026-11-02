@@ -1202,64 +1202,7 @@ async function checkUserRole(uid) {
   }
 }
 async function loginWithCode() {
-  const code = document.getElementById('auth-code').value.trim().toUpperCase();
-  if (!code) return;
-
-  const btn = document.getElementById('login-btn');
-  const oldText = btn ? btn.textContent : 'Войти';
-  const errorDiv = document.getElementById('auth-error');
-
-  if (btn) { btn.disabled = true; btn.textContent = 'Подключение...'; }
-  if (errorDiv) { errorDiv.classList.add('hidden'); errorDiv.textContent = ''; }
-
-  try {
-    // 1. Ищем код
-    const { data: codeData, error: codeError } = await supabaseClient
-      .from('access_codes').select('*').eq('code', code).maybeSingle();
-
-    if (codeError || !codeData) throw new Error('Неверный код доступа');
-
-    // 2. Создаем сессию
-    const { data: { session: existingSession } } = await supabaseClient.auth.getSession();
-    let userId = null;
-
-    if (existingSession && existingSession.user) {
-      userId = existingSession.user.id;
-    } else {
-      const { data: authData, error: authError } = await supabaseClient.auth.signInAnonymously();
-      if (authError) throw new Error('Ошибка входа: ' + authError.message);
-      userId = authData.user.id;
-    }
-
-    // 3. Проверяем, есть ли уже такой игрок
-    const { data: existingPlayers } = await supabaseClient
-      .from('players').select('uid').eq('name', codeData.player_name);
-
-    if (existingPlayers && existingPlayers.length > 0) {
-      // Если есть — обновляем UID
-      await supabaseClient.from('players').update({ uid: userId }).eq('name', codeData.player_name);
-    } else {
-      // Если нет — создаем
-      await supabaseClient.from('players').insert({ uid: userId, name: codeData.player_name });
-    }
-
-    // 4. Сохраняем в кэш и удаляем код
-    localStorage.setItem('arqon_current_uid', userId); 
-    localStorage.setItem('arqon_current_name', codeData.player_name);
-    await supabaseClient.from('access_codes').delete().eq('code', code);
-
-    // 5. Перезагружаем страницу
-    window.location.reload();
-    
-  } catch (err) {
-    if (errorDiv) {
-      errorDiv.textContent = err.message;
-      errorDiv.classList.remove('hidden');
-    } else {
-      alert(err.message);
-    }
-    if (btn) { btn.disabled = false; btn.textContent = oldText; }
-  }
+  throw new Error('Модуль защищённого входа не загружен. Обнови страницу.');
 }
 function logoutPlayer() {
   localStorage.removeItem('arqon_current_uid');
