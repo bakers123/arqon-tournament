@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
+<base href="/">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#09090d">
@@ -1121,7 +1122,8 @@ supabaseClient.auth.onAuthStateChange((event, session) => {
   if (isAdmin()) return;
   if (session) {
     currentUser = session.user;
-    checkUserRole(session.user.id);
+    await checkUserRole(session.user.id);
+    applyPathRoute();
   } else {
     currentUser = null;
     handleNoAuth();
@@ -1161,6 +1163,7 @@ function handleNoAuth() {
       }
     });
   }
+  applyPathRoute();
 }
 
 async function checkUserRole(uid) {
@@ -1844,7 +1847,34 @@ function openPlayerDetail(index){const p=(window.arqonRankedPlayers||[])[index];
 // ==========================================
 // ТАБЫ / НАВИГАЦИЯ
 // ==========================================
-function switchTab(tab) {
+const TAB_PATHS = {
+  home: '/',
+  bracket: '/game_grid',
+  tournaments: '/tournaments',
+  players: '/players',
+  news: '/news',
+  schedule: '/schedule',
+  results: '/results',
+  league: '/league',
+  partners: '/partners',
+  admin: '/admin'
+};
+const PATH_TABS = Object.fromEntries(Object.entries(TAB_PATHS).map(([tab, path]) => [path, tab]));
+
+function applyPathRoute() {
+  const path = window.location.pathname.replace(/\\/+$/, '') || '/';
+  let tab = PATH_TABS[path] || 'home';
+  if (tab === 'admin' && !isAdmin()) tab = 'home';
+  switchTab(tab, false);
+}
+
+window.addEventListener('popstate', applyPathRoute);
+
+function switchTab(tab, updateUrl = true) {
+  if (tab === 'admin' && !isAdmin()) tab = 'home';
+  if (updateUrl && TAB_PATHS[tab] && window.location.pathname !== TAB_PATHS[tab]) {
+    window.history.pushState({ tab }, '', TAB_PATHS[tab]);
+  }
   document.querySelectorAll('nav button').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
 
   const sections = {
@@ -3316,6 +3346,7 @@ async function startApp() {
     document.querySelector('main').style.display = 'block';
     initSupabaseSync();
     loadLeague(true);
+    applyPathRoute();
   } else if (session) {
     currentUser = session.user;
     checkUserRole(session.user.id);
