@@ -1862,7 +1862,7 @@ const TAB_PATHS = {
 const PATH_TABS = Object.fromEntries(Object.entries(TAB_PATHS).map(([tab, path]) => [path, tab]));
 
 function applyPathRoute() {
-  const path = window.location.pathname.replace(/\\/+$/, '') || '/';
+  const path = window.location.pathname.replace(/\/+$/, '') || '/';
   let tab = PATH_TABS[path] || 'home';
   if (tab === 'admin' && !isAdmin()) tab = 'home';
   switchTab(tab, false);
@@ -3349,7 +3349,8 @@ async function startApp() {
     applyPathRoute();
   } else if (session) {
     currentUser = session.user;
-    checkUserRole(session.user.id);
+    await checkUserRole(session.user.id);
+    applyPathRoute();
   } else {
     handleNoAuth();
   }
