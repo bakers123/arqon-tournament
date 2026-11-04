@@ -1426,28 +1426,28 @@ async function handleAddPlayer() {
 function playerCardHTML(p, removeFn, allowTeamAssignment = false) {
   const rank = parseRank(p.rank_tier);
   const removeBtn = isAdmin() ? '<button class="remove" onclick="' + removeFn + '">×</button>' : '';
-
   let faceitBadge = '';
-  if (p.faceitLevel && state.game === 'cs2') {
-    faceitBadge = `<span class="faceit-badge lvl-${p.faceitLevel}">LVL ${p.faceitLevel}</span>`;
-  }
-
+  if (p.faceitLevel && state.game === 'cs2') faceitBadge = `<span class="faceit-badge lvl-${p.faceitLevel}">LVL ${p.faceitLevel}</span>`;
   const codeBtn = isAdmin()
-    ? `<button class="btn ghost" style="padding:2px 8px; font-size:10px; margin-top:5px;" onclick="event.stopPropagation(); generateAccessCode('${escapeHtml(p.name)}')">🔑 Выдать код</button>`
+    ? `<button class="btn ghost" style="padding:2px 8px;font-size:10px;margin-top:5px;" onclick="event.stopPropagation();generateAccessCode('${escapeHtml(p.name)}')">🔑 Выдать код</button>`
     : '';
-  const teamSelect = isAdmin() && allowTeamAssignment
-    ? `<select aria-label="Команда игрока" style="display:block;max-width:190px;margin-top:7px;padding:5px;background:#101014;color:var(--text);border:1px solid var(--border);border-radius:6px;" onclick="event.stopPropagation()" onchange="assignFreeAgentTeam('${escapeHtml(p.account_id)}',this.value)">
-        <option value="">Без команды</option>
-        ${(state.teams||[]).map(t=>`<option value="${escapeHtml(t.id)}" ${p.assignedTeamId===t.id?'selected':''}>${escapeHtml(t.name)}</option>`).join('')}
-      </select>`
+  const freeAgentTeam = isAdmin() && allowTeamAssignment
+    ? `<div style="display:flex;align-items:center;gap:6px;margin-top:7px;flex-wrap:wrap;">
+        ${p.freeAgentTeamName ? `<span class="hint" style="margin:0;color:#c4a4ff;">Команда: ${escapeHtml(p.freeAgentTeamName)}</span>` : ''}
+        <button type="button" class="btn ghost" style="width:27px;height:27px;padding:0;margin:0!important;font-size:18px;line-height:1;" title="Указать команду игрока" onclick="event.stopPropagation();editFreeAgentTeam(this)">+</button>
+        <div class="free-agent-team-editor" style="display:none;width:100%;gap:5px;margin-top:4px;">
+          <input type="text" maxlength="60" placeholder="Название команды" value="${escapeHtml(p.freeAgentTeamName || '')}" style="padding:6px 8px;font-size:12px;">
+          <button type="button" class="btn" style="padding:5px 10px;margin:0!important;" onclick="event.stopPropagation();saveFreeAgentTeam(this,'${escapeHtml(p.account_id)}')">Сохранить</button>
+          <button type="button" class="btn ghost" style="padding:5px 10px;margin:0!important;" onclick="event.stopPropagation();this.parentElement.style.display='none'">Отмена</button>
+        </div>
+      </div>`
     : '';
-
-  return '<div class="player" draggable="true" ondragstart="dragPlayerFromPool(event, \'' + p.account_id + '\')">' +
+  return '<div class="player" draggable="true" ondragstart="dragPlayerFromPool(event, \' ' + p.account_id + '\')">' +
     '<img src="' + p.avatar + '" alt="" onerror="this.style.display=\'none\'">' +
     '<div>' +
       '<div class="name">' + escapeHtml(p.name) + ' ' + faceitBadge + '</div>' +
       '<div class="rank" style="color:' + rank.color + '">' + rank.icon + ' ' + rank.name + '</div>' +
-      codeBtn + teamSelect +
+      codeBtn + freeAgentTeam +
     '</div>' + removeBtn +
   '</div>';
 }
@@ -1549,20 +1549,64 @@ function renderTeams() {
 // УДАЛЕНИЕ / КАПИТАН
 // ==========================================
 function removeSolo(accId) { if (!isAdmin()) return; state.soloPlayers = state.soloPlayers.filter(p => p.account_id !== accId); renderSolo(); saveState(); }
-function assignFreeAgentTeam(accountId, teamId) {
+function editFreeAgentTeam(button) {
+  if (!isAdmin()) return;
+  const editor = button?.parentElement?.querySelector('.free-agent-team-editor');
+  if (!editor) return;
+  editor.style.display = editor.style.display === 'none' ? 'flex' : 'none';
+  if (editor.style.display !== 'none') editor.querySelector('input')?.focus();
+}
+function saveFreeAgentTeam(button, accountId) {
   if (!isAdmin()) return;
   const player = (state.freeAgents || []).find(p => String(p.account_id) === String(accountId));
-  if (!player) return;
-  if (teamId && !(state.teams || []).some(t => t.id === teamId)) return;
-  if (teamId) player.assignedTeamId = teamId;
-  else delete player.assignedTeamId;
+  const input = button?.parentElement?.querySelector('input');
+  if (!player || !input) return;
+  const teamName = input.value.trim();
+  if (teamName) player.freeAgentTeamName = teamName.slice(0, 60);
+  else delete player.freeAgentTeamName;
   saveState();
   renderFreeAgents();
+  if (typeof loadPlayerHub === 'function') loadPlayerHub();
 }
-function removeFreeAgent(accId) { if (!isAdmin()) return; state.freeAgents = state.freeAgents.filter(p => p.account_id !== accId); renderFreeAgents(); saveState(); }
-function removeTeam(id) { if (!isAdmin()) return; state.teams = state.teams.filter(t => t.id !== id); (state.freeAgents||[]).forEach(p => { if (p.assignedTeamId === id) delete p.assignedTeamId; }); renderTeams(); renderFreeAgents(); saveState(); }
-function renameTeam(id, name) { if (!isAdmin()) return; const t = state.teams.find(t => t.id === id); if (t) { t.name = name; renderFreeAgents(); saveState(); } }
-function removePlayerFromTeam(teamId, accId) { if (!isAdmin()) return; const t = state.teams.find(t => t.id === teamId); if (t) { t.players = t.players.filter(p => p.account_id !== accId); renderTeams(); saveState(); } }
+function removeFreeAgent(accId) {
+  if (!isAdmin()) return;
+  state.freeAgents = (state.freeAgents || []).filter(p => String(p.account_id) !== String(accId));
+  renderFreeAgents(); saveState();
+}
+function removeTeam(id) {
+  if (!isAdmin()) return;
+  const team = (state.teams || []).find(t => String(t.id) === String(id));
+  if (team) {
+    if (!state.freeAgents) state.freeAgents = [];
+    (team.players || []).forEach(player => {
+      delete player.freeAgentTeamName;
+      if (!state.freeAgents.some(p => String(p.account_id) === String(player.account_id))) state.freeAgents.push(player);
+    });
+  }
+  state.teams = (state.teams || []).filter(t => String(t.id) !== String(id));
+  renderTeams(); renderFreeAgents(); saveState();
+  if (typeof loadPlayerHub === 'function') loadPlayerHub();
+}
+function renameTeam(id, name) {
+  if (!isAdmin()) return;
+  const team = (state.teams || []).find(t => String(t.id) === String(id));
+  if (team) { team.name = name; renderTeams(); renderFreeAgents(); saveState(); if (typeof loadPlayerHub === 'function') loadPlayerHub(); }
+}
+function removePlayerFromTeam(teamId, accId) {
+  if (!isAdmin()) return;
+  const team = (state.teams || []).find(t => String(t.id) === String(teamId));
+  if (!team) return;
+  const player = (team.players || []).find(p => String(p.account_id) === String(accId));
+  if (!player) return;
+  team.players = team.players.filter(p => String(p.account_id) !== String(accId));
+  if (String(team.captainId) === String(accId)) delete team.captainId;
+  delete player.freeAgentTeamName;
+  if (!state.freeAgents) state.freeAgents = [];
+  if (!state.freeAgents.some(p => String(p.account_id) === String(accId))) state.freeAgents.push(player);
+  renderTeams(); renderFreeAgents(); saveState();
+  if (typeof loadPlayerHub === 'function') loadPlayerHub();
+}
+
 function setCaptain(teamId, accountId) {
   if (!isAdmin()) return;
   const team = state.teams.find(t => t.id === teamId);
@@ -1601,8 +1645,9 @@ function handleDropOnTeam(event, teamId) {
     if (!team) return;
     if (team.players.length >= 5) { alert('В команде уже 5 игроков!'); return; }
 
-    state.freeAgents = state.freeAgents.filter(p => p.account_id !== accountId);
+    state.freeAgents = state.freeAgents.filter(p => String(p.account_id) !== String(accountId));
     delete player.assignedTeamId;
+    delete player.freeAgentTeamName;
     team.players.push(player);
   }
 
@@ -1614,7 +1659,8 @@ function handleDropOnTeam(event, teamId) {
 // Экспорт в window
 window.removeSolo = removeSolo;
 window.removeFreeAgent = removeFreeAgent;
-window.assignFreeAgentTeam = assignFreeAgentTeam;
+window.editFreeAgentTeam = editFreeAgentTeam;
+window.saveFreeAgentTeam = saveFreeAgentTeam;
 window.removeTeam = removeTeam;
 window.renameTeam = renameTeam;
 window.removePlayerFromTeam = removePlayerFromTeam;
@@ -2011,20 +2057,27 @@ function collectPlayerFaceitLevels(source) {
 }
 function collectPlayerTeamNames(source) {
  const teams = {};
- const visitPlayers = (players, teamName) => {
-  if (!Array.isArray(players)) return;
-  players.forEach(player => {
-   if (player && player.name) teams[String(player.name).trim().toLocaleLowerCase()] = teamName;
-  });
- };
- (source?.teams || []).forEach(team => visitPlayers(team.players, team.name));
+ const keyFor = player => String(player?.name || '').trim().toLocaleLowerCase();
+ // Свободные игроки могут указать свою команду вручную через кнопку «+».
  (source?.freeAgents || []).forEach(player => {
-  if (!player?.name || !player.assignedTeamId) return;
-  const team = (source?.teams || []).find(item => item.id === player.assignedTeamId);
-  if (team) teams[String(player.name).trim().toLocaleLowerCase()] = team.name;
+  const key = keyFor(player);
+  if (!key) return;
+  if (player.freeAgentTeamName) teams[key] = player.freeAgentTeamName;
+  else if (player.assignedTeamId) {
+   const assigned = (source?.teams || []).find(item => String(item.id) === String(player.assignedTeamId));
+   if (assigned) teams[key] = assigned.name;
+  }
+ });
+ // Реальный состав всегда имеет приоритет над временной командой свободного агента.
+ (source?.teams || []).forEach(team => {
+  (team.players || []).forEach(player => {
+   const key = keyFor(player);
+   if (key) teams[key] = team.name;
+  });
  });
  return teams;
 }
+
 function playerAvatarHTML(player) {
  const initial = escapeHtml(String(player?.name || '?').trim().slice(0,1).toUpperCase());
  const avatar = String(player?.avatar || '').trim();
