@@ -545,6 +545,10 @@
   .home-stream-head h2,.home-data-card h3 { font:700 14px Orbitron,sans-serif; letter-spacing:1px; }
   .home-live-label { display:inline-flex; align-items:center; gap:7px; color:#ff6b83; font:700 11px Orbitron,sans-serif; letter-spacing:1px; }
   .home-live-label:before { content:''; width:7px; height:7px; border-radius:50%; background:#ff4267; box-shadow:0 0 12px #ff4267; }
+  .home-live-label.is-offline { color:#92929d; }
+  .home-live-label.is-offline:before { background:#777783; box-shadow:none; }
+  .home-live-label.is-live { color:#ff6b83; }
+  .home-live-label.is-live:before { background:#ff4267; box-shadow:0 0 12px #ff4267; }
   .home-twitch-frame { display:block; width:100%; aspect-ratio:16/9; border:0; background:#07070a; }
   .home-stream-foot { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px; padding:14px 18px; color:var(--text-dim); font-size:13px; }
   .home-stream-side { display:grid; gap:16px; }
@@ -949,8 +953,8 @@
       <div class="home-section-head"><div><h2>СМОТРИ ARQON LIVE</h2><p>Трансляции турниров и игровые моменты на нашем Twitch-канале.</p></div><span class="home-live-label">TWITCH CHANNEL</span></div>
       <div class="home-stream-layout">
         <div class="home-stream-card">
-          <div class="home-stream-head"><h2>ARQON ESPORTS BROADCAST</h2><span class="home-live-label">LIVE / VOD</span></div>
-          <iframe id="arqon-twitch-player" class="home-twitch-frame" title="ARQON Esports на Twitch" loading="lazy" allowfullscreen allow="autoplay; fullscreen" referrerpolicy="strict-origin-when-cross-origin" src="about:blank"></iframe>
+          <div class="home-stream-head"><h2>ARQON ESPORTS BROADCAST</h2><span id="arqon-stream-status" class="home-live-label is-offline" role="status" aria-live="polite">OFFLINE</span></div>
+          <div id="arqon-twitch-player" class="home-twitch-frame" title="ARQON Esports на Twitch"></div>
           <div class="home-stream-foot"><span>Если эфир не отображается, открой Twitch напрямую.</span><a class="nav-social-btn nav-telegram" href="https://www.twitch.tv/arqon_esports" target="_blank" rel="noopener noreferrer">Открыть Twitch ↗</a></div>
         </div>
         <div class="home-stream-side">
@@ -1067,7 +1071,7 @@
         <ul style="list-style: none; padding: 0; display: flex; flex-direction: column; gap: 10px;">
           <li><a href="#" onclick="openInfoModal('contact'); return false;" style="color: var(--text-dim); text-decoration: none; font-size: 14px; transition: 0.2s;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text-dim)'">Связаться с нами</a></li>
           <li><a href="https://t.me/support_arqon" target="_blank" style="color: var(--text-dim); text-decoration: none; font-size: 14px; transition: 0.2s;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text-dim)'">Telegram</a></li>
-          <li><a href="mailto:contact@arqon.gg" style="color: var(--text-dim); text-decoration: none; font-size: 14px; transition: 0.2s;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text-dim)'">contact@arqon.gg</a></li>
+          <li><a href="mailto:P393058@gmail.com" style="color: var(--text-dim); text-decoration: none; font-size: 14px; transition: 0.2s;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text-dim)'">P393058@gmail.com</a></li>
         </ul>
       </div>
 
@@ -1772,14 +1776,60 @@ function handleDrop(event, targetMatchId, targetSlotKey) {
   }
 }
 
-// Главная: встроенный Twitch и актуальные данные из Supabase.
+// Главная: Twitch Embed API и актуальные данные из Supabase.
 function setupArqonTwitch() {
   const frame = document.getElementById('arqon-twitch-player');
-  if (!frame) return;
+  const status = document.getElementById('arqon-stream-status');
+  if (!frame || frame.dataset.initialized === 'true') return;
+  frame.dataset.initialized = 'true';
+
+  const setStreamStatus = (isLive) => {
+    if (!status) return;
+    status.textContent = isLive ? 'LIVE' : 'OFFLINE';
+    status.classList.toggle('is-live', isLive);
+    status.classList.toggle('is-offline', !isLive);
+  };
+
+  // Пока Twitch не подтвердил обратное, показываем безопасный статус OFFLINE.
+  setStreamStatus(false);
   const host = window.location.hostname;
-  if (!host || host === 'about:blank') return;
-  const params = new URLSearchParams({ channel: 'arqon_esports', parent: host, muted: 'true' });
-  frame.src = 'https://player.twitch.tv/?' + params.toString();
+  if (!host) return;
+
+  const createPlayer = () => {
+    if (!window.Twitch || !window.Twitch.Player) return;
+    try {
+      const player = new Twitch.Player('arqon-twitch-player', {
+        width: '100%',
+        height: '100%',
+        channel: 'arqon_esports',
+        parent: [host],
+        autoplay: false,
+        muted: true
+      });
+      player.addEventListener(Twitch.Player.ONLINE, () => setStreamStatus(true));
+      player.addEventListener(Twitch.Player.OFFLINE, () => setStreamStatus(false));
+      player.addEventListener(Twitch.Player.READY, () => {
+        // Начальное состояние уточняется событиями ONLINE/OFFLINE самого Twitch.
+      });
+    } catch (error) {
+      console.warn('Twitch player could not be initialized:', error);
+      setStreamStatus(false);
+    }
+  };
+
+  if (window.Twitch && window.Twitch.Player) {
+    createPlayer();
+    return;
+  }
+  const script = document.createElement('script');
+  script.src = 'https://player.twitch.tv/js/embed/v1.js';
+  script.async = true;
+  script.onload = createPlayer;
+  script.onerror = () => {
+    console.warn('Twitch Embed API failed to load');
+    setStreamStatus(false);
+  };
+  document.head.appendChild(script);
 }
 
 async function loadHomeHighlights() {
@@ -3204,7 +3254,7 @@ const INFO_TEXTS = {
     text: `
       <p>По всем вопросам сотрудничества, проведения турниров или технических проблем обращайтесь:</p>
       <ul style="margin-left: 20px; margin-top: 10px;">
-        <li>Email: <b>contact@arqon.gg</b></li>
+        <li>Email: <b>P393058@gmail.com</b></li>
         <li>Telegram: <b>@arqon_support</b></li>
       </ul>
       <p style="margin-top: 15px;">Мы открыты к предложениям о партнерстве и спонсорстве!</p>
