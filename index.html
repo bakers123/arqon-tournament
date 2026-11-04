@@ -1442,12 +1442,19 @@ function playerCardHTML(p, removeFn, allowTeamAssignment = false) {
         </div>
       </div>`
     : '';
+  const arqonRatingEditor = isAdmin()
+    ? `<div style="display:flex;align-items:center;gap:5px;margin-top:7px;flex-wrap:wrap;">
+        <span class="hint" style="margin:0;">ARQON:</span>
+        <input type="number" min="0" max="100" step="1" value="${Number.isFinite(Number(p.arqonRating)) ? Math.max(0,Math.min(100,Number(p.arqonRating))) : 0}" aria-label="Рейтинг ARQON от 0 до 100" style="width:66px;padding:5px 6px;font-size:12px;">
+        <button type="button" class="btn ghost" style="padding:5px 8px;margin:0!important;font-size:11px;" onclick="event.stopPropagation();saveArqonRating(this,'${escapeHtml(p.account_id)}','free')">Сохранить</button>
+      </div>`
+    : '';
   return '<div class="player" draggable="true" ondragstart="dragPlayerFromPool(event, \'' + p.account_id + '\')">' +
     '<img src="' + p.avatar + '" alt="" onerror="this.style.display=\'none\'">' +
     '<div>' +
       '<div class="name">' + escapeHtml(p.name) + ' ' + faceitBadge + '</div>' +
       '<div class="rank" style="color:' + rank.color + '">' + rank.icon + ' ' + rank.name + '</div>' +
-      codeBtn + freeAgentTeam +
+      codeBtn + freeAgentTeam + arqonRatingEditor +
     '</div>' + removeBtn +
   '</div>';
 }
@@ -1498,6 +1505,13 @@ function renderTeams() {
       const codeBtn = isAdm
         ? `<button class="btn ghost" style="padding:2px 8px; font-size:10px; margin-top:5px;" onclick="event.stopPropagation(); generateAccessCode('${escapeHtml(p.name)}')">🔑 Код</button>`
         : '';
+      const arqonRatingEditor = isAdm
+        ? `<div style="display:flex;align-items:center;gap:5px;margin-top:7px;flex-wrap:wrap;">
+            <span class="hint" style="margin:0;">ARQON:</span>
+            <input type="number" min="0" max="100" step="1" value="${Number.isFinite(Number(p.arqonRating)) ? Math.max(0,Math.min(100,Number(p.arqonRating))) : 0}" aria-label="Рейтинг ARQON от 0 до 100" style="width:66px;padding:5px 6px;font-size:12px;">
+            <button type="button" class="btn ghost" style="padding:5px 8px;margin:0!important;font-size:11px;" onclick="event.stopPropagation();saveArqonRating(this,'${escapeHtml(p.account_id)}','team','${escapeHtml(t.id)}')">Сохранить</button>
+          </div>`
+        : '';
 
       const clickAction = isAdm ? `onclick="setCaptain('${t.id}', '${p.account_id}')" title="Сделать капитаном"` : '';
 
@@ -1508,6 +1522,7 @@ function renderTeams() {
             <div class="name">${escapeHtml(p.name)} ${captainBadge} ${faceitBadge}</div>
             <div class="rank" style="color:${rank.color}">${rank.icon} ${rank.name}</div>
             ${codeBtn}
+            ${arqonRatingEditor}
           </div>
           ${isAdm ? `<button class="remove" onclick="event.stopPropagation(); ${removeFn}">×</button>` : ''}
         </div>
@@ -1567,6 +1582,28 @@ function saveFreeAgentTeam(button, accountId) {
   saveState();
   renderFreeAgents();
   if (typeof loadPlayerHub === 'function') loadPlayerHub();
+}
+function saveArqonRating(button, accountId, source, teamId) {
+  if (!isAdmin()) return;
+  const input = button?.parentElement?.querySelector('input[type="number"]');
+  if (!input) return;
+  const raw = input.value.trim();
+  if (raw === '') { alert('Укажи рейтинг от 0 до 100'); return; }
+  const value = Number(raw);
+  if (!Number.isInteger(value) || value < 0 || value > 100) { alert('Рейтинг должен быть целым числом от 0 до 100'); return; }
+  let player = null;
+  if (source === 'team') {
+    const team = (state.teams || []).find(t => String(t.id) === String(teamId));
+    player = (team?.players || []).find(p => String(p.account_id) === String(accountId));
+  } else {
+    player = (state.freeAgents || []).find(p => String(p.account_id) === String(accountId));
+  }
+  if (!player) return;
+  player.arqonRating = value;
+  saveState();
+  if (typeof loadPlayerHub === 'function') loadPlayerHub();
+  button.textContent = 'Готово ✓';
+  setTimeout(() => { if (button.isConnected) button.textContent = 'Сохранить'; }, 1400);
 }
 function removeFreeAgent(accId) {
   if (!isAdmin()) return;
@@ -1659,6 +1696,7 @@ function handleDropOnTeam(event, teamId) {
 // Экспорт в window
 window.removeSolo = removeSolo;
 window.removeFreeAgent = removeFreeAgent;
+window.saveArqonRating = saveArqonRating;
 window.editFreeAgentTeam = editFreeAgentTeam;
 window.saveFreeAgentTeam = saveFreeAgentTeam;
 window.removeTeam = removeTeam;
@@ -2078,6 +2116,20 @@ function collectPlayerTeamNames(source) {
  return teams;
 }
 
+function collectPlayerArqonRatings(source) {
+ const ratings = {};
+ const add = player => {
+  const key = String(player?.name || '').trim().toLocaleLowerCase();
+  if (!key || player?.arqonRating === undefined || player?.arqonRating === null || player?.arqonRating === '') return;
+  const value = Number(player.arqonRating);
+  if (Number.isInteger(value) && value >= 0 && value <= 100) ratings[key] = value;
+ };
+ (source?.freeAgents || []).forEach(add);
+ (source?.teams || []).forEach(team => (team.players || []).forEach(add));
+ (source?.soloPlayers || []).forEach(add);
+ return ratings;
+}
+
 function playerAvatarHTML(player) {
  const initial = escapeHtml(String(player?.name || '?').trim().slice(0,1).toUpperCase());
  const avatar = String(player?.avatar || '').trim();
@@ -2096,17 +2148,18 @@ async function loadPlayerHub(){
   const avatars=tr.error?{}:collectPlayerAvatars(tr.data?.data);
   const faceitLevels=tr.error?{}:collectPlayerFaceitLevels(tr.data?.data);
   const teamNames=tr.error?{}:collectPlayerTeamNames(tr.data?.data);
+  const arqonRatings=tr.error?{}:collectPlayerArqonRatings(tr.data?.data);
   if(tr.error)console.warn('Player profile extras could not be loaded:',tr.error);
   arqonPlayersCache=(pr.data||[]).map(p=>{
    const key=String(p.name||'').trim().toLocaleLowerCase();
-   return {...p,avatar:avatars[key]||p.avatar||'',faceitLevel:faceitLevels[key]||0,teamName:teamNames[key]||''};
+   return {...p,avatar:avatars[key]||p.avatar||'',faceitLevel:faceitLevels[key]||0,teamName:teamNames[key]||'',arqonRating:arqonRatings[key] ?? 0};
   });
   arqonResultsCache=rr.data||[];renderPlayerCards();
  }
  catch(e){console.warn('Player hub:',e);box.innerHTML='<div class="home-data-card">Не удалось загрузить игроков. Проверь RLS и разрешение SELECT для таблицы players.</div>';}
 }
-function renderPlayerCards(){const box=document.getElementById('player-list');if(!box)return;const q=(document.getElementById('player-search')?.value||'').trim().toLocaleLowerCase();const players=arqonPlayersCache.map(p=>({...p,stats:pointsForPlayer(p.name,arqonResultsCache)})).filter(p=>String(p.name||'').toLocaleLowerCase().includes(q)).sort((a,b)=>b.stats.points-a.stats.points||String(a.name).localeCompare(String(b.name)));const count=document.getElementById('players-count');if(count)count.textContent=`${players.length} игроков`;box.innerHTML=players.length?players.map((p,i)=>`<article class="portal-card"><span class="portal-pill">${i===0&&p.stats.points>0?'Лидер рейтинга':'Игрок ARQON'}</span><div class="portal-profile-top" style="margin-top:14px">${playerAvatarHTML(p)}<div><h3>${escapeHtml(safeText(p.name,'Игрок без имени'))} ${p.faceitLevel>0?`<span class="faceit-badge lvl-${p.faceitLevel}">FACEIT LVL ${p.faceitLevel}</span>`:''}</h3><p>${p.teamName?'Команда: '+escapeHtml(p.teamName):'Свободный игрок'} · ${p.stats.events} турниров с опубликованным результатом</p></div></div><div class="portal-detail-grid"><div class="portal-detail-stat"><small>Очки</small><strong class="portal-stat">${p.stats.points}</strong></div><div class="portal-detail-stat"><small>Победы</small><strong class="portal-stat">${p.stats.wins}</strong></div><div class="portal-detail-stat"><small>Топ-3</small><strong class="portal-stat">${p.stats.podiums}</strong></div></div><div class="portal-actions"><button class="btn" onclick="openPlayerDetail(${i})">Профиль игрока →</button></div></article>`).join(''):'<div class="home-data-card">Игроков не найдено.</div>';window.arqonRankedPlayers=players;}
-function openPlayerDetail(index){const p=(window.arqonRankedPlayers||[])[index];const box=document.getElementById('player-detail');if(!p||!box)return;const stats=p.stats;const entries=arqonResultsCache.filter(r=>[r.place_1,r.place_2,r.place_3].some(n=>String(n||'').trim().toLocaleLowerCase()===String(p.name||'').trim().toLocaleLowerCase()));box.classList.remove('hidden');box.innerHTML=`<div class="portal-profile-top">${playerAvatarHTML(p)}<div><span class="portal-pill">PLAYER PROFILE</span><h2>${escapeHtml(safeText(p.name,'Игрок'))} ${p.faceitLevel>0?`<span class="faceit-badge lvl-${p.faceitLevel}">FACEIT LVL ${p.faceitLevel}</span>`:''}</h2><p class="hint">${p.teamName?'Команда: '+escapeHtml(p.teamName):'Свободный игрок'} · Профиль построен по публичным данным ARQON.</p></div></div><div class="portal-detail-grid"><div class="portal-detail-stat"><small>Рейтинг ARQON</small><strong class="portal-stat">${stats.points} очк.</strong></div><div class="portal-detail-stat"><small>Победы</small><strong class="portal-stat">${stats.wins}</strong></div><div class="portal-detail-stat"><small>Призовые места</small><strong class="portal-stat">${stats.podiums}</strong></div><div class="portal-detail-stat"><small>Турниры с результатом</small><strong class="portal-stat">${stats.events}</strong></div></div><h3 style="margin-top:22px">История результатов</h3>${entries.length?entries.map(r=>{const place=String(r.place_1||'').trim().toLowerCase()===String(p.name||'').trim().toLowerCase()?1:String(r.place_2||'').trim().toLowerCase()===String(p.name||'').trim().toLowerCase()?2:3;return `<div class="home-data-item"><strong>${place===1?'🥇 1-е место':place===2?'🥈 2-е место':'🥉 3-е место'}</strong><span>${escapeHtml(safeText(r.tournament_name,'Турнир ARQON'))}</span></div>`}).join(''):'<p class="hint">Пока нет опубликованных призовых мест для этого игрока.</p>'}<div class="portal-actions"><button class="btn ghost" onclick="document.getElementById('player-detail').classList.add('hidden')">Свернуть профиль</button></div>`;box.scrollIntoView({behavior:'smooth',block:'start'});}
+function renderPlayerCards(){const box=document.getElementById('player-list');if(!box)return;const q=(document.getElementById('player-search')?.value||'').trim().toLocaleLowerCase();const players=arqonPlayersCache.map(p=>({...p,stats:pointsForPlayer(p.name,arqonResultsCache)})).filter(p=>String(p.name||'').toLocaleLowerCase().includes(q)).sort((a,b)=>b.stats.points-a.stats.points||String(a.name).localeCompare(String(b.name)));const count=document.getElementById('players-count');if(count)count.textContent=`${players.length} игроков`;box.innerHTML=players.length?players.map((p,i)=>`<article class="portal-card"><span class="portal-pill">${i===0&&p.stats.points>0?'Лидер рейтинга':'Игрок ARQON'}</span><div class="portal-profile-top" style="margin-top:14px">${playerAvatarHTML(p)}<div><h3>${escapeHtml(safeText(p.name,'Игрок без имени'))} ${p.faceitLevel>0?`<span class="faceit-badge lvl-${p.faceitLevel}">FACEIT LVL ${p.faceitLevel}</span>`:''}</h3><p>${p.teamName?'Команда: '+escapeHtml(p.teamName):'Свободный игрок'} · ${p.stats.events} турниров с опубликованным результатом</p></div></div><div class="portal-detail-grid"><div class="portal-detail-stat"><small>Рейтинг ARQON</small><strong class="portal-stat">${p.arqonRating}/100</strong></div><div class="portal-detail-stat"><small>Очки турниров</small><strong class="portal-stat">${p.stats.points}</strong></div><div class="portal-detail-stat"><small>Победы</small><strong class="portal-stat">${p.stats.wins}</strong></div><div class="portal-detail-stat"><small>Топ-3</small><strong class="portal-stat">${p.stats.podiums}</strong></div></div><div class="portal-actions"><button class="btn" onclick="openPlayerDetail(${i})">Профиль игрока →</button></div></article>`).join(''):'<div class="home-data-card">Игроков не найдено.</div>';window.arqonRankedPlayers=players;}
+function openPlayerDetail(index){const p=(window.arqonRankedPlayers||[])[index];const box=document.getElementById('player-detail');if(!p||!box)return;const stats=p.stats;const entries=arqonResultsCache.filter(r=>[r.place_1,r.place_2,r.place_3].some(n=>String(n||'').trim().toLocaleLowerCase()===String(p.name||'').trim().toLocaleLowerCase()));box.classList.remove('hidden');box.innerHTML=`<div class="portal-profile-top">${playerAvatarHTML(p)}<div><span class="portal-pill">PLAYER PROFILE</span><h2>${escapeHtml(safeText(p.name,'Игрок'))} ${p.faceitLevel>0?`<span class="faceit-badge lvl-${p.faceitLevel}">FACEIT LVL ${p.faceitLevel}</span>`:''}</h2><p class="hint">${p.teamName?'Команда: '+escapeHtml(p.teamName):'Свободный игрок'} · Профиль построен по публичным данным ARQON.</p></div></div><div class="portal-detail-grid"><div class="portal-detail-stat"><small>Рейтинг ARQON</small><strong class="portal-stat">${p.arqonRating}/100</strong></div><div class="portal-detail-stat"><small>Очки турниров</small><strong class="portal-stat">${stats.points}</strong></div><div class="portal-detail-stat"><small>Победы</small><strong class="portal-stat">${stats.wins}</strong></div><div class="portal-detail-stat"><small>Призовые места</small><strong class="portal-stat">${stats.podiums}</strong></div><div class="portal-detail-stat"><small>Турниры с результатом</small><strong class="portal-stat">${stats.events}</strong></div></div><h3 style="margin-top:22px">История результатов</h3>${entries.length?entries.map(r=>{const place=String(r.place_1||'').trim().toLowerCase()===String(p.name||'').trim().toLowerCase()?1:String(r.place_2||'').trim().toLowerCase()===String(p.name||'').trim().toLowerCase()?2:3;return `<div class="home-data-item"><strong>${place===1?'🥇 1-е место':place===2?'🥈 2-е место':'🥉 3-е место'}</strong><span>${escapeHtml(safeText(r.tournament_name,'Турнир ARQON'))}</span></div>`}).join(''):'<p class="hint">Пока нет опубликованных призовых мест для этого игрока.</p>'}<div class="portal-actions"><button class="btn ghost" onclick="document.getElementById('player-detail').classList.add('hidden')">Свернуть профиль</button></div>`;box.scrollIntoView({behavior:'smooth',block:'start'});}
 
 // ==========================================
 // ТАБЫ / НАВИГАЦИЯ
