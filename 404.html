@@ -915,6 +915,7 @@
         <input id="res-p1" placeholder="1 место (Ник / Команда)" />
         <input id="res-p2" placeholder="2 место (Ник / Команда)" />
         <input id="res-p3" placeholder="3 место (Ник / Команда)" />
+        <input id="res-mvp" maxlength="80" placeholder="MVP турнира (ник игрока)" />
         <button class="btn" onclick="addResult()">Сохранить результаты</button>
       </div>
       <div id="res-msg"></div>
@@ -922,14 +923,6 @@
     <div class="card" id="league-admin-card">
       <h2>🏅 Управление турниром «Лига» · CS2 5×5</h2>
       <p class="hint">Внеси результат каждого матча. Победа — 3 очка, обычное поражение — 1, техническое поражение — 0. Три техлуза автоматически дают статус дисквалификации.</p>
-      <div class="league-panel" style="margin:14px 0">
-        <h3 style="margin-bottom:8px">🏅 MVP турнира</h3>
-        <p class="league-muted" style="margin-bottom:10px">Укажи ник игрока, которого выбрали самым ценным игроком турнира.</p>
-        <div class="league-admin-row">
-          <input id="league-mvp-input" type="text" maxlength="80" placeholder="Ник игрока — MVP">
-          <button class="btn" onclick="leagueSaveMvp()">Сохранить MVP</button>
-        </div>
-      </div>
       <div id="league-admin-status" class="hint" style="margin:10px 0">Загружаем матчи Лиги…</div>
       <div class="row" style="gap:8px;flex-wrap:wrap;margin-bottom:12px">
         <button class="btn" onclick="loadLeague(true)">↻ Обновить матчи</button>
@@ -2840,10 +2833,6 @@ function leagueRenderPublic(){
   const done=(leagueData.matches||[]).filter(m=>m.result_type!=='pending'&&m.team1&&m.team2);
   const mvpName=String(leagueData.mvp||'').trim();
   box.innerHTML=`
-    <div class="league-panel league-mvp-panel">
-      <div class="league-mvp-icon">★</div>
-      <div><div class="league-mvp-label">MVP ТУРНИРА</div><div class="league-mvp-name">${mvpName?leagueEscape(mvpName):'Будет объявлен'}</div><div class="league-muted">${mvpName?'Самый ценный игрок турнира':'Следи за обновлениями'}</div></div>
-    </div>
     <div class="league-stats">
       <div class="league-stat"><small>Команд</small><strong>${standings.length}</strong></div>
       <div class="league-stat"><small>Сыграно матчей</small><strong>${played}</strong></div>
@@ -3010,6 +2999,7 @@ async function addResult() {
   const place_1 = document.getElementById('res-p1').value.trim();
   const place_2 = document.getElementById('res-p2').value.trim();
   const place_3 = document.getElementById('res-p3').value.trim();
+  const mvp = document.getElementById('res-mvp').value.trim();
   const msg = document.getElementById('res-msg');
 
   if (!tournament_name || !place_1) {
@@ -3018,7 +3008,7 @@ async function addResult() {
   }
 
   const { error } = await supabaseClient.from('results').insert({
-    tournament_name, prize_pool, place_1, place_2, place_3
+    tournament_name, prize_pool, place_1, place_2, place_3, mvp
   });
 
   if (error) {
@@ -3030,6 +3020,7 @@ async function addResult() {
     document.getElementById('res-p1').value = '';
     document.getElementById('res-p2').value = '';
     document.getElementById('res-p3').value = '';
+    document.getElementById('res-mvp').value = '';
     loadResults();
   }
 }
@@ -3066,6 +3057,7 @@ async function loadResults() {
             <div style="color: #FFD700;">🥇 1 место: <b>${escapeHtml(item.place_1)}</b></div>
             ${item.place_2 ? `<div style="color: #C0C0C0;">🥈 2 место: <b>${escapeHtml(item.place_2)}</b></div>` : ''}
             ${item.place_3 ? `<div style="color: #CD7F32;">🥉 3 место: <b>${escapeHtml(item.place_3)}</b></div>` : ''}
+            ${item.mvp ? `<div style="color: #f5c451; margin-top:8px; padding-top:8px; border-top:1px solid var(--border);">★ MVP турнира: <b>${escapeHtml(item.mvp)}</b></div>` : ''}
           </div>
         </div>
       `;
