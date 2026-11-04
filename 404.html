@@ -14,8 +14,39 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#09090d">
-<meta name="description" content="ARQON Esports — киберспортивные турниры, матчи, результаты и прямые трансляции.">
-<title>ARQON Esports — Турниры. Матчи. Победы.</title>
+<meta name="description" content="ARQON Esports — киберспортивные турниры CS2 и Dota 2 в Тюмени и ближайших городах. Участие команд, матчи, результаты и рейтинг игроков.">
+<meta name="robots" content="index,follow,max-image-preview:large">
+<title>ARQON Esports — турниры CS2 в Тюмени, игроки и лига</title>
+<link rel="canonical" href="https://arqon-esports.ru/">
+<meta property="og:type" content="website">
+<meta property="og:locale" content="ru_RU">
+<meta property="og:site_name" content="ARQON Esports">
+<meta property="og:title" content="ARQON Esports — киберспортивные турниры в Тюмени">
+<meta property="og:description" content="Турниры CS2 и Dota 2, команды, рейтинг игроков, расписание и результаты ARQON Esports.">
+<meta property="og:url" content="https://arqon-esports.ru/">
+<meta property="og:image" content="https://arqon-esports.ru/logo.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="ARQON Esports — турниры CS2 в Тюмени">
+<meta name="twitter:description" content="Турниры, команды, рейтинг игроков и результаты ARQON Esports.">
+<meta name="twitter:image" content="https://arqon-esports.ru/logo.png">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "SportsOrganization",
+  "name": "ARQON Esports",
+  "url": "https://arqon-esports.ru/",
+  "logo": "https://arqon-esports.ru/logo.png",
+  "sport": ["Counter-Strike 2", "Dota 2"],
+  "areaServed": [
+    {"@type": "City", "name": "Тюмень"},
+    {"@type": "AdministrativeArea", "name": "Тюменская область"}
+  ],
+  "sameAs": [
+    "https://t.me/ARQON_Esports",
+    "https://www.twitch.tv/arqon_esports"
+  ]
+}
+</script>
   <link rel="icon" type="image/png" href="logo.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -952,7 +983,7 @@
       <div class="home-hero">
         <div class="home-kicker">ARQON ESPORTS · PLAY TO WIN</div>
         <h1 class="home-title">ТВОЯ ИГРА.<br><span>ТВОЯ ПОБЕДА.</span></h1>
-        <p class="home-lead">Турниры, честное соперничество и путь к вершине. Следи за матчами, изучай результаты и участвуй в событиях ARQON.</p>
+        <p class="home-lead">ARQON Esports проводит киберспортивные турниры по CS2 и Dota 2 в Тюмени и ближайших городах. Следи за матчами, изучай результаты, рейтинг игроков и присоединяйся к событиям ARQON.</p>
         <div class="home-actions">
           <button class="btn" onclick="switchTab('bracket')">🏆 Открыть турнирную сетку</button>
           <button class="btn ghost" onclick="switchTab('schedule')">📅 Смотреть расписание</button>
@@ -1054,7 +1085,7 @@
         <img src="logo.png" alt="ARQON Logo" style="width: 150px; height: auto; filter: drop-shadow(0 0 8px rgba(122,59,255,0.6));">
       </div>
       <p style="color: var(--text-dim); font-size: 13px; line-height: 1.6; margin-bottom: 15px;">
-        Платформа для проведения киберспортивных турниров по Dota 2 и CS2. Создавай сетки, проводи драфты и следи за результатами в реальном времени.
+        ARQON Esports — платформа киберспортивных турниров по CS2 и Dota 2 в Тюмени и Тюменской области. Следи за сетками, матчами, командами и результатами.
       </p>
       <p style="color: var(--text-dim); font-size: 12px;">
         © 2026 ARQON Esports. Все права защищены.
@@ -2166,17 +2197,17 @@ function openPlayerDetail(index){const p=(window.arqonRankedPlayers||[])[index];
 // ==========================================
 const TAB_PATHS = {
   home: '/',
-  bracket: '/game_grid',
-  tournaments: '/tournaments',
-  players: '/players',
-  news: '/news',
-  schedule: '/schedule',
-  results: '/results',
-  league: '/league',
-  partners: '/partners',
+  bracket: '/game_grid/',
+  tournaments: '/tournaments/',
+  players: '/players/',
+  news: '/news/',
+  schedule: '/schedule/',
+  results: '/results/',
+  league: '/league/',
+  partners: '/partners/',
   admin: '/admin'
 };
-const PATH_TABS = Object.fromEntries(Object.entries(TAB_PATHS).map(([tab, path]) => [path, tab]));
+const PATH_TABS = Object.fromEntries(Object.entries(TAB_PATHS).map(([tab, path]) => [path.replace(/\\/+$/, '') || '/', tab]));
 
 function applyPathRoute() {
   const path = window.location.pathname.replace(/\/+$/, '') || '/';
