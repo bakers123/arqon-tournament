@@ -1034,14 +1034,14 @@
 
   <!-- КАТАЛОГ ТУРНИРОВ -->
   <section id="tab-tournaments" class="hidden">
-    <div class="portal-heading"><div class="home-kicker">ARQON COMPETITIVE</div><h1 class="home-title">ТУРНИРЫ <span>ARQON</span></h1><p class="home-lead">Страница каждого события: расписание, статус и итоги. Данные загружаются из базы турниров.</p></div>
+    <div class="portal-heading"><div class="home-kicker">ARQON COMPETITIVE</div><h1 class="home-title">ТУРНИРЫ <span>ARQON</span></h1><p class="home-lead">Турниры ARQON по CS2 и Dota 2 в Тюмени и ближайших городах: расписание, участники, статус и опубликованные итоги.</p></div>
     <div id="tournament-list" class="portal-grid"><div class="home-data-card">Загружаем турниры…</div></div>
     <div id="tournament-detail" class="home-data-card hidden" style="margin-top:20px"></div>
   </section>
 
   <!-- РЕЙТИНГ И ПРОФИЛИ ИГРОКОВ -->
   <section id="tab-players" class="hidden">
-    <div class="portal-heading"><div class="home-kicker">PLAYER HUB</div><h1 class="home-title">ИГРОКИ <span>ARQON</span></h1><p class="home-lead">Участники сообщества и рейтинг по опубликованным результатам. Очки начисляются только за места, указанные в результатах турниров.</p></div>
+    <div class="portal-heading"><div class="home-kicker">PLAYER HUB</div><h1 class="home-title">ИГРОКИ <span>ARQON</span></h1><p class="home-lead">Рейтинг игроков ARQON, профили, FACEIT и результаты турниров. Следи за игроками и командами киберспортивного сообщества Тюмени.</p></div>
     <div class="portal-toolbar"><input id="player-search" placeholder="Найти игрока…" aria-label="Найти игрока" /><span id="players-count" class="hint"></span></div>
     <div id="player-list" class="portal-grid"><div class="home-data-card">Загружаем игроков…</div></div>
     <div id="player-detail" class="home-data-card hidden" style="margin-top:20px"></div>
@@ -1049,6 +1049,7 @@
 
   <!-- ВКЛАДКА СЕТКА -->
   <section id="tab-bracket" class="hidden">
+    <div class="portal-heading"><div class="home-kicker">ARQON COMPETITIVE</div><h2 class="home-title">ТУРНИРНАЯ СЕТКА ARQON</h2><p class="home-lead">Сетка киберспортивных турниров ARQON по CS2 и Dota 2: участники, пары матчей и путь команд к финалу.</p></div>
     <div class="card" style="display: flex; justify-content: space-between; align-items: center;">
       <div id="bracket-info" class="hint" style="margin: 0;"></div>
       <button class="btn" id="show-auth-btn" onclick="openAuthScreen()">🎮 Я игрок (Вход)</button>
@@ -1071,7 +1072,7 @@
   </section>
   <section id="tab-league" class="hidden">
     <div class="league-wrap">
-      <div class="league-hero"><div class="league-kicker">ARQON ESPORTS · CS2 5×5</div><h1 class="league-title">КИБЕРСПОРТИВНАЯ ЛИГА</h1><p class="league-sub">Круговой турнир. Все команды играют друг с другом. Победа — 3 очка · обычное поражение — 1 очко · техническое поражение — 0 очков.</p></div>
+      <div class="league-hero"><div class="league-kicker">ARQON ESPORTS · CS2 5×5</div><h1 class="league-title">КИБЕРСПОРТИВНАЯ ЛИГА</h1><p class="league-sub">Лига ARQON — командный турнир CS2 5×5 в Тюмени. Все команды играют друг с другом. Победа — 3 очка · обычное поражение — 1 очко · техническое поражение — 0 очков.</p></div>
       <div id="league-public-content"><div class="league-panel">Загружаем турнирную таблицу…</div></div>
     </div>
   </section>
@@ -3087,7 +3088,7 @@ async function loadNews() {
   const container = document.getElementById('tab-news');
   if (!container) return;
 
-  let html = '<div class="card"><h2 style="margin-bottom: 20px;">📰 Новости и анонсы</h2>';
+  let html = '<div class="card"><h2 style="margin-bottom: 20px;">📰 Новости и анонсы ARQON</h2><p style="color:var(--text-dim);line-height:1.6;margin-bottom:18px;">Новости киберспортивного сообщества ARQON: анонсы турниров CS2 и Dota 2, итоги матчей и события в Тюмени и ближайших городах.</p>';
   if (!data || data.length === 0) {
     html += '<p style="color: var(--text-dim);">Пока новостей нет.</p>';
   } else {
@@ -3291,7 +3292,7 @@ async function loadSchedule() {
 
   let html = `
     <div class="card">
-      <h2 style="margin-bottom: 20px;">📅 Расписание матчей</h2>
+      <h2 style="margin-bottom: 20px;">📅 Расписание матчей ARQON</h2><p style="color:var(--text-dim);line-height:1.6;margin-bottom:14px;">Актуальное расписание турниров и матчей ARQON по CS2 и Dota 2. Проверяй время встреч и следи за обновлениями.</p>
       <table style="width: 100%; border-collapse: collapse; color: #ccc;">
         <thead>
           <tr style="border-bottom: 1px solid var(--border); text-align: left;">
@@ -3382,7 +3383,7 @@ async function loadResults() {
       <p style="color: var(--text-dim); font-size: 13px;">Выплачено победителям</p>
     </div>
     <div class="card">
-      <h2 style="margin-bottom: 20px;">🏆 Зал славы</h2>
+      <h2 style="margin-bottom: 20px;">🏆 Результаты турниров ARQON</h2><p style="color:var(--text-dim);line-height:1.6;margin-bottom:14px;">Опубликованные результаты, призовые места и MVP турниров ARQON Esports.</p>
   `;
 
   if (!data || data.length === 0) {
@@ -3450,7 +3451,7 @@ async function loadSponsors() {
   const container = document.getElementById('tab-partners');
   if (!container) return;
 
-  let html = '<div class="card"><h2 style="margin-bottom: 20px;">🤝 Наши партнеры</h2><div style="display: flex; flex-wrap: wrap; gap: 20px; align-items: center; justify-content: center;">';
+  let html = '<div class="card"><h2 style="margin-bottom: 20px;">🤝 Партнёры ARQON Esports</h2><p style="color:var(--text-dim);line-height:1.6;margin-bottom:18px;">Партнёры и игровые площадки, поддерживающие развитие киберспорта и турниров ARQON в Тюмени.</p><div style="display: flex, flex-wrap: wrap; gap: 20px; align-items: center; justify-content: center;">';
 
   if (!data || data.length === 0) {
     html += '<p style="color: var(--text-dim); width: 100%; text-align: center;">Пока партнеров нет.</p>';
