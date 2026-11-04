@@ -1560,8 +1560,8 @@ function assignFreeAgentTeam(accountId, teamId) {
   renderFreeAgents();
 }
 function removeFreeAgent(accId) { if (!isAdmin()) return; state.freeAgents = state.freeAgents.filter(p => p.account_id !== accId); renderFreeAgents(); saveState(); }
-function removeTeam(id) { if (!isAdmin()) return; state.teams = state.teams.filter(t => t.id !== id); renderTeams(); saveState(); }
-function renameTeam(id, name) { if (!isAdmin()) return; const t = state.teams.find(t => t.id === id); if (t) { t.name = name; saveState(); } }
+function removeTeam(id) { if (!isAdmin()) return; state.teams = state.teams.filter(t => t.id !== id); (state.freeAgents||[]).forEach(p => { if (p.assignedTeamId === id) delete p.assignedTeamId; }); renderTeams(); renderFreeAgents(); saveState(); }
+function renameTeam(id, name) { if (!isAdmin()) return; const t = state.teams.find(t => t.id === id); if (t) { t.name = name; renderFreeAgents(); saveState(); } }
 function removePlayerFromTeam(teamId, accId) { if (!isAdmin()) return; const t = state.teams.find(t => t.id === teamId); if (t) { t.players = t.players.filter(p => p.account_id !== accId); renderTeams(); saveState(); } }
 function setCaptain(teamId, accountId) {
   if (!isAdmin()) return;
@@ -3481,6 +3481,7 @@ function init() {
     if (!isAdmin()) return;
     state.teams.push({ id: genId(), name: 'Team ' + (state.teams.length + 1), players: [] });
     renderTeams();
+    renderFreeAgents();
     saveState();
   };
 
