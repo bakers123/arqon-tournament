@@ -1906,7 +1906,7 @@ function collectPlayerAvatars(source) {
  const visit = value => {
   if (!value || typeof value !== 'object') return;
   if (Array.isArray(value)) { value.forEach(visit); return; }
-  if (typeof value.name === 'string' && typeof value.avatar === 'string' && /^https?:\\/\\//i.test(value.avatar.trim())) {
+  if (typeof value.name === 'string' && typeof value.avatar === 'string' && /^https?:\/\//i.test(value.avatar.trim())) {
    avatars[value.name.trim().toLocaleLowerCase()] = value.avatar.trim();
   }
   Object.values(value).forEach(visit);
@@ -1917,8 +1917,8 @@ function collectPlayerAvatars(source) {
 function playerAvatarHTML(player) {
  const initial = escapeHtml(String(player?.name || '?').trim().slice(0,1).toUpperCase());
  const avatar = String(player?.avatar || '').trim();
- if (!/^https?:\\/\\//i.test(avatar)) return '<div class="portal-avatar">' + initial + '</div>';
- return '<div class="portal-avatar portal-avatar-has-image"><img src="' + escapeHtml(avatar) + '" alt="' + escapeHtml(player?.name || 'Аватар игрока') + '" loading="lazy" referrerpolicy="no-referrer" onerror="this.style.display=\\'none\\';this.nextElementSibling.style.display=\\'grid\\'"><span class="portal-avatar-fallback" style="display:none">' + initial + '</span></div>';
+ if (!/^https?:\/\//i.test(avatar)) return '<div class="portal-avatar">' + initial + '</div>';
+ return `<div class="portal-avatar portal-avatar-has-image"><img src="${escapeHtml(avatar)}" alt="${escapeHtml(player?.name || 'Аватар игрока')}" loading="lazy" referrerpolicy="no-referrer" onerror="this.style.display='none';this.nextElementSibling.style.display='grid'"><span class="portal-avatar-fallback" style="display:none">${initial}</span></div>`;
 }
 async function loadPlayerHub(){
  const box=document.getElementById('player-list');if(!box)return;box.innerHTML='<div class="home-data-card">Загружаем игроков…</div>';
