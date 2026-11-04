@@ -1442,7 +1442,7 @@ function playerCardHTML(p, removeFn, allowTeamAssignment = false) {
         </div>
       </div>`
     : '';
-  return '<div class="player" draggable="true" ondragstart="dragPlayerFromPool(event, \' ' + p.account_id + '\')">' +
+  return '<div class="player" draggable="true" ondragstart="dragPlayerFromPool(event, \'' + p.account_id + '\')">' +
     '<img src="' + p.avatar + '" alt="" onerror="this.style.display=\'none\'">' +
     '<div>' +
       '<div class="name">' + escapeHtml(p.name) + ' ' + faceitBadge + '</div>' +
@@ -1639,7 +1639,7 @@ function handleDropOnTeam(event, teamId) {
   if (!state.teams) state.teams = [];
 
   if (source === 'pool') {
-    const player = state.freeAgents.find(p => p.account_id === accountId);
+    const player = state.freeAgents.find(p => String(p.account_id) === String(accountId));
     if (!player) return;
     const team = state.teams.find(t => t.id === teamId);
     if (!team) return;
