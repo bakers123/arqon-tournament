@@ -1088,6 +1088,20 @@
   </div>
 </footer>
 <!-- УНИВЕРСАЛЬНОЕ ОКНО ДЛЯ ИНФОРМАЦИИ -->
+<div id="access-code-modal" class="modal" style="display:none; z-index:1100;" onclick="if(event.target===this) closeAccessCodeModal()">
+  <div class="modal-content" style="max-width:420px; text-align:center;">
+    <button type="button" onclick="closeAccessCodeModal()" aria-label="Закрыть" style="float:right; background:none; border:0; color:var(--text-dim); font-size:24px; cursor:pointer;">×</button>
+    <h2 style="margin:8px 0 6px;">Код доступа игрока</h2>
+    <p style="color:var(--text-dim); margin:0 0 16px;">Игрок: <strong id="access-code-player"></strong></p>
+    <div style="padding:16px; margin-bottom:14px; border:1px solid var(--accent); border-radius:10px; background:rgba(122,59,255,.10);">
+      <code id="generated-access-code" style="font-size:28px; font-weight:800; letter-spacing:5px; user-select:all; overflow-wrap:anywhere;"></code>
+    </div>
+    <button type="button" class="btn" onclick="copyGeneratedAccessCode()" style="width:100%;">📋 Копировать код</button>
+    <div id="access-code-copy-status" role="status" aria-live="polite" style="min-height:20px; margin-top:10px; color:var(--accent-2); font-size:13px;"></div>
+    <p style="font-size:12px; color:var(--text-dim); margin:8px 0 0;">Передай этот код игроку для входа на сайт.</p>
+  </div>
+</div>
+
 <div id="info-modal" class="modal" style="display: none; z-index: 1000;">
   <div class="modal-content" style="max-width: 700px; max-height: 80vh; overflow-y: auto; position: relative;">
     <button onclick="closeInfoModal()" style="position: absolute; top: 15px; right: 20px; background: none; border: none; color: var(--text-dim); font-size: 24px; cursor: pointer;">&times;</button>
@@ -1295,6 +1309,53 @@ function parseRank(rankTier) {
 // ==========================================
 // КОДЫ ДОСТУПА
 // ==========================================
+function showAccessCodeModal(playerName, code) {
+  const modal = document.getElementById('access-code-modal');
+  const nameEl = document.getElementById('access-code-player');
+  const codeEl = document.getElementById('generated-access-code');
+  const statusEl = document.getElementById('access-code-copy-status');
+  if (!modal || !nameEl || !codeEl) {
+    alert('Код для игрока ' + playerName + ': ' + code);
+    return;
+  }
+  nameEl.textContent = playerName;
+  codeEl.textContent = code;
+  if (statusEl) statusEl.textContent = '';
+  modal.style.display = 'flex';
+}
+
+function closeAccessCodeModal() {
+  const modal = document.getElementById('access-code-modal');
+  if (modal) modal.style.display = 'none';
+}
+
+async function copyGeneratedAccessCode() {
+  const codeEl = document.getElementById('generated-access-code');
+  const statusEl = document.getElementById('access-code-copy-status');
+  const code = codeEl ? codeEl.textContent.trim() : '';
+  if (!code) return;
+  try {
+    if (navigator.clipboard && window.isSecureContext) {
+      await navigator.clipboard.writeText(code);
+    } else {
+      const field = document.createElement('textarea');
+      field.value = code;
+      field.setAttribute('readonly', '');
+      field.style.position = 'fixed';
+      field.style.opacity = '0';
+      document.body.appendChild(field);
+      field.select();
+      field.setSelectionRange(0, field.value.length);
+      const copied = document.execCommand('copy');
+      field.remove();
+      if (!copied) throw new Error('Не удалось скопировать');
+    }
+    if (statusEl) statusEl.textContent = '✓ Код скопирован';
+  } catch (error) {
+    if (statusEl) statusEl.textContent = 'Не удалось скопировать автоматически — выдели код и скопируй вручную';
+  }
+}
+
 async function generateAccessCode(playerName) {
   if (!isAdmin()) return;
   const { data: code, error } = await supabaseClient.rpc('create_player_access_code', {
@@ -1304,7 +1365,7 @@ async function generateAccessCode(playerName) {
     alert('Ошибка создания кода: ' + error.message);
     return;
   }
-  alert(`Код для игрока ${playerName}:\n\n${code}\n\nПередайте его игроку.`);
+  showAccessCodeModal(playerName, code);
 }
 
 // ==========================================
