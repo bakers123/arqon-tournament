@@ -3451,7 +3451,7 @@ async function loadSponsors() {
   const container = document.getElementById('tab-partners');
   if (!container) return;
 
-  let html = '<div class="card"><h2 style="margin-bottom: 20px;">🤝 Партнёры ARQON Esports</h2><p style="color:var(--text-dim);line-height:1.6;margin-bottom:18px;">Партнёры и игровые площадки, поддерживающие развитие киберспорта и турниров ARQON в Тюмени.</p><div style="display: flex, flex-wrap: wrap; gap: 20px; align-items: center; justify-content: center;">';
+  let html = '<div class="card"><h2 style="margin-bottom: 20px;">🤝 Партнёры ARQON Esports</h2><p style="color:var(--text-dim);line-height:1.6;margin-bottom:18px;">Партнёры и игровые площадки, поддерживающие развитие киберспорта и турниров ARQON в Тюмени.</p><div style="display: flex; flex-wrap: wrap; gap: 20px; align-items: center; justify-content: center;">';
 
   if (!data || data.length === 0) {
     html += '<p style="color: var(--text-dim); width: 100%; text-align: center;">Пока партнеров нет.</p>';
