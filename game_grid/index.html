@@ -2210,6 +2210,39 @@ const TAB_PATHS = {
 };
 const PATH_TABS = Object.fromEntries(Object.entries(TAB_PATHS).map(([tab, path]) => [path.replace(/\/+$/, '') || '/', tab]));
 
+const TAB_SEO = {
+  home: { title: 'ARQON Esports — турниры CS2 в Тюмени, игроки и лига', description: 'ARQON Esports — киберспортивные турниры CS2 и Dota 2 в Тюмени и ближайших городах. Участие команд, матчи, результаты и рейтинг игроков.' },
+  bracket: { title: 'Турнирная сетка ARQON — матчи CS2 и Dota 2 в Тюмени', description: 'Турнирная сетка ARQON Esports: участники, пары матчей и результаты киберспортивных турниров CS2 и Dota 2 в Тюмени.' },
+  tournaments: { title: 'Турниры CS2 в Тюмени — ARQON Esports', description: 'Киберспортивные турниры ARQON по CS2 и Dota 2 в Тюмени и ближайших городах. Следи за событиями, расписанием и результатами.' },
+  players: { title: 'Рейтинг игроков CS2 — игроки ARQON Esports', description: 'Рейтинг игроков ARQON: профили, рейтинг ARQON от 0 до 100, FACEIT и результаты турниров киберспортивного сообщества Тюмени.' },
+  news: { title: 'Новости киберспорта и турниров — ARQON Esports', description: 'Новости ARQON Esports: анонсы турниров CS2 и Dota 2, итоги матчей и события киберспортивного сообщества Тюмени.' },
+  schedule: { title: 'Расписание матчей и турниров CS2 — ARQON', description: 'Расписание матчей и киберспортивных турниров ARQON по CS2 и Dota 2 в Тюмени. Время встреч и обновления.' },
+  results: { title: 'Результаты турниров CS2 — ARQON Esports', description: 'Результаты турниров ARQON Esports, призовые места, победители и MVP киберспортивных соревнований.' },
+  league: { title: 'Лига ARQON — турнирная таблица CS2 5×5 в Тюмени', description: 'Следи за Лигой ARQON: турнирная таблица CS2 5×5, результаты матчей, очки команд и MVP турнира.' },
+  partners: { title: 'Партнёры ARQON Esports — киберспорт в Тюмени', description: 'Партнёры и игровые площадки ARQON Esports, которые поддерживают развитие киберспорта и турниров в Тюмени.' }
+};
+
+function updateTabSeo(tab) {
+  const meta = TAB_SEO[tab] || TAB_SEO.home;
+  const path = TAB_PATHS[tab] || '/';
+  const url = 'https://arqon-esports.ru' + (path === '/' ? '/' : path);
+  document.title = meta.title;
+  const description = document.querySelector('meta[name="description"]');
+  if (description) description.setAttribute('content', meta.description);
+  const canonical = document.querySelector('link[rel="canonical"]');
+  if (canonical) canonical.setAttribute('href', url);
+  const ogTitle = document.querySelector('meta[property="og:title"]');
+  if (ogTitle) ogTitle.setAttribute('content', meta.title);
+  const ogDescription = document.querySelector('meta[property="og:description"]');
+  if (ogDescription) ogDescription.setAttribute('content', meta.description);
+  const ogUrl = document.querySelector('meta[property="og:url"]');
+  if (ogUrl) ogUrl.setAttribute('content', url);
+  const twitterTitle = document.querySelector('meta[name="twitter:title"]');
+  if (twitterTitle) twitterTitle.setAttribute('content', meta.title);
+  const twitterDescription = document.querySelector('meta[name="twitter:description"]');
+  if (twitterDescription) twitterDescription.setAttribute('content', meta.description);
+}
+
 function applyPathRoute() {
   const path = window.location.pathname.replace(/\/+$/, '') || '/';
   let tab = PATH_TABS[path] || 'home';
@@ -2223,7 +2256,15 @@ function switchTab(tab, updateUrl = true) {
   if (tab === 'admin' && !isAdmin()) tab = 'home';
   if (updateUrl && TAB_PATHS[tab] && window.location.pathname !== TAB_PATHS[tab]) {
     window.history.pushState({ tab }, '', TAB_PATHS[tab]);
+    if (typeof gtag === 'function') {
+      gtag('event', 'page_view', {
+        page_title: (TAB_SEO[tab] || TAB_SEO.home).title,
+        page_location: window.location.href,
+        page_path: window.location.pathname
+      });
+    }
   }
+  updateTabSeo(tab);
   document.querySelectorAll('nav button').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
 
   const sections = {
