@@ -3434,45 +3434,49 @@ window.renderPlayerDraft = renderPlayerDraft;
 // УМНЫЙ ЗАПУСК (ИСПРАВЛЕНИЕ)
 // ==========================================
 async function startApp() {
-  // 1. Мгновенно проверяем LocalStorage (не ждем Supabase)
+  // Сначала проверяем реальную сессию Supabase: сохранённый вход игрока
+  // не должен перекрывать вход организатора.
+  init();
+
+  let session = null;
+  try {
+    const { data, error } = await supabaseClient.auth.getSession();
+    if (error) throw error;
+    session = data?.session || null;
+  } catch (error) {
+    console.error('Не удалось проверить сессию ARQON:', error);
+  }
+
+  if (session?.user) {
+    currentUser = session.user;
+    // organizer-auth.js получает роль через current_organizer_role.
+    await window.checkUserRole(session.user.id);
+    applyPathRoute();
+    return;
+  }
+
+  // Локальный вход игрока используем только если активной сессии нет.
   const savedUid = localStorage.getItem('arqon_current_uid');
   const savedName = localStorage.getItem('arqon_current_name');
-
-  if (savedUid && savedName && !isAdmin()) {
-    console.log("Вход по LocalStorage:", savedName);
+  if (savedUid && savedName) {
+    console.log('Вход игрока по LocalStorage:', savedName);
     currentUser = { id: savedUid };
-    
-    document.getElementById('auth-screen').style.display = 'none';
-    document.querySelector('main').style.display = 'none';
-    
+    const authScreen = document.getElementById('auth-screen');
+    if (authScreen) authScreen.style.display = 'none';
+    const main = document.querySelector('main');
+    if (main) main.style.display = 'none';
     const playerScreen = document.getElementById('player-screen');
-    playerScreen.classList.remove('hidden');
-    playerScreen.style.display = 'flex';
-    
-    document.getElementById('player-display-name').textContent = savedName;
-    
+    if (playerScreen) {
+      playerScreen.classList.remove('hidden');
+      playerScreen.style.display = 'flex';
+    }
+    const playerName = document.getElementById('player-display-name');
+    if (playerName) playerName.textContent = savedName;
     startDraftListener(savedUid);
-    init(); // Инициализируем кнопки (но renderAll не тронет player-screen)
-    return; // Выходим, чтобы не ждать Supabase
+    return;
   }
 
-  // 2. Если LocalStorage пуст — работаем через Supabase
-  init(); 
-  const { data: { session } } = await supabaseClient.auth.getSession();
-
-  if (isAdmin()) {
-    document.getElementById('auth-screen').style.display = 'none';
-    document.querySelector('main').style.display = 'block';
-    initSupabaseSync();
-    loadLeague(true);
-    applyPathRoute();
-  } else if (session) {
-    currentUser = session.user;
-    await checkUserRole(session.user.id);
-    applyPathRoute();
-  } else {
-    handleNoAuth();
-  }
+  handleNoAuth();
 }
   if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', startApp);
