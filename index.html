@@ -1122,8 +1122,9 @@ supabaseClient.auth.onAuthStateChange((event, session) => {
   if (isAdmin()) return;
   if (session) {
     currentUser = session.user;
-    await checkUserRole(session.user.id);
-    applyPathRoute();
+    checkUserRole(session.user.id)
+      .then(() => applyPathRoute())
+      .catch(error => console.error('Ошибка проверки роли пользователя:', error));
   } else {
     currentUser = null;
     handleNoAuth();
