@@ -179,6 +179,17 @@
     margin-top: 4px;
   }
   nav { display: flex; gap: 6px; }
+  #player-screen.player-match-open { display:flex !important; position:fixed; top:92px; left:20px; right:20px; bottom:20px; z-index:9; overflow:auto; background:#09090d; border:1px solid rgba(139,92,246,.65); border-radius:14px; box-shadow:0 18px 70px rgba(0,0,0,.8); padding:20px; align-items:stretch; }
+  #player-screen.player-match-open > div { width:100%; max-width:1000px; margin:0 auto; }
+  .player-match-close { background:transparent; border:1px solid var(--border); color:var(--text-dim); border-radius:6px; padding:8px 12px; cursor:pointer; }
+  .player-account-widget { display:none; align-items:center; gap:9px; margin-left:14px; flex:0 0 auto; }
+  .player-account-widget.visible { display:flex; }
+  .player-account-trigger { display:flex; align-items:center; gap:8px; border:1px solid rgba(139,92,246,.45); border-radius:9px; padding:5px 9px; background:rgba(139,92,246,.08); color:#fff; cursor:pointer; font:700 13px 'Rajdhani',sans-serif; max-width:180px; }
+  .player-account-trigger img { width:30px; height:30px; border-radius:50%; object-fit:cover; border:1px solid #8b5cf6; }
+  .player-account-trigger span { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .player-match-trigger { white-space:nowrap; }
+  @media(max-width:900px){ header { flex-wrap:wrap; gap:10px; padding:12px 14px; } header nav { order:3; width:100%; overflow-x:auto; flex-wrap:nowrap; } .player-account-widget { margin-left:auto; } #player-screen.player-match-open { top:150px; left:8px; right:8px; bottom:8px; padding:12px; } }
+  @media(max-width:520px){ .player-account-trigger span { max-width:78px; } .player-match-trigger { padding:7px 9px; font-size:11px; } }
   nav button {
     background: transparent;
     border: 1px solid transparent;
@@ -2253,6 +2264,7 @@ function applyPathRoute() {
 window.addEventListener('popstate', applyPathRoute);
 
 function switchTab(tab, updateUrl = true) {
+  if (typeof window.hidePlayerMatchPanel === 'function') window.hidePlayerMatchPanel();
   if (tab === 'admin' && !isAdmin()) tab = 'home';
   if (updateUrl && TAB_PATHS[tab] && window.location.pathname !== TAB_PATHS[tab]) {
     window.history.pushState({ tab }, '', TAB_PATHS[tab]);
@@ -2329,9 +2341,7 @@ function renderAll() {
 // ЭКРАН ИГРОКА / ВОЗВРАТ
 // ==========================================
 async function showPlayerBracket() {
-  const playerScreen = document.getElementById('player-screen');
-  playerScreen.classList.add('hidden');
-  playerScreen.style.display = 'none';
+  if (typeof window.hidePlayerMatchPanel === 'function') window.hidePlayerMatchPanel();
 
   document.querySelector('main').style.display = 'block';
   document.getElementById('tab-bracket').classList.remove('hidden');
@@ -3759,16 +3769,16 @@ async function startApp() {
     currentUser = { id: savedUid };
     const authScreen = document.getElementById('auth-screen');
     if (authScreen) authScreen.style.display = 'none';
-    const main = document.querySelector('main');
-    if (main) main.style.display = 'none';
-    const playerScreen = document.getElementById('player-screen');
-    if (playerScreen) {
-      playerScreen.classList.remove('hidden');
-      playerScreen.style.display = 'flex';
+    if (typeof window.checkUserRole === 'function') {
+      await window.checkUserRole(savedUid);
+    } else {
+      const playerName = document.getElementById('player-display-name');
+      if (playerName) playerName.textContent = savedName;
+      const main = document.querySelector('main');
+      if (main) main.style.display = 'block';
+      startDraftListener(savedUid);
     }
-    const playerName = document.getElementById('player-display-name');
-    if (playerName) playerName.textContent = savedName;
-    startDraftListener(savedUid);
+    applyPathRoute();
     return;
   }
 
