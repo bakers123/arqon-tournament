@@ -2368,10 +2368,9 @@ async function showPlayerBracket() {
 }
 
 function backToDraft() {
-  document.querySelector('main').style.display = 'none';
-  const playerScreen = document.getElementById('player-screen');
-  playerScreen.classList.remove('hidden');
-  playerScreen.style.display = 'flex';
+  if (typeof window.showPlayerMatchPanel === 'function') {
+    window.showPlayerMatchPanel();
+  }
 }
 
 // ==========================================
