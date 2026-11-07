@@ -729,6 +729,18 @@
     .player-match-trigger { height: 36px; min-height: 36px; padding: 0 9px; font-size: 11px; }
   }
 
+
+  .roster-role-badge {
+    display: inline-flex; align-items: center; vertical-align: middle;
+    margin-left: 5px; padding: 2px 6px; border-radius: 5px;
+    border: 1px solid rgba(167,139,250,.48); background: rgba(124,58,237,.16);
+    color: #c4b5fd; font: 700 9px/1.3 'Rajdhani',sans-serif; letter-spacing: .7px;
+  }
+  .roster-role-toggle {
+    margin: 6px 5px 0 0 !important; padding: 4px 7px !important;
+    font-size: 10px !important; min-height: 25px;
+  }
+
 </style>
 </head>
 <body>
@@ -1691,6 +1703,10 @@ function renderTeams() {
       }
 
       const removeFn = `removePlayerFromTeam('${t.id}','${p.account_id}')`;
+      const reserveBadge = p.rosterRole === 'reserve' ? '<span class="roster-role-badge">ЗАПАСНОЙ</span>' : '';
+      const rosterRoleBtn = isAdm
+        ? `<button type="button" class="btn ghost roster-role-toggle" onclick="event.stopPropagation(); setPlayerRosterRole('${escapeHtml(t.id)}','${escapeHtml(p.account_id)}','${p.rosterRole === 'reserve' ? 'starter' : 'reserve'}')">${p.rosterRole === 'reserve' ? '↑ В основной состав' : '↓ Сделать запасным'}</button>`
+        : '';
       const codeBtn = isAdm
         ? `<button class="btn ghost" style="padding:2px 8px; font-size:10px; margin-top:5px;" onclick="event.stopPropagation(); generateAccessCode('${escapeHtml(p.name)}')">🔑 Код</button>`
         : '';
@@ -1708,8 +1724,9 @@ function renderTeams() {
         <div class="player" draggable="true" ondragstart="dragPlayerFromPool(event, '${p.account_id}')" style="cursor: pointer;" ${clickAction}>
           <img src="${p.avatar}" alt="" onerror="this.style.display='none'">
           <div>
-            <div class="name">${escapeHtml(p.name)} ${captainBadge} ${faceitBadge}</div>
+            <div class="name">${escapeHtml(p.name)} ${captainBadge} ${faceitBadge} ${reserveBadge}</div>
             <div class="rank" style="color:${rank.color}">${rank.icon} ${rank.name}</div>
+            ${rosterRoleBtn}
             ${codeBtn}
             ${arqonRatingEditor}
           </div>
@@ -1879,6 +1896,18 @@ function setCaptain(teamId, accountId) {
   if (team) { team.captainId = accountId; saveState(); renderTeams(); }
 }
 
+function setPlayerRosterRole(teamId, accountId, role) {
+  if (!isAdmin() || !['starter', 'reserve'].includes(role)) return;
+  const team = (state.teams || []).find(t => String(t.id) === String(teamId));
+  const player = team?.players?.find(p => String(p.account_id) === String(accountId));
+  if (!player) return;
+  if (role === 'reserve') player.rosterRole = 'reserve';
+  else delete player.rosterRole;
+  saveState();
+  renderTeams();
+  if (!document.getElementById('tab-teams')?.classList.contains('hidden') && typeof loadTeamsHub === 'function') loadTeamsHub();
+}
+
 // ==========================================
 // DRAG & DROP ИГРОКОВ В КОМАНДЫ
 // ==========================================
@@ -1932,6 +1961,7 @@ window.removeTeam = removeTeam;
 window.renameTeam = renameTeam;
 window.removePlayerFromTeam = removePlayerFromTeam;
 window.setCaptain = setCaptain;
+window.setPlayerRosterRole = setPlayerRosterRole;
 window.dragPlayerFromPool = dragPlayerFromPool;
 window.handleDropOnTeam = handleDropOnTeam;
 window.loginWithCode = loginWithCode;
@@ -3548,15 +3578,22 @@ function renderArqonCalendar(){
 async function loadSchedule(){const box=document.getElementById('tab-schedule');if(!box)return;box.innerHTML='<div class="home-data-card">Загружаем календарь ARQON…</div>';try{const [_,extra]=await Promise.all([arqonLoadLeagueReadOnly(),supabaseClient.from('schedule').select('*').order('id',{ascending:true})]);if(extra.error)console.warn('Additional ARQON events unavailable:',extra.error);arqonExtraSchedule=extra.error?[]:(extra.data||[]);renderArqonCalendar();}catch(e){console.warn('ARQON calendar:',e);box.innerHTML='<div class="arqon-hub-panel"><h2>Календарь временно недоступен</h2><p class="hint">Не удалось получить расписание: '+escapeHtml(e.message||e)+'</p></div>';}}
 async function loadHistory(){const box=document.getElementById('history-list');if(!box)return;box.innerHTML='<div class="home-data-card">Загружаем историю матчей…</div>';try{await arqonLoadLeagueReadOnly();renderHistory();}catch(e){box.innerHTML='<div class="home-data-card">Не удалось загрузить историю: '+escapeHtml(e.message||e)+'</div>';}}
 function renderHistory(){const box=document.getElementById('history-list');if(!box||!leagueData)return;const q=(document.getElementById('history-search')?.value||'').trim().toLocaleLowerCase(),filter=document.getElementById('history-filter')?.value||'all',list=(leagueData.matches||[]).filter(m=>m.team1&&m.team2&&m.result_type!=='pending').filter(m=>filter==='all'||m.result_type===filter).filter(m=>[m.team1,m.team2,String(m.match_no||'')].join(' ').toLocaleLowerCase().includes(q)).sort((a,b)=>arqonCompareLeagueMatches(b,a));const count=document.getElementById('history-count');if(count)count.textContent='Найдено матчей: '+list.length;box.innerHTML=list.length?list.map(arqonMatchCard).join(''):'<div class="home-data-card">По выбранным условиям матчей не найдено.</div>';}
+function arqonTeamNameKey(value){
+ const key=String(value||'').trim().toLocaleLowerCase().replace(/[ё]/g,'е').replace(/[ë]/g,'e').normalize('NFD').replace(/[\\u0300-\\u036f]/g,'').replace(/[^a-z0-9а-я]/g,'');
+ // В таблице лиги RC | Team записана как RC I Team — считаем эти варианты одной командой.
+ if(key==='rciteam'||key==='rcteam')return 'rcteam';
+ return key;
+}
 let arqonTeamHubData=[],arqonPendingTeamProfile='';
 async function loadTeamsHub(){const box=document.getElementById('team-list');if(!box)return;box.innerHTML='<div class="home-data-card">Загружаем профили команд…</div>';try{
- const [{data:lr,error:le},{data:tr,error:te}]=await Promise.all([supabaseClient.from('league_data').select('payload').eq('id',1).maybeSingle(),supabaseClient.from('tournament').select('data').eq('id',1).maybeSingle()]);if(le)throw le;leagueData=leagueNormalizeData(lr?.payload||{});if(!te&&tr?.data)state=tr.data;
- arqonTeamHubData=leagueStandings().map(s=>{const reg=(state?.teams||[]).find(t=>String(t.name||'').trim().toLocaleLowerCase()===s.team.toLocaleLowerCase()),roster=reg?.players||[],tagged=(state?.freeAgents||[]).filter(p=>String(p.freeAgentTeamName||'').trim().toLocaleLowerCase()===s.team.toLocaleLowerCase()),matches=(leagueData.matches||[]).filter(m=>m.team1===s.team||m.team2===s.team),recent=matches.filter(m=>m.result_type!=='pending').sort((a,b)=>arqonCompareLeagueMatches(b,a)).slice(0,5);return {...s,roster,tagged,matches,recent,logo:reg?.logo||reg?.avatar||''};});
+ const [{data:lr,error:le},{data:tr,error:te}]=await Promise.all([supabaseClient.from('league_data').select('payload').eq('id',1).maybeSingle(),supabaseClient.from('tournament').select('data').eq('id',1).maybeSingle()]);if(le)throw le;if(te)throw te;if(!tr?.data||!Array.isArray(tr.data.teams))throw new Error('Регистрационные составы не загрузились из Supabase (tournament.data.teams).');leagueData=leagueNormalizeData(lr?.payload||{});state={...state,...tr.data,teams:tr.data.teams,freeAgents:Array.isArray(tr.data.freeAgents)?tr.data.freeAgents:[]};
+ const registrationTeams=state.teams;
+ arqonTeamHubData=leagueStandings().map(s=>{const leagueKey=arqonTeamNameKey(s.team),reg=registrationTeams.find(t=>arqonTeamNameKey(t.name)===leagueKey||(leagueKey==='rcteam'&&/^rc\s*[|i]\s*team$/i.test(String(t.name||'')))),roster=Array.isArray(reg?.players)?reg.players:[],tagged=state.freeAgents.filter(p=>arqonTeamNameKey(p.freeAgentTeamName)===leagueKey),matches=(leagueData.matches||[]).filter(m=>m.team1===s.team||m.team2===s.team),recent=matches.filter(m=>m.result_type!=='pending').sort((a,b)=>arqonCompareLeagueMatches(b,a)).slice(0,5);return {...s,roster,tagged,matches,recent,logo:reg?.logo||reg?.avatar||''};});
  box.innerHTML=arqonTeamHubData.map((t,i)=>{const initials=t.team.split(/\s+/).map(x=>x[0]).join('').slice(0,3).toUpperCase(),form=t.recent.slice().reverse().map(m=>m.result_type==='tech'?(m.tech_loss_team===t.team?'loss':'win'):(m.winner===t.team?'win':'loss')).map(x=>'<span class="arqon-form-dot '+x+'"></span>').join('');return '<article class="portal-card arqon-team-card" role="button" tabindex="0" data-team="'+escapeHtml(t.team)+'" onclick="openTeamProfile(this.dataset.team)" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();openTeamProfile(this.dataset.team)}"><div class="portal-profile-top"><div class="arqon-team-mark">'+(t.logo?'<img src="'+escapeHtml(t.logo)+'" alt="">':initials)+'</div><div><span class="portal-pill">#'+(i+1)+' · '+t.points+' ОЧКОВ</span><h3>'+escapeHtml(t.team)+'</h3><p>'+t.played+' матчей · '+t.wins+' побед · '+t.losses+' поражений</p></div></div><div class="portal-detail-grid"><div class="portal-detail-stat"><small>Победы</small><strong class="portal-stat">'+t.wins+'</strong></div><div class="portal-detail-stat"><small>Очки</small><strong class="portal-stat">'+t.points+'</strong></div><div class="portal-detail-stat"><small>Состав</small><strong class="portal-stat">'+t.roster.length+'</strong></div></div><div class="arqon-form" style="margin-top:14px"><small class="hint">ФОРМА</small>'+form+'</div><div class="portal-actions"><button class="btn" type="button" onclick="event.stopPropagation();openTeamProfile(this.closest(\'.arqon-team-card\').dataset.team)">Открыть профиль →</button></div></article>';}).join('')||'<div class="home-data-card">Команды пока не найдены.</div>';
  window.arqonTeamsReady=true;if(arqonPendingTeamProfile){const n=arqonPendingTeamProfile;arqonPendingTeamProfile='';renderTeamProfile(n);}
  }catch(e){console.warn('Team hub:',e);box.innerHTML='<div class="home-data-card">Не удалось загрузить команды: '+escapeHtml(e.message||e)+'</div>';}}
 function openTeamProfile(name){arqonPendingTeamProfile=String(name||'');if(document.getElementById('tab-teams')?.classList.contains('hidden'))switchTab('teams');else if(window.arqonTeamsReady)renderTeamProfile(arqonPendingTeamProfile);}
-function renderTeamProfile(name){const t=arqonTeamHubData.find(x=>x.team===name),box=document.getElementById('team-detail');if(!t||!box)return;const initials=t.team.split(/\s+/).map(x=>x[0]).join('').slice(0,3).toUpperCase(),roster=t.roster.length?t.roster.map(p=>'<div class="arqon-roster-player">'+playerAvatarHTML(p)+'<div><strong>'+escapeHtml(p.name||'Игрок')+'</strong><small>'+(+p.faceitLevel>0?'FACEIT LVL '+(+p.faceitLevel):'FACEIT не указан')+'</small></div></div>').join(''):'<p class="hint">Официальный состав этой команды пока не заполнен в регистрационных данных.</p>',tagged=t.tagged.length?'<h3 style="margin-top:22px">Свободные игроки с отметкой команды</h3><div class="arqon-roster-grid">'+t.tagged.map(p=>'<div class="arqon-roster-player">'+playerAvatarHTML(p)+'<div><strong>'+escapeHtml(p.name||'Игрок')+'</strong><small>Свободный агент · отметка '+escapeHtml(t.team)+'</small></div></div>').join('')+'</div>':'',matches=t.matches.slice().sort((a,b)=>arqonCompareLeagueMatches(b,a));box.classList.remove('hidden');box.innerHTML='<div class="portal-profile-top"><div class="arqon-team-mark">'+(t.logo?'<img src="'+escapeHtml(t.logo)+'" alt="">':initials)+'</div><div><span class="portal-pill">TEAM PROFILE</span><h2>'+escapeHtml(t.team)+'</h2><p class="hint">Позиция в лиге: '+(leagueStandings().findIndex(x=>x.team===t.team)+1)+' · '+(t.dq?'Дисквалификация':'Участник лиги')+'</p></div></div><div class="portal-detail-grid"><div class="portal-detail-stat"><small>Очки</small><strong class="portal-stat">'+t.points+'</strong></div><div class="portal-detail-stat"><small>Матчи</small><strong class="portal-stat">'+t.played+'</strong></div><div class="portal-detail-stat"><small>Победы</small><strong class="portal-stat">'+t.wins+'</strong></div><div class="portal-detail-stat"><small>Поражения</small><strong class="portal-stat">'+t.losses+'</strong></div><div class="portal-detail-stat"><small>Тех. поражения</small><strong class="portal-stat">'+t.tech+'</strong></div></div><h3 style="margin-top:22px">Официальный состав</h3><div class="arqon-roster-grid">'+roster+'</div>'+tagged+'<h3 style="margin-top:24px">Матчи команды</h3>'+(matches.length?'<div class="arqon-match-list">'+matches.map(arqonMatchCard).join('')+'</div>':'<p class="hint">Матчей пока нет.</p>')+'<div class="portal-actions"><button class="btn ghost" onclick="document.getElementById(\'team-detail\').classList.add(\'hidden\')">Свернуть профиль</button><button class="btn" onclick="switchTab(\'history\');document.getElementById(\'history-search\').value='+JSON.stringify(t.team)+';renderHistory()">История матчей →</button></div>';box.scrollIntoView({behavior:'smooth',block:'start'});}
+function renderTeamProfile(name){const t=arqonTeamHubData.find(x=>x.team===name),box=document.getElementById('team-detail');if(!t||!box)return;const initials=t.team.split(/\s+/).map(x=>x[0]).join('').slice(0,3).toUpperCase(),roster=t.roster.length?t.roster.map(p=>'<div class="arqon-roster-player">'+playerAvatarHTML(p)+'<div><strong>'+escapeHtml(p.name||'Игрок')+(p.rosterRole==='reserve'?' <span class="roster-role-badge">ЗАПАСНОЙ</span>':'')+'</strong><small>'+(+p.faceitLevel>0?'FACEIT LVL '+(+p.faceitLevel):'FACEIT не указан')+'</small></div></div>').join(''):'<p class="hint">Официальный состав этой команды пока не заполнен в регистрационных данных.</p>',tagged=t.tagged.length?'<h3 style="margin-top:22px">Свободные игроки с отметкой команды</h3><div class="arqon-roster-grid">'+t.tagged.map(p=>'<div class="arqon-roster-player">'+playerAvatarHTML(p)+'<div><strong>'+escapeHtml(p.name||'Игрок')+'</strong><small>Свободный агент · отметка '+escapeHtml(t.team)+'</small></div></div>').join('')+'</div>':'',matches=t.matches.slice().sort((a,b)=>arqonCompareLeagueMatches(b,a));box.classList.remove('hidden');box.innerHTML='<div class="portal-profile-top"><div class="arqon-team-mark">'+(t.logo?'<img src="'+escapeHtml(t.logo)+'" alt="">':initials)+'</div><div><span class="portal-pill">TEAM PROFILE</span><h2>'+escapeHtml(t.team)+'</h2><p class="hint">Позиция в лиге: '+(leagueStandings().findIndex(x=>x.team===t.team)+1)+' · '+(t.dq?'Дисквалификация':'Участник лиги')+'</p></div></div><div class="portal-detail-grid"><div class="portal-detail-stat"><small>Очки</small><strong class="portal-stat">'+t.points+'</strong></div><div class="portal-detail-stat"><small>Матчи</small><strong class="portal-stat">'+t.played+'</strong></div><div class="portal-detail-stat"><small>Победы</small><strong class="portal-stat">'+t.wins+'</strong></div><div class="portal-detail-stat"><small>Поражения</small><strong class="portal-stat">'+t.losses+'</strong></div><div class="portal-detail-stat"><small>Тех. поражения</small><strong class="portal-stat">'+t.tech+'</strong></div></div><h3 style="margin-top:22px">Официальный состав</h3><div class="arqon-roster-grid">'+roster+'</div>'+tagged+'<h3 style="margin-top:24px">Матчи команды</h3>'+(matches.length?'<div class="arqon-match-list">'+matches.map(arqonMatchCard).join('')+'</div>':'<p class="hint">Матчей пока нет.</p>')+'<div class="portal-actions"><button class="btn ghost" onclick="document.getElementById(\'team-detail\').classList.add(\'hidden\')">Свернуть профиль</button><button class="btn" onclick="switchTab(\'history\');document.getElementById(\'history-search\').value='+JSON.stringify(t.team)+';renderHistory()">История матчей →</button></div>';box.scrollIntoView({behavior:'smooth',block:'start'});}
 
 async function removeSchedule(id) {
   if (!isAdmin()) return;
