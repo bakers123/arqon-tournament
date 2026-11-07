@@ -691,6 +691,44 @@
 @media(max-width:768px){header nav{flex-wrap:nowrap!important;justify-content:flex-start!important;overflow-x:auto!important;white-space:nowrap;scrollbar-width:none}header nav::-webkit-scrollbar{display:none}header nav button{flex:0 0 auto}}
 
 .team-logo-admin{display:flex;align-items:center;gap:13px;padding:12px;margin:0 0 12px;border:1px solid rgba(167,139,250,.2);border-radius:12px;background:rgba(139,92,246,.055)}.team-logo-admin-preview{width:58px;height:58px;flex:0 0 58px;display:grid;place-items:center;overflow:hidden;border-radius:13px;border:1px solid rgba(196,181,253,.35);background:linear-gradient(135deg,#6d28d9,#211632);font:900 17px 'Orbitron',sans-serif;color:#fff}.team-logo-admin-preview img{width:100%;height:100%;object-fit:cover}.team-logo-admin-actions{display:flex;gap:7px;align-items:center;flex-wrap:wrap}.team-logo-admin-actions label{display:inline-flex;align-items:center;justify-content:center;cursor:pointer}.team-logo-admin-actions small{display:block;width:100%;color:var(--text-dim);font-size:11px}.team-logo-admin-status{font-size:12px;color:#c4b5fd;margin-top:5px;min-height:16px}
+
+  /* Аккуратная компоновка аккаунта игрока в шапке */
+  header { gap: 16px; }
+  header nav { flex: 1 1 auto; min-width: 0; justify-content: center; }
+  .player-account-widget {
+    display: none; align-items: center; justify-content: flex-end; gap: 8px;
+    flex: 0 0 auto; margin: 0 0 0 auto; padding: 4px;
+    border: 1px solid rgba(139,92,246,.22); border-radius: 12px;
+    background: rgba(17,15,25,.92); box-shadow: 0 4px 18px rgba(0,0,0,.22);
+  }
+  .player-account-widget.visible { display: flex; }
+  .player-account-trigger {
+    display: inline-flex; align-items: center; justify-content: center; gap: 7px;
+    min-width: 0; min-height: 38px; max-width: 150px; padding: 3px 8px 3px 3px;
+    border: 1px solid rgba(139,92,246,.42); border-radius: 8px;
+    background: rgba(139,92,246,.09); color: #fff; cursor: pointer;
+    font: 700 12px 'Rajdhani',sans-serif;
+  }
+  .player-account-trigger img {
+    display: block; width: 32px; height: 32px; min-width: 32px; flex: 0 0 32px;
+    border-radius: 6px; border: 1px solid rgba(167,139,250,.75);
+    object-fit: cover; object-position: center; background: #171321;
+  }
+  .player-account-trigger span { max-width: 92px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .player-match-trigger { min-width: 0; height: 38px; min-height: 38px; padding: 0 11px; border-radius: 8px; font-size: 12px; }
+  @media (max-width: 900px) {
+    header nav { order: 3; flex: 0 0 100%; width: 100%; justify-content: flex-start; }
+    .player-account-widget { order: 2; margin-left: auto; }
+    .mobile-nav-scrollbar { order: 4; }
+  }
+  @media (max-width: 520px) {
+    .player-account-widget { gap: 5px; padding: 3px; }
+    .player-account-trigger { padding: 2px; }
+    .player-account-trigger span { display: none; }
+    .player-account-trigger img { width: 32px; height: 32px; }
+    .player-match-trigger { height: 36px; min-height: 36px; padding: 0 9px; font-size: 11px; }
+  }
+
 </style>
 </head>
 <body>
