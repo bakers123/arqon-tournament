@@ -690,6 +690,7 @@
 @media(max-width:760px){.arqon-home-stats{grid-template-columns:repeat(2,minmax(0,1fr))}.arqon-match-list{grid-template-columns:1fr}.arqon-cal-shell,.arqon-hub-panel{padding:13px}.arqon-cal-day{min-height:52px;padding:6px;font-size:12px}.arqon-cal-grid{gap:4px}.arqon-cal-weekday{font-size:9px}.arqon-history-toolbar{grid-template-columns:1fr}}
 @media(max-width:768px){header nav{flex-wrap:nowrap!important;justify-content:flex-start!important;overflow-x:auto!important;white-space:nowrap;scrollbar-width:none}header nav::-webkit-scrollbar{display:none}header nav button{flex:0 0 auto}}
 
+.team-logo-admin{display:flex;align-items:center;gap:13px;padding:12px;margin:0 0 12px;border:1px solid rgba(167,139,250,.2);border-radius:12px;background:rgba(139,92,246,.055)}.team-logo-admin-preview{width:58px;height:58px;flex:0 0 58px;display:grid;place-items:center;overflow:hidden;border-radius:13px;border:1px solid rgba(196,181,253,.35);background:linear-gradient(135deg,#6d28d9,#211632);font:900 17px 'Orbitron',sans-serif;color:#fff}.team-logo-admin-preview img{width:100%;height:100%;object-fit:cover}.team-logo-admin-actions{display:flex;gap:7px;align-items:center;flex-wrap:wrap}.team-logo-admin-actions label{display:inline-flex;align-items:center;justify-content:center;cursor:pointer}.team-logo-admin-actions small{display:block;width:100%;color:var(--text-dim);font-size:11px}.team-logo-admin-status{font-size:12px;color:#c4b5fd;margin-top:5px;min-height:16px}
 </style>
 </head>
 <body>
@@ -1556,6 +1557,82 @@ function renderFreeAgents() {
   list.innerHTML = state.freeAgents.map(p => playerCardHTML(p, "removeFreeAgent('" + p.account_id + "')", true)).join('');
 }
 
+async function uploadTeamLogo(input, teamId) {
+  if (!isAdmin()) { if (input) input.value = ''; return; }
+  const file = input?.files?.[0];
+  if (!file) return;
+  const statusId = 'team-logo-status-' + teamId;
+  const showStatus = (message, isError = false) => {
+    const el = document.getElementById(statusId);
+    if (el) { el.textContent = message; el.style.color = isError ? '#fca5a5' : '#c4b5fd'; }
+  };
+  const allowed = { 'image/jpeg':'jpg', 'image/png':'png', 'image/webp':'webp' };
+  if (!allowed[file.type]) { showStatus('Поддерживаются JPG, PNG и WebP.', true); input.value = ''; return; }
+  if (file.size > 5 * 1024 * 1024) { showStatus('Файл больше 5 МБ. Выбери фото поменьше.', true); input.value = ''; return; }
+  const team = (state.teams || []).find(t => String(t.id) === String(teamId));
+  if (!team) { showStatus('Команда не найдена. Обнови страницу.', true); input.value = ''; return; }
+  const oldLogo = team.logo || '';
+  const oldPath = team.logoPath || '';
+  const safeId = String(team.id).replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 80) || 'team';
+  const randomId = window.crypto?.randomUUID?.() || (Date.now() + '-' + Math.random().toString(36).slice(2, 9));
+  const path = safeId + '/' + Date.now() + '-' + randomId + '.' + allowed[file.type];
+  const label = document.querySelector('label[for="team-logo-input-' + CSS.escape(String(teamId)) + '"]');
+  if (label) { label.textContent = 'Загружаем…'; label.style.pointerEvents = 'none'; }
+  showStatus('Загружаем фотографию…');
+  try {
+    const { error: uploadError } = await supabaseClient.storage.from('team-avatars').upload(path, file, {
+      cacheControl: '31536000', contentType: file.type, upsert: false
+    });
+    if (uploadError) throw uploadError;
+    const { data: publicData } = supabaseClient.storage.from('team-avatars').getPublicUrl(path);
+    team.logo = publicData.publicUrl;
+    team.logoPath = path;
+    const { error: saveError } = await supabaseClient.from('tournament').upsert({ id: 1, data: state });
+    if (saveError) {
+      team.logo = oldLogo;
+      team.logoPath = oldPath;
+      await supabaseClient.storage.from('team-avatars').remove([path]);
+      throw saveError;
+    }
+    if (oldPath && oldPath !== path) {
+      const { error: removeError } = await supabaseClient.storage.from('team-avatars').remove([oldPath]);
+      if (removeError) console.warn('Old team logo cleanup failed:', removeError);
+    }
+    renderTeams();
+    const teamsTab = document.getElementById('tab-teams');
+    if (teamsTab && !teamsTab.classList.contains('hidden') && typeof loadTeamsHub === 'function') await loadTeamsHub();
+    showStatus('Аватар команды обновлён ✓');
+  } catch (error) {
+    console.error('Team logo upload failed:', error);
+    showStatus(error.message || 'Не удалось загрузить фотографию.', true);
+  } finally {
+    input.value = '';
+    const currentLabel = document.querySelector('label[for="team-logo-input-' + CSS.escape(String(teamId)) + '"]');
+    if (currentLabel) { currentLabel.textContent = '📷 Выбрать из галереи'; currentLabel.style.pointerEvents = ''; }
+  }
+}
+async function removeTeamLogo(teamId) {
+  if (!isAdmin()) return;
+  const team = (state.teams || []).find(t => String(t.id) === String(teamId));
+  if (!team || !team.logo) return;
+  if (!confirm('Убрать аватар команды?')) return;
+  const oldLogo = team.logo, oldPath = team.logoPath || '';
+  delete team.logo; delete team.logoPath;
+  const { error } = await supabaseClient.from('tournament').upsert({ id: 1, data: state });
+  if (error) {
+    team.logo = oldLogo; if (oldPath) team.logoPath = oldPath;
+    const status = document.getElementById('team-logo-status-' + teamId);
+    if (status) status.textContent = 'Не удалось сохранить удаление: ' + error.message;
+    return;
+  }
+  if (oldPath) {
+    const { error: removeError } = await supabaseClient.storage.from('team-avatars').remove([oldPath]);
+    if (removeError) console.warn('Team logo file cleanup failed:', removeError);
+  }
+  renderTeams();
+  if (!document.getElementById('tab-teams')?.classList.contains('hidden') && typeof loadTeamsHub === 'function') await loadTeamsHub();
+}
+
 function renderTeams() {
   const list = document.getElementById('teams-list');
   if (!list) return;
@@ -1607,6 +1684,16 @@ function renderTeams() {
       ? `<input value="${escapeHtml(t.name)}" onchange="renameTeam('${t.id}', this.value)" style="flex:1; font-weight:700; letter-spacing:1px;" />`
       : `<input value="${escapeHtml(t.name)}" disabled style="flex:1; font-weight:700; letter-spacing:1px;" />`;
 
+    const logoEditor = isAdm
+      ? '<div class="team-logo-admin"><div class="team-logo-admin-preview">' +
+          (t.logo ? '<img src="' + escapeHtml(t.logo) + '" alt="Аватар ' + escapeHtml(t.name) + '">' : '<span>' + escapeHtml(String(t.name || 'TM').slice(0,2).toUpperCase()) + '</span>') +
+          '</div><div style="min-width:0;flex:1;"><div class="team-logo-admin-actions">' +
+          '<label class="btn ghost" for="team-logo-input-' + escapeHtml(t.id) + '">📷 Выбрать из галереи</label>' +
+          '<input id="team-logo-input-' + escapeHtml(t.id) + '" type="file" accept="image/*" hidden onchange="uploadTeamLogo(this,\'' + escapeHtml(t.id) + '\')">' +
+          (t.logo ? '<button type="button" class="btn ghost" onclick="removeTeamLogo(\'' + escapeHtml(t.id) + '\')">Убрать</button>' : '') +
+          '<small>JPG, PNG или WebP · до 5 МБ</small></div>' +
+          '<div class="team-logo-admin-status" id="team-logo-status-' + escapeHtml(t.id) + '"></div></div></div>'
+      : '';
     const captain = t.captainId ? t.players.find(p => String(p.account_id) === String(t.captainId)) : null;
     const captainHint = isAdm ? `
       <div class="hint" style="margin-bottom: 10px; color: ${captain ? 'gold' : 'var(--text-dim)'};">
@@ -1619,6 +1706,7 @@ function renderTeams() {
            ondragover="event.preventDefault(); this.classList.add('drag-over');"
            ondragleave="this.classList.remove('drag-over');"
            ondrop="handleDropOnTeam(event, '${t.id}')">
+        ${logoEditor}
         <div class="row" style="align-items:center; margin-bottom:10px;">
           ${nameInput}
           <span class="hint" style="margin:0;">${t.players.length}/5</span>
@@ -3756,6 +3844,8 @@ window.addResult = addResult;
 window.removeResult = removeResult;
 window.addSponsor = addSponsor;
 window.removeSponsor = removeSponsor;
+window.uploadTeamLogo = uploadTeamLogo;
+window.removeTeamLogo = removeTeamLogo;
 window.openInfoModal = openInfoModal;
 window.closeInfoModal = closeInfoModal;
 window.openAuthScreen = openAuthScreen;
