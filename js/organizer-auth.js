@@ -18,7 +18,7 @@
     widget.id = 'player-account-widget';
     widget.className = 'player-account-widget';
     widget.innerHTML = `
-      <button class="player-match-trigger btn ghost" id="player-match-trigger" type="button">⚔ Мой матч</button>
+      <button class="player-action-button player-match-trigger" id="player-match-trigger" type="button"><span aria-hidden="true">⚔</span><span>МОЙ МАТЧ</span></button>
       <button class="player-account-trigger" id="player-account-trigger" type="button" aria-label="Открыть профиль игрока">
         <img id="player-account-avatar" alt="" src="">
         <span id="player-account-name">Игрок</span>
@@ -30,11 +30,15 @@
     if (panelHeader && !byId('player-match-close')) {
       const close = document.createElement('button');
       close.id = 'player-match-close';
-      close.className = 'player-match-close';
+      close.className = 'player-action-button player-match-close';
       close.type = 'button';
-      close.textContent = 'Свернуть ×';
+      close.innerHTML = '<span aria-hidden="true">⌃</span><span>СВЕРНУТЬ</span>';
       close.addEventListener('click', () => window.hidePlayerMatchPanel?.());
-      panelHeader.querySelector('div:last-child')?.appendChild(close);
+      const actions = panelHeader.querySelector('div:last-child');
+      if (actions) {
+        actions.classList.add('player-dashboard-actions');
+        actions.appendChild(close);
+      }
     }
   }
 
