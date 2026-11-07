@@ -1506,14 +1506,15 @@ function playerCardHTML(p, removeFn, allowTeamAssignment = false) {
     ? `<button class="btn ghost" style="padding:2px 8px;font-size:10px;margin-top:5px;" onclick="event.stopPropagation();generateAccessCode('${escapeHtml(p.name)}')">🔑 Выдать код</button>`
     : '';
   const freeAgentTeam = isAdmin() && allowTeamAssignment
-    ? `<div style="display:flex;align-items:center;gap:6px;margin-top:7px;flex-wrap:wrap;">
-        ${p.freeAgentTeamName ? `<span class="hint" style="margin:0;color:#c4a4ff;">Команда: ${escapeHtml(p.freeAgentTeamName)}</span>` : ''}
-        <button type="button" class="btn ghost" style="width:27px;height:27px;padding:0;margin:0!important;font-size:18px;line-height:1;" title="Указать команду игрока" onclick="event.stopPropagation();editFreeAgentTeam(this)">+</button>
-        <div class="free-agent-team-editor" style="display:none;width:100%;gap:5px;margin-top:4px;">
-          <input type="text" maxlength="60" placeholder="Название команды" value="${escapeHtml(p.freeAgentTeamName || '')}" style="padding:6px 8px;font-size:12px;">
-          <button type="button" class="btn" style="padding:5px 10px;margin:0!important;" onclick="event.stopPropagation();saveFreeAgentTeam(this,'${escapeHtml(p.account_id)}')">Сохранить</button>
-          <button type="button" class="btn ghost" style="padding:5px 10px;margin:0!important;" onclick="event.stopPropagation();this.parentElement.style.display='none'">Отмена</button>
-        </div>
+    ? `<div style="display:flex;align-items:center;gap:7px;margin-top:7px;flex-wrap:wrap;">
+        <span class="hint" style="margin:0;color:#c4a4ff;">Свободный агент</span>
+        <select aria-label="Выбрать команду для ${escapeHtml(p.name)}"
+          style="width:auto;max-width:190px;min-width:145px;padding:6px 28px 6px 9px;font-size:12px;"
+          onclick="event.stopPropagation()"
+          onchange="event.stopPropagation();assignFreeAgentToTeam(this,'${escapeHtml(p.account_id)}')">
+          <option value="">Выбрать команду…</option>
+          ${(state.teams || []).map(t => `<option value="${escapeHtml(t.id)}" ${(t.players || []).length >= 5 ? 'disabled' : ''}>${escapeHtml(t.name)}${(t.players || []).length >= 5 ? ' (5/5)' : ''}</option>`).join('')}
+        </select>
       </div>`
     : '';
   const arqonRatingEditor = isAdmin()
@@ -1771,6 +1772,40 @@ function removeFreeAgent(accId) {
   state.freeAgents = (state.freeAgents || []).filter(p => String(p.account_id) !== String(accId));
   renderFreeAgents(); saveState();
 }
+
+function assignFreeAgentToTeam(select, accountId) {
+  if (!isAdmin()) { if (select) select.value = ''; return; }
+  const teamId = select?.value;
+  if (!teamId) return;
+  const player = (state.freeAgents || []).find(p => String(p.account_id) === String(accountId));
+  const team = (state.teams || []).find(t => String(t.id) === String(teamId));
+  if (!player || !team) {
+    if (select) select.value = '';
+    alert('Игрок или команда не найдены. Обнови страницу.');
+    return;
+  }
+  if (!Array.isArray(team.players)) team.players = [];
+  if (team.players.length >= 5) {
+    select.value = '';
+    alert('В команде уже 5 игроков!');
+    return;
+  }
+  if (team.players.some(p => String(p.account_id) === String(accountId))) {
+    select.value = '';
+    alert('Этот игрок уже находится в составе команды.');
+    return;
+  }
+
+  state.freeAgents = state.freeAgents.filter(p => String(p.account_id) !== String(accountId));
+  delete player.assignedTeamId;
+  delete player.freeAgentTeamName;
+  team.players.push(player);
+
+  saveState();
+  renderTeams();
+  renderFreeAgents();
+  if (typeof loadPlayerHub === 'function') loadPlayerHub();
+}
 function removeTeam(id) {
   if (!isAdmin()) return;
   const team = (state.teams || []).find(t => String(t.id) === String(id));
@@ -1857,6 +1892,7 @@ function handleDropOnTeam(event, teamId) {
 // Экспорт в window
 window.removeSolo = removeSolo;
 window.removeFreeAgent = removeFreeAgent;
+window.assignFreeAgentToTeam = assignFreeAgentToTeam;
 window.saveArqonRating = saveArqonRating;
 window.editFreeAgentTeam = editFreeAgentTeam;
 window.saveFreeAgentTeam = saveFreeAgentTeam;
