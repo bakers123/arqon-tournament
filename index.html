@@ -1513,7 +1513,7 @@ function playerCardHTML(p, removeFn, allowTeamAssignment = false) {
           onclick="event.stopPropagation()"
           onchange="event.stopPropagation();assignFreeAgentToTeam(this,'${escapeHtml(p.account_id)}')">
           <option value="">Выбрать команду…</option>
-          ${(state.teams || []).map(t => `<option value="${escapeHtml(t.id)}" ${(t.players || []).length >= 5 ? 'disabled' : ''}>${escapeHtml(t.name)}${(t.players || []).length >= 5 ? ' (5/5)' : ''}</option>`).join('')}
+          ${(state.teams || []).map(t => `<option value="${escapeHtml(t.id)}">${escapeHtml(t.name)}</option>`).join('')}
         </select>
       </div>`
     : '';
@@ -1710,7 +1710,7 @@ function renderTeams() {
         ${logoEditor}
         <div class="row" style="align-items:center; margin-bottom:10px;">
           ${nameInput}
-          <span class="hint" style="margin:0;">${t.players.length}/5</span>
+          <span class="hint" style="margin:0;">${t.players.length} игроков</span>
           ${rmTeam}
         </div>
         ${captainHint}
@@ -1785,11 +1785,6 @@ function assignFreeAgentToTeam(select, accountId) {
     return;
   }
   if (!Array.isArray(team.players)) team.players = [];
-  if (team.players.length >= 5) {
-    select.value = '';
-    alert('В команде уже 5 игроков!');
-    return;
-  }
   if (team.players.some(p => String(p.account_id) === String(accountId))) {
     select.value = '';
     alert('Этот игрок уже находится в составе команды.');
@@ -1876,7 +1871,6 @@ function handleDropOnTeam(event, teamId) {
     if (!player) return;
     const team = state.teams.find(t => t.id === teamId);
     if (!team) return;
-    if (team.players.length >= 5) { alert('В команде уже 5 игроков!'); return; }
 
     state.freeAgents = state.freeAgents.filter(p => String(p.account_id) !== String(accountId));
     delete player.assignedTeamId;
