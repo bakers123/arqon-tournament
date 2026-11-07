@@ -11,7 +11,66 @@
 
   window.isAdmin = () => ['owner', 'admin', 'editor'].includes(organizerRole);
 
+  function installPlayerAccountUi() {
+    const header = document.querySelector('header');
+    if (!header || byId('player-account-widget')) return;
+    const widget = document.createElement('div');
+    widget.id = 'player-account-widget';
+    widget.className = 'player-account-widget';
+    widget.innerHTML = `
+      <button class="player-match-trigger btn ghost" id="player-match-trigger" type="button">⚔ Мой матч</button>
+      <button class="player-account-trigger" id="player-account-trigger" type="button" aria-label="Открыть профиль игрока">
+        <img id="player-account-avatar" alt="" src="">
+        <span id="player-account-name">Игрок</span>
+      </button>`;
+    header.appendChild(widget);
+    byId('player-match-trigger').addEventListener('click', () => window.showPlayerMatchPanel?.());
+    byId('player-account-trigger').addEventListener('click', () => window.showPlayerMatchPanel?.());
+    const panelHeader = byId('player-screen')?.querySelector('.card');
+    if (panelHeader && !byId('player-match-close')) {
+      const close = document.createElement('button');
+      close.id = 'player-match-close';
+      close.className = 'player-match-close';
+      close.type = 'button';
+      close.textContent = 'Свернуть ×';
+      close.addEventListener('click', () => window.hidePlayerMatchPanel?.());
+      panelHeader.querySelector('div:last-child')?.appendChild(close);
+    }
+  }
+
+  function setPlayerAccount(player) {
+    if (!player) return;
+    const widget = byId('player-account-widget');
+    const name = String(player.name || localStorage.getItem('arqon_current_name') || 'Игрок');
+    const avatar = String(player.avatar || player.avatar_url || player.photo_url || '');
+    if (byId('player-account-name')) byId('player-account-name').textContent = name;
+    const img = byId('player-account-avatar');
+    if (img) {
+      img.src = avatar || ('https://ui-avatars.com/api/?name=' + encodeURIComponent(name) + '&background=7A3BFF&color=fff&size=96&bold=true');
+      img.onerror = () => { img.src = 'https://ui-avatars.com/api/?name=' + encodeURIComponent(name) + '&background=7A3BFF&color=fff&size=96&bold=true'; };
+    }
+    widget?.classList.add('visible');
+    const displayName = byId('player-display-name');
+    if (displayName) displayName.textContent = name;
+  }
+
+  window.showPlayerMatchPanel = function() {
+    const screen = byId('player-screen');
+    if (!screen) return;
+    screen.classList.remove('hidden');
+    screen.classList.add('player-match-open');
+    screen.style.display = 'flex';
+  };
+  window.hidePlayerMatchPanel = function() {
+    const screen = byId('player-screen');
+    if (!screen) return;
+    screen.classList.remove('player-match-open');
+    screen.classList.add('hidden');
+    screen.style.display = 'none';
+  };
+
   function installOrganizerUi() {
+    installPlayerAccountUi();
     const nav = document.querySelector('header nav');
     if (nav && !byId('organizer-login-btn')) {
       const button = document.createElement('button');
@@ -107,12 +166,13 @@
     if (error) console.error('Player lookup failed:', error);
     if (player) {
       if (byId('auth-screen')) byId('auth-screen').style.display = 'none';
+      installPlayerAccountUi();
       const main = document.querySelector('main');
-      if (main) main.style.display = 'none';
-      const screen = byId('player-screen');
-      if (screen) { screen.classList.remove('hidden'); screen.style.display = 'flex'; }
-      if (byId('player-display-name')) byId('player-display-name').textContent = player.name;
+      if (main) main.style.display = 'block';
+      window.hidePlayerMatchPanel?.();
+      setPlayerAccount(player);
       if (typeof startDraftListener === 'function') startDraftListener(uid);
+      if (typeof applyPathRoute === 'function') applyPathRoute();
     } else if (typeof handleNoAuth === 'function') {
       handleNoAuth();
     }
