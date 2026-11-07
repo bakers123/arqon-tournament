@@ -170,7 +170,17 @@
       const main = document.querySelector('main');
       if (main) main.style.display = 'block';
       window.hidePlayerMatchPanel?.();
-      setPlayerAccount(player);
+      let account = player;
+      if (!account.avatar && !account.avatar_url && typeof collectPlayerAvatars === 'function') {
+        try {
+          const { data: tournament } = await supabaseClient.from('tournament').select('data').eq('id', 1).maybeSingle();
+          const avatars = collectPlayerAvatars(tournament?.data || {});
+          account = { ...player, avatar: avatars[String(player.name || '').trim().toLocaleLowerCase()] || '' };
+        } catch (avatarError) {
+          console.warn('Player avatar lookup failed:', avatarError);
+        }
+      }
+      setPlayerAccount(account);
       if (typeof startDraftListener === 'function') startDraftListener(uid);
       if (typeof applyPathRoute === 'function') applyPathRoute();
     } else if (typeof handleNoAuth === 'function') {
