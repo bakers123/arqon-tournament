@@ -71,17 +71,21 @@
 
   function installOrganizerUi() {
     installPlayerAccountUi();
-    const nav = document.querySelector('header nav');
-    if (nav && !byId('organizer-login-btn')) {
+    const home = byId('tab-home');
+    if (home && !byId('organizer-login-btn')) {
+      const footer = document.createElement('div');
+      footer.className = 'organizer-entry-footer';
       const button = document.createElement('button');
       button.id = 'organizer-login-btn';
       button.type = 'button';
-      button.textContent = 'Организатор';
+      button.className = 'organizer-login-link';
+      button.textContent = 'Вход для организатора';
       button.addEventListener('click', () => {
         const modal = byId('organizer-auth-modal');
         if (modal) modal.style.display = 'flex';
       });
-      nav.appendChild(button);
+      footer.appendChild(button);
+      home.appendChild(footer);
     }
 
     if (!byId('organizer-auth-modal')) {
