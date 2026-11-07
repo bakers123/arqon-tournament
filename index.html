@@ -681,6 +681,15 @@
   .organizer-entry-footer { display:flex; justify-content:center; padding:24px 0 8px; }
   .organizer-login-link { appearance:none; border:1px solid rgba(255,255,255,.08); background:transparent; color:rgba(220,220,230,.34); font:500 10px 'Rajdhani',sans-serif; letter-spacing:.5px; padding:5px 10px; border-radius:5px; cursor:pointer; transition:color .2s,border-color .2s,background .2s; }
   .organizer-login-link:hover { color:rgba(220,220,230,.72); border-color:rgba(255,255,255,.18); background:rgba(255,255,255,.025); }
+
+.arqon-home-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:18px 0 28px}.arqon-home-stat{padding:18px;border:1px solid rgba(167,139,250,.2);border-radius:14px;background:linear-gradient(145deg,rgba(139,92,246,.13),rgba(17,17,24,.92));min-width:0}.arqon-home-stat small{display:block;color:var(--text-dim);font-size:11px;letter-spacing:1.2px;text-transform:uppercase}.arqon-home-stat strong{display:block;margin-top:7px;font:800 clamp(22px,3vw,30px) 'Orbitron',sans-serif;color:#e9ddff}
+.arqon-cal-shell,.arqon-hub-panel{border:1px solid var(--border);border-radius:16px;background:linear-gradient(145deg,rgba(24,20,35,.96),rgba(12,12,18,.98));padding:20px;margin:18px 0}.arqon-cal-head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:16px}.arqon-cal-month{font:800 clamp(18px,3vw,25px) 'Orbitron',sans-serif;text-transform:capitalize}.arqon-cal-controls{display:flex;align-items:center;gap:8px}.arqon-cal-controls button{width:40px;height:40px;border:1px solid rgba(167,139,250,.32);border-radius:10px;background:rgba(139,92,246,.12);color:#e9ddff;font-size:20px;cursor:pointer}.arqon-cal-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:7px}.arqon-cal-weekday{text-align:center;color:var(--text-dim);font-size:11px;font-weight:800;letter-spacing:.7px;padding:7px 0}.arqon-cal-day{position:relative;min-height:66px;border:1px solid rgba(255,255,255,.07);border-radius:10px;background:rgba(255,255,255,.025);color:#eee;display:flex;flex-direction:column;align-items:flex-start;justify-content:space-between;padding:9px;cursor:pointer;font:700 14px 'Rajdhani',sans-serif;text-align:left}.arqon-cal-day:hover{border-color:rgba(167,139,250,.55);background:rgba(139,92,246,.09)}.arqon-cal-day.is-outside{opacity:.3}.arqon-cal-day.is-selected{border-color:#a78bfa;background:linear-gradient(145deg,rgba(139,92,246,.28),rgba(139,92,246,.08));box-shadow:inset 0 0 0 1px rgba(167,139,250,.18)}.arqon-cal-day.is-today:after{content:'';position:absolute;top:8px;right:8px;width:6px;height:6px;border-radius:50%;background:#c4b5fd;box-shadow:0 0 9px #a78bfa}.arqon-cal-count{align-self:flex-end;min-width:18px;height:18px;padding:0 5px;border-radius:99px;background:#7c3aed;color:white;font-size:10px;display:grid;place-items:center}.arqon-cal-filter{max-width:260px}.arqon-cal-selected-head{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin:22px 0 12px}
+.arqon-match-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.arqon-match-card{border:1px solid var(--border);border-radius:13px;padding:15px;background:rgba(8,8,13,.7);min-width:0;transition:border-color .2s,transform .2s}.arqon-match-card:hover{border-color:rgba(167,139,250,.55);transform:translateY(-2px)}.arqon-match-card-top{display:flex;justify-content:space-between;gap:8px;color:var(--text-dim);font-size:11px;margin-bottom:12px}.arqon-match-versus{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:center;gap:10px;font:800 15px 'Orbitron',sans-serif}.arqon-match-team{min-width:0;overflow-wrap:anywhere;color:#fff}.arqon-match-team:last-child{text-align:right}.arqon-match-vs{color:#9b83c8;font-size:10px}.arqon-match-meta{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;color:var(--text-dim);font-size:12px;margin-top:12px;padding-top:10px;border-top:1px solid rgba(255,255,255,.06)}.arqon-match-state{font-weight:800;color:#c4b5fd}.arqon-match-state.done{color:#86efac}.arqon-match-state.tech{color:#fbbf24}.arqon-team-link{border:0;background:none;color:inherit;font:inherit;text-align:inherit;cursor:pointer;padding:0}.arqon-team-link:hover{color:#c4b5fd}
+.arqon-team-card{cursor:pointer}.arqon-team-card:focus-visible,.arqon-cal-day:focus-visible{outline:2px solid #c4b5fd;outline-offset:2px}.arqon-team-mark{width:58px;height:58px;flex:0 0 58px;border-radius:15px;display:grid;place-items:center;background:linear-gradient(135deg,#6d28d9,#211632);border:1px solid rgba(196,181,253,.45);font:900 18px 'Orbitron',sans-serif;color:#fff;overflow:hidden}.arqon-team-mark img{width:100%;height:100%;object-fit:cover}.arqon-form{display:flex;gap:5px;align-items:center}.arqon-form-dot{width:9px;height:9px;border-radius:50%;background:#555}.arqon-form-dot.win{background:#4ade80;box-shadow:0 0 8px rgba(74,222,128,.4)}.arqon-form-dot.loss{background:#fb7185}.arqon-form-dot.pending{background:#a78bfa}.arqon-roster-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:10px;margin-top:12px}.arqon-roster-player{display:flex;align-items:center;gap:10px;padding:10px;border:1px solid var(--border);border-radius:11px;background:rgba(255,255,255,.025);min-width:0}.arqon-roster-player .portal-avatar{width:42px;height:42px;flex:0 0 42px;border-radius:10px;font-size:18px}.arqon-roster-player strong{display:block;overflow-wrap:anywhere}.arqon-roster-player small{color:var(--text-dim)}.arqon-history-toolbar{display:grid;grid-template-columns:minmax(0,1fr) 220px;gap:10px;margin:16px 0}
+.league-table tbody tr.playoff-zone{background:rgba(139,92,246,.055)}.league-table tbody tr.playoff-zone td:first-child{border-left:3px solid rgba(167,139,250,.75)}.league-rank-badge{display:inline-grid;place-items:center;min-width:27px;height:27px;padding:0 5px;border-radius:8px;background:rgba(139,92,246,.13);font-size:12px}.league-rank-badge.rank-1{background:rgba(250,204,21,.16);color:#fde68a}.league-rank-badge.rank-2{background:rgba(203,213,225,.15);color:#e2e8f0}.league-rank-badge.rank-3{background:rgba(217,119,6,.16);color:#fdba74}.league-team-link{border:0;background:transparent;color:#fff;font:inherit;font-weight:800;cursor:pointer;padding:3px 0;text-align:left}.league-team-link:hover{color:#c4b5fd;text-decoration:underline}
+@media(max-width:760px){.arqon-home-stats{grid-template-columns:repeat(2,minmax(0,1fr))}.arqon-match-list{grid-template-columns:1fr}.arqon-cal-shell,.arqon-hub-panel{padding:13px}.arqon-cal-day{min-height:52px;padding:6px;font-size:12px}.arqon-cal-grid{gap:4px}.arqon-cal-weekday{font-size:9px}.arqon-history-toolbar{grid-template-columns:1fr}}
+@media(max-width:768px){header nav{flex-wrap:nowrap!important;justify-content:flex-start!important;overflow-x:auto!important;white-space:nowrap;scrollbar-width:none}header nav::-webkit-scrollbar{display:none}header nav button{flex:0 0 auto}}
+
 </style>
 </head>
 <body>
@@ -751,6 +760,8 @@
     <button data-tab="bracket">Сетка</button>
     <button data-tab="tournaments">Турниры</button>
     <button data-tab="players">Игроки</button>
+     <button data-tab="teams">Команды</button>
+     <button data-tab="history">История</button>
     <button data-tab="news">Новости</button>
     <button data-tab="schedule">Расписание</button>
     <button data-tab="results">🏆 Результаты</button>
@@ -1016,7 +1027,8 @@
         </div>
       </div>
 
-      <div class="home-section-head"><div><h2>СМОТРИ ARQON LIVE</h2><p>Трансляции турниров и игровые моменты на нашем Twitch-канале.</p></div><span class="home-live-label">TWITCH CHANNEL</span></div>
+      <div id="home-league-stats" class="arqon-home-stats"><div class="arqon-home-stat"><small>Команды</small><strong>—</strong></div><div class="arqon-home-stat"><small>Матчи сыграны</small><strong>—</strong></div><div class="arqon-home-stat"><small>Всего матчей</small><strong>—</strong></div><div class="arqon-home-stat"><small>Осталось</small><strong>—</strong></div></div>
+       <div class="home-section-head"><div><h2>СМОТРИ ARQON LIVE</h2><p>Трансляции турниров и игровые моменты на нашем Twitch-канале.</p></div><span class="home-live-label">TWITCH CHANNEL</span></div>
       <div class="home-stream-layout">
         <div class="home-stream-card">
           <div class="home-stream-head"><h2>ARQON ESPORTS BROADCAST</h2><span id="arqon-stream-status" class="home-live-label is-offline" role="status" aria-live="polite">OFFLINE</span></div>
@@ -1072,6 +1084,9 @@
     <div id="player-list" class="portal-grid"><div class="home-data-card">Загружаем игроков…</div></div>
     <div id="player-detail" class="home-data-card hidden" style="margin-top:20px"></div>
   </section>
+
+  <section id="tab-teams" class="hidden"><div class="portal-heading"><div class="home-kicker">TEAM HUB</div><h1 class="home-title">КОМАНДЫ <span>ARQON</span></h1><p class="home-lead">Профили команд, положение в лиге, составы и история встреч.</p></div><div id="team-list" class="portal-grid"><div class="home-data-card">Загружаем команды…</div></div><div id="team-detail" class="arqon-hub-panel hidden"></div></section>
+  <section id="tab-history" class="hidden"><div class="portal-heading"><div class="home-kicker">MATCH ARCHIVE</div><h1 class="home-title">ИСТОРИЯ <span>МАТЧЕЙ</span></h1><p class="home-lead">Архив сыгранных матчей ARQON: результаты, технические поражения и история команд.</p></div><div class="arqon-hub-panel"><div class="arqon-history-toolbar"><input id="history-search" placeholder="Поиск по команде или номеру матча…" aria-label="Поиск матчей"><select id="history-filter" aria-label="Фильтр результатов"><option value="all">Все результаты</option><option value="normal">Обычные матчи</option><option value="tech">Технические матчи</option></select></div><div id="history-count" class="hint"></div><div id="history-list" class="arqon-match-list"><div class="home-data-card">Загружаем историю…</div></div></div></section>
 
   <!-- ВКЛАДКА СЕТКА -->
   <section id="tab-bracket" class="hidden">
@@ -2063,23 +2078,16 @@ function setupArqonTwitch() {
 }
 
 async function loadHomeHighlights() {
-  const upcoming = document.getElementById('home-upcoming-list');
-  const resultsBox = document.getElementById('home-results-list');
-  if (!upcoming || !resultsBox) return;
-  try {
-    const [{ data: schedule, error: scheduleError }, { data: results, error: resultsError }] = await Promise.all([
-      supabaseClient.from('schedule').select('*').order('id', { ascending: true }).limit(3),
-      supabaseClient.from('results').select('*').order('created_at', { ascending: false }).limit(3)
-    ]);
-    if (scheduleError) throw scheduleError;
-    upcoming.innerHTML = schedule && schedule.length ? schedule.map(item => `<div class="home-data-item"><strong>${escapeHtml(item.match_name || 'Матч')}</strong><span>${escapeHtml(item.tournament || 'Турнир ARQON')} · ${escapeHtml(item.match_time || 'Время уточняется')} · ${escapeHtml(item.status || 'Запланирован')}</span></div>`).join('') : '<p class="home-empty-note">Пока нет опубликованных матчей. Следи за анонсами в Telegram.</p>';
-    if (resultsError) throw resultsError;
-    resultsBox.innerHTML = results && results.length ? results.map(item => `<div class="home-data-item"><strong>${escapeHtml(item.tournament_name || 'Турнир ARQON')}</strong><span>🥇 ${escapeHtml(item.place_1 || 'Победитель не указан')}${item.place_2 ? ' · 🥈 ' + escapeHtml(item.place_2) : ''}</span></div>`).join('') : '<p class="home-empty-note">Результаты появятся здесь после завершения турниров.</p>';
-  } catch (err) {
-    upcoming.innerHTML = '<p class="home-empty-note">Не удалось загрузить расписание. Открой соответствующий раздел или загляни позже.</p>';
-    resultsBox.innerHTML = '<p class="home-empty-note">Не удалось загрузить результаты. Попробуй обновить страницу позже.</p>';
-    console.warn('Home highlights could not be loaded:', err);
-  }
+ const upcoming=document.getElementById('home-upcoming-list'),resultsBox=document.getElementById('home-results-list');if(!upcoming||!resultsBox)return;
+ try{
+  const [{data:results,error:resultsError},{data:row,error:leagueError}]=await Promise.all([supabaseClient.from('results').select('*').order('created_at',{ascending:false}).limit(3),supabaseClient.from('league_data').select('payload').eq('id',1).maybeSingle()]);
+  if(leagueError)throw leagueError;leagueData=leagueNormalizeData(row?.payload||{});
+  const matches=(leagueData.matches||[]).filter(m=>m.team1&&m.team2),pending=matches.filter(m=>m.result_type==='pending'&&arqonParseLeagueDate(m.date)).sort(arqonCompareLeagueMatches).slice(0,3),done=matches.filter(m=>m.result_type!=='pending').sort((a,b)=>arqonCompareLeagueMatches(b,a)).slice(0,3);
+  upcoming.innerHTML=pending.length?pending.map(m=>'<div class="home-data-item"><strong>№'+escapeHtml(m.match_no||'—')+' · '+escapeHtml(m.team1)+' vs '+escapeHtml(m.team2)+'</strong><span>'+escapeHtml(m.date||'Дата уточняется')+' · '+escapeHtml(m.time||'Время уточняется')+' · '+escapeHtml(m.venue||'Площадка уточняется')+'</span></div>').join(''):'<p class="home-empty-note">Ближайших матчей с указанной датой пока нет.</p>';
+  if(resultsError)throw resultsError;
+  resultsBox.innerHTML=done.length?done.map(m=>'<div class="home-data-item"><strong>№'+escapeHtml(m.match_no||'—')+' · '+escapeHtml(m.team1)+' vs '+escapeHtml(m.team2)+'</strong><span>'+(m.result_type==='tech'?'Технический результат · техлуз: '+escapeHtml(m.tech_loss_team||'не указан'):'Победитель: '+escapeHtml(m.winner||'не указан'))+(m.score?' · '+escapeHtml(m.score):'')+'</span></div>').join(''):(results&&results.length?results.map(r=>'<div class="home-data-item"><strong>'+escapeHtml(r.tournament_name||'Турнир ARQON')+'</strong><span>🥇 '+escapeHtml(r.place_1||'Победитель не указан')+'</span></div>').join(''):'<p class="home-empty-note">Результаты появятся здесь после завершения матчей.</p>');
+  const statsBox=document.getElementById('home-league-stats');if(statsBox){const standings=leagueStandings(),played=matches.filter(m=>m.result_type!=='pending').length;statsBox.innerHTML=[['Команды',standings.length],['Матчи сыграны',played],['Всего матчей',matches.length],['Осталось',Math.max(0,matches.length-played)]].map(x=>'<div class="arqon-home-stat"><small>'+x[0]+'</small><strong>'+x[1]+'</strong></div>').join('');}
+ }catch(err){upcoming.innerHTML='<p class="home-empty-note">Не удалось загрузить расписание. Попробуй позже.</p>';resultsBox.innerHTML='<p class="home-empty-note">Не удалось загрузить результаты. Попробуй позже.</p>';console.warn('Home highlights:',err);}
 }
 
 // Публичный каталог турниров и профили. Рейтинг — прозрачные очки за опубликованные места.
@@ -2227,6 +2235,8 @@ const TAB_PATHS = {
   bracket: '/game_grid/',
   tournaments: '/tournaments/',
   players: '/players/',
+  teams: '/teams/',
+  history: '/history/',
   news: '/news/',
   schedule: '/schedule/',
   results: '/results/',
@@ -2241,6 +2251,8 @@ const TAB_SEO = {
   bracket: { title: 'Турнирная сетка ARQON — матчи CS2 и Dota 2 в Тюмени', description: 'Турнирная сетка ARQON Esports: участники, пары матчей и результаты киберспортивных турниров CS2 и Dota 2 в Тюмени.' },
   tournaments: { title: 'Турниры CS2 в Тюмени — ARQON Esports', description: 'Киберспортивные турниры ARQON по CS2 и Dota 2 в Тюмени и ближайших городах. Следи за событиями, расписанием и результатами.' },
   players: { title: 'Рейтинг игроков CS2 — игроки ARQON Esports', description: 'Рейтинг игроков ARQON: профили, рейтинг ARQON от 0 до 100, FACEIT и результаты турниров киберспортивного сообщества Тюмени.' },
+  teams: { title: 'Команды ARQON Esports — профили и статистика лиги', description: 'Профили команд ARQON Esports: составы, результаты матчей, статистика и положение в киберспортивной лиге Тюмени.' },
+  history: { title: 'История матчей ARQON — результаты и архив', description: 'Архив матчей ARQON Esports: результаты CS2 5×5, победы, поражения и технические результаты.' },
   news: { title: 'Новости киберспорта и турниров — ARQON Esports', description: 'Новости ARQON Esports: анонсы турниров CS2 и Dota 2, итоги матчей и события киберспортивного сообщества Тюмени.' },
   schedule: { title: 'Расписание матчей и турниров CS2 — ARQON', description: 'Расписание матчей и киберспортивных турниров ARQON по CS2 и Dota 2 в Тюмени. Время встреч и обновления.' },
   results: { title: 'Результаты турниров CS2 — ARQON Esports', description: 'Результаты турниров ARQON Esports, призовые места, победители и MVP киберспортивных соревнований.' },
@@ -2300,6 +2312,8 @@ function switchTab(tab, updateUrl = true) {
     bracket: document.getElementById('tab-bracket'),
     tournaments: document.getElementById('tab-tournaments'),
     players: document.getElementById('tab-players'),
+    teams: document.getElementById('tab-teams'),
+    history: document.getElementById('tab-history'),
     news: document.getElementById('tab-news'),
     schedule: document.getElementById('tab-schedule'),
     results: document.getElementById('tab-results'),
@@ -2320,6 +2334,8 @@ function switchTab(tab, updateUrl = true) {
   }
   if (tab === 'tournaments') loadTournamentHub();
   if (tab === 'players') loadPlayerHub();
+  if (tab === 'teams') loadTeamsHub();
+  if (tab === 'history') loadHistory();
   if (tab === 'news') loadNews();
   if (tab === 'schedule') loadSchedule();
   if (tab === 'results') loadResults();
@@ -3247,7 +3263,7 @@ function leagueRenderPublic(){
       <div class="league-stat"><small>Всего матчей</small><strong>${total}</strong></div>
       <div class="league-stat"><small>Осталось</small><strong>${Math.max(0,total-played)}</strong></div>
     </div>
-    <div class="league-panel"><h2>🏆 Турнирная таблица</h2><div class="league-table-scroll"><table class="league-table"><thead><tr><th>#</th><th>Команда</th><th>И</th><th>В</th><th>П</th><th>ТЛ</th><th>О</th><th>Статус</th></tr></thead><tbody>${standings.map((t,i)=>`<tr><td class="league-rank">${i+1}</td><td class="league-team-name">${leagueEscape(t.team)}${t.dq?'<span class="league-dq">DQ</span>':''}</td><td>${t.played}</td><td>${t.wins}</td><td>${t.losses}</td><td>${t.tech}</td><td><b>${t.points}</b></td><td>${t.dq?'<span class="league-status dq">ДИСКВАЛИФИКАЦИЯ</span>':'<span class="league-status">В турнире</span>'}</td></tr>`).join('')}</tbody></table></div><p class="league-muted" style="margin-top:10px">И — игры, В — победы, П — поражения, ТЛ — технические поражения, О — очки. При 3 технических поражениях команда автоматически получает статус DQ.</p></div>
+    <div class="league-panel"><h2>🏆 Турнирная таблица</h2><div class="league-table-scroll"><table class="league-table"><thead><tr><th>#</th><th>Команда</th><th>И</th><th>В</th><th>П</th><th>ТЛ</th><th>О</th><th>Статус</th></tr></thead><tbody>${standings.map((t,i)=>`<tr class="${i<4?'playoff-zone':''}"><td class="league-rank"><span class="league-rank-badge rank-${i+1}">${i===0?'🥇':i===1?'🥈':i===2?'🥉':i+1}</span></td><td class="league-team-name"><button type="button" class="league-team-link" data-team="${leagueEscape(t.team)}" onclick="openTeamProfile(this.dataset.team)">${leagueEscape(t.team)}</button>${t.dq?'<span class="league-dq">DQ</span>':''}</td><td>${t.played}</td><td>${t.wins}</td><td>${t.losses}</td><td>${t.tech}</td><td><b>${t.points}</b></td><td>${t.dq?'<span class="league-status dq">ДИСКВАЛИФИКАЦИЯ</span>':'<span class="league-status">В турнире</span>'}</td></tr>`).join('')}</tbody></table></div><p class="league-muted" style="margin-top:10px">И — игры, В — победы, П — поражения, ТЛ — технические поражения, О — очки. При 3 технических поражениях команда автоматически получает статус DQ. Топ-4 выделены как зона плей-офф. Нажми на название команды, чтобы открыть профиль.</p></div>
     <div class="league-panel"><h2>Последние результаты</h2>${done.length?`<div class="league-match-grid">${done.slice().reverse().slice(0,12).map(m=>`<article class="league-match"><div class="league-match-top"><span>Матч №${m.match_no||'—'}</span><span>${leagueEscape(m.date)} ${leagueEscape(m.time)}</span></div><div class="league-match-teams">${leagueEscape(m.team1)} <span style="color:var(--text-dim)">vs</span> ${leagueEscape(m.team2)}</div><div class="league-result">${m.result_type==='tech'?'Тех. поражение: '+leagueEscape(m.tech_loss_team):'Победитель: '+leagueEscape(m.winner)}${m.score?' · '+leagueEscape(m.score):''}</div></article>`).join('')}</div>`:'<p class="league-muted">Результаты ещё не внесены. Они появятся здесь после сохранения администратором.</p>'}</div>
     <div class="league-panel"><h2>Расписание матчей</h2><div class="league-match-grid">${upcoming.filter(m=>m.team1&&m.team2).map(m=>`<article class="league-match"><div class="league-match-top"><span>Матч №${m.match_no||'—'}</span><span>${leagueEscape(m.date)} ${leagueEscape(m.time)}</span></div><div class="league-match-teams">${leagueEscape(m.team1)} <span style="color:var(--text-dim)">vs</span> ${leagueEscape(m.team2)}</div><div class="league-match-meta">${leagueEscape(m.venue||'Место не указано')} · <span class="league-status">ОЖИДАЕТСЯ</span></div></article>`).join('')||'<p class="league-muted">Нет матчей с заполненными командами.</p>'}</div></div>`;
 }
@@ -3350,45 +3366,40 @@ async function addSchedule() {
   }
 }
 
-async function loadSchedule() {
-  const { data } = await supabaseClient.from('schedule').select('*').order('id', { ascending: true });
-  const container = document.getElementById('tab-schedule');
-  if (!container) return;
 
-  let html = `
-    <div class="card">
-      <h2 style="margin-bottom: 20px;">📅 Расписание матчей ARQON</h2><p style="color:var(--text-dim);line-height:1.6;margin-bottom:14px;">Актуальное расписание турниров и матчей ARQON по CS2 и Dota 2. Проверяй время встреч и следи за обновлениями.</p>
-      <table style="width: 100%; border-collapse: collapse; color: #ccc;">
-        <thead>
-          <tr style="border-bottom: 1px solid var(--border); text-align: left;">
-            <th style="padding: 10px; color: var(--accent);">Время</th>
-            <th style="padding: 10px; color: var(--accent);">Турнир</th>
-            <th style="padding: 10px; color: var(--accent);">Матч</th>
-            <th style="padding: 10px; color: var(--accent);">Статус</th>
-            <th style="padding: 10px; color: var(--accent);"></th>
-          </tr>
-        </thead>
-        <tbody>
-  `;
-
-  if (!data || data.length === 0) {
-    html += '<tr><td colspan="5" style="padding: 10px; text-align: center; color: var(--text-dim);">Матчей пока нет.</td></tr>';
-  } else {
-    data.forEach(item => {
-      html += `
-        <tr style="border-bottom: 1px solid var(--border);">
-          <td style="padding: 10px;">${escapeHtml(item.match_time)}</td>
-          <td style="padding: 10px;">${escapeHtml(item.tournament)}</td>
-          <td style="padding: 10px;">${escapeHtml(item.match_name)}</td>
-          <td style="padding: 10px; color: ${item.status === 'Скоро' ? '#22c55e' : 'var(--text-dim)'};">${escapeHtml(item.status)}</td>
-          <td style="padding: 10px;">${isAdmin() ? `<button class="btn danger" style="padding: 2px 8px; font-size: 10px;" onclick="removeSchedule(${item.id})">Удалить</button>` : ''}</td>
-        </tr>
-      `;
-    });
-  }
-  html += `</tbody></table><div class="hint" style="margin-top: 20px;">* Время указано по МСК.</div></div>`;
-  container.innerHTML = html;
+let arqonCalendarMonth=null,arqonCalendarSelected='',arqonCalendarTeamFilter='all';
+function arqonParseLeagueDate(v){const m=String(v||'').match(/^(\d{1,2})\.(\d{1,2})\.(\d{4})$/);if(!m)return null;const d=new Date(+m[3],+m[2]-1,+m[1]);return Number.isNaN(d.getTime())?null:d;}
+function arqonDateKey(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
+function arqonCompareLeagueMatches(a,b){const da=arqonParseLeagueDate(a?.date),db=arqonParseLeagueDate(b?.date),ka=da?arqonDateKey(da):'9999-99-99',kb=db?arqonDateKey(db):'9999-99-99';return ka.localeCompare(kb)||String(a?.time||'').localeCompare(String(b?.time||''))||(+a?.match_no||0)-(+b?.match_no||0);}
+async function arqonLoadLeagueReadOnly(){const {data,error}=await supabaseClient.from('league_data').select('payload').eq('id',1).maybeSingle();if(error)throw error;leagueData=leagueNormalizeData(data?.payload||{});return leagueData;}
+function arqonMatchCard(m){const pending=m.result_type==='pending',tech=m.result_type==='tech',stateText=pending?'ПРЕДСТОЯЩИЙ':tech?'ТЕХНИЧЕСКИЙ РЕЗУЛЬТАТ':'ЗАВЕРШЁН',result=pending?'Матч ещё не сыгран':tech?'Техлуз: '+(m.tech_loss_team||'не указан'):'Победитель: '+(m.winner||'не указан');return '<article class="arqon-match-card"><div class="arqon-match-card-top"><span>МАТЧ №'+escapeHtml(m.match_no||'—')+'</span><span>'+escapeHtml((m.date||'Дата не указана')+' · '+(m.time||'Время не указано'))+'</span></div><div class="arqon-match-versus"><button class="arqon-match-team arqon-team-link" data-team="'+escapeHtml(m.team1)+'" onclick="openTeamProfile(this.dataset.team)">'+escapeHtml(m.team1||'Команда 1')+'</button><span class="arqon-match-vs">VS</span><button class="arqon-match-team arqon-team-link" data-team="'+escapeHtml(m.team2)+'" onclick="openTeamProfile(this.dataset.team)">'+escapeHtml(m.team2||'Команда 2')+'</button></div><div class="arqon-match-meta"><span>'+escapeHtml(m.venue||'Площадка не указана')+'</span><span class="arqon-match-state '+(pending?'':tech?'tech':'done')+'">'+stateText+'</span></div><div class="arqon-match-meta"><span>'+escapeHtml(result)+(m.score?' · '+escapeHtml(m.score):'')+'</span></div></article>';}
+function setCalendarMonth(delta){if(!arqonCalendarMonth)arqonCalendarMonth=new Date(new Date().getFullYear(),new Date().getMonth(),1);arqonCalendarMonth=new Date(arqonCalendarMonth.getFullYear(),arqonCalendarMonth.getMonth()+delta,1);arqonCalendarSelected='';renderArqonCalendar();}
+function selectCalendarDay(key){arqonCalendarSelected=key;renderArqonCalendar();}
+function setCalendarTeamFilter(v){arqonCalendarTeamFilter=v||'all';renderArqonCalendar();}
+function renderArqonCalendar(){
+ const box=document.getElementById('tab-schedule');if(!box||!leagueData)return;if(!arqonCalendarMonth)arqonCalendarMonth=new Date(new Date().getFullYear(),new Date().getMonth(),1);
+ const all=(leagueData.matches||[]).filter(m=>m.team1&&m.team2),filtered=all.filter(m=>arqonCalendarTeamFilter==='all'||m.team1===arqonCalendarTeamFilter||m.team2===arqonCalendarTeamFilter),byDay=new Map();filtered.forEach(m=>{const d=arqonParseLeagueDate(m.date);if(!d)return;const k=arqonDateKey(d);if(!byDay.has(k))byDay.set(k,[]);byDay.get(k).push(m);});
+ const year=arqonCalendarMonth.getFullYear(),month=arqonCalendarMonth.getMonth(),first=new Date(year,month,1),offset=(first.getDay()+6)%7,days=new Date(year,month+1,0).getDate(),today=arqonDateKey(new Date());
+ if(!arqonCalendarSelected||!arqonCalendarSelected.startsWith(year+'-'+String(month+1).padStart(2,'0')))arqonCalendarSelected=(new Date().getFullYear()===year&&new Date().getMonth()===month)?today:(byDay.keys().next().value||arqonDateKey(first));
+ const selected=(byDay.get(arqonCalendarSelected)||[]).slice().sort(arqonCompareLeagueMatches),teams=(leagueData.teams||[]).slice().sort((a,b)=>a.localeCompare(b,'ru')),week=['ПН','ВТ','СР','ЧТ','ПТ','СБ','ВС'];let cells='';
+ for(let i=0;i<offset;i++){const d=new Date(year,month,1-offset+i);cells+='<div class="arqon-cal-day is-outside" aria-hidden="true">'+d.getDate()+'</div>';}
+ for(let day=1;day<=days;day++){const d=new Date(year,month,day),key=arqonDateKey(d),count=(byDay.get(key)||[]).length;cells+='<button type="button" class="arqon-cal-day '+(key===arqonCalendarSelected?'is-selected ':'')+(key===today?'is-today':'')+'" data-day="'+key+'" onclick="selectCalendarDay(this.dataset.day)"><span>'+day+'</span>'+(count?'<span class="arqon-cal-count">'+count+'</span>':'')+'</button>';}
+ const trailing=(7-((offset+days)%7))%7;for(let i=1;i<=trailing;i++)cells+='<div class="arqon-cal-day is-outside" aria-hidden="true">'+i+'</div>';
+ const selectedDate=new Date(+arqonCalendarSelected.slice(0,4),+arqonCalendarSelected.slice(5,7)-1,+arqonCalendarSelected.slice(8,10)),label=arqonCalendarMonth.toLocaleDateString('ru-RU',{month:'long',year:'numeric'});
+ box.innerHTML='<div class="portal-heading"><div class="home-kicker">ARQON MATCH CENTER</div><h1 class="home-title">КАЛЕНДАРЬ <span>МАТЧЕЙ</span></h1><p class="home-lead">Выбирай дату, смотри расписание и переходи к профилям команд.</p></div><div class="arqon-cal-shell"><div class="arqon-cal-head"><div class="arqon-cal-controls"><button type="button" aria-label="Предыдущий месяц" onclick="setCalendarMonth(-1)">‹</button><div class="arqon-cal-month">'+label+'</div><button type="button" aria-label="Следующий месяц" onclick="setCalendarMonth(1)">›</button></div><select class="arqon-cal-filter" aria-label="Фильтр по команде" onchange="setCalendarTeamFilter(this.value)"><option value="all">Все команды</option>'+teams.map(t=>'<option value="'+escapeHtml(t)+'" '+(t===arqonCalendarTeamFilter?'selected':'')+'>'+escapeHtml(t)+'</option>').join('')+'</select></div><div class="arqon-cal-grid">'+week.map(x=>'<div class="arqon-cal-weekday">'+x+'</div>').join('')+cells+'</div><div class="arqon-cal-selected-head"><h2 style="margin:0">'+selectedDate.toLocaleDateString('ru-RU',{day:'numeric',month:'long',year:'numeric'})+'</h2><span class="hint">'+selected.length+' матч(ей)</span></div>'+(selected.length?'<div class="arqon-match-list">'+selected.map(arqonMatchCard).join('')+'</div>':'<div class="home-data-card">На выбранную дату матчей нет. Выбери другой день в календаре.</div>')+'</div><div class="arqon-hub-panel"><h2>Матчи без даты</h2><p class="hint">Матчи без указанной даты не отображаются в календарной сетке. Завершённые результаты доступны в истории.</p><div class="arqon-match-list">'+filtered.filter(m=>!arqonParseLeagueDate(m.date)&&m.result_type==='pending').map(arqonMatchCard).join('')+'</div></div>';
 }
+async function loadSchedule(){const box=document.getElementById('tab-schedule');if(!box)return;box.innerHTML='<div class="home-data-card">Загружаем календарь ARQON…</div>';try{await arqonLoadLeagueReadOnly();renderArqonCalendar();}catch(e){console.warn('ARQON calendar:',e);box.innerHTML='<div class="arqon-hub-panel"><h2>Календарь временно недоступен</h2><p class="hint">Не удалось получить расписание: '+escapeHtml(e.message||e)+'</p></div>';}}
+async function loadHistory(){const box=document.getElementById('history-list');if(!box)return;box.innerHTML='<div class="home-data-card">Загружаем историю матчей…</div>';try{await arqonLoadLeagueReadOnly();renderHistory();}catch(e){box.innerHTML='<div class="home-data-card">Не удалось загрузить историю: '+escapeHtml(e.message||e)+'</div>';}}
+function renderHistory(){const box=document.getElementById('history-list');if(!box||!leagueData)return;const q=(document.getElementById('history-search')?.value||'').trim().toLocaleLowerCase(),filter=document.getElementById('history-filter')?.value||'all',list=(leagueData.matches||[]).filter(m=>m.team1&&m.team2&&m.result_type!=='pending').filter(m=>filter==='all'||m.result_type===filter).filter(m=>[m.team1,m.team2,String(m.match_no||'')].join(' ').toLocaleLowerCase().includes(q)).sort((a,b)=>arqonCompareLeagueMatches(b,a));const count=document.getElementById('history-count');if(count)count.textContent='Найдено матчей: '+list.length;box.innerHTML=list.length?list.map(arqonMatchCard).join(''):'<div class="home-data-card">По выбранным условиям матчей не найдено.</div>';}
+let arqonTeamHubData=[],arqonPendingTeamProfile='';
+async function loadTeamsHub(){const box=document.getElementById('team-list');if(!box)return;box.innerHTML='<div class="home-data-card">Загружаем профили команд…</div>';try{
+ const [{data:lr,error:le},{data:tr,error:te}]=await Promise.all([supabaseClient.from('league_data').select('payload').eq('id',1).maybeSingle(),supabaseClient.from('tournament').select('data').eq('id',1).maybeSingle()]);if(le)throw le;leagueData=leagueNormalizeData(lr?.payload||{});if(!te&&tr?.data)state=tr.data;
+ arqonTeamHubData=leagueStandings().map(s=>{const reg=(state?.teams||[]).find(t=>String(t.name||'').trim().toLocaleLowerCase()===s.team.toLocaleLowerCase()),roster=reg?.players||[],tagged=(state?.freeAgents||[]).filter(p=>String(p.freeAgentTeamName||'').trim().toLocaleLowerCase()===s.team.toLocaleLowerCase()),matches=(leagueData.matches||[]).filter(m=>m.team1===s.team||m.team2===s.team),recent=matches.filter(m=>m.result_type!=='pending').sort((a,b)=>arqonCompareLeagueMatches(b,a)).slice(0,5);return {...s,roster,tagged,matches,recent,logo:reg?.logo||reg?.avatar||''};});
+ box.innerHTML=arqonTeamHubData.map((t,i)=>{const initials=t.team.split(/\s+/).map(x=>x[0]).join('').slice(0,3).toUpperCase(),form=t.recent.slice().reverse().map(m=>m.result_type==='tech'?(m.tech_loss_team===t.team?'loss':'win'):(m.winner===t.team?'win':'loss')).map(x=>'<span class="arqon-form-dot '+x+'"></span>').join('');return '<article class="portal-card arqon-team-card" role="button" tabindex="0" data-team="'+escapeHtml(t.team)+'" onclick="openTeamProfile(this.dataset.team)" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();openTeamProfile(this.dataset.team)}"><div class="portal-profile-top"><div class="arqon-team-mark">'+(t.logo?'<img src="'+escapeHtml(t.logo)+'" alt="">':initials)+'</div><div><span class="portal-pill">#'+(i+1)+' · '+t.points+' ОЧКОВ</span><h3>'+escapeHtml(t.team)+'</h3><p>'+t.played+' матчей · '+t.wins+' побед · '+t.losses+' поражений</p></div></div><div class="portal-detail-grid"><div class="portal-detail-stat"><small>Победы</small><strong class="portal-stat">'+t.wins+'</strong></div><div class="portal-detail-stat"><small>Очки</small><strong class="portal-stat">'+t.points+'</strong></div><div class="portal-detail-stat"><small>Состав</small><strong class="portal-stat">'+t.roster.length+'</strong></div></div><div class="arqon-form" style="margin-top:14px"><small class="hint">ФОРМА</small>'+form+'</div><div class="portal-actions"><button class="btn" type="button" onclick="event.stopPropagation();openTeamProfile(this.closest(\'.arqon-team-card\').dataset.team)">Открыть профиль →</button></div></article>';}).join('')||'<div class="home-data-card">Команды пока не найдены.</div>';
+ window.arqonTeamsReady=true;if(arqonPendingTeamProfile){const n=arqonPendingTeamProfile;arqonPendingTeamProfile='';renderTeamProfile(n);}
+ }catch(e){console.warn('Team hub:',e);box.innerHTML='<div class="home-data-card">Не удалось загрузить команды: '+escapeHtml(e.message||e)+'</div>';}}
+function openTeamProfile(name){arqonPendingTeamProfile=String(name||'');if(document.getElementById('tab-teams')?.classList.contains('hidden'))switchTab('teams');else if(window.arqonTeamsReady)renderTeamProfile(arqonPendingTeamProfile);}
+function renderTeamProfile(name){const t=arqonTeamHubData.find(x=>x.team===name),box=document.getElementById('team-detail');if(!t||!box)return;const initials=t.team.split(/\s+/).map(x=>x[0]).join('').slice(0,3).toUpperCase(),roster=t.roster.length?t.roster.map(p=>'<div class="arqon-roster-player">'+playerAvatarHTML(p)+'<div><strong>'+escapeHtml(p.name||'Игрок')+'</strong><small>'+(+p.faceitLevel>0?'FACEIT LVL '+(+p.faceitLevel):'FACEIT не указан')+'</small></div></div>').join(''):'<p class="hint">Официальный состав этой команды пока не заполнен в регистрационных данных.</p>',tagged=t.tagged.length?'<h3 style="margin-top:22px">Свободные игроки с отметкой команды</h3><div class="arqon-roster-grid">'+t.tagged.map(p=>'<div class="arqon-roster-player">'+playerAvatarHTML(p)+'<div><strong>'+escapeHtml(p.name||'Игрок')+'</strong><small>Свободный агент · отметка '+escapeHtml(t.team)+'</small></div></div>').join('')+'</div>':'',matches=t.matches.slice().sort((a,b)=>arqonCompareLeagueMatches(b,a));box.classList.remove('hidden');box.innerHTML='<div class="portal-profile-top"><div class="arqon-team-mark">'+(t.logo?'<img src="'+escapeHtml(t.logo)+'" alt="">':initials)+'</div><div><span class="portal-pill">TEAM PROFILE</span><h2>'+escapeHtml(t.team)+'</h2><p class="hint">Позиция в лиге: '+(leagueStandings().findIndex(x=>x.team===t.team)+1)+' · '+(t.dq?'Дисквалификация':'Участник лиги')+'</p></div></div><div class="portal-detail-grid"><div class="portal-detail-stat"><small>Очки</small><strong class="portal-stat">'+t.points+'</strong></div><div class="portal-detail-stat"><small>Матчи</small><strong class="portal-stat">'+t.played+'</strong></div><div class="portal-detail-stat"><small>Победы</small><strong class="portal-stat">'+t.wins+'</strong></div><div class="portal-detail-stat"><small>Поражения</small><strong class="portal-stat">'+t.losses+'</strong></div><div class="portal-detail-stat"><small>Тех. поражения</small><strong class="portal-stat">'+t.tech+'</strong></div></div><h3 style="margin-top:22px">Официальный состав</h3><div class="arqon-roster-grid">'+roster+'</div>'+tagged+'<h3 style="margin-top:24px">Матчи команды</h3>'+(matches.length?'<div class="arqon-match-list">'+matches.map(arqonMatchCard).join('')+'</div>':'<p class="hint">Матчей пока нет.</p>')+'<div class="portal-actions"><button class="btn ghost" onclick="document.getElementById(\'team-detail\').classList.add(\'hidden\')">Свернуть профиль</button><button class="btn" onclick="switchTab(\'history\');document.getElementById(\'history-search\').value='+JSON.stringify(t.team)+';renderHistory()">История матчей →</button></div>';box.scrollIntoView({behavior:'smooth',block:'start'});}
 
 async function removeSchedule(id) {
   if (!isAdmin()) return;
