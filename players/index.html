@@ -915,7 +915,7 @@
 .fonbet-partner-card strong{font:700 13px Orbitron,sans-serif;letter-spacing:1px}
 .fonbet-partner-card small{color:var(--text-dim);font-size:10px;text-align:center}
 @media(max-width:1050px){.home-layout{grid-template-columns:minmax(0,1fr) 150px;gap:14px}}
-@media(max-width:820px){.home-layout{grid-template-columns:1fr}.home-fonbet-sidebar{position:static;width:150px;max-width:100%;margin:22px auto 0}.home-fonbet-sidebar .home-fonbet-note{font-size:9px}}
+@media(max-width:820px){.home-layout{grid-template-columns:1fr}.home-main-column{order:2}.home-fonbet-sidebar{order:1;position:static;width:180px;max-width:100%;margin:14px auto 18px}.home-fonbet-sidebar .home-fonbet-note{font-size:9px}}
 
 </style>
 </head>
@@ -1300,7 +1300,7 @@
         <aside class="home-fonbet-sidebar" aria-label="Рекламный баннер Fonbet">
           <span class="fonbet-ad-label">Реклама · 18+</span>
           <a class="home-fonbet-link" href="https://clicks.af-bk6bba.com/click/s/OSHM" target="_blank" rel="sponsored nofollow noopener noreferrer" aria-label="Перейти к партнёру Fonbet">
-            <img src="/assets/fonbet-home.jpg" alt="Fonbet — рекламное предложение" loading="lazy" width="180" height="360">
+            <img src="/assets/fonbet-home.jpg" alt="Fonbet — рекламное предложение" loading="eager" decoding="async" fetchpriority="high" width="180" height="360">
           </a>
           <div class="home-fonbet-note">Реклама. 18+</div>
         </aside>
