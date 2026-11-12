@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="600" height="760" viewBox="0 0 600 760">
+<defs>
+ <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#08090d"/><stop offset=".55" stop-color="#171015"/><stop offset="1" stop-color="#3b0712"/></linearGradient>
+ <linearGradient id="red" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#ff263f"/><stop offset="1" stop-color="#b90025"/></linearGradient>
+ <linearGradient id="silver" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#fff"/><stop offset=".45" stop-color="#aeb4bd"/><stop offset="1" stop-color="#555d68"/></linearGradient>
+ <filter id="glow"><feGaussianBlur stdDeviation="16"/></filter>
+</defs>
+<rect width="600" height="760" fill="url(#bg)"/>
+<path d="M-40 60L205 -45 55 260 -90 360Z" fill="#d0002d" opacity=".72"/>
+<path d="M600 130L430 230 600 430Z" fill="#a90025" opacity=".4"/>
+<path d="M-20 520L610 170M60 790L650 460M250 790L650 560" stroke="#ed1238" stroke-width="38" opacity=".16"/>
+<circle cx="490" cy="390" r="150" fill="#d60030" opacity=".2" filter="url(#glow)"/>
+<g transform="translate(20 20) rotate(-18 100 95)">
+ <rect x="18" y="20" width="180" height="115" rx="28" fill="url(#silver)" stroke="#fff" stroke-width="5"/>
+ <path d="M35 42L92 34 151 52 176 82 133 112 65 116 28 87Z" fill="#15171b"/>
+ <path d="M90 35L127 48 103 104 64 111Z" fill="#e0002b"/>
+ <path d="M51 54L74 48 65 83 44 88Z" fill="#fafafa"/>
+ <circle cx="140" cy="82" r="9" fill="#e6002e"/><circle cx="163" cy="93" r="7" fill="#e6002e"/>
+</g>
+<g transform="translate(430 70) rotate(12)">
+ <path d="M35 25H145L130 130Q90 180 50 130Z" fill="url(#silver)" stroke="#f7f7f7" stroke-width="5"/>
+ <path d="M35 40Q-10 10 2 70Q10 105 55 110M145 40Q190 10 178 70Q170 105 125 110" fill="none" stroke="#c9cdd3" stroke-width="13"/>
+ <path d="M90 47L125 62 91 92 57 62Z" fill="#c40028"/>
+ <path d="M90 145V190M55 192H125" stroke="#aeb4bd" stroke-width="12" stroke-linecap="round"/>
+</g>
+<text x="300" y="250" fill="#fff" font-family="Arial,Helvetica,sans-serif" font-size="60" font-weight="900" font-style="italic" text-anchor="middle" letter-spacing="-2">FONBET</text>
+<text x="300" y="355" fill="#ff1740" font-family="Arial,Helvetica,sans-serif" font-size="52" font-weight="900" text-anchor="middle">ИГРАЙ</text>
+<text x="300" y="415" fill="#fff" font-family="Arial,Helvetica,sans-serif" font-size="45" font-weight="900" text-anchor="middle">ВМЕСТЕ С ПЕРВЫМИ</text>
+<text x="300" y="535" fill="#fff" font-family="Arial,Helvetica,sans-serif" font-size="115" font-weight="900" text-anchor="middle" letter-spacing="-5">15 000 ₽</text>
+<text x="300" y="585" fill="#fff" font-family="Arial,Helvetica,sans-serif" font-size="34" font-weight="700" text-anchor="middle">ДО · ФРИБЕТ БЕЗ ДЕПОЗИТА</text>
+<rect x="95" y="630" width="410" height="76" rx="38" fill="url(#red)"/>
+<text x="300" y="681" fill="#fff" font-family="Arial,Helvetica,sans-serif" font-size="34" font-weight="900" text-anchor="middle">ПОЛУЧИТЬ</text>
+<text x="300" y="735" fill="#d6d6d6" font-family="Arial,Helvetica,sans-serif" font-size="13" text-anchor="middle">РЕКЛАМА · 18+ · РЕКЛАМОДАТЕЛЬ: FON.BET</text>
+</svg>
