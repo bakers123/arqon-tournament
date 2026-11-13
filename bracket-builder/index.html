@@ -40,6 +40,42 @@
 .admin-tabs.drawer .admin-tab[data-admin-tab="judgeAccount"]::before{content:"♙"}.admin-tabs.drawer .admin-tab[data-admin-tab="judgeAccount"]::after{content:"Создание учётной записи"}
 .admin-tabs.drawer .admin-tab[data-admin-tab="history"]{grid-column:1/-1;min-height:100px}.admin-tabs.drawer .admin-tab[data-admin-tab="history"]::before{content:"◷"}.admin-tabs.drawer .admin-tab[data-admin-tab="history"]::after{content:"Публикации, изменения сетки и результаты матчей"}
 @media(max-width:420px){.admin-tabs.drawer{width:min(390px,94vw);padding:18px 14px}.admin-tabs.drawer .admin-tab{min-height:116px;padding:13px 11px;font-size:14px}.admin-drawer-heading{font-size:21px}}
+
+/* Мобильная компоновка редактора */
+@media(max-width:620px){
+  .shell{padding:8px}
+  .top{gap:8px;align-items:center}
+  .top .brand{min-width:0;flex:1;gap:8px}
+  .brand img{width:34px;height:34px}
+  .brand h1{font-size:13px;line-height:1.25;letter-spacing:0}
+  .brand small{font-size:10px}
+  .top>.toolbar{width:100%;justify-content:space-between}
+  .admin-tab-pane[data-admin-pane="builder"] .toolbar{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+  .admin-tab-pane[data-admin-pane="builder"] .toolbar button{width:100%;min-width:0;min-height:40px;font-size:12px;padding:8px 5px;white-space:normal}
+  .admin-tab-pane[data-admin-pane="builder"] .toolbar .spacer{display:none}
+  .admin-tab-pane[data-admin-pane="tournament"] .toolbar{display:grid;grid-template-columns:1fr;gap:8px}
+  .admin-tab-pane[data-admin-pane="tournament"] .toolbar input,
+  .admin-tab-pane[data-admin-pane="tournament"] .toolbar select,
+  .admin-tab-pane[data-admin-pane="tournament"] .toolbar button{width:100%;min-width:0;max-width:none;min-height:42px}
+  .admin-tab-pane .panel{padding:11px}
+  .canvas-shell{height:58vh;min-height:390px;border-radius:9px}
+  .node{width:280px}
+  .node-body{padding:8px}
+  .map-head{grid-template-columns:minmax(0,1fr) 40px 40px;gap:4px}
+  .map-head select,.score-input{min-width:0;padding:5px;font-size:10px}
+  .node-title-input{width:90px;min-width:0}
+  .node-tools{gap:3px}
+  .node-tools button{padding:3px 5px;font-size:10px}
+  .section-label{min-width:210px;max-width:250px;font-size:12px}
+  .mobile-hint{font-size:11px;padding:7px 2px}
+  #judge-username,#judge-password{width:100%;min-height:44px}
+}
+@media(max-width:380px){
+  .admin-tab-pane[data-admin-pane="builder"] .toolbar{grid-template-columns:1fr 1fr}
+  .admin-tab-pane[data-admin-pane="builder"] .toolbar button{font-size:11px}
+  .node{width:260px}
+  .map-head{grid-template-columns:minmax(0,1fr) 36px 36px}
+}
 </style>
 </head>
 <body>
@@ -105,10 +141,11 @@
         </div>
         <div class="panel">
           <h3>Создать аккаунт судьи</h3>
-          <input id="judge-password" type="password" autocomplete="new-password" placeholder="Начальный пароль (12+ символов)">
-          <button id="create-judge" class="primary" style="width:100%;margin-top:5px">Создать логин sudiya</button>
+          <input id="judge-username" type="text" autocomplete="off" autocapitalize="none" spellcheck="false" maxlength="24" placeholder="Логин судьи (например, referee01)">
+          <input id="judge-password" type="password" autocomplete="new-password" placeholder="Пароль (12+ символов)">
+          <button id="create-judge" class="primary" style="width:100%;margin-top:5px">Создать аккаунт</button>
           <div id="judge-create-status" class="hint" style="margin-top:7px"></div>
-          <p class="hint">Пароль отправляется только в защищённый запрос и не сохраняется в коде сайта.</p>
+          <p class="hint">Судья сможет входить по выбранному логину и паролю. Логин: 3–24 символа, латиница, цифры, _ или -.</p>
         </div>
         <div class="panel">
           <h3>История изменений</h3>
@@ -258,7 +295,7 @@ $('doc-select').onchange=()=>loadDoc($('doc-select').value);$('doc-title').oncha
 $('save-teams').onclick=()=>mutate(()=>{data.teams=$('teams-input').value.split(/[\n,;]+/).map(x=>x.trim()).filter(Boolean)});
 $('assign-judge').onclick=async()=>{const uid=$('judge-select').value;if(!uid||!current)return;const match=$('assignment-match').value||null;const {error}=await sb.from('bracket_assignments').insert({bracket_id:current.id,match_id:match,judge_user_id:uid,assigned_by:session.user.id});if(error){say('assignment-list','Не удалось назначить: '+error.message,'error');return}await loadSideData()};
 $('assignment-list').addEventListener('click',async e=>{const b=e.target.closest('[data-remove-assignment]');if(!b)return;const {error}=await sb.from('bracket_assignments').delete().eq('id',b.dataset.removeAssignment);if(error){say('assignment-list',error.message,'error');return}await loadSideData()});
-$('create-judge').onclick=async()=>{const password=$('judge-password').value;if(password.length<12){say('judge-create-status','Пароль должен содержать минимум 12 символов.','error');return}say('judge-create-status','Создаём аккаунт…');const {data:out,error}=await sb.functions.invoke('provision-bracket-judge',{body:{password}});if(error||out?.error){say('judge-create-status',out?.error||error.message||'Не удалось создать аккаунт.','error');return}$('judge-password').value='';say('judge-create-status','Аккаунт sudiya создан. Теперь можно войти с выбранным паролем.','success');await loadSideData()};
+$('create-judge').onclick=async()=>{const username=$('judge-username').value.trim().toLowerCase(),password=$('judge-password').value;if(!/^[a-z0-9_-]{3,24}$/.test(username)){say('judge-create-status','Логин: 3–24 символа, только латиница, цифры, _ или -.','error');return}if(password.length<12||password.length>72){say('judge-create-status','Пароль должен содержать 12–72 символа.','error');return}say('judge-create-status','Создаём аккаунт…');const {data:out,error}=await sb.functions.invoke('provision-bracket-judge',{body:{username,password}});if(error||out?.error){say('judge-create-status',out?.error||error.message||'Не удалось создать аккаунт.','error');return}$('judge-password').value='';say('judge-create-status','Аккаунт '+out.username+' создан. Судья может войти по этому логину и заданному паролю.','success');await loadSideData()};
 $('public-doc-select').onchange=()=>{const d=docs.find(x=>x.id===$('public-doc-select').value);if(d)renderPublic(d)};
 async function loadJudgeDoc(id){
  const d=docs.find(x=>x.id===id);if(!d)return;current=d;data=JSON.parse(JSON.stringify(d.published_data||{}));
@@ -321,7 +358,7 @@ async function boot(){
  else{role=null;await loadDocs()}
 }
 $('service-entry').onclick=e=>{e.preventDefault();$('login-panel').classList.toggle('hidden');$('login-name').focus()};
-$('password-login').onclick=async()=>{const name=$('login-name').value.trim(),password=$('login-password').value;const email=name.toLowerCase()==='sudiya'?'sudiya@arqon-esports.ru':name;if(!email.includes('@')){say('login-message','Для входа организатора укажи email. Для судьи — логин sudiya.','error');return}const {error}=await sb.auth.signInWithPassword({email,password});if(error){say('login-message','Не удалось войти: '+error.message,'error');return}await boot()};
+$('password-login').onclick=async()=>{const name=$('login-name').value.trim(),password=$('login-password').value;const email=name.includes('@')?name.toLowerCase():name.toLowerCase()+'@arqon-esports.ru';if(!email.includes('@')){say('login-message','Укажи email или логин судьи.','error');return}const {error}=await sb.auth.signInWithPassword({email,password});if(error){say('login-message','Не удалось войти: '+error.message,'error');return}await boot()};
 $('magic-login').onclick=async()=>{const email=$('login-name').value.trim();if(!email.includes('@')){say('login-message','Для входа по ссылке укажи email.','error');return}const {error}=await sb.auth.signInWithOtp({email,options:{shouldCreateUser:false,emailRedirectTo:location.origin+'/bracket-builder/'}});say('login-message',error?'Ошибка: '+error.message:'Если аккаунт приглашён, ссылка отправлена на почту.',error?'error':'success')};
 $('logout-btn').onclick=async()=>{await sb.auth.signOut();location.reload()};
 sb.auth.onAuthStateChange((_event,s)=>{if(s?.user){session=s;setTimeout(()=>boot(),0)}});
