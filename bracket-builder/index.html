@@ -18,11 +18,34 @@
 .admin-tab-pane .toolbar{flex-wrap:wrap}
 .admin-tab-note{color:var(--muted);font-size:12px;margin:0 0 10px}
 @media(max-width:620px){.admin-tabs{margin-left:-2px;margin-right:-2px}.admin-tab{padding:9px 11px;font-size:12px}.admin-tab-pane .toolbar>*{max-width:100%}}
+
+/* Выдвижное меню администратора */
+.admin-menu-trigger{display:none;align-items:center;justify-content:center;width:44px;height:44px;padding:0;border-radius:12px;font-size:23px;background:#1b1b26;border:1px solid #3a3947;flex:0 0 auto}
+.admin-menu-trigger.visible{display:flex}
+.admin-drawer-backdrop{position:fixed;inset:0;background:#000a;backdrop-filter:blur(3px);z-index:1000;opacity:0;visibility:hidden;transition:opacity .22s,visibility .22s}
+.admin-drawer-backdrop.open{opacity:1;visibility:visible}
+.admin-tabs.drawer{position:fixed;z-index:1001;left:0;top:0;bottom:0;width:min(430px,92vw);margin:0;padding:22px 18px max(22px,env(safe-area-inset-bottom));border:1px solid #30303d;border-left:0;border-radius:0 20px 20px 0;background:#101015;box-shadow:18px 0 60px #0009;display:grid;grid-template-columns:1fr 1fr;grid-auto-rows:min-content;align-content:start;gap:10px;overflow-y:auto;transform:translateX(-105%);transition:transform .25s cubic-bezier(.2,.8,.2,1);scrollbar-width:thin}
+.admin-tabs.drawer.open{transform:translateX(0)}
+.admin-drawer-heading{grid-column:1/-1;display:flex;align-items:center;justify-content:space-between;font-size:23px;font-weight:800;margin:4px 0 12px;padding:0 2px 8px}
+.admin-drawer-close{font-size:23px;width:40px;height:40px;padding:0;border-radius:50%}
+.admin-tabs.drawer .admin-tab{white-space:normal;text-align:left;min-height:124px;display:flex;flex-direction:column;justify-content:flex-start;align-items:flex-start;gap:8px;padding:15px 14px;background:#242426;border:1px solid transparent;border-radius:14px;color:#fff;font-size:16px;font-weight:700;line-height:1.35}
+.admin-tabs.drawer .admin-tab::before{font-size:23px;line-height:1.1;font-weight:400}
+.admin-tabs.drawer .admin-tab::after{font-size:12px;font-weight:400;color:#aaa;line-height:1.45}
+.admin-tabs.drawer .admin-tab[aria-selected="true"]{background:#30283f;border-color:#7355a5}
+.admin-tabs.drawer .admin-tab[data-admin-tab="builder"]::before{content:"⌘"}.admin-tabs.drawer .admin-tab[data-admin-tab="builder"]::after{content:"Матчи, соединения, масштаб, отмена действий"}
+.admin-tabs.drawer .admin-tab[data-admin-tab="tournament"]::before{content:"⚙"}.admin-tabs.drawer .admin-tab[data-admin-tab="tournament"]::after{content:"Название, формат, создание сеток"}
+.admin-tabs.drawer .admin-tab[data-admin-tab="publish"]::before{content:"⇧"}.admin-tabs.drawer .admin-tab[data-admin-tab="publish"]::after{content:"Черновики и публикация"}
+.admin-tabs.drawer .admin-tab[data-admin-tab="teams"]::before{content:"♧"}.admin-tabs.drawer .admin-tab[data-admin-tab="teams"]::after{content:"Состав команд"}
+.admin-tabs.drawer .admin-tab[data-admin-tab="judges"]::before{content:"⚖"}.admin-tabs.drawer .admin-tab[data-admin-tab="judges"]::after{content:"Назначение на матчи и турниры"}
+.admin-tabs.drawer .admin-tab[data-admin-tab="judgeAccount"]::before{content:"♙"}.admin-tabs.drawer .admin-tab[data-admin-tab="judgeAccount"]::after{content:"Создание учётной записи"}
+.admin-tabs.drawer .admin-tab[data-admin-tab="history"]{grid-column:1/-1;min-height:100px}.admin-tabs.drawer .admin-tab[data-admin-tab="history"]::before{content:"◷"}.admin-tabs.drawer .admin-tab[data-admin-tab="history"]::after{content:"Публикации, изменения сетки и результаты матчей"}
+@media(max-width:420px){.admin-tabs.drawer{width:min(390px,94vw);padding:18px 14px}.admin-tabs.drawer .admin-tab{min-height:116px;padding:13px 11px;font-size:14px}.admin-drawer-heading{font-size:21px}}
 </style>
 </head>
 <body>
 <div class="shell">
   <header class="top">
+    <button id="admin-menu-trigger" class="admin-menu-trigger" type="button" aria-label="Открыть меню разделов" aria-expanded="false">☰</button>
     <div class="brand"><img src="/logo.png" alt="ARQON"><div><h1>ARQON · КОНСТРУКТОР СЕТОК</h1><small>Визуальный редактор турнирных сеток</small></div></div>
     <div class="toolbar"><span id="role-label" class="status">Публичная сетка</span><button id="logout-btn" class="hidden">Выйти</button><a href="/" class="hint">← На главную</a></div>
   </header>
@@ -261,7 +284,14 @@ function initAdminTabs(){
  const sidePanels=side?[...side.children]:[];
  const makePane=id=>{const el=document.createElement('section');el.className='admin-tab-pane hidden';el.dataset.adminPane=id;return el};
  const panes={builder:makePane('builder'),tournament:makePane('tournament'),publish:makePane('publish'),teams:makePane('teams'),judges:makePane('judges'),judgeAccount:makePane('judgeAccount'),history:makePane('history')};
- const tabs=document.createElement('div');tabs.className='admin-tabs';tabs.setAttribute('role','tablist');tabs.setAttribute('aria-label','Разделы управления сеткой');
+ const tabs=document.createElement('div');tabs.className='admin-tabs drawer';tabs.setAttribute('role','tablist');tabs.setAttribute('aria-label','Разделы управления сеткой');
+ const backdrop=document.createElement('div');backdrop.className='admin-drawer-backdrop';backdrop.addEventListener('click',closeAdminMenu);document.body.appendChild(backdrop);
+ const heading=document.createElement('div');heading.className='admin-drawer-heading';heading.innerHTML='<span>Админка ARQON</span>';
+ const close=document.createElement('button');close.type='button';close.className='admin-drawer-close';close.setAttribute('aria-label','Закрыть меню');close.textContent='×';close.addEventListener('click',closeAdminMenu);heading.appendChild(close);tabs.appendChild(heading);
+ const trigger=$('admin-menu-trigger');trigger.classList.add('visible');trigger.onclick=()=>{const opened=tabs.classList.contains('open');if(opened)closeAdminMenu();else openAdminMenu()};
+ function openAdminMenu(){tabs.classList.add('open');backdrop.classList.add('open');trigger.setAttribute('aria-expanded','true')}
+ function closeAdminMenu(){tabs.classList.remove('open');backdrop.classList.remove('open');trigger.setAttribute('aria-expanded','false')}
+ document.addEventListener('keydown',e=>{if(e.key==='Escape')closeAdminMenu()});
  const defs=[['builder','Конструктор'],['tournament','Настройки турнира'],['publish','Сохранение и публикация'],['teams','Участники'],['judges','Судьи и назначения'],['judgeAccount','Аккаунт судьи'],['history','История действий']];
  defs.forEach(([id,label],i)=>{const b=document.createElement('button');b.type='button';b.className='admin-tab';b.dataset.adminTab=id;b.id='admin-tab-'+id;b.setAttribute('role','tab');b.setAttribute('aria-controls','admin-pane-'+id);b.setAttribute('aria-selected',i===0?'true':'false');b.textContent=label;tabs.appendChild(b);panes[id].id='admin-pane-'+id;panes[id].setAttribute('role','tabpanel');panes[id].setAttribute('aria-labelledby',b.id)});
  const panelFor=(node,title,desc)=>{const panel=document.createElement('div');panel.className='panel';if(title){const h=document.createElement('h3');h.textContent=title;panel.appendChild(h)}if(desc){const d=document.createElement('p');d.className='admin-tab-note';d.textContent=desc;panel.appendChild(d)}if(node)panel.appendChild(node);return panel};
@@ -277,7 +307,7 @@ function initAdminTabs(){
  ids.forEach(id=>{const note=document.createElement('p');note.className='admin-tab-note';note.textContent=intro[id];panes[id].insertBefore(note,panes[id].firstChild)});
  base.remove();layout.remove();if(side)side.remove();editor.insertBefore(tabs,editor.firstChild);defs.forEach(([id])=>editor.appendChild(panes[id]));
  const activate=id=>{Object.entries(panes).forEach(([key,pane])=>pane.classList.toggle('hidden',key!==id));tabs.querySelectorAll('[role="tab"]').forEach(b=>{const on=b.dataset.adminTab===id;b.setAttribute('aria-selected',on?'true':'false');b.tabIndex=on?0:-1})};
- tabs.addEventListener('click',e=>{const b=e.target.closest('[data-admin-tab]');if(b)activate(b.dataset.adminTab)});
+ tabs.addEventListener('click',e=>{const b=e.target.closest('[data-admin-tab]');if(b){activate(b.dataset.adminTab);closeAdminMenu()}});
  tabs.addEventListener('keydown',e=>{if(!['ArrowLeft','ArrowRight','Home','End'].includes(e.key))return;const all=[...tabs.querySelectorAll('[role="tab"]')];const active=all.findIndex(x=>x.getAttribute('aria-selected')==='true');const next=e.key==='Home'?0:e.key==='End'?all.length-1:(active+(e.key==='ArrowRight'?1:-1)+all.length)%all.length;e.preventDefault();all[next].focus();activate(all[next].dataset.adminTab)});
  editor._activateAdminTab=activate;activate('builder');
 }
