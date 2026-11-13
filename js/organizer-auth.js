@@ -89,6 +89,23 @@
         if (modal) modal.style.display = 'flex';
       });
       footer.appendChild(button);
+      const serviceLink = document.createElement('a');
+      serviceLink.href = '/bracket-builder/';
+      serviceLink.className = 'organizer-login-link';
+      serviceLink.textContent = 'служебный вход';
+      serviceLink.style.cssText = 'opacity:.18;text-decoration:none;font-size:9px;margin-left:8px;letter-spacing:1px';
+      serviceLink.addEventListener('mouseenter', () => { serviceLink.style.opacity = '.75'; });
+      serviceLink.addEventListener('mouseleave', () => { serviceLink.style.opacity = '.18'; });
+      footer.appendChild(serviceLink);
+      const bracketTab = byId('tab-bracket');
+      if (bracketTab && !byId('published-bracket-link')) {
+        const link = document.createElement('a');
+        link.id = 'published-bracket-link';
+        link.href = '/bracket-builder/';
+        link.textContent = 'Открыть опубликованные турнирные сетки →';
+        link.style.cssText = 'display:inline-block;margin:12px 0;color:#c4b5fd;font-size:12px;text-decoration:none';
+        bracketTab.appendChild(link);
+      }
       home.appendChild(footer);
     }
 
@@ -151,6 +168,14 @@
       const main = document.querySelector('main');
       if (main) main.style.display = 'block';
       setVisible(byId('tab-home'), true);
+      const adminSection = byId('tab-admin');
+      if (adminSection && !byId('bracket-builder-admin-link')) {
+        const card = document.createElement('div');
+        card.className = 'card';
+        card.id = 'bracket-builder-admin-link';
+        card.innerHTML = '<h2>🎯 Конструктор турнирных сеток</h2><p style="color:#aaa">Создание сеток, соединение матчей, публикация и назначение судей.</p><a href="/bracket-builder/" class="btn" style="display:inline-block;text-decoration:none">Открыть конструктор</a>';
+        adminSection.prepend(card);
+      }
       setVisible(byId('tab-admin'), true);
       setVisible(byId('tab-bracket'), false);
       const adminButton = byId('admin-tab-btn');
