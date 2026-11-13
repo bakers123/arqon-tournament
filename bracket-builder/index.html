@@ -1,0 +1,259 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Конструктор турнирных сеток — ARQON Esports</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<style>
+:root{color-scheme:dark;--bg:#09090d;--panel:#14141c;--panel2:#1b1b26;--line:#30303d;--muted:#9292a4;--text:#f4f3fa;--accent:#8b5cf6;--green:#22c55e;--amber:#f59e0b;--red:#ef4444}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at 20% 0%,#171126 0,transparent 34%),var(--bg);color:var(--text);font:14px Inter,system-ui,Arial,sans-serif}button,input,select{font:inherit}button{cursor:pointer;border:1px solid var(--line);background:var(--panel2);color:var(--text);padding:9px 12px;border-radius:8px}button:hover{border-color:var(--accent)}button.primary{background:var(--accent);border-color:var(--accent);color:white}button:disabled{opacity:.4;cursor:not-allowed}input,select{background:#0d0d13;color:var(--text);border:1px solid var(--line);border-radius:7px;padding:8px;min-width:0}input:focus,select:focus{outline:1px solid var(--accent);border-color:var(--accent)}a{color:#c4b5fd}.shell{max-width:1600px;margin:auto;padding:18px}.top{display:flex;align-items:center;gap:14px;justify-content:space-between;flex-wrap:wrap;margin-bottom:16px}.brand{display:flex;align-items:center;gap:12px}.brand img{width:42px;height:42px;object-fit:contain}.brand h1{font-size:19px;margin:0;letter-spacing:.5px}.brand small{display:block;color:var(--muted);font-size:11px;margin-top:3px}.status{color:var(--muted);font-size:12px}.panel{background:rgba(20,20,28,.94);border:1px solid var(--line);border-radius:12px;padding:15px;margin-bottom:14px}.toolbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.toolbar input{min-width:180px;flex:1}.toolbar select{min-width:145px}.toolbar .spacer{flex:1}.hint{color:var(--muted);font-size:12px;line-height:1.5}.hidden{display:none!important}.login-wrap{max-width:430px;margin:8vh auto}.login-wrap h2{margin:0 0 8px}.login-wrap p{color:var(--muted);line-height:1.5}.login-wrap input{width:100%;margin:6px 0}.login-actions{display:flex;gap:8px;margin-top:10px}.login-actions button{flex:1}.subtle-entry{display:block;text-align:center;margin:22px auto 0;font-size:10px;opacity:.22;text-decoration:none;letter-spacing:1px}.subtle-entry:hover{opacity:.8}.layout{display:grid;grid-template-columns:minmax(0,1fr) 290px;gap:14px}.canvas-shell{position:relative;min-height:680px;height:calc(100vh - 240px);overflow:auto;background:#0b0b11;border:1px solid var(--line);border-radius:12px;background-image:radial-gradient(#333344 1px,transparent 1px);background-size:22px 22px}.world{position:relative;width:2600px;height:1800px;transform-origin:0 0}.edge-layer{position:absolute;inset:0;width:2600px;height:1800px;pointer-events:none;overflow:visible}.edge-path{fill:none;stroke:#8b5cf6;stroke-width:2.5;opacity:.8}.edge-path.loser{stroke:#f59e0b}.section-label{position:absolute;min-width:250px;padding:9px 13px;border-left:3px solid var(--accent);background:#171323;color:#d9ccff;font-weight:700;letter-spacing:.4px;border-radius:5px}.node{position:absolute;width:310px;background:var(--panel);border:1px solid #3b354c;border-radius:10px;box-shadow:0 10px 28px #0008;overflow:visible}.node-head{display:flex;align-items:center;justify-content:space-between;padding:9px 10px;background:#1c1828;border-radius:9px 9px 0 0;cursor:grab;user-select:none}.node-head:active{cursor:grabbing}.node-title{font-weight:800;font-size:12px}.node-title-input{width:125px;font-weight:800;font-size:12px;padding:4px 6px}.node-tools{display:flex;gap:5px;align-items:center}.node-tools button{padding:3px 6px;font-size:11px}.node-body{padding:10px}.team-line{display:grid;grid-template-columns:1fr 32px;gap:7px;align-items:center;margin:5px 0}.team-line input{width:100%;font-size:12px}.map-row{border-top:1px solid #2a2934;padding-top:8px;margin-top:8px}.map-head{display:grid;grid-template-columns:1fr 46px 46px;gap:5px;align-items:center}.map-head select{width:100%;font-size:11px;padding:6px}.score-input{width:100%;text-align:center;padding:6px}.map-status{width:100%;margin-top:5px;font-size:11px}.node-meta{display:flex;gap:6px;align-items:center;justify-content:space-between;margin-top:8px}.node-meta select{flex:1;font-size:11px;padding:6px}.winner-label{font-size:11px;color:var(--green);margin-top:7px}.port{position:absolute;width:15px;height:15px;border-radius:50%;border:2px solid #d6c6ff;background:var(--accent);z-index:5;cursor:crosshair}.port.in{left:-8px;background:#f59e0b;border-color:#ffe1a3}.port.out{right:-8px}.port[data-port="loser"]{background:#d97706;border-color:#fed7aa}.port-label{position:absolute;font-size:9px;color:var(--muted);white-space:nowrap;pointer-events:none}.in-label{left:10px}.out-label{right:10px}.node-footer{border-top:1px solid #2a2934;padding:7px 10px;color:var(--muted);font-size:10px;display:flex;justify-content:space-between}.side-panel h3{font-size:13px;margin:0 0 10px}.side-panel select,.side-panel input{width:100%;margin:4px 0}.side-panel .row{display:flex;gap:6px}.side-panel .row>*{flex:1}.audit-item{padding:8px 0;border-top:1px solid #292936;font-size:11px;color:#c9c7d5}.audit-item small{display:block;color:var(--muted);margin-top:3px}.empty{padding:45px 20px;text-align:center;color:var(--muted)}.badge{font-size:10px;border:1px solid var(--line);padding:3px 6px;border-radius:20px;color:var(--muted)}.badge.live{color:#fbbf24;border-color:#76521a}.badge.done{color:#86efac;border-color:#235d3a}.error{color:#fca5a5}.success{color:#86efac}.section-actions{display:flex;gap:7px;flex-wrap:wrap}.mobile-hint{display:none}
+@media(max-width:980px){.layout{grid-template-columns:1fr}.canvas-shell{height:65vh;min-height:500px}.side-panel{display:grid;grid-template-columns:1fr 1fr;gap:10px}.side-panel .panel{margin:0}.shell{padding:10px}}
+@media(max-width:620px){.brand h1{font-size:15px}.toolbar{gap:6px}.toolbar button{font-size:11px;padding:8px}.toolbar input{min-width:130px}.canvas-shell{height:62vh}.side-panel{display:block}.side-panel .panel{margin-bottom:10px}.mobile-hint{display:block}}
+</style>
+</head>
+<body>
+<div class="shell">
+  <header class="top">
+    <div class="brand"><img src="/logo.png" alt="ARQON"><div><h1>ARQON · КОНСТРУКТОР СЕТОК</h1><small>Визуальный редактор турнирных сеток</small></div></div>
+    <div class="toolbar"><span id="role-label" class="status">Публичная сетка</span><button id="logout-btn" class="hidden">Выйти</button><a href="/" class="hint">← На главную</a></div>
+  </header>
+
+  <section id="login-panel" class="panel login-wrap hidden">
+    <h2>Служебный вход</h2>
+    <p>Организаторы входят по почте. Судья может использовать свой логин.</p>
+    <input id="login-name" autocomplete="username" placeholder="Email организатора или логин судьи">
+    <input id="login-password" type="password" autocomplete="current-password" placeholder="Пароль">
+    <div class="login-actions"><button id="password-login" class="primary">Войти</button><button id="magic-login">Ссылка на почту</button></div>
+    <div id="login-message" class="hint" role="status"></div>
+  </section>
+
+  <section id="public-panel" class="panel">
+    <div class="toolbar"><strong>Опубликованные сетки</strong><span class="spacer"></span><select id="public-doc-select" aria-label="Выбрать сетку"></select></div>
+    <div id="public-empty" class="empty hidden">Пока нет опубликованных сеток.</div>
+  </section>
+
+  <section id="editor-panel" class="hidden">
+    <div class="panel">
+      <div class="toolbar">
+        <select id="doc-select" aria-label="Выбрать сетку"></select>
+        <input id="doc-title" placeholder="Название сетки">
+        <select id="doc-format" aria-label="Формат сетки">
+          <option value="single">Single Elimination</option><option value="double">Double Elimination</option><option value="round_robin">Круговая</option><option value="custom">Свободная сетка</option>
+        </select>
+        <button id="new-doc">+ Сетка</button><button id="save-draft">Сохранить черновик</button><button id="publish-doc" class="primary">Опубликовать</button>
+      </div>
+      <div class="toolbar" style="margin-top:9px">
+        <button id="add-match">+ Матч</button><button id="add-section">+ Этап / раунд</button><button id="generate-round">Создать круговую</button>
+        <button id="undo-btn">↶ Отменить</button><button id="redo-btn">↷ Повторить</button>
+        <span class="spacer"></span><button id="zoom-out">−</button><span id="zoom-label" class="badge">100%</span><button id="zoom-in">+</button><button id="zoom-reset">Сброс масштаба</button>
+      </div>
+      <div id="editor-status" class="hint" style="margin-top:8px">Черновик не опубликован. Изменения станут публичными только после публикации.</div>
+    </div>
+    <div class="layout">
+      <div>
+        <div class="canvas-shell" id="canvas-shell">
+          <div class="world" id="world"><svg class="edge-layer" id="edge-layer"></svg><div id="world-content"></div></div>
+        </div>
+        <div class="mobile-hint hint">На телефоне перемещай поле двумя пальцами или прокручивай его; карточки матчей можно двигать за заголовок.</div>
+      </div>
+      <aside class="side-panel">
+        <div class="panel">
+          <h3>Состав участников</h3>
+          <textarea id="teams-input" rows="5" style="width:100%;background:#0d0d13;color:#fff;border:1px solid var(--line);border-radius:7px;padding:8px" placeholder="Одна команда на строку"></textarea>
+          <button id="save-teams" style="width:100%;margin-top:6px">Обновить список команд</button>
+          <p class="hint">Команды можно вписывать в матч вручную или выбирать из списка.</p>
+        </div>
+        <div class="panel">
+          <h3>Назначение судей</h3>
+          <select id="judge-select"><option value="">Судья не выбран</option></select>
+          <select id="assignment-match"><option value="">Весь турнир</option></select>
+          <button id="assign-judge" style="width:100%;margin-top:5px">Назначить</button>
+          <div id="assignment-list" class="hint" style="margin-top:8px"></div>
+          <div class="hint" style="margin-top:8px">Назначенный судья сможет менять только результаты назначенных матчей.</div>
+        </div>
+        <div class="panel">
+          <h3>Создать аккаунт судьи</h3>
+          <input id="judge-password" type="password" autocomplete="new-password" placeholder="Начальный пароль (12+ символов)">
+          <button id="create-judge" class="primary" style="width:100%;margin-top:5px">Создать логин sudiya</button>
+          <div id="judge-create-status" class="hint" style="margin-top:7px"></div>
+          <p class="hint">Пароль отправляется только в защищённый запрос и не сохраняется в коде сайта.</p>
+        </div>
+        <div class="panel">
+          <h3>История изменений</h3>
+          <div id="audit-list" class="hint">Выбери сетку, чтобы увидеть историю.</div>
+        </div>
+      </aside>
+    </div>
+  </section>
+
+  <section id="judge-panel" class="hidden">
+    <div class="panel"><strong>Панель судьи</strong><p class="hint">Доступны только назначенные матчи. Структуру сетки и соединения менять нельзя.</p><select id="judge-doc-select"></select></div>
+    <div class="layout"><div class="canvas-shell" id="judge-canvas-shell"><div class="world" id="judge-world"><svg class="edge-layer" id="judge-edge-layer"></svg><div id="judge-world-content"></div></div></div><aside class="side-panel"><div class="panel"><h3>Назначенные матчи</h3><div id="judge-match-list" class="hint"></div></div></aside></div>
+  </section>
+
+  <footer><a href="#" id="service-entry" class="subtle-entry">СЛУЖЕБНЫЙ ВХОД</a></footer>
+</div>
+<datalist id="team-options"></datalist>
+<script>
+const SUPABASE_URL='https://uscnaqcvuwjrmkjyuklp.supabase.co';
+const SUPABASE_KEY='sb_publishable_oE2Bc1wPAcDt6HE8bOUj3Q_0-2FfIxB';
+const sb=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+const $=id=>document.getElementById(id);
+const MAPS=['Ancient','Anubis','Cache','Dust2','Inferno','Mirage','Nuke','Overpass','Train','Vertigo'];
+const BO=['BO1','BO3','BO5'];
+let session=null,role=null,docs=[],current=null,data=null,zoom=1,undoStack=[],redoStack=[],connecting=null,dragState=null,assignments=[],judges=[];
+const freshData=()=>({sections:[{id:uid(),title:'Этап 1',x:45,y:35}],nodes:[],edges:[],teams:[]});
+function uid(){return crypto.randomUUID?crypto.randomUUID():'n'+Math.random().toString(36).slice(2,12)}
+function esc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function admin(){return ['owner','admin','editor'].includes(role)}
+function say(id,msg,cls='hint'){const el=$(id);if(el){el.className=cls;el.textContent=msg}}
+function needed(format){return format==='BO1'?1:format==='BO5'?3:2}
+function nodeBy(id){return data?.nodes.find(n=>n.id===id)}
+function slotTeam(n,slot,seen=new Set()){
+  const e=data.edges.find(x=>x.toId===n.id&&x.toSlot===slot);
+  if(!e)return n[slot]||'';
+  if(seen.has(e.fromId))return '';
+  seen.add(e.fromId);
+  const source=nodeBy(e.fromId);if(!source)return '';
+  const resolved=resolvedTeams(source,seen);
+  const side=matchWinnerSide(source,resolved);
+  if(side==null)return '';
+  const winning=side===1?resolved.a:resolved.b;
+  const losing=side===1?resolved.b:resolved.a;
+  return e.fromPort==='winner'?winning:losing;
+}
+function resolvedTeams(n,seen=new Set()){return {a:slotTeam(n,'team1',new Set(seen)),b:slotTeam(n,'team2',new Set(seen))}}
+function matchWinnerSide(n,teams){
+  if(n.resultType&&n.resultType!=='normal')return n.winnerSide||null;
+  let a=0,b=0;
+  (n.maps||[]).forEach(m=>{if(m.status!=='completed')return;const x=Number(m.score1),y=Number(m.score2);if(!Number.isFinite(x)||!Number.isFinite(y)||x===y)return;if(x>y)a++;else b++});
+  const target=needed(n.format||'BO3');if(a>=target)return 1;if(b>=target)return 2;return null;
+}
+function winnerName(n){const t=resolvedTeams(n),s=matchWinnerSide(n,t);return s===1?t.a:s===2?t.b:''}
+function snapshot(){undoStack.push(JSON.stringify(data));if(undoStack.length>80)undoStack.shift();redoStack=[];refreshUndo()}
+function refreshUndo(){$('undo-btn').disabled=!undoStack.length;$('redo-btn').disabled=!redoStack.length}
+function mutate(fn){if(!admin())return;snapshot();fn();renderEditor()}
+function addMatch(x,y,sectionId){
+ const n={id:uid(),title:'Матч '+(data.nodes.length+1),x,y,sectionId:sectionId||data.sections[0]?.id||null,format:'BO3',team1:'',team2:'',status:'pending',resultType:'normal',winnerSide:null,maps:[{map:'Mirage',score1:'',score2:'',status:'not_started'},{map:'Dust2',score1:'',score2:'',status:'not_started'},{map:'Inferno',score1:'',score2:'',status:'not_started'}]};
+ data.nodes.push(n);return n;
+}
+function mapOptions(value){return MAPS.map(m=>'<option '+(m===value?'selected':'')+'>'+m+'</option>').join('')}
+function matchCard(n,mode='admin'){
+ const edit=mode==='admin'||mode==='judge',structure=mode==='admin',t=resolvedTeams(n),win=matchWinnerSide(n,t),maps=(n.maps||[]).slice(0,Number((n.format||'BO3').slice(2))||1);
+ const teamField=(slot,name)=>structure?'<input data-field="'+slot+'" data-node="'+n.id+'" list="team-options" value="'+esc(name)+'" placeholder="Команда '+(slot==='team1'?'A':'B')+'">':'<span>'+esc(name||'Ожидается команда')+'</span>';
+ const port=(type,slot,label)=>structure?'<span class="port '+type+'" data-'+(type==='in'?'in':'out')+'="'+(type==='in'?slot:n.id)+'" data-node="'+n.id+'" data-port="'+(type==='out'?slot:'')+'" style="top:'+(type==='in'?(slot==='team1'?76:113):(slot==='winner'?50:78))+'px"></span>':'';
+ const mapRows=maps.map((m,i)=>'<div class="map-row"><div class="map-head">'+(edit?'<select data-map-field="map" data-node="'+n.id+'" data-index="'+i+'">'+mapOptions(m.map)+'</select>':'<span>'+esc(m.map||'Карта')+'</span>')+(edit?'<input class="score-input" data-map-field="score1" data-node="'+n.id+'" data-index="'+i+'" type="number" min="0" max="99" value="'+esc(m.score1)+'" placeholder="0"><input class="score-input" data-map-field="score2" data-node="'+n.id+'" data-index="'+i+'" type="number" min="0" max="99" value="'+esc(m.score2)+'" placeholder="0">':'<b>'+esc(m.score1??'–')+' : '+esc(m.score2??'–')+'</b>')+'</div>'+(edit?'<select class="map-status" data-map-field="status" data-node="'+n.id+'" data-index="'+i+'"><option value="not_started" '+(m.status==='not_started'?'selected':'')+'>Не началась</option><option value="live" '+(m.status==='live'?'selected':'')+'>Идёт</option><option value="completed" '+(m.status==='completed'?'selected':'')+'>Завершена</option></select>':'<div class="hint">'+(m.status==='live'?'Идёт':m.status==='completed'?'Завершена':'Не началась')+'</div>')+'</div>').join('');
+ const fmt=structure?'<select data-field="format" data-node="'+n.id+'">'+BO.map(v=>'<option '+(n.format===v?'selected':'')+'>'+v+'</option>').join('')+'</select>':'<span class="badge">'+esc(n.format)+'</span>';
+ const status=edit?'<select data-field="status" data-node="'+n.id+'"><option value="pending" '+(n.status==='pending'?'selected':'')+'>Ожидание</option><option value="live" '+(n.status==='live'?'selected':'')+'>Идёт</option><option value="completed" '+(n.status==='completed'?'selected':'')+'>Завершён</option><option value="technical" '+(n.status==='technical'?'selected':'')+'>Технический</option><option value="cancelled" '+(n.status==='cancelled'?'selected':'')+'>Отменён</option></select>':'<span class="badge '+(n.status==='live'?'live':n.status==='completed'?'done':'')+'">'+esc(n.status)+'</span>';
+ const result=edit?'<select data-field="resultType" data-node="'+n.id+'"><option value="normal" '+(n.resultType==='normal'?'selected':'')+'>Обычный результат</option><option value="technical_win" '+(n.resultType==='technical_win'?'selected':'')+'>Техническая победа</option><option value="technical_loss" '+(n.resultType==='technical_loss'?'selected':'')+'>Техническое поражение</option><option value="disqualified" '+(n.resultType==='disqualified'?'selected':'')+'>Дисквалификация</option><option value="cancelled" '+(n.resultType==='cancelled'?'selected':'')+'>Отмена</option></select>':'';
+ const winner=edit&&n.resultType!=='normal'?'<select data-field="winnerSide" data-node="'+n.id+'"><option value="">Победитель не выбран</option><option value="1" '+(n.winnerSide===1?'selected':'')+'>Победитель: команда A</option><option value="2" '+(n.winnerSide===2?'selected':'')+'>Победитель: команда B</option></select>':'';
+ return '<article class="node" data-node-card="'+n.id+'" style="left:'+Number(n.x||0)+'px;top:'+Number(n.y||0)+'px">'+port('in','team1')+port('in','team2')+port('out','winner')+port('out','loser')+'<div class="node-head" data-drag="'+n.id+'">'+(structure?'<input class="node-title-input" data-field="title" data-node="'+n.id+'" value="'+esc(n.title||'Матч')+'">':'<span class="node-title">'+esc(n.title||'Матч')+'</span>')+'<div class="node-tools">'+fmt+(structure?'<button data-action="remove" data-node="'+n.id+'" title="Удалить матч">×</button>':'')+'</div></div><div class="node-body"><div class="team-line">'+teamField('team1',t.a)+'<b>'+((win===1)?'✓':'')+'</b></div><div class="team-line">'+teamField('team2',t.b)+'<b>'+((win===2)?'✓':'')+'</b></div>'+mapRows+'<div class="node-meta">'+status+result+'</div>'+winner+(winnerName(n)?'<div class="winner-label">Победитель: '+esc(winnerName(n))+'</div>':'')+(mode==='judge'?'<button data-action="save-result" data-node="'+n.id+'" class="primary" style="width:100%;margin-top:8px">Сохранить результат</button>':'')+'</div><div class="node-footer"><span>'+esc(n.id.slice(0,8))+'</span><span>'+esc(n.sectionId||'Без этапа')+'</span></div></article>';
+}
+let judgeAllowedIds=new Set();
+function renderWorld(worldId,contentId,svgId,mode){
+ const world=$(worldId),content=$(contentId),svg=$(svgId);if(!world||!content)return;
+ const sections=data?.sections||[],nodes=(data?.nodes||[]).filter(n=>mode!=='judge'||judgeAllowedIds.has(n.id));
+ content.innerHTML=sections.map(s=>'<div class="section-label" style="left:'+Number(s.x||45)+'px;top:'+Number(s.y||35)+'px">'+esc(s.title)+'</div>').join('')+nodes.map(n=>matchCard(n,mode)).join('');
+ if(svg){svg.innerHTML='';nodes.forEach(n=>{['winner','loser'].forEach(portName=>{const edge=data.edges.find(e=>e.fromId===n.id&&e.fromPort===portName);if(!edge)return;const target=nodeBy(edge.toId);if(!target)return;const sourceEl=content.querySelector('[data-node-card="'+n.id+'"] .port[data-port="'+portName+'"]');const targetEl=content.querySelector('[data-node-card="'+target.id+'"] .port[data-in="'+edge.toSlot+'"]');if(!sourceEl||!targetEl)return;const a=sourceEl.getBoundingClientRect(),b=targetEl.getBoundingClientRect(),r=world.getBoundingClientRect(),x1=(a.left+a.width/2-r.left)/zoom,y1=(a.top+a.height/2-r.top)/zoom,x2=(b.left+b.width/2-r.left)/zoom,y2=(b.top+b.height/2-r.top)/zoom,dx=Math.max(55,Math.abs(x2-x1)*.45);const p=document.createElementNS('http://www.w3.org/2000/svg','path');p.setAttribute('d','M '+x1+' '+y1+' C '+(x1+dx)+' '+y1+', '+(x2-dx)+' '+y2+', '+x2+' '+y2);p.setAttribute('class','edge-path '+(portName==='loser'?'loser':''));svg.appendChild(p)})})}
+}
+function renderEditor(){if(!data)return;const t=$('doc-title');if(t&&document.activeElement!==t)t.value=current?.title||'';$('doc-format').value=current?.format||'custom';$('teams-input').value=(data.teams||[]).join('\n');$('team-options').innerHTML=(data.teams||[]).map(x=>'<option value="'+esc(x)+'">').join('');renderWorld('world','world-content','edge-layer','admin');$('zoom-label').textContent=Math.round(zoom*100)+'%';refreshUndo()}
+function renderPublic(doc){
+ const d=doc?.published_data||{};data={sections:d.sections||[],nodes:d.nodes||[],edges:d.edges||[],teams:d.teams||[]};$('public-empty').classList.toggle('hidden',!!doc);$('canvas-shell').classList.toggle('hidden',!doc);
+ if(doc){$('editor-panel').classList.remove('hidden');$('editor-panel').querySelector('.panel').classList.add('hidden');$('editor-panel').querySelector('.layout aside')?.classList.add('hidden');$('editor-panel').querySelector('.layout').style.gridTemplateColumns='1fr';renderWorld('world','world-content','edge-layer','public')}
+}
+async function loadDocs(){
+ const {data:rows,error}=await sb.from('bracket_documents').select('id,title,format,status,data,published_data,published_at,updated_at').order('updated_at',{ascending:false});
+ if(error)throw error;docs=rows||[];
+ if(admin()){const sel=$('doc-select');sel.innerHTML=docs.map(d=>'<option value="'+d.id+'">'+esc(d.title)+(d.status==='published'?' · опубликована':' · черновик')+'</option>').join('');}
+ else if(role==='judge'){
+   const {data:a,error:ae}=await sb.from('bracket_assignments').select('bracket_id,match_id').eq('judge_user_id',session.user.id);if(ae)throw ae;assignments=a||[];
+   const ids=[...new Set(assignments.map(x=>x.bracket_id))];docs=docs.filter(d=>ids.includes(d.id)&&d.status==='published');
+   $('judge-doc-select').innerHTML=docs.map(d=>'<option value="'+d.id+'">'+esc(d.title)+'</option>').join('');
+ }else{$('public-doc-select').innerHTML=docs.filter(d=>d.status==='published').map(d=>'<option value="'+d.id+'">'+esc(d.title)+'</option>').join('');}
+ if(admin()&&!docs.length){newDoc();await loadSideData()}else if(admin()&&docs.length){await loadDoc(docs[0].id)}else if(role==='judge'&&docs.length){await loadJudgeDoc(docs[0].id)}else if(!role){const d=docs.find(x=>x.status==='published');renderPublic(d||null)}
+}
+async function loadDoc(id){current=docs.find(d=>d.id===id)||null;if(!current)return;data=JSON.parse(JSON.stringify(current.data||freshData()));undoStack=[];redoStack=[];renderEditor();await loadSideData()}
+async function loadSideData(){
+ const [{data:j,error:je},{data:a,error:ae},{data:h,error:he}]=await Promise.all([
+ sb.from('bracket_judges').select('user_id,username'),sb.from('bracket_assignments').select('id,match_id,judge_user_id').eq('bracket_id',current.id),sb.from('bracket_audit').select('action,match_id,details,created_at,actor_id').eq('bracket_id',current.id).order('created_at',{ascending:false}).limit(20)]);
+ if(je)throw je;if(ae)throw ae;if(he)throw he;judges=j||[];assignments=a||[];
+ $('judge-select').innerHTML='<option value="">Выбрать судью</option>'+judges.map(x=>'<option value="'+x.user_id+'">'+esc(x.username)+'</option>').join('');
+ $('assignment-match').innerHTML='<option value="">Весь турнир</option>'+data.nodes.map(n=>'<option value="'+esc(n.id)+'">'+esc(n.title)+'</option>').join('');
+ $('assignment-list').innerHTML=assignments.map(x=>'<div class="audit-item">'+esc(judges.find(j=>j.user_id===x.judge_user_id)?.username||'Судья')+' · '+esc(x.match_id?data.nodes.find(n=>n.id===x.match_id)?.title||x.match_id:'Весь турнир')+' <button data-remove-assignment="'+x.id+'" style="padding:2px 5px">×</button></div>').join('')||'Назначений пока нет.';
+ $('audit-list').innerHTML=(h||[]).map(x=>{const d=x.details||{};const label=x.action==='published'?'Сетка опубликована':x.action==='saved_draft'?'Черновик сохранён':x.action==='match_result_updated'?'Обновлён результат матча':x.action;const changes=[];if(d.changedPositions?.length)changes.push('Позиции матчей: '+d.changedPositions.length);if(d.edgesChanged)changes.push('Изменены соединения');if(d.matchCount!=null)changes.push('Матчей: '+d.matchCount);return '<div class="audit-item">'+esc(label)+(x.match_id?' · '+esc(x.match_id):'')+(changes.length?' · '+esc(changes.join(' · ')):'')+'<small>'+new Date(x.created_at).toLocaleString('ru-RU')+'</small></div>'}).join('')||'История пока пустая.';
+}
+function newDoc(){current={id:uid(),title:'Новая сетка',format:'custom',status:'draft',data:freshData()};data=JSON.parse(JSON.stringify(current.data));docs.unshift(current);$('doc-select').innerHTML=docs.map(d=>'<option value="'+d.id+'">'+esc(d.title)+'</option>').join('');$('doc-select').value=current.id;undoStack=[];redoStack=[];renderEditor();say('editor-status','Создан новый черновик. Сохрани его, чтобы продолжить позже.')}
+async function saveDoc(publish){
+ if(!admin()||!current)return;
+ current.title=$('doc-title').value.trim()||'Новая сетка';current.format=$('doc-format').value;current.data=data;
+ say('editor-status',publish?'Публикуем…':'Сохраняем черновик…');
+ const {data:id,error}=await sb.rpc('save_bracket_document',{p_id:current.id,p_title:current.title,p_format:current.format,p_data:data,p_publish:publish});
+ if(error){say('editor-status','Ошибка сохранения: '+error.message,'error');return}
+ current.id=id;current.status=publish?'published':current.status;current.data=data;
+ say('editor-status',publish?'Сетка опубликована. Публичная версия обновлена.':'Черновик сохранён. Публичная версия не менялась.','success');
+ await loadDocs();
+}
+function undo(){if(!undoStack.length)return;redoStack.push(JSON.stringify(data));data=JSON.parse(undoStack.pop());renderEditor()}
+function redo(){if(!redoStack.length)return;undoStack.push(JSON.stringify(data));data=JSON.parse(redoStack.pop());renderEditor()}
+function addSection(){const title=prompt('Название этапа или раунда','Верхняя сетка — Раунд 1');if(!title)return;mutate(()=>data.sections.push({id:uid(),title,x:45,y:35+data.sections.length*180}))}
+function generateRound(){const raw=prompt('Введи команды — по одной на строку','Команда 1\nКоманда 2\nКоманда 3\nКоманда 4');if(!raw)return;const teams=raw.split(/[\n,;]+/).map(x=>x.trim()).filter(Boolean);if(teams.length<2){alert('Нужно минимум две команды.');return}mutate(()=>{data.teams=teams;data.sections=[{id:uid(),title:'Круговой этап',x:45,y:35}];data.nodes=[];data.edges=[];let k=0;for(let i=0;i<teams.length;i++)for(let j=i+1;j<teams.length;j++){const n=addMatch(380+(k%4)*360,130+Math.floor(k/4)*300,data.sections[0].id);n.title='Матч '+(++k);n.format='BO1';n.maps=[{map:'Mirage',score1:'',score2:'',status:'not_started'}];n.team1=teams[i];n.team2=teams[j]}})}
+function changeField(el){
+ const n=nodeBy(el.dataset.node);if(!n)return;
+ if(el.dataset.field){const f=el.dataset.field;let v=el.value;if(f==='winnerSide')v=v?Number(v):null;if(f==='format'&&v!==n.format){const count=Number(v.slice(2))||1;n.maps=(n.maps||[]).slice(0,count);while(n.maps.length<count)n.maps.push({map:MAPS[n.maps.length]||'Mirage',score1:'',score2:'',status:'not_started'})}n[f]=v;if(f==='resultType'&&v==='normal')n.winnerSide=null;if(f==='team1'||f==='team2'){if(v&&!data.teams.includes(v))data.teams.push(v)}}
+ if(el.dataset.mapField){const i=Number(el.dataset.index),f=el.dataset.mapField;if(n.maps[i])n.maps[i][f]=el.value}
+}
+$('world-content').addEventListener('change',e=>{const el=e.target;if(el.matches('[data-field],[data-map-field]'))mutate(()=>changeField(el))});
+$('world-content').addEventListener('click',e=>{const b=e.target.closest('[data-action]');if(!b)return;const n=nodeBy(b.dataset.node);if(!n)return;if(b.dataset.action==='remove')mutate(()=>{data.nodes=data.nodes.filter(x=>x.id!==n.id);data.edges=data.edges.filter(x=>x.fromId!==n.id&&x.toId!==n.id)});});
+$('world-content').addEventListener('change',e=>{if(e.target.matches('[data-field="format"]'))renderEditor()});
+
+$('world-content').addEventListener('pointerdown',e=>{
+ const p=e.target.closest('.port[data-out]');if(p&&admin()){connecting={fromId:p.dataset.node,fromPort:p.dataset.port};e.preventDefault();return}
+ const h=e.target.closest('[data-drag]');if(h&&admin()&&!e.target.closest('button,select,input')){const n=nodeBy(h.dataset.drag);if(!n)return;snapshot();dragState={id:n.id,x:e.clientX,y:e.clientY,ox:n.x,oy:n.y,moved:false};h.setPointerCapture?.(e.pointerId)}
+});
+window.addEventListener('pointermove',e=>{
+ if(dragState){const n=nodeBy(dragState.id);if(!n)return;const dx=(e.clientX-dragState.x)/zoom,dy=(e.clientY-dragState.y)/zoom;if(Math.abs(dx)+Math.abs(dy)>2)dragState.moved=true;n.x=Math.max(0,dragState.ox+dx);n.y=Math.max(0,dragState.oy+dy);const el=$('world-content').querySelector('[data-node-card="'+n.id+'"]');if(el){el.style.left=n.x+'px';el.style.top=n.y+'px'}renderWorld('world','world-content','edge-layer','admin')}
+});
+window.addEventListener('pointerup',e=>{
+ if(dragState){if(!dragState.moved){undoStack.pop();refreshUndo()}dragState=null}
+ if(connecting){const target=e.target.closest('.port[data-in]');if(target){const toId=target.dataset.node,toSlot=target.dataset.in,fromId=connecting.fromId,fromPort=connecting.fromPort;const exists=data.edges.some(x=>x.toId===toId&&x.toSlot===toSlot);const duplicate=data.edges.some(x=>x.fromId===fromId&&x.fromPort===fromPort);const reaches=(start,target,seen=new Set())=>{if(start===target)return true;if(seen.has(start))return false;seen.add(start);return data.edges.filter(x=>x.fromId===start).some(x=>reaches(x.toId,target,seen))};const cycle=reaches(toId,fromId);if(!exists&&!duplicate&&!cycle&&fromId!==toId){snapshot();data.edges.push({fromId,fromPort,toId,toSlot});renderEditor()}else say('editor-status',cycle?'Такое соединение создаст цикл.':'Этот вход или выход уже соединён.','error')}connecting=null}
+});
+$('canvas-shell').addEventListener('pointerdown',e=>{if(e.target!==$('canvas-shell')&&e.target!==$('world'))return;if(e.button===1||e.shiftKey){const shell=$('canvas-shell'),sx=e.clientX,sy=e.clientY,sl=shell.scrollLeft,st=shell.scrollTop;const move=ev=>{shell.scrollLeft=sl-(ev.clientX-sx);shell.scrollTop=st-(ev.clientY-sy)};const up=()=>{window.removeEventListener('pointermove',move);window.removeEventListener('pointerup',up)};window.addEventListener('pointermove',move);window.addEventListener('pointerup',up)}});
+function setZoom(v){zoom=Math.max(.45,Math.min(1.5,v));$('world').style.transform='scale('+zoom+')';$('world').style.width='2600px';$('world').style.height='1800px';$('zoom-label').textContent=Math.round(zoom*100)+'%';renderWorld('world','world-content','edge-layer','admin')}
+$('zoom-in').onclick=()=>setZoom(zoom+.1);$('zoom-out').onclick=()=>setZoom(zoom-.1);$('zoom-reset').onclick=()=>setZoom(1);$('canvas-shell').addEventListener('wheel',e=>{if(e.ctrlKey||e.metaKey){e.preventDefault();setZoom(zoom+(e.deltaY<0?.05:-.05))}},{passive:false});document.addEventListener('keydown',e=>{if(e.target.closest('input,textarea,select'))return;if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='z'){e.preventDefault();e.shiftKey?redo():undo()}if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='y'){e.preventDefault();redo()}});
+$('add-match').onclick=()=>mutate(()=>addMatch(100+(data.nodes.length%4)*360,150+Math.floor(data.nodes.length/4)*300));
+$('add-section').onclick=addSection;$('generate-round').onclick=generateRound;$('undo-btn').onclick=undo;$('redo-btn').onclick=redo;$('new-doc').onclick=()=>{newDoc();loadSideData()};$('save-draft').onclick=()=>saveDoc(false);$('publish-doc').onclick=()=>saveDoc(true);
+$('doc-select').onchange=()=>loadDoc($('doc-select').value);$('doc-title').onchange=()=>{if(current)current.title=$('doc-title').value};$('doc-format').onchange=()=>{if(current)current.format=$('doc-format').value};
+$('save-teams').onclick=()=>mutate(()=>{data.teams=$('teams-input').value.split(/[\n,;]+/).map(x=>x.trim()).filter(Boolean)});
+$('assign-judge').onclick=async()=>{const uid=$('judge-select').value;if(!uid||!current)return;const match=$('assignment-match').value||null;const {error}=await sb.from('bracket_assignments').insert({bracket_id:current.id,match_id:match,judge_user_id:uid,assigned_by:session.user.id});if(error){say('assignment-list','Не удалось назначить: '+error.message,'error');return}await loadSideData()};
+$('assignment-list').addEventListener('click',async e=>{const b=e.target.closest('[data-remove-assignment]');if(!b)return;const {error}=await sb.from('bracket_assignments').delete().eq('id',b.dataset.removeAssignment);if(error){say('assignment-list',error.message,'error');return}await loadSideData()});
+$('create-judge').onclick=async()=>{const password=$('judge-password').value;if(password.length<12){say('judge-create-status','Пароль должен содержать минимум 12 символов.','error');return}say('judge-create-status','Создаём аккаунт…');const {data:out,error}=await sb.functions.invoke('provision-bracket-judge',{body:{password}});if(error||out?.error){say('judge-create-status',out?.error||error.message||'Не удалось создать аккаунт.','error');return}$('judge-password').value='';say('judge-create-status','Аккаунт sudiya создан. Теперь можно войти с выбранным паролем.','success');await loadSideData()};
+$('public-doc-select').onchange=()=>{const d=docs.find(x=>x.id===$('public-doc-select').value);if(d)renderPublic(d)};
+async function loadJudgeDoc(id){
+ const d=docs.find(x=>x.id===id);if(!d)return;current=d;data=JSON.parse(JSON.stringify(d.published_data||{}));
+ const allowed=new Set(assignments.filter(a=>a.bracket_id===id).map(a=>a.match_id).filter(Boolean));const whole=assignments.some(a=>a.bracket_id===id&&!a.match_id);
+ judgeAllowedIds=whole?new Set(data.nodes.map(n=>n.id)):allowed;
+ renderWorld('judge-world','judge-world-content','judge-edge-layer','judge');
+ $('judge-match-list').innerHTML=data.nodes.filter(n=>judgeAllowedIds.has(n.id)).map(n=>{const t=resolvedTeams(n);return '<div class="audit-item">'+esc(n.title)+'<small>'+esc(t.a||'Команда A')+' — '+esc(t.b||'Команда B')+'</small></div>'}).join('')||'Нет назначенных матчей.';
+}
+$('judge-doc-select').onchange=()=>loadJudgeDoc($('judge-doc-select').value);
+$('judge-world-content').addEventListener('change',e=>{const el=e.target;if(el.matches('[data-field],[data-map-field]')){const n=nodeBy(el.dataset.node);if(!n)return;if(el.dataset.field){const f=el.dataset.field;let v=el.value;if(f==='winnerSide')v=v?Number(v):null;n[f]=v}if(el.dataset.mapField){const m=n.maps[Number(el.dataset.index)];if(m)m[el.dataset.mapField]=el.value}}});
+$('judge-world-content').addEventListener('click',async e=>{const b=e.target.closest('[data-action="save-result"]');if(!b)return;const n=nodeBy(b.dataset.node);if(!n)return;const {error}=await sb.rpc('update_assigned_bracket_match',{p_bracket_id:current.id,p_match_id:n.id,p_maps:n.maps,p_status:n.status,p_result_type:n.resultType||'normal',p_winner_side:n.winnerSide||null});if(error){alert('Не удалось сохранить результат: '+error.message);return}alert('Результат сохранён.');await loadDocs()});
+async function boot(){
+ const {data:s,error}=await sb.auth.getSession();if(error)console.warn(error);session=s?.session||null;
+ if(session?.user){const {data:r,error:re}=await sb.rpc('current_organizer_role');if(re)console.warn(re);role=r||null}
+ $('logout-btn').classList.toggle('hidden',!session);$('role-label').textContent=role==='judge'?'Судья':admin()?'Организатор':'Публичная сетка';
+ $('login-panel').classList.add('hidden');$('public-panel').classList.remove('hidden');$('editor-panel').classList.add('hidden');$('judge-panel').classList.add('hidden');
+ if(admin()){$('public-panel').classList.add('hidden');$('editor-panel').classList.remove('hidden');$('editor-panel').querySelector('.panel').classList.remove('hidden');$('editor-panel').querySelector('.layout aside')?.classList.remove('hidden');$('editor-panel').querySelector('.layout').style.gridTemplateColumns='';$('create-judge').closest('.panel').classList.toggle('hidden',!['owner','admin'].includes(role));await loadDocs()}
+ else if(role==='judge'){$('public-panel').classList.add('hidden');$('judge-panel').classList.remove('hidden');await loadDocs()}
+ else{role=null;await loadDocs()}
+}
+$('service-entry').onclick=e=>{e.preventDefault();$('login-panel').classList.toggle('hidden');$('login-name').focus()};
+$('password-login').onclick=async()=>{const name=$('login-name').value.trim(),password=$('login-password').value;const email=name.toLowerCase()==='sudiya'?'sudiya@arqon-esports.ru':name;if(!email.includes('@')){say('login-message','Для входа организатора укажи email. Для судьи — логин sudiya.','error');return}const {error}=await sb.auth.signInWithPassword({email,password});if(error){say('login-message','Не удалось войти: '+error.message,'error');return}await boot()};
+$('magic-login').onclick=async()=>{const email=$('login-name').value.trim();if(!email.includes('@')){say('login-message','Для входа по ссылке укажи email.','error');return}const {error}=await sb.auth.signInWithOtp({email,options:{shouldCreateUser:false,emailRedirectTo:location.origin+'/bracket-builder/'}});say('login-message',error?'Ошибка: '+error.message:'Если аккаунт приглашён, ссылка отправлена на почту.',error?'error':'success')};
+$('logout-btn').onclick=async()=>{await sb.auth.signOut();location.reload()};
+sb.auth.onAuthStateChange((_event,s)=>{if(s?.user){session=s;setTimeout(()=>boot(),0)}});
+boot().catch(e=>say('editor-status','Ошибка загрузки: '+e.message,'error'));
+</script>
+</body>
+</html>
