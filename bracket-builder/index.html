@@ -159,7 +159,7 @@ function renderWorld(worldId,contentId,svgId,mode){
 function renderEditor(){if(!data)return;const t=$('doc-title');if(t&&document.activeElement!==t)t.value=current?.title||'';$('doc-format').value=current?.format||'custom';$('teams-input').value=(data.teams||[]).join('\n');$('team-options').innerHTML=(data.teams||[]).map(x=>'<option value="'+esc(x)+'">').join('');renderWorld('world','world-content','edge-layer','admin');$('zoom-label').textContent=Math.round(zoom*100)+'%';refreshUndo()}
 function renderPublic(doc){
  const d=doc?.published_data||{};data={sections:d.sections||[],nodes:d.nodes||[],edges:d.edges||[],teams:d.teams||[]};$('public-empty').classList.toggle('hidden',!!doc);$('canvas-shell').classList.toggle('hidden',!doc);
- if(doc){$('public-panel').classList.add('hidden');$('editor-panel').classList.remove('hidden');$('editor-panel').querySelector('.panel').classList.add('hidden');$('editor-panel').querySelector('.layout aside')?.classList.add('hidden');$('editor-panel').querySelector('.layout').style.gridTemplateColumns='1fr';renderWorld('world','world-content','edge-layer','public')}
+ if(doc){$('editor-panel').classList.remove('hidden');$('editor-panel').querySelector('.panel').classList.add('hidden');$('editor-panel').querySelector('.layout aside')?.classList.add('hidden');$('editor-panel').querySelector('.layout').style.gridTemplateColumns='1fr';renderWorld('world','world-content','edge-layer','public')}
 }
 async function loadDocs(){
  const {data:rows,error}=await sb.from('bracket_documents').select('id,title,format,status,data,published_data,published_at,updated_at').order('updated_at',{ascending:false});
@@ -170,7 +170,7 @@ async function loadDocs(){
    const ids=[...new Set(assignments.map(x=>x.bracket_id))];docs=docs.filter(d=>ids.includes(d.id)&&d.status==='published');
    $('judge-doc-select').innerHTML=docs.map(d=>'<option value="'+d.id+'">'+esc(d.title)+'</option>').join('');
  }else{$('public-doc-select').innerHTML=docs.filter(d=>d.status==='published').map(d=>'<option value="'+d.id+'">'+esc(d.title)+'</option>').join('');}
- if(admin()&&docs.length){await loadDoc(docs[0].id)}else if(role==='judge'&&docs.length){await loadJudgeDoc(docs[0].id)}else if(!role){const d=docs.find(x=>x.status==='published');renderPublic(d||null)}
+ if(admin()&&!docs.length){newDoc()}else if(admin()&&docs.length){await loadDoc(docs[0].id)}else if(role==='judge'&&docs.length){await loadJudgeDoc(docs[0].id)}else if(!role){const d=docs.find(x=>x.status==='published');renderPublic(d||null)}
 }
 async function loadDoc(id){current=docs.find(d=>d.id===id)||null;if(!current)return;data=JSON.parse(JSON.stringify(current.data||freshData()));undoStack=[];redoStack=[];renderEditor();await loadSideData()}
 async function loadSideData(){
@@ -205,7 +205,7 @@ function changeField(el){
 $('world-content').addEventListener('change',e=>{const el=e.target;if(el.matches('[data-field],[data-map-field]'))mutate(()=>changeField(el))});
 $('world-content').addEventListener('click',e=>{const b=e.target.closest('[data-action]');if(!b)return;const n=nodeBy(b.dataset.node);if(!n)return;if(b.dataset.action==='remove')mutate(()=>{data.nodes=data.nodes.filter(x=>x.id!==n.id);data.edges=data.edges.filter(x=>x.fromId!==n.id&&x.toId!==n.id)});});
 $('world-content').addEventListener('change',e=>{if(e.target.matches('[data-field="format"]'))renderEditor()});
-$('world-content').addEventListener('input',e=>{if(e.target.matches('[data-field="team1"],[data-field="team2"]')){const n=nodeBy(e.target.dataset.node);if(n)n[e.target.dataset.field]=e.target.value}});
+
 $('world-content').addEventListener('pointerdown',e=>{
  const p=e.target.closest('.port[data-out]');if(p&&admin()){connecting={fromId:p.dataset.node,fromPort:p.dataset.port};e.preventDefault();return}
  const h=e.target.closest('[data-drag]');if(h&&admin()&&!e.target.closest('button,select,input')){const n=nodeBy(h.dataset.drag);if(!n)return;snapshot();dragState={id:n.id,x:e.clientX,y:e.clientY,ox:n.x,oy:n.y,moved:false};h.setPointerCapture?.(e.pointerId)}
@@ -243,7 +243,7 @@ async function boot(){
  if(session?.user){const {data:r,error:re}=await sb.rpc('current_organizer_role');if(re)console.warn(re);role=r||null}
  $('logout-btn').classList.toggle('hidden',!session);$('role-label').textContent=role==='judge'?'Судья':admin()?'Организатор':'Публичная сетка';
  $('login-panel').classList.add('hidden');$('public-panel').classList.remove('hidden');$('editor-panel').classList.add('hidden');$('judge-panel').classList.add('hidden');
- if(admin()){$('public-panel').classList.add('hidden');$('editor-panel').classList.remove('hidden');await loadDocs()}
+ if(admin()){$('public-panel').classList.add('hidden');$('editor-panel').classList.remove('hidden');$('create-judge').closest('.panel').classList.toggle('hidden',!['owner','admin'].includes(role));await loadDocs()}
  else if(role==='judge'){$('public-panel').classList.add('hidden');$('judge-panel').classList.remove('hidden');await loadDocs()}
  else{role=null;await loadDocs()}
 }
