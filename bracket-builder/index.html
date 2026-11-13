@@ -74,7 +74,7 @@
         </div>
         <div class="panel">
           <h3>Создать аккаунт судьи</h3>
-          <input id="judge-password" type="password" autocomplete="new-password" placeholder="Начальный пароль (10+ символов)">
+          <input id="judge-password" type="password" autocomplete="new-password" placeholder="Начальный пароль (12+ символов)">
           <button id="create-judge" class="primary" style="width:100%;margin-top:5px">Создать логин sudiya</button>
           <div id="judge-create-status" class="hint" style="margin-top:7px"></div>
           <p class="hint">Пароль отправляется только в защищённый запрос и не сохраняется в коде сайта.</p>
@@ -227,7 +227,7 @@ $('doc-select').onchange=()=>loadDoc($('doc-select').value);$('doc-title').oncha
 $('save-teams').onclick=()=>mutate(()=>{data.teams=$('teams-input').value.split(/[\n,;]+/).map(x=>x.trim()).filter(Boolean)});
 $('assign-judge').onclick=async()=>{const uid=$('judge-select').value;if(!uid||!current)return;const match=$('assignment-match').value||null;const {error}=await sb.from('bracket_assignments').insert({bracket_id:current.id,match_id:match,judge_user_id:uid,assigned_by:session.user.id});if(error){say('assignment-list','Не удалось назначить: '+error.message,'error');return}await loadSideData()};
 $('assignment-list').addEventListener('click',async e=>{const b=e.target.closest('[data-remove-assignment]');if(!b)return;const {error}=await sb.from('bracket_assignments').delete().eq('id',b.dataset.removeAssignment);if(error){say('assignment-list',error.message,'error');return}await loadSideData()});
-$('create-judge').onclick=async()=>{const password=$('judge-password').value;if(password.length<10){say('judge-create-status','Пароль должен содержать минимум 10 символов.','error');return}say('judge-create-status','Создаём аккаунт…');const {data:out,error}=await sb.functions.invoke('provision-bracket-judge',{body:{password}});if(error||out?.error){say('judge-create-status',out?.error||error.message||'Не удалось создать аккаунт.','error');return}$('judge-password').value='';say('judge-create-status','Аккаунт sudiya создан. Теперь можно войти с выбранным паролем.','success');await loadSideData()};
+$('create-judge').onclick=async()=>{const password=$('judge-password').value;if(password.length<12){say('judge-create-status','Пароль должен содержать минимум 12 символов.','error');return}say('judge-create-status','Создаём аккаунт…');const {data:out,error}=await sb.functions.invoke('provision-bracket-judge',{body:{password}});if(error||out?.error){say('judge-create-status',out?.error||error.message||'Не удалось создать аккаунт.','error');return}$('judge-password').value='';say('judge-create-status','Аккаунт sudiya создан. Теперь можно войти с выбранным паролем.','success');await loadSideData()};
 $('public-doc-select').onchange=()=>{const d=docs.find(x=>x.id===$('public-doc-select').value);if(d)renderPublic(d)};
 async function loadJudgeDoc(id){
  const d=docs.find(x=>x.id===id);if(!d)return;current=d;data=JSON.parse(JSON.stringify(d.published_data||{}));
