@@ -56,8 +56,8 @@ Deno.serve(async (req: Request) => {
 
     const body = await req.json().catch(() => ({}));
     const password = typeof body.password === "string" ? body.password : "";
-    if (password.length < 10 || password.length > 72) {
-      return Response.json({ error: "Password must contain 10–72 characters" }, { status: 400, headers });
+    if (password.length < 12 || password.length > 72) {
+      return Response.json({ error: "Password must contain 12–72 characters" }, { status: 400, headers });
     }
 
     const email = "sudiya@arqon-esports.ru";
