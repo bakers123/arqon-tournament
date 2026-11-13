@@ -247,7 +247,7 @@ async function loadJudgeDoc(id){
 $('judge-doc-select').onchange=()=>loadJudgeDoc($('judge-doc-select').value);
 $('judge-world-content').addEventListener('change',e=>{const el=e.target;if(el.matches('[data-field],[data-map-field]')){const n=nodeBy(el.dataset.node);if(!n)return;if(el.dataset.field){const f=el.dataset.field;let v=el.value;if(f==='winnerSide')v=v?Number(v):null;n[f]=v}if(el.dataset.mapField){const m=n.maps[Number(el.dataset.index)];if(m)m[el.dataset.mapField]=el.value}}});
 $('judge-world-content').addEventListener('click',async e=>{const b=e.target.closest('[data-action="save-result"]');if(!b)return;const n=nodeBy(b.dataset.node);if(!n)return;const {error}=await sb.rpc('update_assigned_bracket_match',{p_bracket_id:current.id,p_match_id:n.id,p_maps:n.maps,p_status:n.status,p_result_type:n.resultType||'normal',p_winner_side:n.winnerSide||null});if(error){alert('Не удалось сохранить результат: '+error.message);return}alert('Результат сохранён.');await loadDocs()});
-async function initAdminTabs(){
+function initAdminTabs(){
  const editor=$('editor-panel');
  if(editor.dataset.tabsReady==='1')return;
  const base=editor.querySelector(':scope > .panel');
@@ -281,7 +281,7 @@ async function initAdminTabs(){
  tabs.addEventListener('keydown',e=>{if(!['ArrowLeft','ArrowRight','Home','End'].includes(e.key))return;const all=[...tabs.querySelectorAll('[role="tab"]')];const active=all.findIndex(x=>x.getAttribute('aria-selected')==='true');const next=e.key==='Home'?0:e.key==='End'?all.length-1:(active+(e.key==='ArrowRight'?1:-1)+all.length)%all.length;e.preventDefault();all[next].focus();activate(all[next].dataset.adminTab)});
  editor._activateAdminTab=activate;activate('builder');
 }
-function boot(){
+async function boot(){
  const {data:s,error}=await sb.auth.getSession();if(error)console.warn(error);session=s?.session||null;
  if(session?.user){const {data:r,error:re}=await sb.rpc('current_organizer_role');if(re)console.warn(re);role=r||null}
  $('logout-btn').classList.toggle('hidden',!session);$('role-label').textContent=role==='judge'?'Судья':admin()?'Организатор':'Публичная сетка';
