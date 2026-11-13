@@ -358,7 +358,7 @@ async function boot(){
  else{role=null;await loadDocs()}
 }
 $('service-entry').onclick=e=>{e.preventDefault();$('login-panel').classList.toggle('hidden');$('login-name').focus()};
-$('password-login').onclick=async()=>{const name=$('login-name').value.trim(),password=$('login-password').value;const email=name.includes('@')?name.toLowerCase():name.toLowerCase()+'@arqon-esports.ru';if(!email.includes('@')){say('login-message','Укажи email или логин судьи.','error');return}const {error}=await sb.auth.signInWithPassword({email,password});if(error){say('login-message','Не удалось войти: '+error.message,'error');return}await boot()};
+$('password-login').onclick=async()=>{const name=$('login-name').value.trim(),password=$('login-password').value;if(!name){say('login-message','Укажи email или логин судьи.','error');return}const email=name.includes('@')?name.toLowerCase():name.toLowerCase()+'@arqon-esports.ru';const {error}=await sb.auth.signInWithPassword({email,password});if(error){say('login-message','Не удалось войти: '+error.message,'error');return}await boot()};
 $('magic-login').onclick=async()=>{const email=$('login-name').value.trim();if(!email.includes('@')){say('login-message','Для входа по ссылке укажи email.','error');return}const {error}=await sb.auth.signInWithOtp({email,options:{shouldCreateUser:false,emailRedirectTo:location.origin+'/bracket-builder/'}});say('login-message',error?'Ошибка: '+error.message:'Если аккаунт приглашён, ссылка отправлена на почту.',error?'error':'success')};
 $('logout-btn').onclick=async()=>{await sb.auth.signOut();location.reload()};
 sb.auth.onAuthStateChange((_event,s)=>{if(s?.user){session=s;setTimeout(()=>boot(),0)}});
