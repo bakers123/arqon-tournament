@@ -231,9 +231,14 @@ function renderPublic(doc){
  if(doc){$('editor-panel').classList.remove('hidden');$('editor-panel').querySelector('.panel').classList.add('hidden');$('editor-panel').querySelector('.layout aside')?.classList.add('hidden');$('editor-panel').querySelector('.layout').style.gridTemplateColumns='1fr';renderWorld('world','world-content','edge-layer','public')}
 }
 async function loadDocs(){
- const source=admin()?'organizer_bracket_documents':'published_bracket_documents';
- const columns=admin()?'id,title,format,status,data,published_data,published_at,updated_at':'id,title,format,status,published_data,published_at,updated_at';
- const {data:rows,error}=await sb.from(source).select(columns).order('updated_at',{ascending:false});
+ let rows,error;
+ if(admin()){
+   const result=await sb.rpc('list_organizer_bracket_documents');
+   rows=result.data;error=result.error;
+ }else{
+   const result=await sb.from('published_bracket_documents').select('id,title,format,status,published_data,published_at,updated_at').order('updated_at',{ascending:false});
+   rows=result.data;error=result.error;
+ }
  if(error)throw error;docs=rows||[];
  if(admin()){const sel=$('doc-select');sel.innerHTML=docs.map(d=>'<option value="'+d.id+'">'+esc(d.title)+(d.status==='published'?' · опубликована':' · черновик')+'</option>').join('');}
  else if(role==='judge'){
