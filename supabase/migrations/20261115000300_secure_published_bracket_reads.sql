@@ -15,6 +15,8 @@ select id, title, format, status, data, published_data, published_at, updated_at
 from public.bracket_documents
 where public.has_organizer_role('editor');
 
+drop policy if exists bracket_documents_public_published_read on public.bracket_documents;
+
 revoke select on table public.bracket_documents from anon, authenticated;
 grant select on table public.published_bracket_documents to anon, authenticated;
 grant select on table public.organizer_bracket_documents to authenticated;
