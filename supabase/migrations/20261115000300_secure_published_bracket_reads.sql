@@ -8,12 +8,65 @@ revoke select on table public.bracket_documents from anon, authenticated;
 grant select (id, title, format, status, published_data, published_at, updated_at)
   on table public.bracket_documents to anon, authenticated;
 
+drop policy if exists bracket_documents_editor_all on public.bracket_documents;
 drop policy if exists bracket_documents_public_published_read on public.bracket_documents;
+
 create policy bracket_documents_public_published_read
-  on public.bracket_documents
-  for select
-  to anon, authenticated
+  on public.bracket_documents for select to anon
   using (status = 'published' and published_data is not null);
+
+create policy bracket_documents_authenticated_read
+  on public.bracket_documents for select to authenticated
+  using (
+    public.has_organizer_role('editor')
+    or (status = 'published' and published_data is not null)
+  );
+
+create policy bracket_documents_editor_insert
+  on public.bracket_documents for insert to authenticated
+  with check (public.has_organizer_role('editor'));
+
+create policy bracket_documents_editor_update
+  on public.bracket_documents for update to authenticated
+  using (public.has_organizer_role('editor'))
+  with check (public.has_organizer_role('editor'));
+
+create policy bracket_documents_editor_delete
+  on public.bracket_documents for delete to authenticated
+  using (public.has_organizer_role('editor'));
+
+drop policy if exists bracket_assignments_editor_all on public.bracket_assignments;
+drop policy if exists bracket_assignments_judge_read_own on public.bracket_assignments;
+
+create policy bracket_assignments_authenticated_read
+  on public.bracket_assignments for select to authenticated
+  using (
+    public.has_organizer_role('editor')
+    or judge_user_id = (select auth.uid())
+  );
+
+create policy bracket_assignments_editor_insert
+  on public.bracket_assignments for insert to authenticated
+  with check (public.has_organizer_role('editor'));
+
+create policy bracket_assignments_editor_update
+  on public.bracket_assignments for update to authenticated
+  using (public.has_organizer_role('editor'))
+  with check (public.has_organizer_role('editor'));
+
+create policy bracket_assignments_editor_delete
+  on public.bracket_assignments for delete to authenticated
+  using (public.has_organizer_role('editor'));
+
+drop policy if exists bracket_audit_editor_read on public.bracket_audit;
+drop policy if exists bracket_audit_judge_read_own on public.bracket_audit;
+
+create policy bracket_audit_authenticated_read
+  on public.bracket_audit for select to authenticated
+  using (
+    public.has_organizer_role('editor')
+    or actor_id = (select auth.uid())
+  );
 
 create view public.published_bracket_documents
 with (security_invoker = true, security_barrier = true)
