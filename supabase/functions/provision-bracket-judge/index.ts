@@ -55,12 +55,16 @@ Deno.serve(async (req: Request) => {
     }
 
     const body = await req.json().catch(() => ({}));
+    const username = typeof body.username === "string" ? body.username.trim().toLowerCase() : "";
+    if (!/^[a-z0-9_-]{3,24}$/.test(username)) {
+      return Response.json({ error: "Username must be 3–24 characters: lowercase letters, numbers, _ or -" }, { status: 400, headers });
+    }
     const password = typeof body.password === "string" ? body.password : "";
     if (password.length < 12 || password.length > 72) {
       return Response.json({ error: "Password must contain 12–72 characters" }, { status: 400, headers });
     }
 
-    const email = "sudiya@arqon-esports.ru";
+    const email = `${username}@arqon-esports.ru`;
     const createResponse = await fetch(`${url}/auth/v1/admin/users`, {
       method: "POST",
       headers: { "apikey": secretKey, "Content-Type": "application/json" },
@@ -68,7 +72,7 @@ Deno.serve(async (req: Request) => {
         email,
         password,
         email_confirm: true,
-        user_metadata: { username: "sudiya", display_name: "Судья ARQON" },
+        user_metadata: { username, display_name: username },
       }),
     });
 
@@ -100,7 +104,7 @@ Deno.serve(async (req: Request) => {
       return Response.json({ error: "Judge role assignment failed; the newly created Auth user was rolled back." }, { status: 502, headers });
     }
 
-    return Response.json({ success: true, username: "sudiya" }, { status: 201, headers });
+    return Response.json({ success: true, username }, { status: 201, headers });
   } catch (_error) {
     return Response.json({ error: "Unexpected server error" }, { status: 500, headers });
   }
