@@ -10,6 +10,10 @@ grant select (id, title, format, status, published_data, published_at, updated_a
 
 drop policy if exists bracket_documents_editor_all on public.bracket_documents;
 drop policy if exists bracket_documents_public_published_read on public.bracket_documents;
+drop policy if exists bracket_documents_authenticated_read on public.bracket_documents;
+drop policy if exists bracket_documents_editor_insert on public.bracket_documents;
+drop policy if exists bracket_documents_editor_update on public.bracket_documents;
+drop policy if exists bracket_documents_editor_delete on public.bracket_documents;
 
 create policy bracket_documents_public_published_read
   on public.bracket_documents for select to anon
@@ -37,6 +41,10 @@ create policy bracket_documents_editor_delete
 
 drop policy if exists bracket_assignments_editor_all on public.bracket_assignments;
 drop policy if exists bracket_assignments_judge_read_own on public.bracket_assignments;
+drop policy if exists bracket_assignments_authenticated_read on public.bracket_assignments;
+drop policy if exists bracket_assignments_editor_insert on public.bracket_assignments;
+drop policy if exists bracket_assignments_editor_update on public.bracket_assignments;
+drop policy if exists bracket_assignments_editor_delete on public.bracket_assignments;
 
 create policy bracket_assignments_authenticated_read
   on public.bracket_assignments for select to authenticated
@@ -60,6 +68,7 @@ create policy bracket_assignments_editor_delete
 
 drop policy if exists bracket_audit_editor_read on public.bracket_audit;
 drop policy if exists bracket_audit_judge_read_own on public.bracket_audit;
+drop policy if exists bracket_audit_authenticated_read on public.bracket_audit;
 
 create policy bracket_audit_authenticated_read
   on public.bracket_audit for select to authenticated
