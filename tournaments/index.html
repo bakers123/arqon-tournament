@@ -2916,13 +2916,11 @@ async function pickHero(heroId, myRole) {
   draftState.picks[myRole] = heroId;
   renderPlayerDraft(currentUser.id);
 
-  const { error } = await supabaseClient.from('drafts').upsert({ id: 1, data: oldState, ...{ data: draftState } });
-  // ВАЖНО: делаем upsert корректно:
-  const res = await supabaseClient.from('drafts').upsert({ id: 1, data: draftState });
-  if (res.error) {
+  const { error } = await savePlayerDraft(draftState);
+  if (error) {
     draftState = oldState;
     renderPlayerDraft(currentUser.id);
-    alert('Ошибка сохранения пика: ' + res.error.message);
+    alert('Ошибка сохранения пика: ' + error.message);
   }
 }
 
