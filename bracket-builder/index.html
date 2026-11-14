@@ -231,15 +231,17 @@ function renderPublic(doc){
  if(doc){$('editor-panel').classList.remove('hidden');$('editor-panel').querySelector('.panel').classList.add('hidden');$('editor-panel').querySelector('.layout aside')?.classList.add('hidden');$('editor-panel').querySelector('.layout').style.gridTemplateColumns='1fr';renderWorld('world','world-content','edge-layer','public')}
 }
 async function loadDocs(){
- const {data:rows,error}=await sb.from('bracket_documents').select('id,title,format,status,data,published_data,published_at,updated_at').order('updated_at',{ascending:false});
+ const source=admin()?'organizer_bracket_documents':'published_bracket_documents';
+ const columns=admin()?'id,title,format,status,data,published_data,published_at,updated_at':'id,title,format,status,published_data,published_at,updated_at';
+ const {data:rows,error}=await sb.from(source).select(columns).order('updated_at',{ascending:false});
  if(error)throw error;docs=rows||[];
  if(admin()){const sel=$('doc-select');sel.innerHTML=docs.map(d=>'<option value="'+d.id+'">'+esc(d.title)+(d.status==='published'?' · опубликована':' · черновик')+'</option>').join('');}
  else if(role==='judge'){
    const {data:a,error:ae}=await sb.from('bracket_assignments').select('bracket_id,match_id').eq('judge_user_id',session.user.id);if(ae)throw ae;assignments=a||[];
    const ids=[...new Set(assignments.map(x=>x.bracket_id))];docs=docs.filter(d=>ids.includes(d.id)&&d.status==='published');
    $('judge-doc-select').innerHTML=docs.map(d=>'<option value="'+d.id+'">'+esc(d.title)+'</option>').join('');
- }else{$('public-doc-select').innerHTML=docs.filter(d=>d.status==='published').map(d=>'<option value="'+d.id+'">'+esc(d.title)+'</option>').join('');}
- if(admin()&&!docs.length){newDoc();await loadSideData()}else if(admin()&&docs.length){await loadDoc(docs[0].id)}else if(role==='judge'&&docs.length){await loadJudgeDoc(docs[0].id)}else if(!role){const d=docs.find(x=>x.status==='published');renderPublic(d||null)}
+ }else{$('public-doc-select').innerHTML=docs.map(d=>'<option value="'+d.id+'">'+esc(d.title)+'</option>').join('');}
+ if(admin()&&!docs.length){newDoc();await loadSideData()}else if(admin()&&docs.length){await loadDoc(docs[0].id)}else if(role==='judge'&&docs.length){await loadJudgeDoc(docs[0].id)}else if(!role){const d=docs[0];renderPublic(d||null)}
 }
 async function loadDoc(id){current=docs.find(d=>d.id===id)||null;if(!current)return;data=JSON.parse(JSON.stringify(current.data||freshData()));undoStack=[];redoStack=[];renderEditor();await loadSideData()}
 async function loadSideData(){
