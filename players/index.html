@@ -4165,17 +4165,29 @@ async function startSteamAuth(mode) {
   if (registerButton) registerButton.disabled = true;
   setSteamMessage('Подготавливаем безопасное соединение со Steam…');
   try {
-    let { data: sessionData, error: sessionError } = await supabaseClient.auth.getSession();
-    if (sessionError) throw sessionError;
-    if (mode === 'register' && !sessionData.session?.user) {
-      const { error } = await supabaseClient.auth.signInAnonymously();
+    let accessToken = null;
+    if (mode === 'register') {
+      let { data, error } = await supabaseClient.auth.getSession();
       if (error) throw error;
-      ({ data: sessionData, error: sessionError } = await supabaseClient.auth.getSession());
-      if (sessionError) throw sessionError;
+      if (!data.session?.access_token) {
+        const created = await supabaseClient.auth.signInAnonymously();
+        if (created.error) throw created.error;
+        ({ data, error } = await supabaseClient.auth.getSession());
+        if (error) throw error;
+      }
+      accessToken = data.session?.access_token;
+      if (!accessToken) throw new Error('Не удалось подготовить аккаунт. Обнови страницу и попробуй снова.');
     }
-    const { data, error } = await supabaseClient.functions.invoke('steam-openid-start', { body: {} });
-    if (error) throw error;
-    if (!data?.url) throw new Error(data?.error || 'Steam не вернул ссылку для входа.');
+    const headers = { 'Content-Type': 'application/json', 'apikey': SUPABASE_KEY };
+    // Login is deliberately unauthenticated: a stale local session must never turn
+    // a Steam login attempt into linking Steam to the currently open account.
+    if (mode === 'register') headers.Authorization = 'Bearer ' + accessToken;
+    const response = await fetch(SUPABASE_URL + '/functions/v1/steam-openid-start', {
+      method: 'POST', headers, body: JSON.stringify({ mode })
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(data.error || 'Не удалось начать вход через Steam.');
+    if (!data?.url) throw new Error('Steam не вернул ссылку для входа.');
     window.location.assign(data.url);
   } catch (error) {
     setSteamMessage(error.message || 'Не удалось начать вход через Steam.', true);
@@ -4183,7 +4195,6 @@ async function startSteamAuth(mode) {
     if (registerButton) registerButton.disabled = false;
   }
 }
-
 async function saveSteamEmail() {
   const input = document.getElementById('steam-email');
   const button = document.getElementById('steam-email-submit');
