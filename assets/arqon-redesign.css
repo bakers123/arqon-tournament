@@ -75,3 +75,22 @@ input:focus,select:focus,textarea:focus{outline:none!important;border-color:#a78
   main{padding:12px 10px 90px!important}
 }
 @media(max-width:390px){header{gap:7px!important}header .brand img{width:112px!important}#arqon-account-button{font-size:10px!important;padding:0 8px!important}}
+
+/* Player hub and account surfaces */
+.portal-card{
+  border:1px solid var(--arq-border)!important;border-radius:17px!important;
+  background:linear-gradient(145deg,rgba(27,22,42,.96),rgba(13,12,20,.98))!important;
+  box-shadow:0 12px 34px rgba(0,0,0,.22)!important;
+}
+.portal-card:hover{border-color:rgba(167,139,250,.55)!important;box-shadow:0 18px 42px rgba(65,35,120,.22)!important}
+.portal-pill{background:rgba(139,92,246,.12)!important;border-color:rgba(167,139,250,.32)!important;color:#d8c8ff!important}
+.portal-detail-stat{border-color:var(--arq-border)!important;border-radius:12px!important;background:rgba(255,255,255,.035)!important}
+.portal-avatar{border-radius:17px!important;box-shadow:0 8px 24px rgba(109,40,217,.2)!important}
+#arqon-account-modal .modal-content{border:1px solid var(--arq-border-strong)!important;border-radius:20px!important;background:linear-gradient(150deg,#1a1428,#100e18 70%)!important;box-shadow:var(--arq-shadow)!important}
+#arqon-account-modal .modal-content button{min-height:42px}
+.home-title span{color:#b69cff!important;text-shadow:0 0 28px rgba(139,92,246,.28)}
+/* The manual bracket builder shares the same design language */
+header.top{background:rgba(9,8,15,.9)!important;border-bottom:1px solid var(--arq-border)!important;backdrop-filter:blur(18px)!important}
+.panel,.side-panel,.canvas-shell{border-color:var(--arq-border)!important;border-radius:15px!important;background:linear-gradient(145deg,rgba(24,21,36,.96),rgba(13,12,20,.98))!important;box-shadow:0 10px 30px rgba(0,0,0,.18)!important}
+header.top .brand h1{color:#f4edff!important}
+button.primary{background:linear-gradient(110deg,#6d28d9,#8b5cf6)!important;border-color:rgba(196,181,253,.35)!important}
