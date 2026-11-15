@@ -7,7 +7,8 @@ async function syncSteamProfile(admin:any,steamId:string,userId:string){
     const extract=(tag:string)=>{
       const match=xml.match(new RegExp(`<${tag}>([\\s\\S]*?)</${tag}>`,"i"));
       if(!match)return null;
-      const raw=match[1].trim();\n      return raw.startsWith("<![CDATA[")&&raw.endsWith("]]>")?raw.slice(9,-3).trim():raw;
+      const raw=match[1].trim();
+      return raw.startsWith("<![CDATA[")&&raw.endsWith("]]>")?raw.slice(9,-3).trim():raw;
     };
     const persona=extract("steamID");
     const avatar=extract("avatarFull")||extract("avatarMedium")||extract("avatarIcon");
