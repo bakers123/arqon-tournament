@@ -4,7 +4,7 @@ const json=(body:unknown,status=200)=>new Response(JSON.stringify(body),{status,
 const esc=(v:unknown)=>String(v??"").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;");
 const SITE="https://arqon-esports.ru";
 const menuMarkup=(isAdmin=false)=>({inline_keyboard:[
- [{text:"👤 Мой профиль",callback_data:"profile"}],
+ [{text:"👤 Мой профиль",url:SITE+"/players/profile/?me=1"}],
  [{text:"🔔 Уведомления",callback_data:"notifications"}],
  [{text:"🏆 Киберспортивная лига",callback_data:"league"}],
  [{text:"👥 Команды",callback_data:"teams"},{text:"🎯 Игроки",callback_data:"players"}],
