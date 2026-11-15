@@ -1468,10 +1468,13 @@ let state = {
 // ==========================================
 
 supabaseClient.auth.onAuthStateChange((event, session) => {
-  if (isAdmin()) return;
-  if (session) {
+  // startApp() restores the initial session. Do not repeat role checks and
+  // tournament loads for Supabase's INITIAL_SESSION/TOKEN_REFRESHED events.
+  if (event === 'INITIAL_SESSION' || event === 'TOKEN_REFRESHED') return;
+  if (window.isAdmin?.()) return;
+  if (session?.user) {
     currentUser = session.user;
-    checkUserRole(session.user.id)
+    Promise.resolve(window.checkUserRole?.(session.user.id))
       .then(() => applyPathRoute())
       .catch(error => console.error('Ошибка проверки роли пользователя:', error));
   } else {
