@@ -4251,6 +4251,24 @@ async function handleSteamReturn(user) {
     return;
   }
   if (status === 'signed_in') {
+    if (!user) {
+      const fragment = new URLSearchParams(window.location.hash.replace(/^#/, ''));
+      const accessToken = fragment.get('access_token');
+      const refreshToken = fragment.get('refresh_token');
+      if (accessToken && refreshToken) {
+        const { error } = await supabaseClient.auth.setSession({
+          access_token: accessToken,
+          refresh_token: refreshToken
+        });
+        if (!error) {
+          clearReturn();
+          window.location.reload();
+          return;
+        }
+      }
+      if (authScreen) authScreen.style.display = 'flex';
+      setSteamMessage('Steam подтвердил аккаунт, но сессию не удалось восстановить. Повтори вход.', true);
+    }
     clearReturn();
     return;
   }
