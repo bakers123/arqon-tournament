@@ -1,5 +1,9 @@
 
 alter table public.team_transfer_history drop constraint if exists team_transfer_history_event_type_check;
+alter table public.user_notifications drop constraint if exists user_notifications_notification_type_check;
+alter table public.user_notifications add constraint user_notifications_notification_type_check
+  check (notification_type = any (array['support_reply','team_invitation','team_offer','system','support_status','team_status','team_role_changed','team_roster_changed']::text[]));
+
 alter table public.team_transfer_history add constraint team_transfer_history_event_type_check
   check (event_type = any (array['joined','released','promoted','demoted','deputy_assigned','role_changed']::text[]));
 
