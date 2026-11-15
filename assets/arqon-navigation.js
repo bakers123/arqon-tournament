@@ -19,7 +19,7 @@
 
     const head = document.createElement('div');
     head.className = 'arqon-nav-head';
-    head.innerHTML = '<div class="arqon-nav-brand">ARQON <span>ESPORTS</span></div><div class="arqon-nav-close" role="button" tabindex="0" aria-label="Закрыть меню">×</div>';
+    head.innerHTML = '<div class="arqon-nav-brand">ARQON <span>ESPORTS</span></div><button class="arqon-nav-close" type="button" aria-label="Закрыть меню">×</button>';
     nav.prepend(head);
 
     const buttons = Array.from(nav.querySelectorAll('button[data-tab]'));
@@ -50,6 +50,7 @@
       document.body.classList.remove('arqon-menu-open');
       trigger.setAttribute('aria-expanded','false');
       trigger.setAttribute('aria-label','Открыть меню');
+      trigger.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h16"/></svg>';
     };
     const open = () => {
       nav.classList.add('arqon-nav-open');
@@ -57,12 +58,13 @@
       document.body.classList.add('arqon-menu-open');
       trigger.setAttribute('aria-expanded','true');
       trigger.setAttribute('aria-label','Закрыть меню');
+      trigger.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h16"/></svg>';
     };
     trigger.addEventListener('click', () => nav.classList.contains('arqon-nav-open') ? close() : open());
     backdrop.addEventListener('click',close);
     const closeControl = head.querySelector('.arqon-nav-close');
     closeControl.addEventListener('click',close);
-    closeControl.addEventListener('keydown',event => { if(event.key==='Enter' || event.key===' ') { event.preventDefault(); close(); } });
+    
     nav.addEventListener('click',event => {
       if(event.target.closest('button[data-tab]')) close();
     });
