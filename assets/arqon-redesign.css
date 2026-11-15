@@ -443,3 +443,14 @@ header>#player-account-widget{order:7!important;flex:0 0 auto!important;min-widt
   header>nav a.nav-social-btn{width:100%!important;max-width:100%!important;min-height:46px!important;flex:0 0 auto!important;white-space:normal!important;overflow-wrap:anywhere!important}
   .arqon-menu-backdrop{position:fixed!important;inset:0!important;z-index:1000!important}
 }
+
+
+/* Mobile drawer layering fix v12: backdrop below the sticky header stacking context */
+@media(max-width:900px){
+  .arqon-menu-backdrop{z-index:799!important;pointer-events:auto!important}
+  header{z-index:800!important}
+  header>nav{z-index:2!important;pointer-events:auto!important}
+  header>nav.arqon-nav-open{pointer-events:auto!important}
+  header>nav.arqon-nav-open button,
+  header>nav.arqon-nav-open a{pointer-events:auto!important}
+}
