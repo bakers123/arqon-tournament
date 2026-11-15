@@ -44,7 +44,7 @@
     const drawer = document.createElement('aside');
     drawer.id = 'arqon-admin-drawer';
     drawer.setAttribute('aria-label','Разделы панели администратора');
-    drawer.innerHTML = '<div class="arqon-admin-drawer-head"><div class="arqon-admin-drawer-brand">ARQON <span>ADMIN</span></div><button id="arqon-admin-drawer-close" type="button" aria-label="Закрыть меню">×</button></div><div id="arqon-admin-drawer-items"></div><a class="arqon-admin-link support" href="/support/admin/">✦ Техподдержка · обращения игроков</a>';
+    drawer.innerHTML = '<div class="arqon-admin-drawer-head"><div class="arqon-admin-drawer-brand">ARQON <span>ADMIN</span></div><button id="arqon-admin-drawer-close" type="button" aria-label="Закрыть меню">×</button></div><div id="arqon-admin-drawer-items"></div><a class="arqon-admin-link" href="/live/">◉ ARQON Live Center</a><a class="arqon-admin-link support" href="/support/admin/">✦ Техподдержка · обращения игроков</a>';
     document.body.append(backdrop,drawer);
 
     const items = drawer.querySelector('#arqon-admin-drawer-items');
