@@ -28,8 +28,8 @@
     .support-card h2{font:700 16px Orbitron,sans-serif;letter-spacing:.4px;margin:0 0 15px;color:#f4edff}
     .support-hint{color:var(--s-muted);font-size:14px;line-height:1.45}
     .support-field{display:block;margin:14px 0}.support-field span{display:block;color:#c9c1d8;font-weight:700;font-size:13px;margin-bottom:6px}
-    .support-field input,.support-field textarea{width:100%;background:#0c0b14;border:1px solid rgba(173,132,255,.25);border-radius:10px;color:#fff;padding:12px 13px;font:600 15px Rajdhani,sans-serif;outline:none}
-    .support-field textarea{min-height:125px;resize:vertical}.support-field input:focus,.support-field textarea:focus{border-color:#a78bfa;box-shadow:0 0 0 3px rgba(139,92,246,.13)}
+    .support-field input,.support-field textarea,.support-field select{width:100%;background:#0c0b14;border:1px solid rgba(173,132,255,.25);border-radius:10px;color:#fff;padding:12px 13px;font:600 15px Rajdhani,sans-serif;outline:none}
+    .support-field textarea{min-height:125px;resize:vertical}.support-field input:focus,.support-field textarea:focus,.support-field select:focus{border-color:#a78bfa;box-shadow:0 0 0 3px rgba(139,92,246,.13)}
     .support-btn{border:1px solid rgba(196,181,253,.28);background:linear-gradient(120deg,#7540d7,#9b5cff);color:white;border-radius:11px;padding:11px 16px;font:700 14px Rajdhani,sans-serif;cursor:pointer;min-height:43px}
     .support-btn:disabled{opacity:.48;cursor:not-allowed}.support-btn.secondary{background:rgba(255,255,255,.045);color:#e6dcff}
     .support-notice{border:1px solid rgba(167,139,250,.24);background:rgba(139,92,246,.08);color:#d8cafa;padding:12px 13px;border-radius:11px;font-size:14px;line-height:1.4;margin:12px 0}
@@ -43,7 +43,7 @@
     .support-chat-head h2{margin:0 0 5px}.support-messages{display:flex;flex-direction:column;gap:10px;padding:16px 2px;flex:1;min-height:250px;max-height:490px;overflow:auto}
     .support-message{max-width:min(85%,650px);padding:11px 13px;border-radius:13px;background:#1a1726;border:1px solid rgba(173,132,255,.14);align-self:flex-start;overflow-wrap:anywhere;white-space:pre-wrap;line-height:1.4}
     .support-message.player{align-self:flex-end;background:linear-gradient(140deg,rgba(91,49,158,.55),rgba(42,31,64,.85));border-color:rgba(167,139,250,.25)}
-    .support-message .meta{font-size:11px;color:#a9a1b9;margin-bottom:5px}.support-message .body{font-size:15px;color:#f1ebff}
+    .support-message .meta{font-size:11px;color:#a9a1b9;margin-bottom:5px}.support-message .body{font-size:15px;color:#f1ebff}.support-attachment-preview{display:block;max-width:min(100%,260px);max-height:220px;margin-top:9px;border:1px solid rgba(173,132,255,.25);border-radius:9px;object-fit:contain}
     .support-compose{display:flex;gap:9px;align-items:flex-end;border-top:1px solid rgba(173,132,255,.13);padding-top:13px}.support-compose textarea{flex:1;min-height:48px;max-height:130px;resize:vertical;background:#0c0b14;border:1px solid rgba(173,132,255,.25);border-radius:10px;color:white;padding:12px;font:600 15px Rajdhani,sans-serif}
     .support-empty{display:grid;place-items:center;text-align:center;color:#9f98b1;min-height:250px;padding:20px}
     .support-footer-note{margin-top:14px;color:#827b92;font-size:12px}
@@ -81,6 +81,7 @@
         <label class="support-field"><span>Категория</span><select id="support-category" required><option value="bug">Ошибка на сайте</option><option value="idea">Предложение</option><option value="account">Аккаунт и профиль</option><option value="team">Команды и составы</option><option value="tournament">Турниры и матчи</option><option value="other">Другое</option></select></label>
         <label class="support-field"><span>Тема обращения</span><input id="support-subject" maxlength="100" minlength="4" placeholder="Например: Проблема с профилем" required></label>
         <label class="support-field"><span>Опиши проблему</span><textarea id="support-first-message" maxlength="2000" placeholder="Расскажи, что произошло и что ты уже пробовал…" required></textarea></label>
+        <label class="support-field"><span>Скриншот (необязательно)</span><input id="support-attachment" type="file" accept="image/jpeg,image/png,image/webp"><small class="support-hint">JPG, PNG или WebP, до 5 МБ. Не прикладывай личные данные и коды входа.</small></label>
         <button id="support-create-btn" class="support-btn" type="submit">Отправить обращение</button>
       </form>
       <div class="support-footer-note">До 5 открытых обращений на аккаунт. В Telegram отвечай командой /ticket НОМЕР текст. Не отправляй пароли и коды входа.</div>
@@ -159,12 +160,17 @@
     const {data,error}=await client.rpc('get_my_support_ticket_messages',{p_ticket_id:ticketId});
     if(error) throw error;
     const root=$('support-messages');root.replaceChildren();
-    (data||[]).forEach(item=>{
+    for(const item of (data||[])){
       const wrap=document.createElement('div');wrap.className='support-message '+(item.sender_role==='player'?'player':'admin');
       const meta=document.createElement('div');meta.className='meta';meta.textContent=(item.sender_role==='player'?'Ты':'Поддержка ARQON')+' · '+new Date(item.created_at).toLocaleString('ru-RU');
       const body=document.createElement('div');body.className='body';body.textContent=item.message;
-      wrap.append(meta,body);root.append(wrap);
-    });
+      wrap.append(meta,body);
+      if(item.attachment_path){
+        const {data:fileData}=await client.storage.from('support-attachments').createSignedUrl(item.attachment_path,3600);
+        if(fileData?.signedUrl){const link=document.createElement('a');link.href=fileData.signedUrl;link.target='_blank';link.rel='noopener noreferrer';link.setAttribute('aria-label','Открыть прикреплённый скриншот');const img=document.createElement('img');img.className='support-attachment-preview';img.src=fileData.signedUrl;img.alt='Прикреплённый скриншот';link.append(img);wrap.append(link);}
+      }
+      root.append(wrap);
+    }
     if(!data?.length){const empty=document.createElement('div');empty.className='support-empty';empty.textContent='Сообщений пока нет.';root.append(empty);}
     root.scrollTop=root.scrollHeight;
     const ticket=tickets.find(t=>Number(t.ticket_id)===Number(ticketId));
@@ -182,11 +188,28 @@
       const {data,error}=await client.rpc('create_support_ticket',{p_subject:subject,p_message:message,p_category:category});
       if(error)throw error;
       const ticketId=Number(data);
-      $('support-subject').value='';$('support-first-message').value='';$('support-category').value='bug';
+      const file=$('support-attachment').files?.[0];
+      $('support-subject').value='';$('support-first-message').value='';$('support-category').value='bug';$('support-attachment').value='';
       selectedTicket=ticketId;
+      let attachmentNote='';
+      if(file){
+        const allowed=['image/jpeg','image/png','image/webp'];
+        if(!allowed.includes(file.type)||file.size>5*1024*1024){attachmentNote=' Скриншот не прикреплён: допустимы JPG, PNG или WebP до 5 МБ.';}
+        else{
+          const ext={'image/jpeg':'jpg','image/png':'png','image/webp':'webp'}[file.type];
+          const token=window.crypto?.randomUUID?crypto.randomUUID():Date.now()+'-'+Math.random().toString(36).slice(2);
+          const path=session.user.id+'/'+ticketId+'/'+token+'.'+ext;
+          const {error:uploadError}=await client.storage.from('support-attachments').upload(path,file,{contentType:file.type,upsert:false});
+          if(uploadError){attachmentNote=' Обращение создано, но скриншот загрузить не удалось.';}
+          else{
+            const {error:attachError}=await client.rpc('attach_my_support_ticket_file',{p_ticket_id:ticketId,p_path:path});
+            if(attachError){await client.storage.from('support-attachments').remove([path]);attachmentNote=' Обращение создано, но скриншот не удалось прикрепить.';}
+          }
+        }
+      }
       let sent=true;try{await invokeNotification('support_ticket_created',ticketId);}catch(_){sent=false;}
       await loadTickets();
-      notice(sent?'Обращение #'+ticketId+' создано. Команда ARQON получила уведомление в Telegram.':'Обращение #'+ticketId+' создано, но уведомление в Telegram не подтвердилось. Команда увидит его в системе.');
+      notice((sent?'Обращение #'+ticketId+' создано. Команда ARQON получила уведомление в Telegram.':'Обращение #'+ticketId+' создано, но уведомление в Telegram не подтвердилось. Команда увидит его в системе.')+attachmentNote);
     }catch(err){notice(escapeError(err),true);}
     finally{btn.disabled=false;btn.textContent='Отправить обращение';}
   });
