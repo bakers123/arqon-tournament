@@ -50,7 +50,8 @@
     const raw=$('award-player-id').value.trim(),id=Number(raw);
     if(!Number.isSafeInteger(id)||id<1){say('Введи корректный ARQON ID.',true);return}
     const button=$('award-player-find');button.disabled=true;say('Ищем игрока…');
-    const {data,error}=await client().from('profiles').select('arqon_id,display_name,steam_persona_name').eq('arqon_id',id).maybeSingle();
+    const {data:rows,error}=await client().rpc('get_award_recipient',{p_arqon_id:id});
+    const data=rows?.[0]||null;
     button.disabled=false;
     if(error){selectedPlayer=null;$('award-grant-fields').classList.add('hidden');$('award-player-result').textContent='Ошибка поиска: '+error.message;say('Не удалось найти игрока.',true);return}
     if(!data){selectedPlayer=null;$('award-grant-fields').classList.add('hidden');$('award-player-result').textContent='Игрок с таким ARQON ID не найден.';$('award-admin-history').replaceChildren();say('');return}
