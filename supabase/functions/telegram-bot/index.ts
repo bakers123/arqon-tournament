@@ -2,7 +2,11 @@ import { createClient } from "npm:@supabase/supabase-js@2";
 const cors = {"Access-Control-Allow-Origin":"https://arqon-esports.ru","Access-Control-Allow-Headers":"authorization, x-client-info, apikey, content-type, x-telegram-bot-api-secret-token","Access-Control-Allow-Methods":"POST, OPTIONS"};
 const json=(body:unknown,status=200)=>new Response(JSON.stringify(body),{status,headers:{...cors,"Content-Type":"application/json"}});
 const esc=(v:unknown)=>String(v??"").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;");
-async function send(token:string,chatId:string,text:string){const r=await fetch(`https://api.telegram.org/bot${token}/sendMessage`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({chat_id:chatId,text,parse_mode:"HTML",disable_web_page_preview:true})});if(!r.ok)throw new Error("telegram_send_failed")}
+async function send(token:string,chatId:string,text:string){
+ const r=await fetch(`https://api.telegram.org/bot${token}/sendMessage`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({chat_id:chatId,text,parse_mode:"HTML",disable_web_page_preview:true})});
+ const payload=await r.json().catch(()=>({}));
+ if(!r.ok||payload?.ok!==true)throw new Error("telegram_send_failed");
+}
 Deno.serve(async(req)=>{
  if(req.method==="OPTIONS")return new Response("ok",{headers:cors});
  if(req.method!=="POST")return json({error:"method_not_allowed"},405);
@@ -11,16 +15,39 @@ Deno.serve(async(req)=>{
  const admin=createClient(url,service,{auth:{persistSession:false}});
  if(new URL(req.url).searchParams.get("mode")==="webhook"){
   if(req.headers.get("x-telegram-bot-api-secret-token")!==secret)return json({error:"unauthorized_webhook"},401);
-  const update=await req.json().catch(()=>({})),msg=update?.message,chat=msg?.chat?.id,txt=String(msg?.text??"");
-  const match=txt.match(/^\/start\s+([a-f0-9]{40,80})$/i);
+  const update=await req.json().catch(()=>({})),msg=update?.message,chat=msg?.chat?.id,txt=String(msg?.text??"").trim();
   if(!chat)return json({ok:true});
-  if(!match){await send(bot,String(chat),"Чтобы подключить ARQON, открой профиль на arqon-esports.ru и нажми «Подключить Telegram».");return json({ok:true})}
-  const {data:link}=await admin.from("telegram_link_tokens").select("token,user_id,expires_at").eq("token",match[1]).gt("expires_at",new Date().toISOString()).maybeSingle();
-  if(!link){await send(bot,String(chat),"Код подключения недействителен или истёк. Создай новый код в профиле ARQON.");return json({ok:true})}
-  const {error}=await admin.from("telegram_accounts").upsert({user_id:link.user_id,chat_id:String(chat),telegram_username:msg?.from?.username??null,first_name:msg?.from?.first_name??null,linked_at:new Date().toISOString()},{onConflict:"user_id"});
-  if(error)return json({error:"link_save_failed"},500);
-  await admin.from("telegram_link_tokens").delete().eq("token",link.token);
-  await send(bot,String(chat),"✅ Telegram успешно подключён к ARQON! Теперь сюда будут приходить уведомления о предложениях команд и ответах игроков.");
+  const chatId=String(chat);
+  const start=txt.match(/^\/start\s+([a-f0-9]{40,80})$/i);
+  if(start){
+   const {data:link}=await admin.from("telegram_link_tokens").select("token,user_id,expires_at").eq("token",start[1]).gt("expires_at",new Date().toISOString()).maybeSingle();
+   if(!link){await send(bot,chatId,"Код подключения недействителен или истёк. Создай новый код в профиле ARQON.");return json({ok:true})}
+   const {error}=await admin.from("telegram_accounts").upsert({user_id:link.user_id,chat_id:chatId,telegram_username:msg?.from?.username??null,first_name:msg?.from?.first_name??null,linked_at:new Date().toISOString()},{onConflict:"user_id"});
+   if(error)return json({error:"link_save_failed"},500);
+   await admin.from("telegram_link_tokens").delete().eq("token",link.token);
+   await send(bot,chatId,"✅ Telegram успешно подключён к ARQON! Теперь сюда будут приходить уведомления и ответы техподдержки.");
+   return json({ok:true});
+  }
+  const reply=txt.match(/^\/reply(?:@\w+)?\s+(\d+)\s+([\s\S]+)$/i);
+  if(reply){
+   const ticketId=Number(reply[1]);
+   const {data,error}=await admin.rpc("support_ticket_admin_reply",{p_chat_id:chatId,p_ticket_id:ticketId,p_message:reply[2].trim()});
+   if(error||!data?.[0]){await send(bot,chatId,"⛔ Не удалось отправить ответ. Проверь номер обращения и права администратора.");return json({ok:true})}
+   const target=data[0].player_chat_id;
+   if(target)await send(bot,target,`💬 <b>Ответ техподдержки ARQON · обращение #${ticketId}</b>\n\n${esc(reply[2].trim())}\n\nПродолжить диалог можно на сайте в профиле.`);
+   await send(bot,chatId,`✅ Ответ по обращению #${ticketId} отправлен игроку.`);
+   return json({ok:true});
+  }
+  const close=txt.match(/^\/close(?:@\w+)?\s+(\d+)$/i);
+  if(close){
+   const ticketId=Number(close[1]);
+   const {data,error}=await admin.rpc("support_ticket_admin_close",{p_chat_id:chatId,p_ticket_id:ticketId});
+   if(error||!data?.[0]){await send(bot,chatId,"⛔ Не удалось закрыть обращение. Проверь номер и права администратора.");return json({ok:true})}
+   if(data[0].player_chat_id)await send(bot,data[0].player_chat_id,`🔒 Обращение #${ticketId} закрыто администрацией ARQON. Если вопрос остался, создай новое обращение на сайте.`);
+   await send(bot,chatId,`✅ Обращение #${ticketId} закрыто.`);
+   return json({ok:true});
+  }
+  await send(bot,chatId,"🤖 <b>ARQON Support</b>\nДля привязки аккаунта используй кнопку подключения на сайте.\nАдминистраторы могут отвечать на обращения командой:\n<code>/reply НОМЕР текст ответа</code>\nЗакрыть обращение: <code>/close НОМЕР</code>");
   return json({ok:true});
  }
  const jwt=(req.headers.get("authorization")??"").replace(/^Bearer\s+/i,"");
@@ -28,7 +55,24 @@ Deno.serve(async(req)=>{
  const auth=createClient(url,anon,{auth:{persistSession:false}});
  const {data:userData,error:authErr}=await auth.auth.getUser(jwt);
  if(authErr||!userData.user)return json({error:"unauthorized"},401);
- const actor=userData.user.id,body=await req.json().catch(()=>({})),offerId=String(body?.offer_id??""),event=String(body?.event??"");
+ const actor=userData.user.id,body=await req.json().catch(()=>({})),event=String(body?.event??"");
+ if(["support_ticket_created","support_ticket_message"].includes(event)){
+  const ticketId=Number(body?.ticket_id);
+  if(!Number.isSafeInteger(ticketId)||ticketId<1)return json({error:"invalid_ticket_id"},400);
+  const {data:ticket}=await admin.from("support_tickets").select("id,user_id,arqon_id,subject,status").eq("id",ticketId).maybeSingle();
+  if(!ticket||ticket.user_id!==actor)return json({error:"forbidden"},403);
+  const {data:message}=await admin.from("support_ticket_messages").select("message").eq("ticket_id",ticketId).eq("sender_role","player").order("created_at",{ascending:false}).limit(1).maybeSingle();
+  const {data:admins,error:adminsError}=await admin.rpc("get_support_admin_telegram_chats");
+  if(adminsError)return json({error:"support_admin_lookup_failed"},500);
+  let sent=0;
+  for(const recipient of admins||[]){
+   if(!recipient.chat_id)continue;
+   const note=`🆘 <b>${event==="support_ticket_created"?"Новое обращение":"Новое сообщение"} · #${ticketId}</b>\nИгрок: ARQON #${ticket.arqon_id??"—"}\nТема: <b>${esc(ticket.subject)}</b>\n\n${esc(message?.message||"Открой сайт для просмотра переписки.")}\n\nОтветить: <code>/reply ${ticketId} текст</code>\nЗакрыть: <code>/close ${ticketId}</code>`;
+   try{await send(bot,recipient.chat_id,note);sent++}catch(e){console.warn("Support admin notification failed",e)}
+  }
+  return json({ok:true,sent,reason:sent?"notified":"admins_not_linked"});
+ }
+ const offerId=String(body?.offer_id??"");
  if(!offerId||!["offer_created","offer_accepted"].includes(event))return json({error:"invalid_event"},400);
  const {data:offer}=await admin.from("team_player_offers").select("id,team_id,team_name,player_user_id,player_name,player_arqon_id,offered_role,created_by").eq("id",offerId).maybeSingle();
  if(!offer)return json({error:"offer_not_found"},404);
