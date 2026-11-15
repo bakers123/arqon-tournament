@@ -40,6 +40,10 @@
         <form class="edit" id="edit-form">
           <div class="field"><label for="display-name">ИМЯ ПРОФИЛЯ</label><input id="display-name" maxlength="32" placeholder="Как тебя называть"></div>
           <div class="field"><label for="bio-input">О СЕБЕ · ДО 280 СИМВОЛОВ</label><textarea id="bio-input" maxlength="280" placeholder="Расскажи немного о себе"></textarea></div>
+          <div class="field"><label for="cs2-elo-input">CS2 · FACEIT ELO</label><input id="cs2-elo-input" type="number" min="0" max="5000" step="1" placeholder="Например, 1850"></div>
+          <div class="field"><label for="cs2-url-input">CS2 · ССЫЛКА НА FACEIT</label><input id="cs2-url-input" type="url" placeholder="https://www.faceit.com/…"></div>
+          <div class="field"><label for="dota-mmr-input">DOTA 2 · MMR</label><input id="dota-mmr-input" type="number" min="0" max="20000" step="1" placeholder="Например, 4500"></div>
+          <div class="field"><label for="dota-url-input">DOTA 2 · ССЫЛКА НА ПРОФИЛЬ</label><input id="dota-url-input" type="url" placeholder="https://www.dotabuff.com/players/…"></div>
           <div class="field"><label for="avatar-file">ЗАГРУЗИТЬ АВАТАР · JPG, PNG, WEBP · ДО 5 МБ</label><input id="avatar-file" type="file" accept="image/jpeg,image/png,image/webp"></div>
           <div class="field"><label for="cover-file">ЗАГРУЗИТЬ ОБЛОЖКУ · JPG, PNG, WEBP · ДО 5 МБ</label><input id="cover-file" type="file" accept="image/jpeg,image/png,image/webp"></div>
           <div class="field"><label for="avatar-input">ИЛИ ССЫЛКА НА АВАТАР (HTTPS)</label><input id="avatar-input" type="url" placeholder="https://…"></div>
@@ -50,6 +54,19 @@
       </section>
       <aside class="card"><h2>АРКОН АККАУНТ</h2><div class="stat"><span>ARQON ID</span><strong id="stat-id">—</strong></div><div class="stat"><span>Игровой ник</span><strong id="player-name">—</strong></div><div class="stat"><span>Команда</span><strong id="team-name">—</strong></div><div class="stat"><span>Рейтинг ARQON</span><strong id="arqon-rating">—</strong></div><div class="stat"><span>FACEIT</span><strong id="faceit-level">—</strong></div><div class="stat"><span>Очки турниров</span><strong id="tournament-points">0</strong></div><div class="stat"><span>Победы / топ-3</span><strong id="tournament-wins">0 / 0</strong></div><div class="stat"><span>Steam</span><strong id="steam-state">Скрыт</strong></div><p class="muted" style="font-size:13px;margin-top:16px">Игровые рейтинги CS2 и Dota 2 подключим отдельно, когда будут утверждены источники данных.</p></aside>
     </div>
+    <section class="card" style="width:min(1040px,calc(100% - 28px));margin:16px auto 0">
+      <h2>ИГРОВЫЕ ПРОФИЛИ</h2>
+      <div class="content" style="margin-top:0">
+        <div>
+          <div class="stat"><span>CS2 · FACEIT ELO</span><strong id="public-cs2-elo">Не указан</strong></div>
+          <div class="stat"><span>FACEIT</span><strong id="public-cs2-link">—</strong></div>
+        </div>
+        <div>
+          <div class="stat"><span>DOTA 2 · MMR</span><strong id="public-dota-mmr">Не указан</strong></div>
+          <div class="stat"><span>Профиль Dota 2</span><strong id="public-dota-link">—</strong></div>
+        </div>
+      </div>
+    </section>
     <div class="notice hidden" id="notice"></div>
   </main>
   <script>
@@ -108,7 +125,7 @@
       if(error)throw error;
       let profile=data?.[0]||null;
       if(ownerUser){
-        const {data:mine}=await db.from('profiles').select('arqon_id,display_name,bio,avatar_url,cover_url,is_public,show_steam,steam_id,created_at').eq('user_id',ownerUser.id).maybeSingle();
+        const {data:mine}=await db.from('profiles').select('arqon_id,display_name,bio,avatar_url,cover_url,is_public,show_steam,steam_id,created_at,cs2_faceit_url,cs2_faceit_elo,dota2_profile_url,dota2_mmr').eq('user_id',ownerUser.id).maybeSingle();
         if(mine?.arqon_id===arqonId){ownProfile=mine;profile={...mine,player_name:profile?.player_name||null,steam_id:mine.show_steam?mine.steam_id:null};el('edit-toggle').classList.remove('hidden');}
       }
       if(!profile){el('name').textContent='Профиль недоступен';showNotice('Игрок скрыл профиль или такого ARQON ID не существует.');return}
@@ -118,6 +135,11 @@
       el('player-name').textContent=profile.player_name||'Не указан';
       el('bio').textContent=profile.bio||'Игрок пока ничего не рассказал о себе.';
       el('steam-state').textContent=profile.steam_id||'Скрыт';
+      el('public-cs2-elo').textContent=profile.cs2_faceit_elo===null||profile.cs2_faceit_elo===undefined?'Не указан':String(profile.cs2_faceit_elo);
+      el('public-dota-mmr').textContent=profile.dota2_mmr===null||profile.dota2_mmr===undefined?'Не указан':String(profile.dota2_mmr);
+      const setExternalLink=(id,url,label)=>{const node=el(id);node.textContent='—';if(url){const link=document.createElement('a');link.href=url;link.target='_blank';link.rel='noopener noreferrer';link.textContent=label;link.style.color='#c7a4ff';node.replaceChildren(link)}};
+      setExternalLink('public-cs2-link',profile.cs2_faceit_url,'Открыть FACEIT ↗');
+      setExternalLink('public-dota-link',profile.dota2_profile_url,'Открыть профиль ↗');
       const [resultsResponse,tournamentResponse]=await Promise.all([
         db.from('results').select('place_1,place_2,place_3,tournament_name').limit(500),
         db.from('tournament').select('data').eq('id',1).maybeSingle()
@@ -136,6 +158,10 @@
       if(ownProfile){
         el('display-name').value=ownProfile.display_name||'';
         el('bio-input').value=ownProfile.bio||'';
+        el('cs2-elo-input').value=ownProfile.cs2_faceit_elo??'';
+        el('cs2-url-input').value=ownProfile.cs2_faceit_url||'';
+        el('dota-mmr-input').value=ownProfile.dota2_mmr??'';
+        el('dota-url-input').value=ownProfile.dota2_profile_url||'';
         el('avatar-input').value=ownProfile.avatar_url||'';
         el('cover-input').value=ownProfile.cover_url||'';
         el('public-input').checked=ownProfile.is_public;
@@ -148,6 +174,13 @@
       const message=el('edit-message');message.textContent='Сохраняем…';
       const display_name=el('display-name').value.trim().split(' ').filter(Boolean).join(' ');
       const bio=el('bio-input').value.trim();
+      const cs2_faceit_elo=el('cs2-elo-input').value===''?null:Number(el('cs2-elo-input').value);
+      const dota2_mmr=el('dota-mmr-input').value===''?null:Number(el('dota-mmr-input').value);
+      const cs2_faceit_url=el('cs2-url-input').value.trim()||null;
+      const dota2_profile_url=el('dota-url-input').value.trim()||null;
+      if(cs2_faceit_elo!==null&&(!Number.isInteger(cs2_faceit_elo)||cs2_faceit_elo<0||cs2_faceit_elo>5000)){message.textContent='FACEIT ELO должен быть от 0 до 5000.';return}
+      if(dota2_mmr!==null&&(!Number.isInteger(dota2_mmr)||dota2_mmr<0||dota2_mmr>20000)){message.textContent='Dota 2 MMR должен быть от 0 до 20000.';return}
+      for(const url of [cs2_faceit_url,dota2_profile_url])if(url&&url.slice(0,8)!=='https://'){message.textContent='Игровые ссылки должны начинаться с https://';return}
       let avatar_url=el('avatar-input').value.trim()||null;
       let cover_url=el('cover-input').value.trim()||null;
       for(const url of [avatar_url,cover_url])if(url&&url.slice(0,8)!=='https://'){message.textContent='Ссылки на изображения должны начинаться с https://';return}
@@ -158,7 +191,7 @@
         if(uploadedAvatar)avatar_url=uploadedAvatar;
         if(uploadedCover)cover_url=uploadedCover;
       }catch(uploadError){message.textContent=uploadError.message||'Не удалось загрузить изображение.';return}
-      const {error}=await db.from('profiles').update({display_name,bio,avatar_url,cover_url,is_public:el('public-input').checked,show_steam:el('steam-input').checked}).eq('user_id',ownerUser.id);
+      const {error}=await db.from('profiles').update({display_name,bio,avatar_url,cover_url,cs2_faceit_url,cs2_faceit_elo,dota2_profile_url,dota2_mmr,is_public:el('public-input').checked,show_steam:el('steam-input').checked}).eq('user_id',ownerUser.id);
       if(error){message.textContent=error.message;return}
       el('avatar-file').value='';el('cover-file').value='';
       message.textContent='Профиль сохранён.';await load();
