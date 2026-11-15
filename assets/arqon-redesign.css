@@ -238,3 +238,26 @@ header nav .arqon-nav-close>*{display:block!important;line-height:1!important;ma
   header:has(#arqon-session-logout){padding-right:74px!important}
   header:has(#arqon-session-logout) .brand{max-width:calc(100% - 74px)!important}
 }
+
+
+/* Keep account and logout controls side by side in the header */
+header #arqon-session-logout{
+  position:relative!important;inset:auto!important;top:auto!important;right:auto!important;
+  transform:none!important;order:6!important;flex:0 0 auto!important;
+  margin:0 0 0 8px!important;z-index:4!important;
+  min-width:72px!important;min-height:40px!important;padding:0 13px!important;
+  white-space:nowrap!important;box-sizing:border-box!important;
+}
+header #arqon-account-button{order:5!important;flex:0 0 auto!important;margin:0!important}
+header #arqon-session-logout:hover{background:rgba(127,29,29,.32)!important;border-color:rgba(248,113,113,.72)!important}
+@media(max-width:900px){
+  header #arqon-account-button{margin-left:auto!important;max-width:none!important;min-width:0!important;padding:0 9px!important;font-size:10px!important}
+  header #arqon-session-logout{margin-left:6px!important;min-width:58px!important;min-height:36px!important;padding:0 8px!important;font-size:10px!important}
+  header:has(#arqon-session-logout){padding-right:10px!important}
+  header:has(#arqon-session-logout) .brand{max-width:none!important}
+  header:has(#arqon-session-logout) .brand img{width:clamp(92px,25vw,126px)!important}
+}
+@media(max-width:390px){
+  header #arqon-account-button{font-size:9px!important;padding:0 7px!important}
+  header #arqon-session-logout{min-width:52px!important;font-size:9px!important;padding:0 6px!important}
+}
