@@ -53,7 +53,7 @@ Deno.serve(async (req: Request) => {
     if (profile.steam_id) return Response.json({ error: "Steam is already linked to this ARQON account" }, { status: 409, headers });
 
     const state = crypto.randomUUID();
-    const { error: insertError } = await admin.schema("private").from("steam_openid_states").insert({
+    const { error: insertError } = await admin.from("steam_openid_states").insert({
       state,
       user_id: user.id,
       return_origin: origin,
