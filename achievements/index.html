@@ -18,6 +18,7 @@ main{width:min(1050px,calc(100% - 28px));margin:32px auto 70px}.hero{padding:26p
 .notice{padding:13px 15px;border:1px solid #9b5cff55;background:#8b5cf612;border-radius:12px;color:#d9cafa;margin:14px 0}.notice a{color:#d9baff;text-decoration:underline;font-weight:800}
 .filters{display:flex;gap:8px;flex-wrap:wrap;margin:20px 0 12px}.filters button{border:1px solid var(--line);border-radius:999px;padding:8px 14px;background:#ffffff06;color:#d8cce9;font:700 14px Rajdhani;cursor:pointer}.filters button.active{background:#8b5cf633;border-color:#a879ff;color:white}
 .grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.achievement{display:flex;gap:13px;align-items:flex-start;min-width:0;padding:16px;border:1px solid #ffffff16;border-radius:15px;background:linear-gradient(145deg,#171426ee,#100f19f2)}.achievement.earned{border-color:#a879ff88;background:linear-gradient(145deg,#26183e,#141120)}.icon{width:48px;height:48px;flex:0 0 48px;border-radius:13px;display:grid;place-items:center;background:#7136c933;border:1px solid #9b5cff66;font-size:23px}.copy{flex:1;min-width:0}.title-line{display:flex;align-items:center;justify-content:space-between;gap:8px}.title-line h2{font:700 13px Orbitron;letter-spacing:.6px;margin:2px 0 5px}.state{flex:0 0 auto;font:700 9px Orbitron;letter-spacing:.8px;color:#a9a0b7}.earned .state{color:#d7baff}.desc{color:#bdb3cc;font-size:14px;line-height:1.25}.reward-label{margin-top:9px;color:#d6baff;font:700 10px Orbitron;letter-spacing:.6px}.progress-meta{display:flex;justify-content:space-between;gap:8px;margin-top:12px;color:#d2c6e4;font-size:13px;font-weight:700}.progress-track{height:8px;margin-top:6px;background:#2a2437;border-radius:99px;overflow:hidden}.progress-fill{height:100%;width:0;background:linear-gradient(90deg,#7436d1,#c084fc);border-radius:99px;transition:width .25s ease}.empty{grid-column:1/-1;padding:22px;border:1px dashed #a879ff55;border-radius:14px;text-align:center;color:var(--muted)}
+.unlock-overlay{position:fixed;inset:0;z-index:30;display:none;place-items:center;padding:20px;background:#05040bdc;backdrop-filter:blur(12px)}.unlock-overlay.show{display:grid;animation:overlayIn .25s ease}.unlock-card{width:min(440px,100%);position:relative;overflow:hidden;text-align:center;padding:28px 22px;border:1px solid #c084fc99;border-radius:24px;background:radial-gradient(circle at 50% 0,#7436d155,transparent 55%),linear-gradient(145deg,#211337,#100e1b);box-shadow:0 25px 100px #000b;animation:unlockIn .45s cubic-bezier(.2,.8,.2,1)}.unlock-card:before{content:"";position:absolute;inset:-70% 20%;background:linear-gradient(90deg,transparent,#ffffff16,transparent);transform:rotate(25deg);animation:shine 2.2s ease-in-out infinite}.unlock-icon{font-size:64px;filter:drop-shadow(0 0 18px #b78bff);animation:pop 1.1s ease-in-out infinite alternate}.unlock-eyebrow{font:700 10px Orbitron;letter-spacing:3px;color:#d9baff}.unlock-title{font:800 clamp(21px,5vw,29px) Orbitron;margin:12px 0 8px}.unlock-desc{color:#c9bfd9;font-size:16px}.unlock-reward{margin:18px auto;padding:12px;border:1px solid #a879ff66;border-radius:13px;background:#9b5cff18;color:#e8d8ff;font:800 18px Orbitron}.unlock-next{position:relative;width:100%;min-height:46px;border:1px solid #c084fc;border-radius:12px;background:linear-gradient(110deg,#7136c9,#9b5cff);color:white;font:700 13px Orbitron;cursor:pointer}@keyframes overlayIn{from{opacity:0}to{opacity:1}}@keyframes unlockIn{from{opacity:0;transform:translateY(20px) scale(.92)}to{opacity:1;transform:translateY(0) scale(1)}}@keyframes pop{from{transform:scale(.94) rotate(-4deg)}to{transform:scale(1.08) rotate(4deg)}}@keyframes shine{0%,100%{translate:-100% 0}50%{translate:100% 0}}
 @media(max-width:650px){.top{height:60px;padding:0 13px}.brand{font-size:13px;letter-spacing:2px}.top-links a{font-size:12px;padding:8px 10px}.grid{grid-template-columns:1fr}.hero{padding:20px}.summary-card{flex:1}.achievement{padding:13px}}
 @media(prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
@@ -31,6 +32,9 @@ main{width:min(1050px,calc(100% - 28px));margin:32px auto 70px}.hero{padding:26p
 <div class="filters" aria-label="Фильтр достижений"><button type="button" class="active" data-filter="all">Все</button><button type="button" data-filter="earned">Полученные</button><button type="button" data-filter="locked">Не полученные</button><button type="button" data-filter="tournament">Турниры</button><button type="button" data-filter="live">Live Center</button></div>
 <section id="achievement-grid" class="grid"><div class="empty">Загружаем достижения…</div></section>
 </main>
+<div class="unlock-overlay" id="unlock-overlay" role="dialog" aria-modal="true" aria-labelledby="unlock-title">
+ <div class="unlock-card"><div class="unlock-eyebrow">ARQON ACHIEVEMENT UNLOCKED</div><div class="unlock-icon" id="unlock-icon">🏆</div><h2 class="unlock-title" id="unlock-title">Достижение получено!</h2><p class="unlock-desc" id="unlock-desc"></p><div class="unlock-reward" id="unlock-reward">+0 COINS</div><button class="unlock-next" id="unlock-next" type="button">ЗАБРАТЬ НАГРАДУ</button></div>
+</div>
 <script>
 (()=>{
 const URL='https://uscnaqcvuwjrmkjyuklp.supabase.co';
@@ -53,7 +57,26 @@ const catalog=[
 {key:'live_mvp',icon:'🌟',name:'MVP Live',desc:'Получи отметку MVP минимум в одном матче Live Center.',group:'live',goal:1,unit:'MVP'}
 ];
 const rewardByKey={tournament_first:20,tournament_podium:30,tournament_champion:60,tournament_mvp:50,tournament_veteran:75,tournament_legend:150,live_first_match:20,live_stability:50,live_adr_100:75,live_fragger:75,live_team_player:50,live_mvp:60};
-let rows=[],filter='all';
+let rows=[],filter='all',unlockQueue=[];
+function showNextUnlock(){
+ const overlay=$('unlock-overlay'),item=unlockQueue.shift();
+ if(!item){overlay.classList.remove('show');return}
+ $('unlock-icon').textContent=item.icon;$('unlock-title').textContent=item.name;$('unlock-desc').textContent=item.desc;$('unlock-reward').textContent='+'+item.reward+' COINS';
+ $('unlock-next').textContent=unlockQueue.length?'СЛЕДУЮЩЕЕ ДОСТИЖЕНИЕ':'ОТЛИЧНО!';
+ overlay.classList.add('show');
+}
+$('unlock-next').addEventListener('click',showNextUnlock);
+function announceNewAchievements(profileId){
+ const earned=rows.filter(x=>x.earned),key='arqon_seen_achievements_'+profileId;
+ try{
+  const raw=localStorage.getItem(key),current=earned.map(x=>x.key);
+  if(raw===null){localStorage.setItem(key,JSON.stringify(current));return}
+  const seen=new Set(JSON.parse(raw));
+  unlockQueue=earned.filter(x=>!seen.has(x.key));
+  localStorage.setItem(key,JSON.stringify(current));
+  if(unlockQueue.length)showNextUnlock();
+ }catch(e){console.warn('Achievement popup storage unavailable',e)}
+}
 function make(tag,cls,txt){const n=document.createElement(tag);if(cls)n.className=cls;if(txt!==undefined)n.textContent=txt;return n}
 async function allRows(table,columns){
  let out=[],from=0,step=1000;
@@ -143,7 +166,7 @@ async function load(){
   live_mvp:[liveMvps,earnedKeys.has('live_mvp'),liveMvps+' / 1 MVP']
  };
  rows.forEach(x=>{const v=values[x.key];setProgress(x,v[0],v[2],v[1])});
- $('earned-count').textContent=rows.filter(x=>x.earned).length;render();
+ $('earned-count').textContent=rows.filter(x=>x.earned).length;render();announceNewAchievements(profile.arqon_id);
 }
 load().catch(err=>{$('notice').textContent='Не удалось загрузить прогресс: '+(err.message||'ошибка соединения');$('achievement-grid').replaceChildren(make('div','empty','Попробуй обновить страницу позже.'))});
 })();
