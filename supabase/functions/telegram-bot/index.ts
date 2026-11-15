@@ -28,6 +28,40 @@ Deno.serve(async(req)=>{
    await send(bot,chatId,"✅ Telegram успешно подключён к ARQON! Теперь сюда будут приходить уведомления и ответы техподдержки.");
    return json({ok:true});
   }
+  const ticketReply=txt.match(/^\/ticket(?:@\w+)?\s+(\d+)\s+([\s\S]+)$/i);
+  if(ticketReply){
+   const ticketId=Number(ticketReply[1]),messageText=ticketReply[2].trim();
+   if(!Number.isSafeInteger(ticketId)||ticketId<1||messageText.length<1||messageText.length>2000){
+    await send(bot,chatId,"Формат ответа: <code>/ticket НОМЕР текст сообщения</code> (до 2000 символов).");
+    return json({ok:true});
+   }
+   const {data:ticket}=await admin.from("support_tickets").select("id,user_id,arqon_id,subject,status").eq("id",ticketId).maybeSingle();
+   if(!ticket||ticket.status==="closed"){
+    await send(bot,chatId,"⛔ Обращение не найдено или уже закрыто.");
+    return json({ok:true});
+   }
+   const {data:linked}=await admin.from("telegram_accounts").select("user_id").eq("user_id",ticket.user_id).eq("chat_id",chatId).maybeSingle();
+   if(!linked){
+    await send(bot,chatId,"⛔ Это обращение не привязано к твоему Telegram-аккаунту.");
+    return json({ok:true});
+   }
+   const {error:insertError}=await admin.from("support_ticket_messages").insert({ticket_id:ticketId,sender_user_id:ticket.user_id,sender_role:"player",message:messageText});
+   if(insertError){
+    await send(bot,chatId,"Не удалось сохранить сообщение. Попробуй ещё раз или напиши на сайте.");
+    return json({ok:true});
+   }
+   await admin.from("support_tickets").update({status:"waiting_admin",updated_at:new Date().toISOString()}).eq("id",ticketId).eq("user_id",ticket.user_id);
+   const {data:admins,error:adminsError}=await admin.rpc("get_support_admin_telegram_chats");
+   if(!adminsError){
+    const note="💬 <b>Ответ игрока · обращение #"+ticketId+"</b>\nARQON #"+(ticket.arqon_id??"—")+"\nТема: <b>"+esc(ticket.subject)+"</b>\n\n"+esc(messageText)+"\n\nОтветить: <code>/reply "+ticketId+" текст</code>\nЗакрыть: <code>/close "+ticketId+"</code>";
+    for(const recipient of admins||[]){
+     if(!recipient.chat_id)continue;
+     try{await send(bot,recipient.chat_id,note)}catch(e){console.warn("Support player reply notification failed",e)}
+    }
+   }
+   await send(bot,chatId,"✅ Сообщение добавлено в обращение #"+ticketId+". Поддержка получит уведомление.");
+   return json({ok:true});
+  }
   const reply=txt.match(/^\/reply(?:@\w+)?\s+(\d+)\s+([\s\S]+)$/i);
   if(reply){
    const ticketId=Number(reply[1]);
@@ -47,7 +81,7 @@ Deno.serve(async(req)=>{
    await send(bot,chatId,`✅ Обращение #${ticketId} закрыто.`);
    return json({ok:true});
   }
-  await send(bot,chatId,"🤖 <b>ARQON Support</b>\nДля привязки аккаунта используй кнопку подключения на сайте.\nАдминистраторы могут отвечать на обращения командой:\n<code>/reply НОМЕР текст ответа</code>\nЗакрыть обращение: <code>/close НОМЕР</code>");
+  await send(bot,chatId,"🤖 <b>ARQON Support</b>\nПодключи Telegram в окне «Мой профиль» на сайте.\nОтветить в своём обращении: <code>/ticket НОМЕР текст</code>\nАдминистратор отвечает: <code>/reply НОМЕР текст</code>\nЗакрыть обращение: <code>/close НОМЕР</code>");
   return json({ok:true});
  }
  const jwt=(req.headers.get("authorization")??"").replace(/^Bearer\s+/i,"");
