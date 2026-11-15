@@ -51,6 +51,22 @@
     }
   }
 
+  function installMyProfileButton(visible) {
+    const header = document.querySelector('header');
+    if (!header) return;
+    let link = byId('arqon-my-profile-link');
+    if (!link) {
+      link = document.createElement('a');
+      link.id = 'arqon-my-profile-link';
+      link.href = '/players/profile/?me=1#telegram-settings';
+      link.textContent = 'МОЙ ПРОФИЛЬ';
+      link.setAttribute('aria-label', 'Открыть мой профиль и настройки Telegram');
+      link.style.cssText = 'display:none;align-items:center;justify-content:center;min-height:38px;padding:0 14px;margin-left:8px;border:1px solid rgba(167,139,250,.5);border-radius:9px;background:rgba(139,92,246,.14);color:#e9ddff;font:700 12px Rajdhani,sans-serif;letter-spacing:1px;text-decoration:none;white-space:nowrap;flex:0 0 auto';
+      header.appendChild(link);
+    }
+    link.style.display = visible ? 'inline-flex' : 'none';
+  }
+
   function installSessionLogoutButton() {
     const header = document.querySelector('header');
     if (!header || byId('arqon-session-logout')) return;
@@ -196,6 +212,7 @@
     // A valid auth event means the session exists: keep logout visible even when
     // this Steam account has not yet been mapped to the legacy players table.
     installSessionLogoutButton();
+    installMyProfileButton(!!uid);
     setLogoutVisible(!!uid);
     try {
       const { data: role, error: roleError } = await supabaseClient.rpc('current_organizer_role');
