@@ -7,12 +7,12 @@ async function syncSteamProfile(admin:any,steamId:string,userId:string){
     const extract=(tag:string)=>{
       const match=xml.match(new RegExp(`<${tag}>([\\s\\S]*?)</${tag}>`,"i"));
       if(!match)return null;
-      return match[1].replace(/^<!\\[CDATA\\[/,"").replace(/\\]\\]>$/,"").trim();
+      const raw=match[1].trim();\n      return raw.startsWith("<![CDATA[")&&raw.endsWith("]]>")?raw.slice(9,-3).trim():raw;
     };
     const persona=extract("steamID");
     const avatar=extract("avatarFull")||extract("avatarMedium")||extract("avatarIcon");
     const safeName=persona?.replace(/<[^>]*>/g,"").trim().slice(0,128)||null;
-    const safeAvatar=avatar&&/^https:\\/\\//i.test(avatar)&&avatar.length<=2048?avatar:null;
+    const safeAvatar=avatar&&avatar.startsWith("https://")&&avatar.length<=2048?avatar:null;
     const patch:Record<string,string>={};
     if(safeName)patch.steam_persona_name=safeName;
     if(safeAvatar)patch.steam_avatar_url=safeAvatar;
