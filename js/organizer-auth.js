@@ -233,8 +233,8 @@
     const host=byId('arqon-awards-admin-list');if(!host)return;
     host.textContent='Загружаем награды…';
     const {data,error}=await supabaseClient.from('arqon_player_awards')
-      .select('id,arqon_id,award_name,award_icon,rarity,reason,granted_at,profiles(display_name)')
-      .is('revoked_at',null).order('granted_at',{ascending:false}).limit(100);
+      .select('id,arqon_id,award_name,award_icon,rarity,reason,granted_at,revoked_at,revoke_reason,profiles(display_name)')
+      .order('granted_at',{ascending:false}).limit(100);
     if(error){host.textContent='Не удалось загрузить награды: '+error.message;return}
     host.replaceChildren();
     if(!data?.length){host.textContent='Пока нет выданных наград.';return}
@@ -246,8 +246,12 @@
       const title=document.createElement('strong');title.textContent=(row.award_icon||'🏅')+' '+row.award_name+' · '+(row.profiles?.display_name||('#'+row.arqon_id));
       const meta=document.createElement('small');meta.style.cssText='display:block;color:#aaa;margin-top:4px';meta.textContent=(labels[row.rarity]||row.rarity)+' · '+row.reason+' · '+new Date(row.granted_at).toLocaleDateString('ru-RU');
       info.append(title,meta);
-      const revoke=document.createElement('button');revoke.type='button';revoke.className='btn ghost';revoke.textContent='Отозвать';revoke.dataset.revokeAward=String(row.id);
-      item.append(info,revoke);host.append(item);
+      if(row.revoked_at){
+        const revoked=document.createElement('small');revoked.style.cssText='display:block;color:#fca5a5;margin-top:5px';revoked.textContent='Отозвана '+new Date(row.revoked_at).toLocaleDateString('ru-RU')+(row.revoke_reason?' · '+row.revoke_reason:'');info.append(revoked);
+      }
+      item.append(info);
+      if(!row.revoked_at){const revoke=document.createElement('button');revoke.type='button';revoke.className='btn ghost';revoke.textContent='Отозвать';revoke.dataset.revokeAward=String(row.id);item.append(revoke)}
+      host.append(item);
     });
   }
   async function installAwardAdminPanel(){
