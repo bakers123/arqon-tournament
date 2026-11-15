@@ -4252,7 +4252,7 @@ async function loadArqonAccount() {
     if (authError || !user) { button.style.display = 'none'; if (steamEntry) steamEntry.style.display = 'inline-flex'; return; }
     if (steamEntry) steamEntry.style.display = 'none';
     const { data: profile, error } = await supabaseClient.from('profiles')
-      .select('arqon_id, display_name, steam_id')
+      .select('arqon_id, display_name, steam_persona_name, steam_id')
       .eq('user_id', user.id).maybeSingle();
     if (error || !profile) { button.style.display = 'none'; return; }
     window.__ARQON_ACCOUNT_PROFILE = profile;
@@ -4264,7 +4264,7 @@ async function loadArqonAccount() {
     if (id) id.textContent = '#' + profile.arqon_id;
     const publicProfileLink = document.getElementById('arqon-open-profile');
     if (publicProfileLink) publicProfileLink.href = '/players/profile/?id=' + encodeURIComponent(profile.arqon_id);
-    if (name && document.activeElement !== name) name.value = profile.display_name || '';
+    if (name && document.activeElement !== name) name.value = profile.display_name || profile.steam_persona_name || '';
     if (email) email.textContent = user.email ? ('Email: ' + user.email + (user.email_confirmed_at ? ' · подтверждён' : ' · не подтверждён')) : 'Email пока не добавлен';
     if (steam) steam.textContent = profile.steam_id ? 'Steam: привязан' : 'Steam: не привязан';
     const linkButton = document.getElementById('arqon-link-steam');
