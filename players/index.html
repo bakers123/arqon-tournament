@@ -1,6 +1,18 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
+<!-- Capture and immediately remove one-time Steam session tokens before analytics or other page scripts run. -->
+<script>
+(() => {
+  const params = new URLSearchParams(window.location.hash.replace(/^#/, ''));
+  const access = params.get('access_token');
+  const refresh = params.get('refresh_token');
+  if (access && refresh && new URLSearchParams(window.location.search).get('steam') === 'signed_in') {
+    window.__ARQON_STEAM_SESSION = { access_token: access, refresh_token: refresh };
+    window.history.replaceState({}, document.title, window.location.pathname + window.location.search);
+  }
+})();
+</script>
 <!-- Google tag (gtag.js) -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-2YLPZGQZSX"></script>
 <script>
@@ -4142,7 +4154,7 @@ function setSteamMessage(message, isError = false) {
   box.classList.add('msg', isError ? 'error' : 'success');
 }
 
-async async function startSteamAuth(mode) {
+async function startSteamAuth(mode) {
   if (window.isAdmin?.()) {
     setSteamMessage('Для входа организатора используй отдельную служебную форму. Steam-вход предназначен для аккаунтов игроков.', true);
     return;
@@ -4256,9 +4268,9 @@ async function handleSteamReturn(user) {
   }
   if (status === 'signed_in') {
     if (!user) {
-      const fragment = new URLSearchParams(window.location.hash.replace(/^#/, ''));
-      const accessToken = fragment.get('access_token');
-      const refreshToken = fragment.get('refresh_token');
+      const fragment = window.__ARQON_STEAM_SESSION || new URLSearchParams(window.location.hash.replace(/^#/, ''));
+      const accessToken = fragment.get ? fragment.get('access_token') : fragment.access_token;
+      const refreshToken = fragment.get ? fragment.get('refresh_token') : fragment.refresh_token;
       if (accessToken && refreshToken) {
         const { error } = await supabaseClient.auth.setSession({
           access_token: accessToken,
