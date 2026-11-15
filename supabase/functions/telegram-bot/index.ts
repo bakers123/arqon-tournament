@@ -59,12 +59,12 @@ Deno.serve(async(req)=>{
      let profileText:string;
      if(accountError){
       console.warn("Telegram profile lookup failed",accountError);
-      profileText="👤 <b>ТВОЙ ARQON АККАУНТ</b>\\n\\nНе удалось проверить подключение прямо сейчас. Попробуй ещё раз чуть позже.";
+      profileText="👤 <b>ТВОЙ ARQON АККАУНТ</b>\n\nНе удалось проверить подключение прямо сейчас. Попробуй ещё раз чуть позже.";
      }else if(account){
       const linkedDate=account.linked_at?new Date(account.linked_at).toLocaleDateString("ru-RU"):"не указана";
-      profileText="👤 <b>ТВОЙ ARQON АККАУНТ</b>\\n\\nСтатус: <b>подключён</b>\\nTelegram: "+(account.telegram_username?"@"+esc(account.telegram_username):esc(account.first_name||"аккаунт подключён"))+"\\nДата подключения: "+linkedDate+"\\n\\nТвой Telegram привязан к ARQON. Управлять подключением можно в настройках профиля на сайте.";
+      profileText="👤 <b>ТВОЙ ARQON АККАУНТ</b>\n\nСтатус: <b>подключён</b>\nTelegram: "+(account.telegram_username?"@"+esc(account.telegram_username):esc(account.first_name||"аккаунт подключён"))+"\nДата подключения: "+linkedDate+"\n\nТвой Telegram привязан к ARQON. Управлять подключением можно в настройках профиля на сайте.";
      }else{
-      profileText="👤 <b>ТВОЙ ARQON АККАУНТ</b>\\n\\nСтатус: <b>не подключён</b>\\n\\nОткрой сайт ARQON → «Мой профиль» → «Подключить Telegram», затем отправь боту команду подключения.";
+      profileText="👤 <b>ТВОЙ ARQON АККАУНТ</b>\n\nСтатус: <b>не подключён</b>\n\nОткрой сайт ARQON → «Мой профиль» → «Подключить Telegram», затем отправь боту команду подключения.";
      }
      try{
       await send(bot,callbackChatId,profileText,{inline_keyboard:[[{text:"⚙️ Настройки профиля",url:SITE+"/"}],[{text:"↩️ Главное меню",callback_data:"menu"}]]});
