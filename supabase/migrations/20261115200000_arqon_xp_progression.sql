@@ -12,6 +12,7 @@ create table if not exists public.arqon_xp_events (
 create index if not exists arqon_xp_events_profile_date on public.arqon_xp_events(arqon_id,created_at desc);
 alter table public.arqon_xp_events enable row level security;
 grant select on public.arqon_xp_events to anon,authenticated;
+drop policy if exists "Players can read public XP" on public.arqon_xp_events;
 create policy "Players can read public XP" on public.arqon_xp_events
 for select to anon,authenticated using (
  exists(select 1 from public.profiles p where p.arqon_id=arqon_xp_events.arqon_id
@@ -41,6 +42,7 @@ begin
  return new;
 end;
 $$;
+drop trigger if exists arqon_xp_milestones_after_insert on public.arqon_xp_events;
 create trigger arqon_xp_milestones_after_insert after insert on public.arqon_xp_events
 for each row execute function public.award_arqon_xp_milestones();
 
@@ -75,6 +77,7 @@ begin
  return new;
 end;
 $$;
+drop trigger if exists arqon_tournament_xp_sync on public.results;
 create trigger arqon_tournament_xp_sync after insert or update or delete on public.results
 for each row execute function public.sync_arqon_tournament_xp();
 
@@ -96,6 +99,7 @@ begin
  return new;
 end;
 $$;
+drop trigger if exists arqon_live_match_xp_sync on public.live_match_player_stats;
 create trigger arqon_live_match_xp_sync after insert on public.live_match_player_stats
 for each row execute function public.award_arqon_live_match_xp();
 
@@ -120,4 +124,40 @@ join public.players pl on lower(btrim(pl.name))=lower(btrim(ls.player_name))
 join public.profiles pr on pr.user_id::text=pl.uid
 left join public.live_matches lm on lm.id=ls.live_match_id
 order by pr.arqon_id,ls.live_match_id,ls.created_at
+on conflict(arqon_id,source_type,source_key) do nothing;
+
+
+create or replace function public.sync_arqon_live_mvp_xp()
+returns trigger language plpgsql security definer set search_path=''
+as $$
+declare target_id bigint;
+begin
+ if tg_op='UPDATE' and old.mvp_name is not null and old.mvp_name is distinct from new.mvp_name then
+   select pr.arqon_id into target_id from public.players pl join public.profiles pr on pr.user_id::text=pl.uid
+   where lower(btrim(pl.name))=lower(btrim(old.mvp_name)) order by pr.arqon_id limit 1;
+   if target_id is not null then
+     delete from public.arqon_xp_events where arqon_id=target_id and source_type='live_match' and source_key=old.id::text||':mvp';
+   end if;
+ end if;
+ if new.mvp_name is not null and (tg_op='INSERT' or old.mvp_name is distinct from new.mvp_name) then
+   select pr.arqon_id into target_id from public.players pl join public.profiles pr on pr.user_id::text=pl.uid
+   where lower(btrim(pl.name))=lower(btrim(new.mvp_name)) order by pr.arqon_id limit 1;
+   if target_id is not null then
+     insert into public.arqon_xp_events(arqon_id,source_type,source_key,source_label,xp_amount)
+     values(target_id,'live_match',new.id::text||':mvp',coalesce(new.title,'MVP матча Live Center'),50)
+     on conflict(arqon_id,source_type,source_key) do nothing;
+   end if;
+ end if;
+ return new;
+end;
+$$;
+drop trigger if exists arqon_live_match_mvp_xp_sync on public.live_matches;
+create trigger arqon_live_match_mvp_xp_sync after insert or update of mvp_name on public.live_matches
+for each row execute function public.sync_arqon_live_mvp_xp();
+insert into public.arqon_xp_events(arqon_id,source_type,source_key,source_label,xp_amount)
+select pr.arqon_id,'live_match',lm.id::text||':mvp',coalesce(lm.title,'MVP матча Live Center'),50
+from public.live_matches lm
+join public.players pl on lower(btrim(pl.name))=lower(btrim(lm.mvp_name))
+join public.profiles pr on pr.user_id::text=pl.uid
+where lm.mvp_name is not null
 on conflict(arqon_id,source_type,source_key) do nothing;
