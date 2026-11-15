@@ -1,4 +1,24 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+async function syncSteamProfile(admin:any,steamId:string,userId:string){
+  try{
+    const response=await fetch(`https://steamcommunity.com/profiles/${steamId}?xml=1`,{headers:{"User-Agent":"ARQON-Esports/1.0"},signal:AbortSignal.timeout(7000)});
+    if(!response.ok)return;
+    const xml=await response.text();
+    const extract=(tag:string)=>{
+      const match=xml.match(new RegExp(`<${tag}>([\\s\\S]*?)</${tag}>`,"i"));
+      if(!match)return null;
+      return match[1].replace(/^<!\\[CDATA\\[/,"").replace(/\\]\\]>$/,"").trim();
+    };
+    const persona=extract("steamID");
+    const avatar=extract("avatarFull")||extract("avatarMedium")||extract("avatarIcon");
+    const safeName=persona?.replace(/<[^>]*>/g,"").trim().slice(0,128)||null;
+    const safeAvatar=avatar&&/^https:\\/\\//i.test(avatar)&&avatar.length<=2048?avatar:null;
+    const patch:Record<string,string>={};
+    if(safeName)patch.steam_persona_name=safeName;
+    if(safeAvatar)patch.steam_avatar_url=safeAvatar;
+    if(Object.keys(patch).length)await admin.from("profiles").update(patch).eq("user_id",userId);
+  }catch(error){console.warn("Steam public profile sync skipped:",error)}
+}
 function redirect(origin:string,status:string,fragment?:Record<string,string>){
   const target=new URL("/players/",origin);
   target.searchParams.set("steam",status);
@@ -60,11 +80,11 @@ Deno.serve(async(req:Request)=>{
     const {data:updated,error:updateError}=await admin.from("profiles").update({steam_id:steamId})
       .eq("user_id",consumed.user_id).is("steam_id",null).select("user_id").maybeSingle();
     if(updateError||!updated) return redirect(origin,"already_linked");
-    return redirect(origin,"linked");
+    await syncSteamProfile(admin,steamId,consumed.user_id);\n    return redirect(origin,"linked");
   }
   const {data:profile,error:profileError}=await admin.from("profiles").select("user_id").eq("steam_id",steamId).maybeSingle();
   if(profileError||!profile) return redirect(origin,"not_found");
-  const {data:userResult,error:userError}=await admin.auth.admin.getUserById(profile.user_id);
+  await syncSteamProfile(admin,steamId,profile.user_id);\n  const {data:userResult,error:userError}=await admin.auth.admin.getUserById(profile.user_id);
   const user=userResult?.user;
   if(userError||!user||!user.email||!user.email_confirmed_at) return redirect(origin,"email_required");
   const {data:generated,error:generateError}=await admin.auth.admin.generateLink({type:"magiclink",email:user.email});
