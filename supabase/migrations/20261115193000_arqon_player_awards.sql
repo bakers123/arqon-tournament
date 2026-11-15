@@ -23,11 +23,26 @@ grant select on public.arqon_player_awards to anon, authenticated;
 grant insert,update on public.arqon_player_awards to authenticated;
 grant usage, select on sequence public.arqon_player_awards_id_seq to authenticated;
 drop policy if exists "Public can read active ARQON awards" on public.arqon_player_awards;
+drop policy if exists "Public can read visible ARQON awards" on public.arqon_player_awards;
 drop policy if exists "Organizers can grant ARQON awards" on public.arqon_player_awards;
 drop policy if exists "Organizers can revoke ARQON awards" on public.arqon_player_awards;
-create policy "Public can read active ARQON awards"
+create or replace function public.can_view_arqon_awards(p_arqon_id bigint)
+returns boolean language sql stable security definer set search_path = ''
+as $
+  select exists (
+    select 1 from public.profiles p
+    where p.arqon_id = p_arqon_id
+      and (p.is_public = true or p.user_id = (select auth.uid()))
+  ) or coalesce(public.current_organizer_role() in ('owner','admin','editor'), false);
+$;
+revoke all on function public.can_view_arqon_awards(bigint) from public;
+grant execute on function public.can_view_arqon_awards(bigint) to anon, authenticated;
+create policy "Public can read visible ARQON awards"
   on public.arqon_player_awards for select to anon,authenticated
-  using (revoked_at is null or (select public.current_organizer_role()) in ('owner','admin','editor'));
+  using (
+    (revoked_at is null and public.can_view_arqon_awards(arqon_id))
+    or (select public.current_organizer_role()) in ('owner','admin','editor')
+  );
 create policy "Organizers can grant ARQON awards"
   on public.arqon_player_awards for insert to authenticated
   with check ((select public.current_organizer_role()) in ('owner','admin','editor') and granted_by=(select auth.uid()) and revoked_at is null and revoked_by is null);
