@@ -24,6 +24,24 @@
     .content{display:grid;grid-template-columns:1.35fr .65fr;gap:16px;margin-top:28px}.card{background:linear-gradient(160deg,#171426ee,#100f19f2);border:1px solid var(--line);border-radius:18px;padding:22px;box-shadow:0 14px 40px #0003}.card h2{font:700 12px Orbitron;letter-spacing:2px;color:#d9c4ff;margin:0 0 16px}.bio{font-size:18px;line-height:1.45;color:#ded8eb;white-space:pre-wrap}.muted{color:var(--muted)}.stat{display:flex;justify-content:space-between;gap:12px;padding:12px 0;border-bottom:1px solid #ffffff10;font-weight:700}.stat:last-child{border:0}.stat strong{color:#d9baff}
     .edit{display:none;margin-top:18px}.edit.open{display:block}.field{margin:12px 0}.field label{display:block;color:#b9aecb;font-size:12px;font-weight:700;letter-spacing:1px;margin-bottom:6px}.field input,.field textarea{width:100%;background:#0b0a12;border:1px solid var(--line);border-radius:10px;padding:12px;color:white;font:600 15px Rajdhani;outline:none}.field textarea{min-height:90px;resize:vertical}.checks{display:flex;gap:18px;flex-wrap:wrap;margin:14px 0;color:#d8cbea;font-weight:600}.checks label{display:flex;align-items:center;gap:7px}.notice{padding:20px;border:1px solid var(--line);background:#171426;border-radius:14px;color:#d6cce5;text-align:center;margin-top:24px}.error{color:#ff9aab}.hidden{display:none!important}
     .history-list{display:grid;gap:10px}.history-item{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:13px 14px;border:1px solid #ffffff12;border-radius:12px;background:rgba(255,255,255,.025);min-width:0}.history-event{min-width:0}.history-event strong{display:block;font-size:16px;overflow-wrap:anywhere}.history-event small{display:block;color:var(--muted);margin-top:3px}.history-result{flex:0 0 auto;text-align:right;color:#d9baff;font-weight:800}.history-result small{display:block;color:#bca7dc;font-size:11px}.history-empty{color:var(--muted);margin:0;font-size:15px}.progress-wrap{margin:14px 0 18px}.progress-meta{display:flex;justify-content:space-between;gap:10px;color:#c9bddb;font-weight:700;font-size:14px}.progress-track{height:10px;background:#292337;border-radius:99px;overflow:hidden;margin-top:8px}.progress-fill{height:100%;width:0;background:linear-gradient(90deg,#7436d1,#c084fc);border-radius:99px;box-shadow:0 0 16px #9b5cff88;transition:width .35s ease}.xp-total{font:800 30px Orbitron;color:#e5d5ff;margin:8px 0}.achievement-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.achievement{display:flex;align-items:center;gap:12px;min-width:0;padding:13px;border:1px solid #ffffff14;border-radius:13px;background:#ffffff04}.achievement.locked{opacity:.42;filter:grayscale(1)}.achievement-icon{width:42px;height:42px;flex:0 0 42px;border-radius:12px;display:grid;place-items:center;background:#7136c933;border:1px solid #9b5cff66;font-size:21px}.achievement strong{display:block;font-size:15px}.achievement small{display:block;color:var(--muted);font-size:12px;line-height:1.2;margin-top:2px}@media(max-width:520px){.achievement-grid{grid-template-columns:minmax(0,1fr)}.achievement{padding:11px}.xp-total{font-size:25px}}
+
+    /* Performance: keep the visual style, but avoid expensive full-screen effects on phones. */
+    .top{backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+    .cover{box-shadow:0 12px 34px rgba(0,0,0,.42)}
+    .avatar{box-shadow:0 7px 22px rgba(0,0,0,.48)}
+    .card{box-shadow:0 8px 24px rgba(0,0,0,.22)}
+    .progress-fill{transition:width .22s ease}
+    @media(max-width:700px){
+      .top{backdrop-filter:none;-webkit-backdrop-filter:none}
+      .cover{box-shadow:0 8px 22px rgba(0,0,0,.35)}
+      .avatar{box-shadow:0 5px 14px rgba(0,0,0,.4)}
+      .card{box-shadow:0 5px 16px rgba(0,0,0,.18)}
+      .achievement,.history-item{contain:layout paint}
+      .content>.card{content-visibility:auto;contain-intrinsic-size:auto 420px}
+    }
+    @media(prefers-reduced-motion:reduce){
+      *,*::before,*::after{scroll-behavior:auto!important;animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
+    }
     @media(max-width:700px){.top{height:64px;padding:0 14px}.brand{font-size:clamp(12px,3.6vw,15px);letter-spacing:2.4px}.back{padding:8px 11px;font-size:14px;white-space:nowrap}main{width:calc(100% - 24px);margin:16px auto 48px}.cover{height:clamp(112px,32vw,150px);border-radius:18px}.profile{display:flex!important;flex-direction:row!important;align-items:flex-end!important;justify-content:flex-start!important;gap:12px!important;margin:-34px 12px 0!important;padding:0!important;width:auto!important;max-width:100%!important;min-width:0!important}.profile>.avatar{display:grid;place-items:center;position:relative;flex:0 0 82px!important;width:82px!important;height:82px!important;min-width:82px!important;max-width:82px!important;margin:0!important;border-radius:17px;border-width:3px}.profile>.identity{display:block;flex:1 1 0!important;width:0!important;min-width:0!important;max-width:none!important;padding:0 0 4px!important;margin:0!important;overflow:hidden!important}.profile>.identity .name{width:100%!important;max-width:100%!important;min-width:0!important;font-size:clamp(15px,4.6vw,22px)!important;line-height:1.12!important;white-space:normal!important;overflow-wrap:anywhere!important;word-break:break-word!important}.profile>.identity .eyebrow{font-size:9px;letter-spacing:1.2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.profile>.identity .id{font-size:11px;overflow-wrap:anywhere}.profile>.actions{display:none!important}.eyebrow{font-size:9px;letter-spacing:1.5px;white-space:nowrap}.name{display:block;width:100%;max-width:100%;font-size:clamp(16px,5vw,23px);line-height:1.12;margin:6px 0;overflow-wrap:anywhere;word-break:break-word}.id{font-size:11px;letter-spacing:.8px;overflow-wrap:anywhere}.actions{display:none}.content{grid-template-columns:minmax(0,1fr);gap:12px;margin-top:24px}.content>*{min-width:0}.card{padding:17px;border-radius:16px}.bio{font-size:17px;overflow-wrap:anywhere}.stat{font-size:15px;align-items:flex-start}.stat span{min-width:0}.stat strong{max-width:52%;text-align:right;overflow-wrap:anywhere}.edit .button{width:100%}}
   </style>
 </head>
@@ -81,7 +99,45 @@
     const params=new URLSearchParams(location.search);
     const arqonId=Number(params.get('id'));
     let ownerUser=null, ownProfile=null;
+    const PROFILE_DRAFT_KEY='arqon_profile_draft_v1';
     const el=id=>document.getElementById(id);
+    const profileFields=['display-name','bio-input','cs2-elo-input','cs2-url-input','dota-mmr-input','dota-url-input','preferred-role-input','avatar-input','cover-input'];
+    function populateProfileForm(profile){
+      if(!profile)return;
+      el('display-name').value=profile.display_name||profile.steam_persona_name||profile.player_name||'';
+      el('bio-input').value=profile.bio||'';
+      el('cs2-elo-input').value=profile.cs2_faceit_elo??'';
+      el('cs2-url-input').value=profile.cs2_faceit_url||'';
+      el('dota-mmr-input').value=profile.dota2_mmr??'';
+      el('dota-url-input').value=profile.dota2_profile_url||'';
+      el('preferred-role-input').value=profile.preferred_role||'';
+      el('looking-for-team-input').checked=!!profile.looking_for_team;
+      el('avatar-input').value=profile.avatar_url||'';
+      el('cover-input').value=profile.cover_url||'';
+      el('public-input').checked=profile.is_public!==false;
+      el('steam-input').checked=!!profile.show_steam;
+    }
+    function persistProfileDraft(){
+      if(!ownerUser||!ownProfile)return;
+      const draft={userId:ownerUser.id,savedAt:Date.now(),fields:{}};
+      profileFields.forEach(id=>draft.fields[id]=el(id)?.value??'');
+      draft.fields['looking-for-team-input']=!!el('looking-for-team-input')?.checked;
+      draft.fields['public-input']=!!el('public-input')?.checked;
+      draft.fields['steam-input']=!!el('steam-input')?.checked;
+      try{localStorage.setItem(PROFILE_DRAFT_KEY,JSON.stringify(draft))}catch(_){}
+    }
+    function restoreProfileDraft(){
+      if(!ownerUser)return;
+      try{
+        const draft=JSON.parse(localStorage.getItem(PROFILE_DRAFT_KEY)||'null');
+        if(!draft||draft.userId!==ownerUser.id||Date.now()-Number(draft.savedAt)>7*24*60*60*1000)return;
+        Object.entries(draft.fields||{}).forEach(([id,value])=>{
+          const field=el(id);if(!field)return;
+          if(field.type==='checkbox')field.checked=!!value;
+          else if(value!==''&&value!==null&&value!==undefined)field.value=String(value);
+        });
+      }catch(_){}
+    }
     function showNotice(message,isError=false){const n=el('notice');n.textContent=message;n.classList.remove('hidden');if(isError)n.classList.add('error')}
     function setImage(containerId,url,alt){const container=el(containerId);if(!url)return;const img=document.createElement('img');img.src=url;img.alt=alt;img.referrerPolicy='no-referrer';img.onerror=()=>img.remove();container.replaceChildren(img)}
     function playerKey(value){return String(value||'').trim().toLocaleLowerCase()}
@@ -271,22 +327,20 @@ async function uploadProfileMedia(file,kind){
       if(ownProfile){
         await loadTeamOffers();
         await loadTelegramSettings();
-        el('display-name').value=ownProfile.display_name||'';
-        el('bio-input').value=ownProfile.bio||'';
-        el('cs2-elo-input').value=ownProfile.cs2_faceit_elo??'';
-        el('cs2-url-input').value=ownProfile.cs2_faceit_url||'';
-        el('dota-mmr-input').value=ownProfile.dota2_mmr??'';
-        el('dota-url-input').value=ownProfile.dota2_profile_url||'';el('preferred-role-input').value=ownProfile.preferred_role||'';el('looking-for-team-input').checked=!!ownProfile.looking_for_team;
-        el('avatar-input').value=ownProfile.avatar_url||'';
-        el('cover-input').value=ownProfile.cover_url||'';
-        el('public-input').checked=ownProfile.is_public;
-        el('steam-input').checked=ownProfile.show_steam;
+        populateProfileForm(ownProfile);
+        restoreProfileDraft();
       }
     }
     el('telegram-connect').addEventListener('click',connectTelegram);
     el('telegram-unlink').addEventListener('click',unlinkTelegram);
     el('telegram-copy-code').addEventListener('click',()=>navigator.clipboard?.writeText(el('telegram-start-code').textContent).then(()=>el('telegram-status').textContent='Команда скопирована.').catch(()=>el('telegram-status').textContent='Не удалось скопировать — выдели команду вручную.'));
-    el('edit-toggle').addEventListener('click',()=>el('edit-form').classList.toggle('open'));
+    el('edit-toggle').addEventListener('click',()=>{
+      const opening=!el('edit-form').classList.contains('open');
+      if(opening){populateProfileForm(ownProfile);restoreProfileDraft()}
+      el('edit-form').classList.toggle('open',opening);
+    });
+    el('edit-form').addEventListener('input',persistProfileDraft);
+    el('edit-form').addEventListener('change',persistProfileDraft);
     el('edit-form').addEventListener('submit',async event=>{
       event.preventDefault();if(!ownerUser||!ownProfile)return;
       const message=el('edit-message');message.textContent='Сохраняем…';
@@ -299,8 +353,9 @@ async function uploadProfileMedia(file,kind){
       if(cs2_faceit_elo!==null&&(!Number.isInteger(cs2_faceit_elo)||cs2_faceit_elo<0||cs2_faceit_elo>5000)){message.textContent='FACEIT ELO должен быть от 0 до 5000.';return}
       if(dota2_mmr!==null&&(!Number.isInteger(dota2_mmr)||dota2_mmr<0||dota2_mmr>20000)){message.textContent='Dota 2 MMR должен быть от 0 до 20000.';return}
       for(const url of [cs2_faceit_url,dota2_profile_url])if(url&&url.slice(0,8)!=='https://'){message.textContent='Игровые ссылки должны начинаться с https://';return}
-      let avatar_url=el('avatar-input').value.trim()||null;
-      let cover_url=el('cover-input').value.trim()||null;
+      // An empty optional image field must not erase an already saved upload.
+      let avatar_url=el('avatar-input').value.trim()||ownProfile.avatar_url||null;
+      let cover_url=el('cover-input').value.trim()||ownProfile.cover_url||null;
       for(const url of [avatar_url,cover_url])if(url&&url.slice(0,8)!=='https://'){message.textContent='Ссылки на изображения должны начинаться с https://';return}
       if(!display_name||display_name.length>32){message.textContent='Имя должно быть от 1 до 32 символов.';return}
       try{
@@ -312,6 +367,8 @@ async function uploadProfileMedia(file,kind){
       const {error}=await db.from('profiles').update({display_name,bio,avatar_url,cover_url,cs2_faceit_url,cs2_faceit_elo,dota2_profile_url,dota2_mmr,is_public:el('public-input').checked,show_steam:el('steam-input').checked,looking_for_team:el('looking-for-team-input').checked,preferred_role:el('preferred-role-input').value.trim()}).eq('user_id',ownerUser.id);
       if(error){message.textContent=error.message;return}
       el('avatar-file').value='';el('cover-file').value='';
+      try{localStorage.removeItem(PROFILE_DRAFT_KEY)}catch(_){}
+      ownProfile={...ownProfile,display_name,bio,avatar_url,cover_url,cs2_faceit_url,cs2_faceit_elo,dota2_profile_url,dota2_mmr,is_public:el('public-input').checked,show_steam:el('steam-input').checked,looking_for_team:el('looking-for-team-input').checked,preferred_role:el('preferred-role-input').value.trim()};
       message.textContent='Профиль сохранён.';await load();
     });
     load().catch(error=>{console.error(error);showNotice('Не удалось загрузить профиль. Попробуй обновить страницу.',true)});
