@@ -20,6 +20,13 @@ async function renderPanel(bot:string,chatId:string,messageId:number,text:string
  try{await telegram(bot,"editMessageText",{chat_id:chatId,message_id:messageId,text,parse_mode:"HTML",disable_web_page_preview:true,reply_markup:keyboard})}
  catch{await send(bot,chatId,text,keyboard)}
 }
+async function loadTournamentTeams(admin:any){
+ const {data}=await admin.from("tournament").select("data").order("id",{ascending:false}).limit(1).maybeSingle();
+ const raw=data?.data?.teams;
+ if(Array.isArray(raw))return raw;
+ if(typeof raw==="string"){try{const parsed=JSON.parse(raw);return Array.isArray(parsed)?parsed:[]}catch{}}
+ return [];
+}
 async function telegram(token:string,method:string,body:Record<string,unknown>){
  const r=await fetch(`https://api.telegram.org/bot${token}/${method}`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});
  const payload=await r.json().catch(()=>({}));
@@ -107,14 +114,34 @@ Deno.serve(async(req)=>{
      const lines=[...recent.map((m:any)=>"• #"+(m.match_no??"?")+" "+esc(m.team1)+" — "+esc(m.team2)+" · "+(m.result_type==="tech"?"ТТ "+esc(m.tech_loss_team):"победа "+esc(m.winner))),...upcoming.map((m:any)=>"• #"+(m.match_no??"?")+" "+esc(m.date||"Дата уточняется")+" "+esc(m.time||"")+" · "+esc(m.team1)+" — "+esc(m.team2))];
      await renderPanel(bot,callbackChatId,callback.message.message_id,"🏆 <b>КИБЕРСПОРТИВНАЯ ЛИГА ARQON</b>\nМатчей в расписании: "+matches.length+"\nС результатом: "+done+"\n\n<b>Результаты и ближайшие матчи</b>\n"+(lines.join("\n")||"Пока нет данных."),{inline_keyboard:[[{text:"↻ Обновить",callback_data:"league"}],[{text:"↩️ Главное меню",callback_data:"menu"}]]});
     }else if(action==="teams"){
-     const {data}=await admin.from("tournament").select("data").order("id",{ascending:false}).limit(1).maybeSingle();
-     const teams=Array.isArray(data?.data?.teams)?data.data.teams:[];
-     const rows=teams.slice(0,18).map((t:any)=>{const name=typeof t==="string"?t:(t.name||t.teamName||"Команда");return "• <b>"+esc(name)+"</b>"+(Array.isArray(t?.players)?" · "+t.players.length+" игроков":"")});
-     await renderPanel(bot,callbackChatId,callback.message.message_id,"👥 <b>КОМАНДЫ ARQON</b>\n\n"+(rows.join("\n")||"Список команд пока пуст.")+"\n\nПолные составы и карточки команд появятся здесь по нажатию на название.",{inline_keyboard:[[{text:"↻ Обновить",callback_data:"teams"}],[{text:"↩️ Главное меню",callback_data:"menu"}]]});
+     const teams=await loadTournamentTeams(admin);
+     const keyboard:any[][]=teams.slice(0,18).map((t:any)=>[{text:"👥 "+String(t.name||"Команда").slice(0,45),callback_data:"team:"+String(t.id||"").slice(0,45)}]);
+     keyboard.push([{text:"↻ Обновить",callback_data:"teams"},{text:"↩️ Главное меню",callback_data:"menu"}]);
+     await renderPanel(bot,callbackChatId,callback.message.message_id,"👥 <b>КОМАНДЫ ARQON</b>\n\nВыбери команду, чтобы посмотреть её состав и игроков.",{inline_keyboard:keyboard});
+    }else if(action.startsWith("team:")){
+     const teamId=action.slice(5),teams=await loadTournamentTeams(admin),team=teams.find((t:any)=>String(t.id)===teamId);
+     if(!team){await renderPanel(bot,callbackChatId,callback.message.message_id,"Команда не найдена или состав обновился.",backMenu)}
+     else{
+      const roster=Array.isArray(team.players)?team.players:[];
+      const rows=roster.map((p:any)=>"• <b>"+esc(p.name)+"</b> · FACEIT "+(p.faceitLevel??"—")+" · ARQON "+(p.arqonRating??"—")+(p.rosterRole==="reserve"?" · запас":""));
+      const buttons=roster.slice(0,20).map((p:any)=>[{text:"🎯 "+String(p.name||"Игрок").slice(0,45),callback_data:"player:"+String(p.account_id||"").slice(0,45)}]);
+      buttons.push([{text:"↩️ К командам",callback_data:"teams"},{text:"Главное меню",callback_data:"menu"}]);
+      await renderPanel(bot,callbackChatId,callback.message.message_id,"👥 <b>"+esc(team.name)+"</b>\nИгроков: "+roster.length+"\n\n"+(rows.join("\n")||"Состав пока не заполнен."),{inline_keyboard:buttons});
+     }
     }else if(action==="players"){
-     const {data,error}=await admin.from("profiles").select("arqon_id,display_name,steam_persona_name,cs2_faceit_elo,dota2_mmr").eq("is_public",true).order("arqon_id",{ascending:true}).limit(15);
-     const rows=(data||[]).map((p:any)=>"• <b>"+esc(p.display_name||p.steam_persona_name||("Игрок #"+p.arqon_id))+"</b> · #"+p.arqon_id+" · FACEIT "+(p.cs2_faceit_elo??"—"));
-     await renderPanel(bot,callbackChatId,callback.message.message_id,"🎯 <b>ИГРОКИ ARQON</b>\n\n"+(error?"Не удалось загрузить игроков.":rows.join("\n")||"Публичных профилей пока нет.")+"\n\nПоиск и открытие карточек игроков добавим следующим этапом.",{inline_keyboard:[[{text:"↻ Обновить",callback_data:"players"}],[{text:"↩️ Главное меню",callback_data:"menu"}]]});
+     const teams=await loadTournamentTeams(admin),roster=teams.flatMap((t:any)=>(Array.isArray(t.players)?t.players:[]).map((p:any)=>({...p,teamName:t.name,teamId:t.id})));
+     const unique=Array.from(new Map(roster.map((p:any)=>[String(p.account_id||p.name),p])).values()).slice(0,30) as any[];
+     const keyboard:any[][]=unique.map((p:any)=>[{text:"🎯 "+String(p.name||"Игрок").slice(0,45),callback_data:"player:"+String(p.account_id||"").slice(0,45)}]);
+     keyboard.push([{text:"↻ Обновить",callback_data:"players"},{text:"↩️ Главное меню",callback_data:"menu"}]);
+     await renderPanel(bot,callbackChatId,callback.message.message_id,"🎯 <b>ИГРОКИ ARQON</b>\n\nИгроков в составах: "+roster.length+"\nВыбери игрока, чтобы посмотреть его игровые данные.",{inline_keyboard:keyboard});
+    }else if(action.startsWith("player:")){
+     const playerId=action.slice(7),teams=await loadTournamentTeams(admin);
+     let found:any=null;for(const t of teams){const p=(t.players||[]).find((x:any)=>String(x.account_id)===playerId);if(p){found={...p,teamName:t.name};break}}
+     if(!found){await renderPanel(bot,callbackChatId,callback.message.message_id,"Игрок не найден в текущих составах.",backMenu)}
+     else{
+      const text="🎯 <b>"+esc(found.name)+"</b>\nКоманда: "+esc(found.teamName||"Свободный агент")+"\nFACEIT: "+(found.faceitLevel??"не указан")+"\nРейтинг ARQON: "+(found.arqonRating??"не указан")+"\nРоль: "+esc(found.rosterRole||"основной состав");
+      await renderPanel(bot,callbackChatId,callback.message.message_id,text,{inline_keyboard:[[{text:"↩️ К игрокам",callback_data:"players"}],[{text:"↩️ Главное меню",callback_data:"menu"}]]});
+     }
     }else if(action==="support"){
      const link=await linkedUser(admin,callbackChatId);
      if(!link){await renderPanel(bot,callbackChatId,callback.message.message_id,"🛟 <b>ПОДДЕРЖКА ARQON</b>\n\nПодключи Telegram к своему аккаунту, чтобы видеть обращения и переписываться с администрацией прямо здесь.",{inline_keyboard:[[{text:"↩️ Главное меню",callback_data:"menu"}]]})}
