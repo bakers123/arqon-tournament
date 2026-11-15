@@ -464,3 +464,35 @@ header nav .arqon-nav-support{
   transition:background .18s,border-color .18s,color .18s;
 }
 header nav .arqon-nav-support:hover{background:rgba(139,92,246,.18);border-color:rgba(196,181,253,.48);color:#fff}
+
+
+/* Mobile profile + navigation safety pass */
+#arqon-account-modal{
+  box-sizing:border-box!important;
+  padding: max(12px,env(safe-area-inset-top)) 12px max(12px,env(safe-area-inset-bottom))!important;
+  overflow-y:auto!important;
+  overscroll-behavior:contain!important;
+}
+#arqon-account-modal .modal-content{
+  box-sizing:border-box!important;
+  width:min(460px,100%)!important;
+  max-height:calc(100dvh - 24px - env(safe-area-inset-top) - env(safe-area-inset-bottom))!important;
+  overflow-y:auto!important;
+  overscroll-behavior:contain!important;
+  -webkit-overflow-scrolling:touch;
+}
+#arqon-account-modal .modal-content > :last-child{margin-bottom:0}
+@media(max-width:900px){
+  header{padding-top:max(8px,env(safe-area-inset-top))!important}
+  header>.arqon-menu-trigger{width:40px!important;height:40px!important;min-width:40px!important;flex-basis:40px!important}
+  header>.brand{max-width:40vw!important}
+  header>#steam-header-entry,header>#arqon-account-button{
+    min-width:0!important;max-width:34vw!important;overflow:hidden!important;
+    text-overflow:ellipsis!important;white-space:nowrap!important;
+  }
+  header nav{padding-top:max(14px,env(safe-area-inset-top))!important;padding-bottom:max(22px,env(safe-area-inset-bottom))!important}
+}
+@media(max-width:390px){
+  header>.brand{max-width:37vw!important}
+  header>#steam-header-entry,header>#arqon-account-button{max-width:31vw!important;padding-inline:7px!important}
+}
