@@ -1062,6 +1062,7 @@
     <div id="arqon-account-steam" class="hint" style="margin-top:5px;"></div>
     <button id="arqon-link-steam" class="btn ghost" type="button" onclick="linkSteamFromAccount()" style="display:none;width:100%;margin-top:14px;">Привязать Steam</button>
     <a id="arqon-open-profile" class="btn ghost" href="/players/profile/" style="display:block;text-align:center;width:100%;margin-top:10px;padding:11px 22px;border-radius:6px;text-decoration:none;border:1px solid var(--border);color:var(--text-dim);">Открыть публичный профиль</a>
+    <section style="margin-top:16px;padding:14px;border:1px solid rgba(139,92,246,.35);border-radius:12px;background:rgba(139,92,246,.06);"><h3 style="font:700 12px Orbitron,sans-serif;letter-spacing:1.5px;color:#d9c4ff;margin:0 0 10px;">ПРИГЛАШЕНИЯ В КОМАНДЫ</h3><div id="arqon-team-invitations" class="hint" aria-live="polite">Загружаем приглашения…</div></section>
     <div id="arqon-account-message" class="msg hidden" role="status" style="margin-top:12px;"></div>
     <div style="display:flex;gap:10px;margin-top:16px;">
       <button class="btn" type="button" onclick="saveArqonAccountName()">Сохранить имя</button>
@@ -4265,10 +4266,38 @@ async function loadArqonAccount() {
     button.style.display = 'none';
   }
 }
+async function loadArqonTeamInvitations() {
+  const host=document.getElementById('arqon-team-invitations');if(!host)return;
+  host.textContent='Загружаем приглашения…';
+  const {data,error}=await supabaseClient.from('team_invitations').select('id,team_id,team_name,created_at').eq('status','pending').order('created_at',{ascending:false});
+  if(error){host.textContent='Не удалось загрузить приглашения.';return}
+  host.replaceChildren();
+  if(!data?.length){host.textContent='Новых приглашений пока нет.';return}
+  data.forEach(invitation=>{
+    const row=document.createElement('div');row.style.cssText='padding:11px 0;border-top:1px solid rgba(255,255,255,.1);display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:9px';
+    const info=document.createElement('div');info.style.minWidth='0';
+    const name=document.createElement('strong');name.textContent=invitation.team_name;
+    const date=document.createElement('div');date.className='hint';date.textContent='Приглашение от '+new Date(invitation.created_at).toLocaleDateString('ru-RU');
+    info.append(name,date);
+    const actions=document.createElement('div');actions.style.cssText='display:flex;gap:7px;flex-wrap:wrap';
+    [['Принять',true],['Отклонить',false]].forEach(([label,accept])=>{
+      const button=document.createElement('button');button.type='button';button.className='btn'+(accept?'':' ghost');button.textContent=label;button.style.cssText='padding:7px 11px;font-size:12px';
+      button.onclick=async()=>{
+        button.disabled=true;const {data:result,error:responseError}=await supabaseClient.rpc('respond_team_invitation',{p_invitation_id:invitation.id,p_accept:accept});
+        if(responseError){button.disabled=false;const msg=document.getElementById('arqon-account-message');if(msg){msg.textContent=responseError.message==='team_roster_full'?'В команде нет свободных мест. Попроси организатора освободить слот.':(responseError.message||'Не удалось обработать приглашение.');msg.className='msg error'}return}
+        await loadArqonTeamInvitations();
+        const msg=document.getElementById('arqon-account-message');if(msg){msg.textContent=accept?'Ты вступил(а) в команду!':'Приглашение отклонено.';msg.className='msg success'}
+      };
+      actions.append(button);
+    });
+    row.append(info,actions);host.append(row);
+  });
+}
 async function openArqonAccount() {
   const modal = document.getElementById('arqon-account-modal');
   if (modal) modal.style.display = 'flex';
   await loadArqonAccount();
+  await loadArqonTeamInvitations();
 }
 function closeArqonAccount() {
   const modal = document.getElementById('arqon-account-modal');
