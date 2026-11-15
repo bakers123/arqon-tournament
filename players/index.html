@@ -4143,6 +4143,10 @@ function setSteamMessage(message, isError = false) {
 }
 
 async async function startSteamAuth(mode) {
+  if (window.isAdmin?.()) {
+    setSteamMessage('Для входа организатора используй отдельную служебную форму. Steam-вход предназначен для аккаунтов игроков.', true);
+    return;
+  }
   const loginButton = document.getElementById('steam-login-btn');
   const registerButton = document.getElementById('steam-register-btn');
   if (loginButton) loginButton.disabled = true;
