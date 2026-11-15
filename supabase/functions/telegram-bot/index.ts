@@ -64,9 +64,10 @@ Deno.serve(async(req)=>{
   const {data:message}=await admin.from("support_ticket_messages").select("message").eq("ticket_id",ticketId).eq("sender_role","player").order("created_at",{ascending:false}).limit(1).maybeSingle();
   const {data:admins,error:adminsError}=await admin.rpc("get_support_admin_telegram_chats");
   if(adminsError)return json({error:"support_admin_lookup_failed"},500);
-  let sent=0;
+  let sent=0;const notifiedChats=new Set<string>();
   for(const recipient of admins||[]){
-   if(!recipient.chat_id)continue;
+   if(!recipient.chat_id||notifiedChats.has(String(recipient.chat_id)))continue;
+   notifiedChats.add(String(recipient.chat_id));
    const note=`🆘 <b>${event==="support_ticket_created"?"Новое обращение":"Новое сообщение"} · #${ticketId}</b>\nИгрок: ARQON #${ticket.arqon_id??"—"}\nТема: <b>${esc(ticket.subject)}</b>\n\n${esc(message?.message||"Открой сайт для просмотра переписки.")}\n\nОтветить: <code>/reply ${ticketId} текст</code>\nЗакрыть: <code>/close ${ticketId}</code>`;
    try{await send(bot,recipient.chat_id,note);sent++}catch(e){console.warn("Support admin notification failed",e)}
   }
