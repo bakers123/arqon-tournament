@@ -53,7 +53,7 @@
           <button class="button" type="submit">Сохранить изменения</button><div id="edit-message" class="muted" role="status" style="margin-top:10px"></div>
         </form>
       </section>
-      <aside class="card"><h2>АРКОН АККАУНТ</h2><div class="stat"><span>ARQON ID</span><strong id="stat-id">—</strong></div><div class="stat"><span>Игровой ник</span><strong id="player-name">—</strong></div><div class="stat"><span>Команда</span><strong id="team-name">—</strong></div><div class="stat"><span>Рейтинг ARQON</span><strong id="arqon-rating">—</strong></div><div class="stat"><span>FACEIT</span><strong id="faceit-level">—</strong></div><div class="stat"><span>Очки турниров</span><strong id="tournament-points">0</strong></div><div class="stat"><span>Победы / топ-3</span><strong id="tournament-wins">0 / 0</strong></div><div class="stat"><span>Steam</span><strong id="steam-state">Скрыт</strong></div><p class="muted" style="font-size:13px;margin-top:16px">Рейтинги и ссылки CS2 / Dota 2 можно указать в настройках профиля.</p></aside>
+      <aside class="card"><h2>АРКОН АККАУНТ</h2><div class="stat"><span>ARQON ID</span><strong id="stat-id">—</strong></div><div class="stat"><span>Игровой ник</span><strong id="player-name">—</strong></div><div class="stat"><span>Команда</span><strong id="team-name">—</strong></div><div class="stat"><span>Рейтинг ARQON</span><strong id="arqon-rating">—</strong></div><div class="stat"><span>FACEIT</span><strong id="faceit-level">—</strong></div><div class="stat"><span>Очки турниров</span><strong id="tournament-points">0</strong></div><div class="stat"><span>Победы / топ-3</span><strong id="tournament-wins">0 / 0</strong></div><div class="stat"><span>Steam</span><strong id="steam-state">Скрыт</strong></div><p class="muted" style="font-size:13px;margin-top:16px">Рейтинги и ссылки CS2 / Dota 2 можно указать в настройках профиля.</p><div id="telegram-settings" class="hidden" style="border-top:1px solid #39304d;margin-top:16px;padding-top:14px"><h3 style="margin:0 0 8px">TELEGRAM УВЕДОМЛЕНИЯ</h3><p id="telegram-status" class="muted" style="font-size:13px">Проверяем подключение…</p><button id="telegram-connect" class="button" type="button">Подключить Telegram</button><button id="telegram-unlink" class="button hidden" type="button" style="margin-left:6px">Отключить</button><div id="telegram-code-box" class="hidden" style="margin-top:10px"><p class="muted">Открой нашего бота и отправь ему эту команду в течение 10 минут:</p><code id="telegram-start-code" style="display:block;overflow-wrap:anywhere;padding:10px;background:#171321;border-radius:10px"></code><button id="telegram-copy-code" class="button" type="button" style="margin-top:8px">Скопировать команду</button></div></div></aside>
     </div>
     <section class="card" style="width:min(1040px,calc(100% - 28px));margin:16px auto 0">
       <h2>ИГРОВЫЕ ПРОФИЛИ</h2>
@@ -151,7 +151,32 @@
         item.append(event,result);host.append(item);
       });
     }
-    async function loadTeamOffers(){
+    async function loadTelegramSettings(){
+ const panel=el('telegram-settings');if(!panel||!ownProfile)return;
+ panel.classList.remove('hidden');
+ const {data,error}=await db.rpc('get_telegram_link_status');
+ if(error){el('telegram-status').textContent='Не удалось проверить Telegram.';return}
+ const state=data?.[0];
+ if(state?.is_linked){el('telegram-status').textContent='Подключён'+(state.telegram_username?' · @'+state.telegram_username:'')+'. Уведомления включены.';el('telegram-connect').classList.add('hidden');el('telegram-unlink').classList.remove('hidden')}
+ else{el('telegram-status').textContent='Telegram пока не подключён. После подключения сюда будут приходить уведомления о предложениях.';el('telegram-connect').classList.remove('hidden');el('telegram-unlink').classList.add('hidden')}
+}
+async function connectTelegram(){
+ const button=el('telegram-connect');button.disabled=true;el('telegram-status').textContent='Создаём одноразовый код…';
+ const {data,error}=await db.rpc('create_telegram_link_token');button.disabled=false;
+ if(error){el('telegram-status').textContent=error.message||'Не удалось создать код.';return}
+ const token=data?.[0]?.link_token;if(!token){el('telegram-status').textContent='Сервер не вернул код подключения.';return}
+ const command='/start '+token;el('telegram-start-code').textContent=command;el('telegram-code-box').classList.remove('hidden');el('telegram-status').textContent='Код действует 10 минут и может быть использован один раз.';
+}
+async function unlinkTelegram(){
+ if(!confirm('Отключить Telegram от ARQON?'))return;
+ const {error}=await db.rpc('unlink_telegram_account');
+ if(error){el('telegram-status').textContent=error.message||'Не удалось отключить Telegram.';return}
+ el('telegram-code-box').classList.add('hidden');await loadTelegramSettings();
+}
+async function notifyTelegram(event,offerId){
+ try{await db.functions.invoke('telegram-bot',{body:{event,offer_id:offerId}})}catch(e){console.warn('Telegram notification failed',e)}
+}
+async function loadTeamOffers(){
  if(!ownerUser)return;
  const {data,error}=await db.rpc('list_my_team_player_offers');
  if(error){console.warn(error);return}
@@ -170,7 +195,7 @@
   if(offer.status==='pending'){
    [['Принять','accepted'],['Отклонить','rejected']].forEach(([label,response])=>{
     const b=document.createElement('button');b.className='button';b.textContent=label;b.style.padding='7px 10px';
-    b.onclick=async()=>{b.disabled=true;const {error:err}=await db.rpc('respond_team_player_offer',{p_offer_id:offer.id,p_response:response});if(err){b.disabled=false;showNotice(err.message||'Не удалось ответить на предложение.',true);return}await loadTeamOffers();if(response==='accepted')showNotice('Предложение принято! Теперь капитан команды сможет оформить переход.')};
+    b.onclick=async()=>{b.disabled=true;const {error:err}=await db.rpc('respond_team_player_offer',{p_offer_id:offer.id,p_response:response});if(err){b.disabled=false;showNotice(err.message||'Не удалось ответить на предложение.',true);return}await loadTeamOffers();if(response==='accepted'){await notifyTelegram('offer_accepted',offer.id);showNotice('Предложение принято! Теперь капитан команды сможет оформить переход.')}};
     actions.append(b);
    });
   }
@@ -230,6 +255,7 @@ async function uploadProfileMedia(file,kind){
       if(profile.cover_url){el('cover-image').src=profile.cover_url;el('cover-image').classList.remove('hidden')}
       if(ownProfile){
         await loadTeamOffers();
+        await loadTelegramSettings();
         el('display-name').value=ownProfile.display_name||'';
         el('bio-input').value=ownProfile.bio||'';
         el('cs2-elo-input').value=ownProfile.cs2_faceit_elo??'';
@@ -242,6 +268,9 @@ async function uploadProfileMedia(file,kind){
         el('steam-input').checked=ownProfile.show_steam;
       }
     }
+    el('telegram-connect').addEventListener('click',connectTelegram);
+    el('telegram-unlink').addEventListener('click',unlinkTelegram);
+    el('telegram-copy-code').addEventListener('click',()=>navigator.clipboard?.writeText(el('telegram-start-code').textContent).then(()=>el('telegram-status').textContent='Команда скопирована.').catch(()=>el('telegram-status').textContent='Не удалось скопировать — выдели команду вручную.'));
     el('edit-toggle').addEventListener('click',()=>el('edit-form').classList.toggle('open'));
     el('edit-form').addEventListener('submit',async event=>{
       event.preventDefault();if(!ownerUser||!ownProfile)return;
