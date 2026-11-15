@@ -46,7 +46,7 @@
           <button class="button" type="submit">Сохранить изменения</button><div id="edit-message" class="muted" role="status" style="margin-top:10px"></div>
         </form>
       </section>
-      <aside class="card"><h2>АРКОН АККАУНТ</h2><div class="stat"><span>ARQON ID</span><strong id="stat-id">—</strong></div><div class="stat"><span>Игровой ник</span><strong id="player-name">—</strong></div><div class="stat"><span>Steam</span><strong id="steam-state">Скрыт</strong></div><p class="muted" style="font-size:13px;margin-top:16px">Статистика матчей и рейтинги появятся здесь после подключения игровых профилей.</p></aside>
+      <aside class="card"><h2>АРКОН АККАУНТ</h2><div class="stat"><span>ARQON ID</span><strong id="stat-id">—</strong></div><div class="stat"><span>Игровой ник</span><strong id="player-name">—</strong></div><div class="stat"><span>Команда</span><strong id="team-name">—</strong></div><div class="stat"><span>Рейтинг ARQON</span><strong id="arqon-rating">—</strong></div><div class="stat"><span>FACEIT</span><strong id="faceit-level">—</strong></div><div class="stat"><span>Очки турниров</span><strong id="tournament-points">0</strong></div><div class="stat"><span>Победы / топ-3</span><strong id="tournament-wins">0 / 0</strong></div><div class="stat"><span>Steam</span><strong id="steam-state">Скрыт</strong></div><p class="muted" style="font-size:13px;margin-top:16px">Игровые рейтинги CS2 и Dota 2 подключим отдельно, когда будут утверждены источники данных.</p></aside>
     </div>
     <div class="notice hidden" id="notice"></div>
   </main>
@@ -60,6 +60,34 @@
     const el=id=>document.getElementById(id);
     function showNotice(message,isError=false){const n=el('notice');n.textContent=message;n.classList.remove('hidden');if(isError)n.classList.add('error')}
     function setImage(containerId,url,alt){const container=el(containerId);if(!url)return;const img=document.createElement('img');img.src=url;img.alt=alt;img.referrerPolicy='no-referrer';img.onerror=()=>img.remove();container.replaceChildren(img)}
+    function playerKey(value){return String(value||'').trim().toLocaleLowerCase()}
+    function getTournamentPlayerMeta(source,name){
+      const key=playerKey(name),meta={avatar:null,faceitLevel:0,arqonRating:null,teamName:null};
+      const visit=value=>{
+        if(!value||typeof value!=='object')return;
+        if(Array.isArray(value)){value.forEach(visit);return}
+        if(playerKey(value.name)===key){
+          if(typeof value.avatar==='string'&&/^https?:\\/\\//i.test(value.avatar.trim()))meta.avatar=value.avatar.trim();
+          const level=Number(value.faceitLevel);if(Number.isInteger(level)&&level>=1&&level<=10)meta.faceitLevel=level;
+          const rating=Number(value.arqonRating);if(Number.isInteger(rating)&&rating>=0&&rating<=100)meta.arqonRating=rating;
+        }
+        Object.values(value).forEach(visit);
+      };
+      visit(source);
+      (source?.teams||[]).forEach(team=>(team.players||[]).forEach(player=>{if(playerKey(player.name)===key)meta.teamName=team.name||null}));
+      const free=(source?.freeAgents||[]).find(player=>playerKey(player.name)===key);
+      if(!meta.teamName&&free?.freeAgentTeamName)meta.teamName=free.freeAgentTeamName;
+      if(!meta.teamName&&free?.assignedTeamId){const team=(source?.teams||[]).find(item=>String(item.id)===String(free.assignedTeamId));if(team)meta.teamName=team.name}
+      return meta;
+    }
+    function getTournamentStats(name,results){
+      const key=playerKey(name);let points=0,wins=0,podiums=0,events=0;
+      (results||[]).forEach(row=>{
+        let place=0;if(playerKey(row.place_1)===key)place=1;else if(playerKey(row.place_2)===key)place=2;else if(playerKey(row.place_3)===key)place=3;
+        if(place){events++;if(place===1)wins++;if(place<=3)podiums++;points+=place===1?3:place===2?2:1}
+      });
+      return {points,wins,podiums,events};
+    }
     async function uploadProfileMedia(file,kind){
       if(!file)return null;
       const allowed=['image/jpeg','image/png','image/webp'];
@@ -88,6 +116,18 @@
       el('player-name').textContent=profile.player_name||'Не указан';
       el('bio').textContent=profile.bio||'Игрок пока ничего не рассказал о себе.';
       el('steam-state').textContent=profile.steam_id||'Скрыт';
+      const [resultsResponse,tournamentResponse]=await Promise.all([
+        db.from('results').select('place_1,place_2,place_3,tournament_name').limit(500),
+        db.from('tournament').select('data').eq('id',1).maybeSingle()
+      ]);
+      const stats=getTournamentStats(profile.player_name,resultsResponse.data||[]);
+      const meta=getTournamentPlayerMeta(tournamentResponse.data?.data,profile.player_name);
+      el('team-name').textContent=meta.teamName||'Свободный игрок';
+      el('arqon-rating').textContent=meta.arqonRating===null?'—':meta.arqonRating+'/100';
+      el('faceit-level').textContent=meta.faceitLevel?'Level '+meta.faceitLevel:'—';
+      el('tournament-points').textContent=String(stats.points);
+      el('tournament-wins').textContent=stats.wins+' / '+stats.podiums;
+      if(!profile.avatar_url&&meta.avatar)setImage('avatar',meta.avatar,'Аватар игрока');
       const initial=(profile.display_name||profile.player_name||'A').trim().charAt(0).toUpperCase();el('avatar').textContent=initial;
       if(profile.avatar_url)setImage('avatar',profile.avatar_url,'Аватар игрока');
       if(profile.cover_url){el('cover-image').src=profile.cover_url;el('cover-image').classList.remove('hidden')}
