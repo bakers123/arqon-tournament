@@ -1,7 +1,7 @@
 /* ARQON unified navigation v2 */
 (() => {
   const boot = () => {
-    if (!document.querySelector('script[data-arqon-notifications]')) { const notificationScript=document.createElement('script'); notificationScript.src='/assets/arqon-notifications.js?v=1'; notificationScript.dataset.arqonNotifications='true'; document.head.appendChild(notificationScript); }
+    if (!document.querySelector('script[data-arqon-notifications]')) { const notificationScript=document.createElement('script'); notificationScript.src='/assets/arqon-notifications.js?v=2'; notificationScript.dataset.arqonNotifications='true'; document.head.appendChild(notificationScript); }
     const header = document.querySelector('body > header');
     const nav = header?.querySelector('nav');
     if (!header || !nav || header.querySelector('.arqon-menu-trigger')) return;
