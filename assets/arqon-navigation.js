@@ -43,6 +43,14 @@
       group.keys.forEach(key => { const button = byKey.get(key); if(button) section.appendChild(button); });
       groupRoot.appendChild(section);
     });
+    const competitionSection = Array.from(groupRoot.querySelectorAll('.arqon-nav-group')).find(section => section.querySelector('.arqon-nav-group-title')?.textContent === 'Соревнования');
+    if (competitionSection && !competitionSection.querySelector('.arqon-nav-live')) {
+      const liveLink = document.createElement('a');
+      liveLink.className = 'arqon-nav-support arqon-nav-live';
+      liveLink.href = '/live/';
+      liveLink.textContent = '◉  ARQON Live Center';
+      competitionSection.appendChild(liveLink);
+    }
     const communitySection = Array.from(groupRoot.querySelectorAll('.arqon-nav-group')).find(section => section.querySelector('.arqon-nav-group-title')?.textContent === 'Сообщество');
     if (communitySection && !communitySection.querySelector('.arqon-nav-support')) {
       const supportLink = document.createElement('a');
