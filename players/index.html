@@ -4308,7 +4308,7 @@ async function loadTelegramAccountSettings(){
   if(error){if(status)status.textContent='Не удалось проверить Telegram: '+(error.message||'ошибка');return}
   const state=data?.[0];
   if(state?.is_linked){
-    if(status)status.textContent='Telegram подключён'+(state.telegram_username?' · @'+state.telegram_username:'')+'. Уведомления включены.';
+    if(status)status.textContent='Telegram подключён'+(state.telegram_username?' · @'+state.telegram_username:(state.first_name?' · '+state.first_name+' (без @username)':''))+'. Видно только тебе. Уведомления включены.';
     if(connect)connect.style.display='none';if(unlink)unlink.style.display='inline-flex';
   }else{
     if(status)status.textContent='Telegram не подключён. Подключи бота, чтобы получать уведомления ARQON.';
