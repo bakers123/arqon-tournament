@@ -1,4 +1,22 @@
 
+create or replace function public.filter_disabled_user_notification()
+returns trigger language plpgsql security definer set search_path=''
+as $function$
+declare v_enabled boolean;
+begin
+ select case
+   when new.notification_type in ('support_reply','support_status') then p.support_enabled
+   when new.notification_type in ('team_invitation','team_offer','team_status','team_role_changed','team_roster_changed') then p.teams_enabled
+   else p.system_enabled
+ end
+ into v_enabled
+ from public.user_notification_preferences p
+ where p.user_id=new.user_id;
+ if v_enabled is false then return null; end if;
+ return new;
+end;
+$function$;
+
 alter table public.team_transfer_history drop constraint if exists team_transfer_history_event_type_check;
 alter table public.user_notifications drop constraint if exists user_notifications_notification_type_check;
 alter table public.user_notifications add constraint user_notifications_notification_type_check
