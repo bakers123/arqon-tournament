@@ -305,22 +305,13 @@
       const played=(rows||[]).map(row=>({place:playerKey(row.place_1)===key?1:playerKey(row.place_2)===key?2:playerKey(row.place_3)===key?3:0,mvp:playerKey(row.mvp)===key})).filter(x=>x.place||x.mvp);
       const wins=played.filter(x=>x.place===1).length,podiums=played.filter(x=>x.place>0).length,mvps=played.filter(x=>x.mvp).length;
 
-      // Live achievements are calculated from the same organizer-entered stats
-      // used by the Live Center player performance table.
-      let liveStats=[],liveMvpMatches=[];
-      const [statsResult,mvpResult]=await Promise.all([
-        db.from('live_match_player_stats').select('live_match_id,kills,assists,adr').eq('player_name',name),
-        db.from('live_matches').select('id').eq('mvp_name',name)
-      ]);
-      if(statsResult.error)console.warn('Live achievement stats unavailable:',statsResult.error);
-      else liveStats=Array.isArray(statsResult.data)?statsResult.data:[];
-      if(mvpResult.error)console.warn('Live MVP achievement stats unavailable:',mvpResult.error);
-      else liveMvpMatches=Array.isArray(mvpResult.data)?mvpResult.data:[];
-      const liveMatchCount=new Set(liveStats.map(row=>row.live_match_id).filter(Boolean)).size;
-      const avgKills=liveStats.length?liveStats.reduce((sum,row)=>sum+Number(row.kills||0),0)/liveStats.length:0;
-      const avgAssists=liveStats.length?liveStats.reduce((sum,row)=>sum+Number(row.assists||0),0)/liveStats.length:0;
-      const adrRows=liveStats.filter(row=>row.adr!==null&&row.adr!==undefined&&Number.isFinite(Number(row.adr)));
-      const avgAdr=adrRows.length?adrRows.reduce((sum,row)=>sum+Number(row.adr),0)/adrRows.length:0;
+      // Live achievements are stored by database triggers and survive profile reloads.
+      const {data:automaticRows,error:automaticError}=await db
+        .from('arqon_automatic_achievements')
+        .select('achievement_key,earned_at')
+        .eq('arqon_id',arqonId);
+      if(automaticError)console.warn('Automatic achievements unavailable:',automaticError);
+      const automaticKeys=new Set((automaticRows||[]).map(row=>row.achievement_key));
       const achievements=[
         {icon:'🎮',name:'Первый результат',desc:'Попал в опубликованные результаты турнира',earned:played.length>=1},
         {icon:'🥉',name:'Первый пьедестал',desc:'Попал в топ-3 турнира',earned:podiums>=1},
@@ -328,12 +319,12 @@
         {icon:'⭐',name:'MVP турнира',desc:'Получил награду самого ценного игрока турнира',earned:mvps>=1},
         {icon:'🔥',name:'Ветеран',desc:'Пять попаданий в опубликованные результаты',earned:played.length>=5},
         {icon:'👑',name:'Легенда ARQON',desc:'Пять побед на турнирах',earned:wins>=5},
-        {icon:'🎯',name:'Первый матч',desc:'Получил статистику хотя бы за один матч Live Center',earned:liveMatchCount>=1},
-        {icon:'🧱',name:'Стабильность',desc:'Сыграл минимум пять матчей со внесённой статистикой',earned:liveMatchCount>=5},
-        {icon:'💥',name:'ADR 100+',desc:'Средний ADR не ниже 100 по матчам Live Center',earned:adrRows.length>0&&avgAdr>=100},
-        {icon:'🔥',name:'Фраггер',desc:'В среднем не менее 20 убийств за матч',earned:liveStats.length>0&&avgKills>=20},
-        {icon:'🤝',name:'Командный игрок',desc:'В среднем не менее 8 ассистов за матч',earned:liveStats.length>0&&avgAssists>=8},
-        {icon:'🌟',name:'MVP Live',desc:'Получил отметку MVP минимум в одном матче Live Center',earned:liveMvpMatches.length>=1}
+        {icon:'🎯',name:'Первый матч',desc:'Получил статистику хотя бы за один матч Live Center',earned:automaticKeys.has('live_first_match')},
+        {icon:'🧱',name:'Стабильность',desc:'Сыграл минимум пять матчей со внесённой статистикой',earned:automaticKeys.has('live_stability')},
+        {icon:'💥',name:'ADR 100+',desc:'Средний ADR не ниже 100 по матчам Live Center',earned:automaticKeys.has('live_adr_100')},
+        {icon:'🔥',name:'Фраггер',desc:'В среднем не менее 20 убийств за матч',earned:automaticKeys.has('live_fragger')},
+        {icon:'🤝',name:'Командный игрок',desc:'В среднем не менее 8 ассистов за матч',earned:automaticKeys.has('live_team_player')},
+        {icon:'🌟',name:'MVP Live',desc:'Получил отметку MVP минимум в одном матче Live Center',earned:automaticKeys.has('live_mvp')}
       ];
       const host=el('achievement-grid');host.replaceChildren();
       const earnedAchievements=achievements.filter(x=>x.earned);
