@@ -42,6 +42,14 @@
       group.keys.forEach(key => { const button = byKey.get(key); if(button) section.appendChild(button); });
       groupRoot.appendChild(section);
     });
+    const communitySection = Array.from(groupRoot.querySelectorAll('.arqon-nav-group')).find(section => section.querySelector('.arqon-nav-group-title')?.textContent === 'Сообщество');
+    if (communitySection && !communitySection.querySelector('.arqon-nav-support')) {
+      const supportLink = document.createElement('a');
+      supportLink.className = 'arqon-nav-support';
+      supportLink.href = '/support/';
+      supportLink.textContent = '✦  Техподдержка';
+      communitySection.appendChild(supportLink);
+    }
     nav.insertBefore(groupRoot, nav.querySelector('.nav-social-btn'));
 
     const close = () => {
@@ -66,7 +74,7 @@
     closeControl.addEventListener('click',close);
     
     nav.addEventListener('click',event => {
-      if(event.target.closest('button[data-tab]')) close();
+      if(event.target.closest('button[data-tab], a[href]')) close();
     });
     document.addEventListener('keydown',event => { if(event.key==='Escape') close(); });
     const brand = header.querySelector('.brand');
