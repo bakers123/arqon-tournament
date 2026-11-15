@@ -1467,9 +1467,7 @@ const CS2_MAPS = [
 ];
 
 // Organizer auth is installed by js/organizer-auth.js after this inline bundle loads.
-// Delegate every legacy admin check to the verified role resolver instead of
-// a hard-coded false placeholder; the resolver remains fail-closed until ready.
-function isAdmin() { return !!window.isAdmin?.(); }
+function isAdmin() { return false; }
 
 // Состояние турнира
 let state = {
