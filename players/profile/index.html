@@ -210,6 +210,7 @@
     async function loadTelegramSettings(){
  const panel=el('telegram-settings');if(!panel||!ownProfile)return;
  panel.classList.remove('hidden');
+ if(location.hash==='#telegram-settings')setTimeout(()=>panel.scrollIntoView({behavior:'smooth',block:'center'}),120);
  const {data,error}=await db.rpc('get_telegram_link_status');
  if(error){el('telegram-status').textContent='Не удалось проверить Telegram.';return}
  const state=data?.[0];
