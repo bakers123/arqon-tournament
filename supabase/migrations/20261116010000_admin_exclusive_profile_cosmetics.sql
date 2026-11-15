@@ -63,3 +63,30 @@ as $$
 $$;
 revoke all on function public.get_public_arqon_profile(bigint) from public;
 grant execute on function public.get_public_arqon_profile(bigint) to anon,authenticated;
+
+create or replace function private.guard_profile_exclusive_cosmetics()
+returns trigger
+language plpgsql
+security definer
+set search_path=''
+as $$
+begin
+  if new.exclusive_profile_title is distinct from old.exclusive_profile_title
+     or new.exclusive_profile_bg_color is distinct from old.exclusive_profile_bg_color
+     or new.exclusive_avatar_border_color is distinct from old.exclusive_avatar_border_color then
+    if auth.uid() is null or not exists(
+      select 1 from private.organizer_roles r
+      where r.user_id=auth.uid() and r.role in ('owner','admin')
+    ) then
+      raise exception 'Изменять эксклюзивное оформление может только администрация ARQON'
+        using errcode='42501';
+    end if;
+  end if;
+  return new;
+end;
+$$;
+revoke all on function private.guard_profile_exclusive_cosmetics() from public,anon,authenticated;
+drop trigger if exists guard_profile_exclusive_cosmetics on public.profiles;
+create trigger guard_profile_exclusive_cosmetics
+before update on public.profiles
+for each row execute function private.guard_profile_exclusive_cosmetics();
