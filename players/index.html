@@ -4408,7 +4408,8 @@ async function handleSteamReturn(user) {
   if (authScreen) authScreen.style.display = 'flex';
   actions?.classList.remove('hidden');
   emailStep?.classList.add('hidden');
-  if (status === 'already_linked') setSteamMessage('Этот Steam уже привязан к аккаунту ARQON. Нажми «Войти через Steam», а не создавай новый аккаунт.', true);\n  else if (status === 'not_found') setSteamMessage('Аккаунт с этим Steam ещё не создан. Если ты новый игрок, выбери «Создать аккаунт через Steam».', true);
+  if (status === 'already_linked') setSteamMessage('Этот Steam уже привязан к аккаунту ARQON. Нажми «Войти через Steam», а не создавай новый аккаунт.', true);
+  else if (status === 'not_found') setSteamMessage('Аккаунт с этим Steam ещё не создан. Если ты новый игрок, выбери «Создать аккаунт через Steam».', true);
   else if (status === 'email_required') setSteamMessage('Для этого аккаунта не подтверждён email. Войди со старого устройства и заверши подтверждение либо обратись в поддержку.', true);
   else setSteamMessage('Не удалось завершить вход через Steam. Попробуй ещё раз.', true);
   clearReturn();
