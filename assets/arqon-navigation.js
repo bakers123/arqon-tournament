@@ -1,4 +1,4 @@
-/* ARQON unified navigation v1 */
+/* ARQON unified navigation v2 */
 (() => {
   const boot = () => {
     const header = document.querySelector('body > header');
