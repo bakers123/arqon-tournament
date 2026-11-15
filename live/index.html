@@ -89,7 +89,7 @@ a{color:inherit;text-decoration:none}button,input,select,textarea{font:inherit}
 (()=>{
 const URL='https://uscnaqcvuwjrmkjyuklp.supabase.co',KEY='sb_publishable_oE2Bc1wPAcDt6HE8bOUj3Q_0-2FfIxB';
 const db=window.supabase.createClient(URL,KEY,{auth:{storageKey:'sb-uscnaqcvuwjrmkjyuklp-auth-token',persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
-const $=id=>document.getElementById(id);let matches=[],selected=null,events=[],isEditor=false,channel=null,eventChannel=null;
+const $=id=>document.getElementById(id);let matches=[],selected=null,events=[],chatMessages=[],playerStats=[],isEditor=false,channel=null,eventChannel=null,chatChannel=null,statsChannel=null,currentUser=null;
 const statusText={scheduled:'Запланирован',live:'LIVE',paused:'Пауза',finished:'Завершён',cancelled:'Отменён'};
 const notice=(msg,error=false)=>{const n=$('notice');n.textContent=msg;n.className='notice show'+(error?' error':'')};
 const clearNotice=()=>{$('notice').className='notice'};
@@ -117,16 +117,39 @@ function renderDetail(){
  [[m.team1,m.lineup1],[m.team2,m.lineup2]].forEach(([name,lineup])=>{const box=make('div','team-box');box.append(make('h3','',name),make('p','',(Array.isArray(lineup)&&lineup.length?lineup.join('\n'):'Состав пока не опубликован')));teams.append(box)});host.append(teams);
  if(m.map_name)host.append(make('div','section-title','КАРТА / РЕЖИМ'),make('p','',m.map_name));
  if(m.mvp_name){host.append(make('div','section-title','MVP МАТЧА'));host.append(make('div','mvp','★ '+m.mvp_name))}
- if(safeHttp(m.stream_url)){const wrap=make('div');wrap.style.marginTop='16px';const a=make('a','btn','СМОТРЕТЬ ТРАНСЛЯЦИЮ ↗');a.href=safeHttp(m.stream_url);a.target='_blank';a.rel='noopener noreferrer';wrap.append(a);host.append(wrap)}
+ if(safeHttp(m.stream_url)){
+  const wrap=make('div');wrap.append(make('div','section-title','ТРАНСЛЯЦИЯ'));
+  const embed=streamEmbed(m.stream_url,m.stream_platform);
+  if(embed){const frame=make('div','stream-frame');const iframe=document.createElement('iframe');iframe.src=embed;iframe.title='Трансляция '+m.title;iframe.loading='lazy';iframe.allow='autoplay; fullscreen; picture-in-picture';iframe.allowFullscreen=true;iframe.referrerPolicy='strict-origin-when-cross-origin';frame.append(iframe);wrap.append(frame)}
+  const a=make('a','btn secondary','Открыть эфир отдельно ↗');a.href=safeHttp(m.stream_url);a.target='_blank';a.rel='noopener noreferrer';a.style.display='inline-flex';a.style.marginTop='9px';wrap.append(a);host.append(wrap);
+ }
+ host.append(make('div','section-title','СТАТИСТИКА ИГРОКОВ'));
+ const statsHost=make('div','stats-scroll'),table=make('table','player-stats'),thead=make('thead'),headRow=make('tr');
+ ['Игрок','Команда','K','D','A','ADR','K/D'].forEach(v=>headRow.append(make('th','',v)));thead.append(headRow);table.append(thead);
+ const tbody=make('tbody');
+ if(!playerStats.length){const row=make('tr'),cell=make('td','stat-empty','Статистика пока не добавлена');cell.colSpan=7;row.append(cell);tbody.append(row)}
+ playerStats.forEach(st=>{const row=make('tr');[st.player_name,st.team_name,st.kills,st.deaths,st.assists,Number(st.adr).toFixed(2),st.deaths?(st.kills/st.deaths).toFixed(2):(st.kills?Number(st.kills).toFixed(2):'0.00')].forEach(v=>row.append(make('td','',String(v))));tbody.append(row)});
+ table.append(tbody);statsHost.append(table);host.append(statsHost);
  host.append(make('div','section-title','ЛЕНТА СОБЫТИЙ'));const timeline=make('div','event-list');
  if(!events.length)timeline.append(make('div','empty','События пока не добавлены.'));
  events.forEach(ev=>{const item=make('article','event');item.append(make('small','',fmt(ev.created_at)+' · '+({info:'Информация',round:'Раунд',kill:'Ключевой момент',map:'Карта',score:'Счёт',mvp:'MVP'}[ev.event_type]||'Событие')));const label=[ev.team_name,ev.player_name].filter(Boolean).join(' · ');item.append(make('p','',(label?label+' — ':'')+ev.description));timeline.append(item)});
  host.append(timeline);
+ host.append(make('div','section-title','ЧАТ МАТЧА'));
+ const chatBox=make('div','chat-box'),chatList=make('div','chat-messages');
+ if(!chatMessages.length)chatList.append(make('div','stat-empty','Пока нет сообщений. Будь первым!'));
+ chatMessages.forEach(msg=>{const item=make('article','chat-message');item.append(make('strong','',msg.display_name||'Игрок ARQON'),make('small','',new Date(msg.created_at).toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'})),make('p','',msg.message));chatList.append(item)});
+ chatBox.append(chatList);
+ const compose=make('form','chat-compose');compose.id='chat-form';
+ const input=make('input');input.id='chat-message';input.maxLength=500;input.placeholder=currentUser?'Напиши сообщение…':'Войди, чтобы писать в чат';input.disabled=!currentUser;input.autocomplete='off';
+ const send=make('button','btn','Отправить');send.type='submit';send.disabled=!currentUser;compose.append(input,send);chatBox.append(compose);
+ if(!currentUser){const login=make('a','chat-login','Войти в аккаунт ARQON, чтобы участвовать в чате →');login.href='/players/';chatBox.append(login)}
+ compose.addEventListener('submit',submitChat);host.append(chatBox);
  $('edit-wrap').hidden=!isEditor;
  if(isEditor){
   $('edit-status').value=m.status;$('edit-map').value=m.map_name||'';$('edit-score1').value=m.score1;$('edit-score2').value=m.score2;$('edit-stream').value=m.stream_url||'';$('edit-platform').value=m.stream_platform||'other';$('edit-mvp').value=m.mvp_name||'';
   $('edit-lineup1').value=(m.lineup1||[]).join('\n');$('edit-lineup2').value=(m.lineup2||[]).join('\n');
   const team=$('event-team');team.replaceChildren(new Option('Без команды',''),new Option(m.team1,m.team1),new Option(m.team2,m.team2));
+  const statTeam=$('stats-team');statTeam.replaceChildren(new Option(m.team1,m.team1),new Option(m.team2,m.team2));
  }
 }
 async function loadEvents(){
@@ -134,15 +157,50 @@ async function loadEvents(){
  const {data,error}=await db.from('live_match_events').select('*').eq('live_match_id',selected).order('created_at',{ascending:false}).limit(100);
  if(error)throw error;events=data||[];
 }
-async function openMatch(id){selected=id;try{await loadEvents();renderList();renderDetail()}catch(e){notice('Не удалось загрузить события матча: '+e.message,true)}}
+async function loadChat(){
+ chatMessages=[];if(!selected)return;
+ const {data,error}=await db.from('live_match_chat').select('id,live_match_id,user_id,display_name,message,created_at').eq('live_match_id',selected).order('created_at',{ascending:false}).limit(60);
+ if(error)throw error;chatMessages=(data||[]).reverse();
+}
+async function loadStats(){
+ playerStats=[];if(!selected)return;
+ const {data,error}=await db.from('live_match_player_stats').select('*').eq('live_match_id',selected).order('kills',{ascending:false}).order('adr',{ascending:false});
+ if(error)throw error;playerStats=data||[];
+}
+function streamEmbed(raw,platform){
+ try{
+  const u=new URL(raw);
+  if(platform==='youtube'&&(u.hostname==='youtube.com'||u.hostname.endsWith('.youtube.com')||u.hostname==='youtu.be')){
+   let id='';if(u.hostname==='youtu.be')id=u.pathname.split('/').filter(Boolean)[0]||'';else if(u.pathname.startsWith('/watch'))id=u.searchParams.get('v')||'';else id=u.pathname.split('/').filter(Boolean).pop()||'';
+   return /^[A-Za-z0-9_-]{11}$/.test(id)?'https://www.youtube-nocookie.com/embed/'+id+'?rel=0':'';
+  }
+  if(platform==='twitch'&&(u.hostname==='twitch.tv'||u.hostname==='www.twitch.tv')){
+   const channelName=u.pathname.split('/').filter(Boolean)[0]||'';
+   if(!/^[A-Za-z0-9_]{3,25}$/.test(channelName)||['videos','directory','downloads','p'].includes(channelName))return '';
+   return 'https://player.twitch.tv/?channel='+encodeURIComponent(channelName)+'&parent=arqon-esports.ru&parent=www.arqon-esports.ru&autoplay=false';
+  }
+ }catch(e){}
+ return '';
+}
+async function submitChat(e){
+ e.preventDefault();if(!currentUser||!selected)return;
+ const input=$('chat-message'),message=input.value.trim();if(!message)return;
+ const btn=e.currentTarget.querySelector('button');btn.disabled=true;
+ try{
+  const {error}=await db.from('live_match_chat').insert({live_match_id:selected,user_id:currentUser.id,message});
+  if(error)throw error;input.value='';await loadChat();renderDetail();
+ }catch(err){notice('Не удалось отправить сообщение: '+err.message,true)}
+ finally{const next=$('chat-form')?.querySelector('button');if(next)next.disabled=!currentUser}
+}
+async function openMatch(id){selected=id;try{await Promise.all([loadEvents(),loadChat(),loadStats()]);renderList();renderDetail()}catch(e){notice('Не удалось загрузить данные матча: '+e.message,true)}}
 async function loadMatches(keep=true){
  const {data,error}=await db.from('live_matches').select('*').order('starts_at',{ascending:false,nullsFirst:false}).order('created_at',{ascending:false});
  if(error)throw error;matches=data||[];
  if(!keep||!matches.some(m=>m.id===selected))selected=matches[0]?.id||null;
- if(selected)await loadEvents();renderList();renderDetail();
+ if(selected){await Promise.all([loadEvents(),loadChat(),loadStats()])}renderList();renderDetail();
 }
 async function checkRole(){
- const {data:{user}}=await db.auth.getUser();if(!user)return;
+ const {data:{user}}=await db.auth.getUser();currentUser=user||null;if(!user)return;
  const {data,error}=await db.rpc('has_organizer_role',{required_role:'editor'});
  if(!error&&data===true){isEditor=true;$('admin-panel').hidden=false}
 }
@@ -167,6 +225,15 @@ $('delete-match').addEventListener('click',async()=>{
  const {error}=await db.from('live_matches').delete().eq('id',selected);if(error){notice('Не удалось удалить матч: '+error.message,true);return}
  selected=null;await loadMatches(false);notice('Матч удалён.');
 });
+$('stats-form').addEventListener('submit',async e=>{
+ e.preventDefault();if(!isEditor||!selected)return;const btn=$('stats-btn');btn.disabled=true;
+ try{
+  const payload={live_match_id:selected,team_name:$('stats-team').value,player_name:$('stats-player').value.trim(),kills:Number($('stats-kills').value),deaths:Number($('stats-deaths').value),assists:Number($('stats-assists').value),adr:Number($('stats-adr').value),updated_at:new Date().toISOString()};
+  const {error}=await db.from('live_match_player_stats').upsert(payload,{onConflict:'live_match_id,player_name,team_name'});if(error)throw error;
+  $('stats-player').value='';$('stats-kills').value='0';$('stats-deaths').value='0';$('stats-assists').value='0';$('stats-adr').value='0';
+  await loadStats();renderDetail();notice('Статистика игрока сохранена.');
+ }catch(err){notice('Не удалось сохранить статистику: '+err.message,true)}finally{btn.disabled=false}
+});
 $('event-form').addEventListener('submit',async e=>{
  e.preventDefault();if(!isEditor||!selected)return;const btn=$('event-btn');btn.disabled=true;
  try{const user=(await db.auth.getUser()).data.user;const {error}=await db.from('live_match_events').insert({live_match_id:selected,event_type:$('event-type').value,team_name:$('event-team').value,player_name:$('event-player').value.trim(),description:$('event-description').value.trim(),created_by:user.id});if(error)throw error;
@@ -177,6 +244,8 @@ async function boot(){
  try{await checkRole();await loadMatches(false);
  channel=db.channel('arqon-live-matches').on('postgres_changes',{event:'*',schema:'public',table:'live_matches'},()=>loadMatches().catch(e=>notice('Ошибка обновления: '+e.message,true))).subscribe();
  eventChannel=db.channel('arqon-live-events').on('postgres_changes',{event:'*',schema:'public',table:'live_match_events'},p=>{if(p.new?.live_match_id===selected||p.old?.live_match_id===selected)openMatch(selected)}).subscribe();
+ chatChannel=db.channel('arqon-live-chat').on('postgres_changes',{event:'INSERT',schema:'public',table:'live_match_chat'},p=>{if(p.new?.live_match_id===selected){loadChat().then(renderDetail).catch(e=>notice('Ошибка чата: '+e.message,true))}}).subscribe();
+ statsChannel=db.channel('arqon-live-stats').on('postgres_changes',{event:'*',schema:'public',table:'live_match_player_stats'},p=>{if(p.new?.live_match_id===selected||p.old?.live_match_id===selected)loadStats().then(renderDetail).catch(e=>notice('Ошибка статистики: '+e.message,true))}).subscribe();
  }catch(e){notice('Не удалось загрузить Live Center: '+e.message,true);$('match-list').replaceChildren(make('div','empty','Проверь подключение к базе данных и доступ к Live Center.'))}
 }
 boot();
