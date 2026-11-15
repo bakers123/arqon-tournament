@@ -151,7 +151,7 @@ async function setupTeamProfileEditor(){const {data:allowed,error}=await db.rpc(
 async function reloadTeam(){
  const {data,error}=await db.from('tournament').select('data').eq('id',1).maybeSingle();if(error)throw error;
  const teams=Array.isArray(data?.data?.teams)?data.data.teams:[];render(teams.find(t=>String(t.id)===String(id)));
- if(!currentTeam)return;await loadTeamProfile();await loadTeamManagement();await setupTeamProfileEditor();await loadRecruitmentRequests();await loadSentPlayerOffers();await loadTeamHistory();
+ if(!currentTeam)return;await loadTeamProfile();await loadTeamManagement();await setupTeamProfileEditor();await setupCaptainOffers();await loadRecruitmentRequests();await loadSentPlayerOffers();await loadTeamHistory();
 }
 async function load(){
  if(!id||!/^[a-z0-9_-]{1,80}$/i.test(id)){el('team-name').textContent='Некорректная ссылка на команду';return}
