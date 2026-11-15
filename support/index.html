@@ -1,0 +1,215 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#090812">
+  <meta name="description" content="Техподдержка ARQON Esports — обращения, ответы и история диалогов.">
+  <title>Поддержка — ARQON Esports</title>
+  <link rel="icon" type="image/png" href="/logo.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;800&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/assets/arqon-redesign.css?v=13">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-2YLPZGQZSX"></script>
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments)}gtag('js',new Date());gtag('config','G-2YLPZGQZSX');</script>
+  <style>
+    :root{color-scheme:dark;--s-bg:#090812;--s-panel:#11101b;--s-panel2:#171426;--s-line:rgba(173,132,255,.2);--s-violet:#9b5cff;--s-pink:#c084fc;--s-muted:#9b96aa;--s-white:#f7f3ff}
+    *{box-sizing:border-box}html{min-height:100%;background:var(--s-bg)}body.support-page{margin:0;min-height:100vh;background:radial-gradient(ellipse at 50% -15%,rgba(117,61,207,.28),transparent 48%),radial-gradient(ellipse at 100% 80%,rgba(83,40,140,.13),transparent 35%),var(--s-bg);color:var(--s-white);font-family:Rajdhani,system-ui,sans-serif}
+    .support-top{height:76px;display:flex;align-items:center;justify-content:space-between;padding:0 clamp(16px,5vw,72px);border-bottom:1px solid var(--s-line);background:rgba(9,8,18,.86);position:sticky;top:0;z-index:20}
+    .support-brand{font:800 17px Orbitron,sans-serif;letter-spacing:1.5px;color:#f4edff;text-decoration:none}.support-brand span{color:#a78bfa}
+    .support-top nav{display:flex;gap:10px;align-items:center}.support-top nav a{padding:9px 13px;border:1px solid var(--s-line);border-radius:10px;color:#e9ddff;text-decoration:none;font-weight:700}
+    .support-wrap{width:min(1180px,calc(100% - 32px));margin:34px auto 70px}
+    .support-hero{margin-bottom:22px}.support-eyebrow{font:700 11px Orbitron,sans-serif;letter-spacing:2px;color:#b79aff}.support-hero h1{font:800 clamp(25px,4vw,38px) Orbitron,sans-serif;margin:10px 0;color:#fff}.support-hero p{color:#aaa3bb;font-size:17px;margin:0;max-width:720px}
+    .support-grid{display:grid;grid-template-columns:minmax(260px,.78fr) minmax(0,1.55fr);gap:18px;align-items:start}
+    .support-card{background:linear-gradient(145deg,rgba(24,20,39,.96),rgba(14,13,23,.98));border:1px solid var(--s-line);border-radius:18px;padding:20px;box-shadow:0 16px 42px rgba(0,0,0,.18)}
+    .support-card h2{font:700 16px Orbitron,sans-serif;letter-spacing:.4px;margin:0 0 15px;color:#f4edff}
+    .support-hint{color:var(--s-muted);font-size:14px;line-height:1.45}
+    .support-field{display:block;margin:14px 0}.support-field span{display:block;color:#c9c1d8;font-weight:700;font-size:13px;margin-bottom:6px}
+    .support-field input,.support-field textarea{width:100%;background:#0c0b14;border:1px solid rgba(173,132,255,.25);border-radius:10px;color:#fff;padding:12px 13px;font:600 15px Rajdhani,sans-serif;outline:none}
+    .support-field textarea{min-height:125px;resize:vertical}.support-field input:focus,.support-field textarea:focus{border-color:#a78bfa;box-shadow:0 0 0 3px rgba(139,92,246,.13)}
+    .support-btn{border:1px solid rgba(196,181,253,.28);background:linear-gradient(120deg,#7540d7,#9b5cff);color:white;border-radius:11px;padding:11px 16px;font:700 14px Rajdhani,sans-serif;cursor:pointer;min-height:43px}
+    .support-btn:disabled{opacity:.48;cursor:not-allowed}.support-btn.secondary{background:rgba(255,255,255,.045);color:#e6dcff}
+    .support-notice{border:1px solid rgba(167,139,250,.24);background:rgba(139,92,246,.08);color:#d8cafa;padding:12px 13px;border-radius:11px;font-size:14px;line-height:1.4;margin:12px 0}
+    .support-notice.error{border-color:rgba(248,113,113,.3);background:rgba(248,113,113,.08);color:#fecaca}
+    .support-ticket-list{display:flex;flex-direction:column;gap:8px;max-height:650px;overflow:auto}
+    .support-ticket{width:100%;text-align:left;border:1px solid rgba(173,132,255,.14);background:rgba(255,255,255,.025);color:#eee8fb;border-radius:12px;padding:12px;cursor:pointer;font-family:inherit}
+    .support-ticket.active{border-color:rgba(167,139,250,.6);background:rgba(139,92,246,.13)}
+    .support-ticket strong{display:block;font-size:15px;margin-bottom:5px;overflow-wrap:anywhere}.support-ticket small{display:block;color:#9f98b1;font-size:12px}
+    .support-status{display:inline-flex;padding:3px 8px;border-radius:20px;background:rgba(167,139,250,.12);color:#d8c7ff;font-size:11px;font-weight:700;margin-top:7px}
+    .support-chat{display:flex;flex-direction:column;min-height:490px}.support-chat-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;border-bottom:1px solid rgba(173,132,255,.13);padding-bottom:13px}
+    .support-chat-head h2{margin:0 0 5px}.support-messages{display:flex;flex-direction:column;gap:10px;padding:16px 2px;flex:1;min-height:250px;max-height:490px;overflow:auto}
+    .support-message{max-width:min(85%,650px);padding:11px 13px;border-radius:13px;background:#1a1726;border:1px solid rgba(173,132,255,.14);align-self:flex-start;overflow-wrap:anywhere;white-space:pre-wrap;line-height:1.4}
+    .support-message.player{align-self:flex-end;background:linear-gradient(140deg,rgba(91,49,158,.55),rgba(42,31,64,.85));border-color:rgba(167,139,250,.25)}
+    .support-message .meta{font-size:11px;color:#a9a1b9;margin-bottom:5px}.support-message .body{font-size:15px;color:#f1ebff}
+    .support-compose{display:flex;gap:9px;align-items:flex-end;border-top:1px solid rgba(173,132,255,.13);padding-top:13px}.support-compose textarea{flex:1;min-height:48px;max-height:130px;resize:vertical;background:#0c0b14;border:1px solid rgba(173,132,255,.25);border-radius:10px;color:white;padding:12px;font:600 15px Rajdhani,sans-serif}
+    .support-empty{display:grid;place-items:center;text-align:center;color:#9f98b1;min-height:250px;padding:20px}
+    .support-footer-note{margin-top:14px;color:#827b92;font-size:12px}
+    @media(max-width:780px){.support-wrap{margin:22px auto 45px}.support-grid{grid-template-columns:1fr}.support-card{padding:16px}.support-ticket-list{max-height:260px}.support-chat{min-height:400px}.support-chat-head{flex-direction:column}.support-compose{flex-direction:column;align-items:stretch}.support-compose .support-btn{width:100%}.support-top{padding:0 16px}.support-top nav{gap:5px}.support-top nav a{font-size:12px;padding:8px 9px}}
+    @media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;transition:none!important}}
+  </style>
+</head>
+<body class="support-page">
+<header class="support-top">
+  <a class="support-brand" href="/">ARQON <span>ESPORTS</span></a>
+  <nav aria-label="Навигация">
+    <a href="/">На главную</a>
+    <a href="/players/">Игроки</a>
+  </nav>
+</header>
+<main class="support-wrap">
+  <section class="support-hero">
+    <div class="support-eyebrow">ARQON · HELP CENTER</div>
+    <h1>ТЕХПОДДЕРЖКА</h1>
+    <p>Создай обращение, следи за ответами команды ARQON и продолжай диалог здесь или через Telegram.</p>
+  </section>
+  <div id="support-global-notice" class="support-notice" hidden></div>
+  <div class="support-grid">
+    <section class="support-card">
+      <h2>НОВОЕ ОБРАЩЕНИЕ</h2>
+      <div id="support-auth-gate" class="support-notice" hidden>
+        Чтобы обратиться в поддержку, войди в аккаунт ARQON и подключи Telegram в окне «Мой профиль».
+        <p style="margin:10px 0 0"><a href="/players/" style="color:#d8c7ff;font-weight:700">Перейти к аккаунту →</a></p>
+      </div>
+      <div id="support-telegram-gate" class="support-notice" hidden>
+        Для получения ответов и уведомлений нужно подключить Telegram к аккаунту.
+        <p style="margin:10px 0 0"><a href="/players/" style="color:#d8c7ff;font-weight:700">Открыть профиль и подключить Telegram →</a></p>
+      </div>
+      <form id="support-create-form">
+        <label class="support-field"><span>Тема обращения</span><input id="support-subject" maxlength="100" minlength="4" placeholder="Например: Проблема с профилем" required></label>
+        <label class="support-field"><span>Опиши проблему</span><textarea id="support-first-message" maxlength="2000" placeholder="Расскажи, что произошло и что ты уже пробовал…" required></textarea></label>
+        <button id="support-create-btn" class="support-btn" type="submit">Отправить обращение</button>
+      </form>
+      <div class="support-footer-note">До 5 открытых обращений на аккаунт. Не отправляй пароли и коды входа.</div>
+    </section>
+    <section class="support-card">
+      <div class="support-chat-head">
+        <div><h2>МОИ ОБРАЩЕНИЯ</h2><div id="support-chat-subtitle" class="support-hint">Выбери обращение, чтобы открыть переписку.</div></div>
+        <button id="support-refresh" class="support-btn secondary" type="button">Обновить</button>
+      </div>
+      <div class="support-grid" style="grid-template-columns:minmax(190px,.72fr) minmax(0,1.3fr);gap:12px;margin-top:14px">
+        <div id="support-ticket-list" class="support-ticket-list"><div class="support-empty">Загружаем обращения…</div></div>
+        <div class="support-chat">
+          <div id="support-messages" class="support-messages"><div class="support-empty">Переписка появится здесь.</div></div>
+          <form id="support-reply-form" class="support-compose" hidden>
+            <textarea id="support-reply-text" maxlength="2000" placeholder="Напиши ответ…" required></textarea>
+            <button id="support-reply-btn" class="support-btn" type="submit">Отправить</button>
+          </form>
+        </div>
+      </div>
+    </section>
+  </div>
+</main>
+<script>
+(() => {
+  const SUPABASE_URL = 'https://uscnaqcvuwjrmkjyuklp.supabase.co';
+  const SUPABASE_KEY = 'sb_publishable_oE2Bc1wPAcDt6HE8bOUj3Q_0-2FfIxB';
+  const client = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+  const $ = (id) => document.getElementById(id);
+  let session = null, selectedTicket = null, tickets = [], telegramLinked = false;
+  const statusLabels = {open:'Открыто',waiting_admin:'Ждёт ответа поддержки',waiting_user:'Нужен твой ответ',closed:'Закрыто'};
+  const notice = (message, error=false) => { const el=$('support-global-notice');el.textContent=message;el.className='support-notice'+(error?' error':'');el.hidden=!message; };
+  const escapeError = (err) => {
+    const raw=String(err?.message||err||'Неизвестная ошибка');
+    const map={telegram_not_linked:'Сначала подключи Telegram в окне «Мой профиль».',too_many_open_tickets:'У тебя уже 5 открытых обращений. Дождись ответа или закрытия одного из них.',ticket_rate_limited:'Подожди минуту перед созданием следующего обращения.',ticket_not_found_or_closed:'Это обращение закрыто или недоступно.',message_length_invalid:'Сообщение должно содержать от 1 до 2000 символов.',subject_length_invalid:'Тема должна содержать от 4 до 100 символов.'};
+    for(const key of Object.keys(map)) if(raw.includes(key)) return map[key];
+    return raw;
+  };
+  const invokeNotification = async (event, ticketId) => {
+    const {data,error}=await client.functions.invoke('telegram-bot',{body:{event,ticket_id:Number(ticketId)}});
+    if(error) throw error;
+    if(data?.ok!==true) throw new Error(data?.error||'Не удалось отправить уведомление');
+    return data;
+  };
+  const loadTelegramStatus = async () => {
+    const {data,error}=await client.rpc('get_telegram_link_status');
+    if(error) throw error;
+    telegramLinked=!!data?.[0]?.is_linked;
+    $('support-telegram-gate').hidden=telegramLinked;
+    $('support-create-form').hidden=!telegramLinked;
+  };
+  const renderTickets = () => {
+    const root=$('support-ticket-list');root.replaceChildren();
+    if(!tickets.length){const empty=document.createElement('div');empty.className='support-empty';empty.textContent='Пока нет обращений. Создай первое слева.';root.append(empty);return;}
+    tickets.forEach(ticket=>{
+      const b=document.createElement('button');b.type='button';b.className='support-ticket'+(Number(ticket.ticket_id)===Number(selectedTicket)?' active':'');
+      const title=document.createElement('strong');title.textContent='#'+ticket.ticket_id+' · '+ticket.subject;
+      const date=document.createElement('small');date.textContent=new Date(ticket.updated_at||ticket.created_at).toLocaleString('ru-RU');
+      const status=document.createElement('span');status.className='support-status';status.textContent=statusLabels[ticket.status]||ticket.status;
+      const preview=document.createElement('small');preview.style.marginTop='5px';preview.textContent=String(ticket.last_message||'').slice(0,90);
+      b.append(title,date,status,preview);b.addEventListener('click',()=>openTicket(Number(ticket.ticket_id)));root.append(b);
+    });
+  };
+  const loadTickets = async () => {
+    const {data,error}=await client.rpc('list_my_support_tickets');
+    if(error) throw error;
+    tickets=data||[];
+    if(selectedTicket&&!tickets.some(t=>Number(t.ticket_id)===Number(selectedTicket)))selectedTicket=null;
+    if(!selectedTicket&&tickets.length)selectedTicket=Number(tickets[0].ticket_id);
+    renderTickets();
+    if(selectedTicket) await loadMessages(selectedTicket);
+    else {$('support-messages').innerHTML='<div class="support-empty">Переписка появится здесь.</div>';$('support-reply-form').hidden=true;}
+  };
+  const loadMessages = async (ticketId) => {
+    const {data,error}=await client.rpc('get_my_support_ticket_messages',{p_ticket_id:ticketId});
+    if(error) throw error;
+    const root=$('support-messages');root.replaceChildren();
+    (data||[]).forEach(item=>{
+      const wrap=document.createElement('div');wrap.className='support-message '+(item.sender_role==='player'?'player':'admin');
+      const meta=document.createElement('div');meta.className='meta';meta.textContent=(item.sender_role==='player'?'Ты':'Поддержка ARQON')+' · '+new Date(item.created_at).toLocaleString('ru-RU');
+      const body=document.createElement('div');body.className='body';body.textContent=item.message;
+      wrap.append(meta,body);root.append(wrap);
+    });
+    if(!data?.length){const empty=document.createElement('div');empty.className='support-empty';empty.textContent='Сообщений пока нет.';root.append(empty);}
+    root.scrollTop=root.scrollHeight;
+    const ticket=tickets.find(t=>Number(t.ticket_id)===Number(ticketId));
+    $('support-chat-subtitle').textContent=ticket?'Обращение #'+ticket.ticket_id+' · '+ticket.subject+' · '+(statusLabels[ticket.status]||ticket.status):'Обращение #'+ticketId;
+    $('support-reply-form').hidden=!ticket||ticket.status==='closed'||!telegramLinked;
+  };
+  const openTicket = async (id) => {selectedTicket=id;renderTickets();try{await loadMessages(id);}catch(e){notice(escapeError(e),true);}};
+  const refresh = async () => {try{notice('');await loadTelegramStatus();await loadTickets();}catch(e){notice(escapeError(e),true);}};
+  $('support-create-form').addEventListener('submit',async e=>{
+    e.preventDefault();if(!session||!telegramLinked)return;
+    const btn=$('support-create-btn');btn.disabled=true;btn.textContent='Отправляем…';
+    try{
+      const subject=$('support-subject').value.trim(),message=$('support-first-message').value.trim();
+      const {data,error}=await client.rpc('create_support_ticket',{p_subject:subject,p_message:message});
+      if(error)throw error;
+      const ticketId=Number(data);
+      $('support-subject').value='';$('support-first-message').value='';
+      selectedTicket=ticketId;
+      let sent=true;try{await invokeNotification('support_ticket_created',ticketId);}catch(_){sent=false;}
+      await loadTickets();
+      notice(sent?'Обращение #'+ticketId+' создано. Команда ARQON получила уведомление в Telegram.':'Обращение #'+ticketId+' создано, но уведомление в Telegram не подтвердилось. Команда увидит его в системе.');
+    }catch(err){notice(escapeError(err),true);}
+    finally{btn.disabled=false;btn.textContent='Отправить обращение';}
+  });
+  $('support-reply-form').addEventListener('submit',async e=>{
+    e.preventDefault();if(!selectedTicket)return;
+    const btn=$('support-reply-btn');btn.disabled=true;btn.textContent='Отправляем…';
+    try{
+      const message=$('support-reply-text').value.trim();
+      const {error}=await client.rpc('send_my_support_ticket_message',{p_ticket_id:selectedTicket,p_message:message});
+      if(error)throw error;
+      $('support-reply-text').value='';
+      let sent=true;try{await invokeNotification('support_ticket_message',selectedTicket);}catch(_){sent=false;}
+      await loadTickets();
+      notice(sent?'Сообщение отправлено. Поддержка получила уведомление.':'Сообщение сохранено, но уведомление в Telegram не подтвердилось.');
+    }catch(err){notice(escapeError(err),true);}
+    finally{btn.disabled=false;btn.textContent='Отправить';}
+  });
+  $('support-refresh').addEventListener('click',refresh);
+  const boot = async () => {
+    try{
+      const {data,error}=await client.auth.getSession();if(error)throw error;session=data.session;
+      if(!session){$('support-auth-gate').hidden=false;$('support-create-form').hidden=true;$('support-ticket-list').innerHTML='<div class="support-empty">Войди в аккаунт ARQON, чтобы видеть свои обращения.</div>';$('support-messages').innerHTML='';$('support-reply-form').hidden=true;return;}
+      await refresh();
+    }catch(e){notice(escapeError(e),true);}
+  };
+  client.auth.onAuthStateChange((_event,next)=>{session=next;boot();});
+  boot();
+})();
+</script>
+</body>
+</html>
