@@ -108,7 +108,7 @@ async function reloadTeam(){
  await loadTeamManagement();await loadTeamHistory();
 }
 async function load(){
- if(!id){el('team-name').textContent='Не указан ID команды';return}
+ if(!id||!/^[a-z0-9_-]{1,80}$/i.test(id)){el('team-name').textContent='Некорректная ссылка на команду';return}
  await reloadTeam();await refreshRequestStatus();await loadAdminRequests();
 }
 el('apply-button').addEventListener('click',submitTeamRequest);
