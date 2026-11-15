@@ -75,6 +75,17 @@
       </div>
       <p class="muted" id="profile-inventory-message" role="status" style="margin:12px 0 0;font-size:13px"></p>
     </section>
+    <section class="card hidden" id="team-invitations-card" style="width:min(1040px,calc(100% - 28px));margin:16px auto 0">
+      <h2 style="margin-bottom:8px">ПРИГЛАШЕНИЯ В КОМАНДЫ</h2>
+      <p class="muted" style="margin:0 0 12px;font-size:14px">Капитаны команд могут пригласить тебя в основной или запасной состав.</p>
+      <div id="team-invitations-list"></div>
+      <p class="muted" id="team-invitations-status" role="status" style="margin:10px 0 0;font-size:13px"></p>
+    </section>
+    <section class="card hidden" id="team-offers-card" style="width:min(1040px,calc(100% - 28px));margin:16px auto 0">
+      <h2 style="margin-bottom:8px">ПРЕДЛОЖЕНИЯ КОМАНД</h2>
+      <p class="muted" style="margin:0 0 12px;font-size:14px">Предложения капитанов о вступлении в команду.</p>
+      <div id="team-offers-list"></div>
+    </section>
     <div class="content">
       <section class="card"><h2>ОБ ИГРОКЕ</h2><p class="bio" id="bio">Загружаем информацию…</p>
         <form class="edit" id="edit-form">
@@ -430,11 +441,43 @@ async function unlinkTelegram(){
 async function notifyTelegram(event,offerId){
  try{await db.functions.invoke('telegram-bot',{body:{event,offer_id:offerId}})}catch(e){console.warn('Telegram notification failed',e)}
 }
+async function loadTeamInvitations(){
+ if(!ownerUser)return;
+ const card=el('team-invitations-card'),host=el('team-invitations-list'),status=el('team-invitations-status');
+ if(!card||!host)return;
+ const {data,error}=await db.from('team_invitations').select('id,team_id,team_name,status,created_at').eq('target_user_id',ownerUser.id).eq('status','pending').order('created_at',{ascending:false});
+ if(error){console.warn('Team invitations unavailable:',error);card.classList.remove('hidden');status.textContent='Не удалось загрузить приглашения. Попробуй обновить страницу.';return}
+ host.replaceChildren();
+ if(!data?.length){card.classList.add('hidden');return}
+ card.classList.remove('hidden');status.textContent='';
+ data.forEach(invitation=>{
+  const row=document.createElement('div');row.className='history-item';
+  const title=document.createElement('strong');title.textContent=invitation.team_name||'Команда ARQON';
+  const detail=document.createElement('small');detail.textContent='Тебя пригласили в команду. Принятие добавит тебя в состав автоматически.';
+  const actions=document.createElement('div');actions.style.display='flex';actions.style.flexWrap='wrap';actions.style.gap='8px';actions.style.marginTop='9px';
+  [['Принять приглашение',true],['Отклонить',false]].forEach(([label,accept])=>{
+   const button=document.createElement('button');button.type='button';button.className='button';button.textContent=label;button.style.padding='8px 12px';
+   button.addEventListener('click',async()=>{
+    button.disabled=true;status.textContent='Обрабатываем приглашение…';
+    const {data:result,error:respondError}=await db.rpc('respond_team_invitation',{p_invitation_id:invitation.id,p_accept:accept});
+    if(respondError){button.disabled=false;status.textContent=({team_roster_full:'В команде нет свободных мест.',already_in_team:'Ты уже состоишь в другой команде.',invitation_not_found_or_processed:'Приглашение уже обработано или недоступно.'})[respondError.message]||respondError.message||'Не удалось обработать приглашение.';return}
+    if(accept){
+     const teamNode=el('team-name');
+     if(teamNode){const link=document.createElement('a');link.href='/teams/profile/?id='+encodeURIComponent(invitation.team_id);link.textContent=invitation.team_name||'Команда';link.style.color='#d9baff';link.style.textDecoration='underline';teamNode.replaceChildren(link)}
+     status.textContent='Приглашение принято! Ты добавлен(а) в команду ('+(result==='reserve'?'запасной состав':'основной состав')+').';
+    }else status.textContent='Приглашение отклонено.';
+    row.remove();if(!host.children.length)card.classList.add('hidden');
+   });
+   actions.append(button);
+  });
+  row.append(title,detail,actions);host.append(row);
+ });
+}
 async function loadTeamOffers(){
  if(!ownerUser)return;
  const {data,error}=await db.rpc('list_my_team_player_offers');
  if(error){console.warn(error);return}
- const host=el('team-offers-list');host.replaceChildren();
+ const host=el('team-offers-list');if(!host)return;host.replaceChildren();
  const visible=(data||[]).filter(x=>['pending','accepted','completed'].includes(x.status)).slice(0,8);
  if(!visible.length){el('team-offers-card').classList.add('hidden');return}
  el('team-offers-card').classList.remove('hidden');
@@ -682,6 +725,7 @@ async function uploadProfileMedia(file,kind){
       if(profile.cover_url){el('cover-image').src=profile.cover_url;el('cover-image').classList.remove('hidden')}
       if(ownProfile){
         await loadProfileInventory();
+        await loadTeamInvitations();
         await loadTeamOffers();
         await loadTelegramSettings();
         await loadSupportTickets();
