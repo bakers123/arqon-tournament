@@ -63,7 +63,7 @@ Deno.serve(async (req: Request) => {
 
     const callback = new URL("/functions/v1/steam-openid-callback", url);
     callback.searchParams.set("state", state);
-    const realm = "https://arqon-esports.ru/";
+    const realm = new URL("/", url).toString();
     const steam = new URL("https://steamcommunity.com/openid/login");
     steam.searchParams.set("openid.ns", "http://specs.openid.net/auth/2.0");
     steam.searchParams.set("openid.mode", "checkid_setup");
