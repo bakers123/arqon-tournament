@@ -25,6 +25,8 @@ alter table public.profiles
   add constraint profiles_cover_url_check
   check (cover_url is null or (cover_url like 'https://%' and char_length(cover_url) <= 2048));
 
+grant select (bio, avatar_url, cover_url, is_public, show_steam)
+  on public.profiles to authenticated;
 grant update (display_name, bio, avatar_url, cover_url, is_public, show_steam)
   on public.profiles to authenticated;
 
