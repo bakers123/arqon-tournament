@@ -108,7 +108,7 @@
 
   <section id="public-panel" class="panel">
     <div class="toolbar"><strong>Опубликованные сетки</strong><span class="spacer"></span><select id="public-doc-select" aria-label="Выбрать сетку"></select></div>
-    <div id="public-empty" class="empty hidden">Пока нет опубликованных сеток.</div>
+    <div id="public-empty" class="empty hidden">Пока нет опубликованных сеток.</div><div id="public-bracket-placements" class="panel hidden"><h3>Итоговые места</h3><div id="public-bracket-placements-content"></div></div>
   </section>
 
   <section id="editor-panel" class="hidden">
@@ -205,8 +205,9 @@ function slotTeam(n,slot,seen=new Set()){
 function resolvedTeams(n,seen=new Set()){return {a:slotTeam(n,'team1',new Set(seen)),b:slotTeam(n,'team2',new Set(seen))}}
 function matchWinnerSide(n,teams){
   if(n.resultType&&n.resultType!=='normal')return n.winnerSide||null;
+  if(n.status==='cancelled')return null;
   let a=0,b=0;
-  (n.maps||[]).forEach(m=>{if(m.status!=='completed')return;const x=Number(m.score1),y=Number(m.score2);if(!Number.isFinite(x)||!Number.isFinite(y)||x===y)return;if(x>y)a++;else b++});
+  (n.maps||[]).forEach(m=>{if(m.status!=='completed'||String(m.score1??'').trim()===''||String(m.score2??'').trim()==='')return;const x=Number(m.score1),y=Number(m.score2);if(!Number.isFinite(x)||!Number.isFinite(y)||x===y)return;if(x>y)a++;else b++});
   const target=needed(n.format||'BO3');if(a>=target)return 1;if(b>=target)return 2;return null;
 }
 function winnerName(n){const t=resolvedTeams(n),s=matchWinnerSide(n,t);return s===1?t.a:s===2?t.b:''}
@@ -239,7 +240,7 @@ function renderWorld(worldId,contentId,svgId,mode){
 }
 function renderEditor(){if(!data)return;const t=$('doc-title');if(t&&document.activeElement!==t)t.value=current?.title||'';$('doc-format').value=current?.format||'custom';$('teams-input').value=(data.teams||[]).join('\n');$('team-options').innerHTML=(data.teams||[]).map(x=>'<option value="'+esc(x)+'">').join('');renderWorld('world','world-content','edge-layer','admin');$('zoom-label').textContent=Math.round(zoom*100)+'%';refreshUndo();renderBracketPlacements()}
 function renderPublic(doc){
- const d=doc?.published_data||{};data={sections:d.sections||[],nodes:d.nodes||[],edges:d.edges||[],teams:d.teams||[]};$('public-empty').classList.toggle('hidden',!!doc);$('canvas-shell').classList.toggle('hidden',!doc);$('editor-panel').querySelector('.admin-tabs')?.classList.add('hidden');
+ const d=doc?.published_data||{};data={sections:d.sections||[],nodes:d.nodes||[],edges:d.edges||[],teams:d.teams||[],bracketMeta:d.bracketMeta||null};$('public-empty').classList.toggle('hidden',!!doc);if($('public-bracket-placements'))$('public-bracket-placements').classList.toggle('hidden',!doc||d.bracketMeta?.type!=='double4');renderBracketPlacements();$('canvas-shell').classList.toggle('hidden',!doc);$('editor-panel').querySelector('.admin-tabs')?.classList.add('hidden');
  if(doc){$('editor-panel').classList.remove('hidden');$('editor-panel').querySelector('.panel').classList.add('hidden');$('editor-panel').querySelector('.layout aside')?.classList.add('hidden');$('editor-panel').querySelector('.layout').style.gridTemplateColumns='1fr';renderWorld('world','world-content','edge-layer','public')}
 }
 async function loadDocs(){
@@ -296,7 +297,7 @@ function getBracketMatchResult(id){
  return {winner:side===1?teams.a:teams.b,loser:side===1?teams.b:teams.a,side};
 }
 function renderBracketPlacements(){
- const host=$('bracket-placements');if(!host)return;
+ const host=$('bracket-placements')||$('public-bracket-placements-content');if(!host)return;
  const meta=data?.bracketMeta;
  if(!meta?.type||meta.type!=='double4'){host.innerHTML='<p class="hint">После генерации сетки здесь будут автоматически определяться призовые места.</p>';return}
  const l1=getBracketMatchResult(meta.lowerRound1),l2=getBracketMatchResult(meta.lowerFinal),gf1=getBracketMatchResult(meta.grandFinal),gf2=getBracketMatchResult(meta.resetFinal);
