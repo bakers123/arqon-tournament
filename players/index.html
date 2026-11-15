@@ -1017,6 +1017,7 @@
     <button data-tab="bracket">Сетка</button>
     <button data-tab="tournaments">Турниры</button>
     <button data-tab="players">Игроки</button>
+    <button data-tab="achievements">🏅 Достижения</button>
      <button data-tab="teams">Команды</button>
      <button data-tab="history">История</button>
     <button data-tab="news">Новости</button>
@@ -1401,6 +1402,12 @@
     <section class="arqon-hub-panel" style="margin:0 0 18px"><div class="home-kicker">LIVE PERFORMANCE</div><h2 style="margin:5px 0 12px">ТОП ИГРОКОВ ПО МАТЧАМ</h2><p class="hint" style="margin:0 0 12px">Автоматический индекс по статистике Live Center. В рейтинг попадают игроки минимум с 3 матчами.</p><div id="player-performance-leaders" class="portal-grid"><div class="home-data-card">Загружаем статистику…</div></div></section>
     <div id="player-list" class="portal-grid"><div class="home-data-card">Загружаем игроков…</div></div>
     <div id="player-detail" class="home-data-card hidden" style="margin-top:20px"></div>
+  </section>
+
+  <section id="tab-achievements" class="hidden">
+    <div class="portal-heading"><div class="home-kicker">ARQON REWARDS</div><h1 class="home-title">ДОСТИЖЕНИЯ <span>ARQON</span></h1><p class="home-lead">Собирай награды за результаты турниров и личную статистику в матчах Live Center. Здесь открыты все условия — закрытые достижения не отображаются в профилях игроков.</p></div>
+    <div class="arqon-hub-panel" style="margin-bottom:18px"><div class="home-kicker">КАК ЭТО РАБОТАЕТ</div><p class="hint" style="margin:8px 0 0">Турнирные достижения начисляются по опубликованным результатам. Достижения Live Center рассчитываются автоматически после внесения организатором личной статистики матча. Повторные результаты учитываются по правилам каждой награды.</p></div>
+    <div id="achievement-catalog" class="portal-grid"></div>
   </section>
 
   <section id="tab-teams" class="hidden"><div class="portal-heading"><div class="home-kicker">TEAM HUB</div><h1 class="home-title">КОМАНДЫ <span>ARQON</span></h1><p class="home-lead">Профили команд, положение в лиге, составы и история встреч.</p></div><div id="team-list" class="portal-grid"><div class="home-data-card">Загружаем команды…</div></div><div id="team-detail" class="arqon-hub-panel hidden"></div></section>
@@ -2749,6 +2756,7 @@ const TAB_PATHS = {
   bracket: '/game_grid/',
   tournaments: '/tournaments/',
   players: '/players/',
+  achievements: '/achievements/',
   teams: '/teams/',
   history: '/history/',
   news: '/news/',
@@ -2765,6 +2773,7 @@ const TAB_SEO = {
   bracket: { title: 'Турнирная сетка ARQON — матчи CS2 и Dota 2 в Тюмени', description: 'Турнирная сетка ARQON Esports: участники, пары матчей и результаты киберспортивных турниров CS2 и Dota 2 в Тюмени.' },
   tournaments: { title: 'Турниры CS2 в Тюмени — ARQON Esports', description: 'Киберспортивные турниры ARQON по CS2 и Dota 2 в Тюмени и ближайших городах. Следи за событиями, расписанием и результатами.' },
   players: { title: 'Рейтинг игроков CS2 — игроки ARQON Esports', description: 'Рейтинг игроков ARQON: профили, рейтинг ARQON от 0 до 100, FACEIT и результаты турниров киберспортивного сообщества Тюмени.' },
+  achievements: { title: 'Достижения игроков — ARQON Esports', description: 'Список достижений ARQON Esports: условия получения наград, турниры, MVP и статистика матчей.' },
   teams: { title: 'Команды ARQON Esports — профили и статистика лиги', description: 'Профили команд ARQON Esports: составы, результаты матчей, статистика и положение в киберспортивной лиге Тюмени.' },
   history: { title: 'История матчей ARQON — результаты и архив', description: 'Архив матчей ARQON Esports: результаты CS2 5×5, победы, поражения и технические результаты.' },
   news: { title: 'Новости киберспорта и турниров — ARQON Esports', description: 'Новости ARQON Esports: анонсы турниров CS2 и Dota 2, итоги матчей и события киберспортивного сообщества Тюмени.' },
@@ -2826,6 +2835,7 @@ function switchTab(tab, updateUrl = true) {
     bracket: document.getElementById('tab-bracket'),
     tournaments: document.getElementById('tab-tournaments'),
     players: document.getElementById('tab-players'),
+    achievements: document.getElementById('tab-achievements'),
     teams: document.getElementById('tab-teams'),
     history: document.getElementById('tab-history'),
     news: document.getElementById('tab-news'),
@@ -2848,6 +2858,7 @@ function switchTab(tab, updateUrl = true) {
   }
   if (tab === 'tournaments') loadTournamentHub();
   if (tab === 'players') loadPlayerHub();
+  if (tab === 'achievements') renderAchievementCatalog();
   if (tab === 'teams') loadTeamsHub();
   if (tab === 'history') loadHistory();
   if (tab === 'news') loadNews();
@@ -2856,6 +2867,25 @@ function switchTab(tab, updateUrl = true) {
   if (tab === 'league') loadLeague(false);
   if (tab === 'admin') { loadSponsorsAdmin(); loadLeague(true); }
   if (tab === 'partners') loadSponsors();
+}
+
+function renderAchievementCatalog(){
+ const host=document.getElementById('achievement-catalog');if(!host)return;
+ const items=[
+  ['🎮','Первый результат','Попади в опубликованные результаты хотя бы одного турнира ARQON.','Турниры'],
+  ['🥉','Первый пьедестал','Займи 1-е, 2-е или 3-е место в любом турнире ARQON.','Турниры'],
+  ['🏆','Чемпион','Займи первое место в турнире.','Турниры'],
+  ['⭐','MVP турнира','Получи награду самого ценного игрока турнира.','Турниры'],
+  ['🔥','Ветеран','Пять раз попади в опубликованные результаты турниров.','Турниры'],
+  ['👑','Легенда ARQON','Пять раз стань чемпионом турниров ARQON.','Турниры'],
+  ['🎯','Первый матч','Получи внесённую организатором статистику хотя бы за один матч Live Center.','Live Center'],
+  ['🧱','Стабильность','Сыграй минимум пять матчей со внесённой личной статистикой.','Live Center'],
+  ['💥','ADR 100+','Достигни среднего ADR не ниже 100 по матчам Live Center.','Live Center'],
+  ['🔥','Фраггер','Держи в среднем не менее 20 убийств за матч.','Live Center'],
+  ['🤝','Командный игрок','Держи в среднем не менее 8 ассистов за матч.','Live Center'],
+  ['🌟','MVP Live','Получи отметку MVP минимум в одном матче Live Center.','Live Center']
+ ];
+ host.innerHTML=items.map(([icon,name,desc,group])=>'<article class="portal-card"><span class="portal-pill">'+escapeHtml(group)+'</span><div class="portal-profile-top" style="margin-top:13px;align-items:center"><div class="portal-avatar-fallback" style="display:grid;place-items:center;width:52px;height:52px;flex:0 0 52px;font-size:26px">'+icon+'</div><div><h3>'+escapeHtml(name)+'</h3><p>'+escapeHtml(desc)+'</p></div></div></article>').join('');
 }
 
 function switchSubTab(sub) {
