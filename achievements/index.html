@@ -116,7 +116,7 @@ async function load(){
  ]);
  if(automatic.error)throw automatic.error;
  const mineResults=results.filter(r=>[r.place_1,r.place_2,r.place_3,r.mvp].some(n=>names.includes(norm(n))));
- const played=mineResults.filter(r=>[r.place_1,r.place_2,r.place_3].some(n=>names.includes(norm(n))));
+ const played=mineResults;
  const wins=mineResults.filter(r=>names.includes(norm(r.place_1))).length;
  const podiums=mineResults.filter(r=>[r.place_1,r.place_2,r.place_3].some(n=>names.includes(norm(n)))).length;
  const tourneyMvps=mineResults.filter(r=>names.includes(norm(r.mvp))).length;
