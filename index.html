@@ -1241,6 +1241,26 @@
       </div>
       <div id="league-admin-matches"></div>
     </div>
+    <div class="card" id="admin-exclusive-profile-card">
+      <h2>✦ Эксклюзивы профиля игрока</h2>
+      <p class="hint" style="margin:0 0 14px">Выдавай персональные титулы и оформление, которых нет в магазине. Игрок не сможет купить или передать эти эксклюзивы.</p>
+      <div class="row" style="flex-direction:column;gap:10px">
+        <input id="exclusive-arqon-id" type="number" min="1" step="1" placeholder="ARQON ID игрока" />
+        <input id="exclusive-title" maxlength="40" placeholder="Эксклюзивный титул (до 40 символов)" />
+        <div class="row" style="gap:10px;flex-wrap:wrap">
+          <label style="flex:1;min-width:190px">Цвет фона профиля
+            <input id="exclusive-bg-color" type="text" maxlength="7" placeholder="#1A1230" />
+          </label>
+          <label style="flex:1;min-width:190px">Цвет обводки аватара
+            <input id="exclusive-border-color" type="text" maxlength="7" placeholder="#A855F7" />
+          </label>
+        </div>
+        <p class="hint" style="margin:0">Пустое поле убирает соответствующий эксклюзив. Цвета указывай в формате #RRGGBB.</p>
+        <button class="btn" type="button" onclick="adminSaveExclusiveProfile()">✦ Выдать / обновить эксклюзивы</button>
+        <button class="btn ghost" type="button" onclick="adminClearExclusiveProfile()">Снять все эксклюзивы с игрока</button>
+      </div>
+      <div id="exclusive-profile-msg" role="status" style="margin-top:12px"></div>
+    </div>
   </section>
 
   <!-- ГЛАВНАЯ СТРАНИЦА -->
@@ -3843,6 +3863,32 @@ async function removeSchedule(id) {
 // ==========================================
 // РЕЗУЛЬТАТЫ
 // ==========================================
+async function adminSaveExclusiveProfile(){
+  if(!isAdmin())return;
+  const id=Number(document.getElementById('exclusive-arqon-id').value);
+  const title=document.getElementById('exclusive-title').value.trim();
+  const bg=document.getElementById('exclusive-bg-color').value.trim();
+  const border=document.getElementById('exclusive-border-color').value.trim();
+  const msg=document.getElementById('exclusive-profile-msg');
+  if(!Number.isSafeInteger(id)||id<1){msg.textContent='Укажи корректный ARQON ID игрока.';return;}
+  if(title.length>40){msg.textContent='Титул не должен превышать 40 символов.';return;}
+  for(const [label,value] of [['фон',bg],['обводка',border]])if(value&&!/^#[0-9a-fA-F]{6}$/.test(value)){msg.textContent='Цвет '+label+' должен быть в формате #RRGGBB.';return;}
+  const button=document.querySelector('#admin-exclusive-profile-card button.btn');
+  if(button){button.disabled=true;button.textContent='Сохраняем…';}
+  const {error}=await supabaseClient.rpc('admin_set_profile_exclusives',{p_arqon_id:id,p_title:title||null,p_bg_color:bg||null,p_border_color:border||null});
+  if(button){button.disabled=false;button.textContent='✦ Выдать / обновить эксклюзивы';}
+  msg.innerHTML=error?'<span class="msg error">Ошибка: '+escapeHtml(error.message)+'</span>':'<span class="msg success">✓ Эксклюзивы игрока #'+id+' сохранены. Профиль обновится после перезагрузки.</span>';
+}
+async function adminClearExclusiveProfile(){
+  if(!isAdmin())return;
+  const id=Number(document.getElementById('exclusive-arqon-id').value);
+  const msg=document.getElementById('exclusive-profile-msg');
+  if(!Number.isSafeInteger(id)||id<1){msg.textContent='Сначала укажи ARQON ID игрока.';return;}
+  if(!confirm('Снять титул, цвет фона и цвет обводки у игрока #'+id+'?'))return;
+  const {error}=await supabaseClient.rpc('admin_set_profile_exclusives',{p_arqon_id:id,p_title:null,p_bg_color:null,p_border_color:null});
+  msg.innerHTML=error?'<span class="msg error">Ошибка: '+escapeHtml(error.message)+'</span>':'<span class="msg success">✓ Все эксклюзивы сняты с игрока #'+id+'.</span>';
+}
+
 async function addResult() {
   if (!isAdmin()) return;
   const tournament_name = document.getElementById('res-tournament').value.trim();
