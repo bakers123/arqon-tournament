@@ -21,6 +21,7 @@ create index if not exists arqon_player_awards_profile_history
 alter table public.arqon_player_awards enable row level security;
 grant select on public.arqon_player_awards to anon, authenticated;
 grant insert,update on public.arqon_player_awards to authenticated;
+grant usage, select on sequence public.arqon_player_awards_id_seq to authenticated;
 drop policy if exists "Public can read active ARQON awards" on public.arqon_player_awards;
 drop policy if exists "Organizers can grant ARQON awards" on public.arqon_player_awards;
 drop policy if exists "Organizers can revoke ARQON awards" on public.arqon_player_awards;
