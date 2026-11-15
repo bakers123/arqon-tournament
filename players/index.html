@@ -1039,6 +1039,7 @@
       Поддержать
     </a>
   </nav>
+  <button id="steam-header-entry" class="btn" type="button" onclick="openAuthScreen()" style="display:inline-flex;align-items:center;white-space:nowrap;margin:0 12px 0 0;">Войти через Steam</button>
   <button id="arqon-account-button" class="btn ghost" type="button" onclick="openArqonAccount()" style="display:none;white-space:nowrap;margin:0 12px 0 0;">Мой аккаунт</button>
   <div class="mobile-nav-scrollbar" id="mobile-nav-scrollbar" aria-label="Полоса прокрутки меню">
     <div class="mobile-nav-scrollbar-thumb" id="mobile-nav-scrollbar-thumb"></div>
@@ -1538,6 +1539,8 @@ supabaseClient.auth.onAuthStateChange((event, session) => {
 });
 
 function handleNoAuth() {
+  const steamEntry = document.getElementById('steam-header-entry');
+  if (steamEntry) steamEntry.style.display = 'inline-flex';
   document.getElementById('auth-screen').style.display = 'none';
 
   const playerScreen = document.getElementById('player-screen');
@@ -4238,11 +4241,13 @@ async function startSteamAuth(mode) {
 }
 async function loadArqonAccount() {
   const button = document.getElementById('arqon-account-button');
+  const steamEntry = document.getElementById('steam-header-entry');
   if (!button || isAdmin()) return;
   try {
     const { data: authData, error: authError } = await supabaseClient.auth.getUser();
     const user = authData?.user;
-    if (authError || !user) { button.style.display = 'none'; return; }
+    if (authError || !user) { button.style.display = 'none'; if (steamEntry) steamEntry.style.display = 'inline-flex'; return; }
+    if (steamEntry) steamEntry.style.display = 'none';
     const { data: profile, error } = await supabaseClient.from('profiles')
       .select('arqon_id, display_name, steam_id')
       .eq('user_id', user.id).maybeSingle();
