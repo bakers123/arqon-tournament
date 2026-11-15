@@ -1037,10 +1037,34 @@
       Поддержать
     </a>
   </nav>
+  <button id="arqon-account-button" class="btn ghost" type="button" onclick="openArqonAccount()" style="display:none;white-space:nowrap;margin:0 12px 0 0;">Мой аккаунт</button>
   <div class="mobile-nav-scrollbar" id="mobile-nav-scrollbar" aria-label="Полоса прокрутки меню">
     <div class="mobile-nav-scrollbar-thumb" id="mobile-nav-scrollbar-thumb"></div>
   </div>
 </header>
+
+<div id="arqon-account-modal" class="modal" style="display:none;z-index:1200;align-items:center;justify-content:center;">
+  <div class="modal-content" style="max-width:460px;width:calc(100% - 28px);text-align:left;">
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;">
+      <h2 style="margin:0;color:var(--accent);">Аккаунт ARQON</h2>
+      <button type="button" class="btn ghost" onclick="closeArqonAccount()" aria-label="Закрыть">✕</button>
+    </div>
+    <p class="hint" style="margin:8px 0 16px;">Твой постоянный идентификатор игрока в экосистеме ARQON.</p>
+    <div style="padding:16px;border:1px solid rgba(139,92,246,.45);border-radius:12px;background:rgba(139,92,246,.08);">
+      <small class="hint">ТВОЙ ARQON ID</small>
+      <div id="arqon-account-id" style="font:700 30px Orbitron,sans-serif;color:#c4b5fd;margin-top:5px;">—</div>
+    </div>
+    <label class="label" for="arqon-account-name" style="margin-top:16px;">Отображаемое имя</label>
+    <input id="arqon-account-name" maxlength="32" placeholder="Как тебя показывать на ARQON">
+    <div id="arqon-account-email" class="hint" style="margin-top:10px;"></div>
+    <div id="arqon-account-steam" class="hint" style="margin-top:5px;"></div>
+    <div id="arqon-account-message" class="msg hidden" role="status" style="margin-top:12px;"></div>
+    <div style="display:flex;gap:10px;margin-top:16px;">
+      <button class="btn" type="button" onclick="saveArqonAccountName()">Сохранить имя</button>
+      <button class="btn ghost" type="button" onclick="closeArqonAccount()">Закрыть</button>
+    </div>
+  </div>
+</div>
 
 <main style="flex: 1;">
   <!-- АДМИН ПАНЕЛЬ -->
@@ -1498,6 +1522,7 @@ supabaseClient.auth.onAuthStateChange((event, session) => {
   if (isAdmin()) return;
   if (session) {
     currentUser = session.user;
+    loadArqonAccount();
     checkUserRole(session.user.id)
       .then(() => applyPathRoute())
       .catch(error => console.error('Ошибка проверки роли пользователя:', error));
@@ -4195,6 +4220,64 @@ async function startSteamAuth(mode) {
     if (registerButton) registerButton.disabled = false;
   }
 }
+async function loadArqonAccount() {
+  const button = document.getElementById('arqon-account-button');
+  if (!button || isAdmin()) return;
+  try {
+    const { data: authData, error: authError } = await supabaseClient.auth.getUser();
+    const user = authData?.user;
+    if (authError || !user) { button.style.display = 'none'; return; }
+    const { data: profile, error } = await supabaseClient.from('profiles')
+      .select('arqon_id, display_name, steam_id')
+      .eq('user_id', user.id).maybeSingle();
+    if (error || !profile) { button.style.display = 'none'; return; }
+    window.__ARQON_ACCOUNT_PROFILE = profile;
+    button.style.display = 'inline-flex';
+    const id = document.getElementById('arqon-account-id');
+    const name = document.getElementById('arqon-account-name');
+    const email = document.getElementById('arqon-account-email');
+    const steam = document.getElementById('arqon-account-steam');
+    if (id) id.textContent = '#' + profile.arqon_id;
+    if (name && document.activeElement !== name) name.value = profile.display_name || '';
+    if (email) email.textContent = user.email ? ('Email: ' + user.email + (user.email_confirmed_at ? ' · подтверждён' : ' · не подтверждён')) : 'Email пока не добавлен';
+    if (steam) steam.textContent = profile.steam_id ? 'Steam: привязан' : 'Steam: не привязан';
+  } catch (error) {
+    console.warn('Не удалось загрузить профиль ARQON:', error);
+    button.style.display = 'none';
+  }
+}
+async function openArqonAccount() {
+  const modal = document.getElementById('arqon-account-modal');
+  if (modal) modal.style.display = 'flex';
+  await loadArqonAccount();
+}
+function closeArqonAccount() {
+  const modal = document.getElementById('arqon-account-modal');
+  if (modal) modal.style.display = 'none';
+}
+async function saveArqonAccountName() {
+  const input = document.getElementById('arqon-account-name');
+  const message = document.getElementById('arqon-account-message');
+  const value = (input?.value || '').trim().replace(/\\s+/g, ' ');
+  if (!value || value.length > 32) {
+    if (message) { message.textContent = 'Имя должно содержать от 1 до 32 символов.'; message.className = 'msg error'; }
+    return;
+  }
+  try {
+    const { data, error: authError } = await supabaseClient.auth.getUser();
+    if (authError || !data?.user) throw new Error('Войди в аккаунт, чтобы изменить имя.');
+    const { error } = await supabaseClient.from('profiles').update({ display_name: value }).eq('user_id', data.user.id);
+    if (error) throw error;
+    if (message) { message.textContent = 'Имя профиля сохранено.'; message.className = 'msg success'; }
+    await loadArqonAccount();
+  } catch (error) {
+    if (message) { message.textContent = error.message || 'Не удалось сохранить имя.'; message.className = 'msg error'; }
+  }
+}
+window.openArqonAccount = openArqonAccount;
+window.closeArqonAccount = closeArqonAccount;
+window.saveArqonAccountName = saveArqonAccountName;
+
 async function saveSteamEmail() {
   const input = document.getElementById('steam-email');
   const button = document.getElementById('steam-email-submit');
@@ -4359,6 +4442,7 @@ async function startApp() {
     await window.checkUserRole(session.user.id);
     await handleSteamReturn(session.user);
     await ensureSteamEmailStep();
+    await loadArqonAccount();
     applyPathRoute();
     return;
   }
