@@ -4,13 +4,22 @@ const json=(body:unknown,status=200)=>new Response(JSON.stringify(body),{status,
 const esc=(v:unknown)=>String(v??"").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;");
 const SITE="https://arqon-esports.ru";
 const menuMarkup=(isAdmin=false)=>({inline_keyboard:[
- [{text:"👤 Мой профиль",callback_data:"profile"},{text:"🔔 Уведомления",url:SITE+"/notifications/"}],
- [{text:"🏆 Киберспортивная лига",url:SITE+"/league/"}],
- [{text:"👥 Команды",url:SITE+"/teams/"},{text:"🎯 Игроки",url:SITE+"/players/"}],
- [{text:"🛟 Поддержка",url:SITE+"/support/"}],
- ...(isAdmin?[[{text:"🛡 Панель организатора",url:SITE+"/support/admin/"}]]:[]),
- [{text:"🌐 Открыть ARQON",url:SITE}]
+ [{text:"👤 Мой профиль",callback_data:"profile"}],
+ [{text:"🔔 Уведомления",callback_data:"notifications"}],
+ [{text:"🏆 Киберспортивная лига",callback_data:"league"}],
+ [{text:"👥 Команды",callback_data:"teams"},{text:"🎯 Игроки",callback_data:"players"}],
+ [{text:"🛟 Поддержка",callback_data:"support"}],
+ ...(isAdmin?[[{text:"🛡 Панель организатора",callback_data:"organizer"}]]:[])
 ]});
+const backMenu={inline_keyboard:[[{text:"↩️ Главное меню",callback_data:"menu"}]]};
+async function linkedUser(admin:any,chatId:string){
+ const {data:link}=await admin.from("telegram_accounts").select("user_id,telegram_username,first_name").eq("chat_id",chatId).maybeSingle();
+ return link||null;
+}
+async function renderPanel(bot:string,chatId:string,messageId:number,text:string,keyboard:any){
+ try{await telegram(bot,"editMessageText",{chat_id:chatId,message_id:messageId,text,parse_mode:"HTML",disable_web_page_preview:true,reply_markup:keyboard})}
+ catch{await send(bot,chatId,text,keyboard)}
+}
 async function telegram(token:string,method:string,body:Record<string,unknown>){
  const r=await fetch(`https://api.telegram.org/bot${token}/${method}`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});
  const payload=await r.json().catch(()=>({}));
@@ -55,20 +64,69 @@ Deno.serve(async(req)=>{
      const text="<b>ＡＲＱＯＮ  ＥＳＰＯＲＴＳ</b>\n<i>YOUR GAME. YOUR LEGACY.</i>\n\nВыбери нужный раздел 👇";
      try{await telegram(bot,"editMessageText",{chat_id:callbackChatId,message_id:callback.message.message_id,text,parse_mode:"HTML",disable_web_page_preview:true,reply_markup:menuMarkup(isSupportAdmin)})}catch{}
     }else if(action==="profile"){
-     const {data:account,error:accountError}=await admin.from("telegram_accounts").select("telegram_username,first_name,linked_at").eq("chat_id",callbackChatId).maybeSingle();
-     let profileText:string;
-     if(accountError){
-      console.warn("Telegram profile lookup failed",accountError);
-      profileText="👤 <b>ТВОЙ ARQON АККАУНТ</b>\n\nНе удалось проверить подключение прямо сейчас. Попробуй ещё раз чуть позже.";
-     }else if(account){
-      const linkedDate=account.linked_at?new Date(account.linked_at).toLocaleDateString("ru-RU"):"не указана";
-      profileText="👤 <b>ТВОЙ ARQON АККАУНТ</b>\n\nСтатус: <b>подключён</b>\nTelegram: "+(account.telegram_username?"@"+esc(account.telegram_username):esc(account.first_name||"аккаунт подключён"))+"\nДата подключения: "+linkedDate+"\n\nТвой Telegram привязан к ARQON. Управлять подключением можно в настройках профиля на сайте.";
+     const link=await linkedUser(admin,callbackChatId);
+     if(!link){
+      await renderPanel(bot,callbackChatId,callback.message.message_id,"👤 <b>МОЙ ПРОФИЛЬ ARQON</b>\\n\\nСначала подключи Telegram к своему аккаунту на сайте. После привязки эта кнопка будет открывать именно твой личный профиль.",{inline_keyboard:[[{text:"🔗 Подключить аккаунт",url:SITE+"/"}],[{text:"↩️ Главное меню",callback_data:"menu"}]]});
      }else{
-      profileText="👤 <b>ТВОЙ ARQON АККАУНТ</b>\n\nСтатус: <b>не подключён</b>\n\nОткрой сайт ARQON → «Мой профиль» → «Подключить Telegram», затем отправь боту команду подключения.";
+      const {data:profile}=await admin.from("profiles").select("arqon_id,display_name,steam_persona_name,avatar_url,cs2_faceit_elo,dota2_mmr").eq("user_id",link.user_id).maybeSingle();
+      if(!profile?.arqon_id){
+       await renderPanel(bot,callbackChatId,callback.message.message_id,"👤 <b>МОЙ ПРОФИЛЬ ARQON</b>\\n\\nTelegram подключён, но игровой профиль ARQON ещё не создан.",{inline_keyboard:[[{text:"Открыть создание профиля",url:SITE+"/"}],[{text:"↩️ Главное меню",callback_data:"menu"}]]});
+      }else{
+       const name=esc(profile.display_name||profile.steam_persona_name||("Игрок #"+profile.arqon_id));
+       const profileUrl=SITE+"/players/profile/?me=1";
+       const text="👤 <b>"+name+"</b>\\nARQON ID: <b>#"+profile.arqon_id+"</b>\\nCS2 FACEIT ELO: "+(profile.cs2_faceit_elo??"—")+"\\nDota 2 MMR: "+(profile.dota2_mmr??"—")+"\\n\\nТвой личный профиль ARQON готов.";
+       await renderPanel(bot,callbackChatId,callback.message.message_id,text,{inline_keyboard:[[{text:"↗️ Открыть мой профиль на сайте",url:profileUrl}],[{text:"↩️ Главное меню",callback_data:"menu"}]]});
+      }
      }
-     try{
-      await send(bot,callbackChatId,profileText,{inline_keyboard:[[{text:"⚙️ Настройки профиля",url:SITE+"/"}],[{text:"↩️ Главное меню",callback_data:"menu"}]]});
-     }catch(e){console.warn("Telegram profile response failed",e)}
+    }else if(action==="notifications"||action.startsWith("notif:")){
+     const link=await linkedUser(admin,callbackChatId);
+     if(!link){await renderPanel(bot,callbackChatId,callback.message.message_id,"🔔 <b>УВЕДОМЛЕНИЯ</b>\\n\\nПодключи Telegram к аккаунту ARQON, чтобы управлять уведомлениями.",{inline_keyboard:[[{text:"↩️ Главное меню",callback_data:"menu"}]]})}
+     else{
+      let {data:prefs}=await admin.from("user_notification_preferences").select("support_enabled,teams_enabled,system_enabled").eq("user_id",link.user_id).maybeSingle();
+      if(!prefs)prefs={support_enabled:true,teams_enabled:true,system_enabled:true};
+      if(action.startsWith("notif:")){
+       const key=action.slice(6);if(["support_enabled","teams_enabled","system_enabled"].includes(key)){
+        prefs={...prefs,[key]:!prefs[key]};
+        await admin.from("user_notification_preferences").upsert({user_id:link.user_id,...prefs,updated_at:new Date().toISOString()},{onConflict:"user_id"});
+       }
+      }
+      const on=(v:boolean)=>v?"🟢 Включены":"⚫ Выключены";
+      await renderPanel(bot,callbackChatId,callback.message.message_id,"🔔 <b>НАСТРОЙКИ УВЕДОМЛЕНИЙ</b>\\n\\nПоддержка: "+on(prefs.support_enabled)+"\\nКоманды и приглашения: "+on(prefs.teams_enabled)+"\\nСистемные: "+on(prefs.system_enabled),{inline_keyboard:[
+       [{text:(prefs.support_enabled?"🟢":"⚫")+" Поддержка",callback_data:"notif:support_enabled"}],
+       [{text:(prefs.teams_enabled?"🟢":"⚫")+" Команды и приглашения",callback_data:"notif:teams_enabled"}],
+       [{text:(prefs.system_enabled?"🟢":"⚫")+" Системные",callback_data:"notif:system_enabled"}],
+       [{text:"↩️ Главное меню",callback_data:"menu"}]
+      ]});
+     }
+    }else if(action==="league"){
+     const {data}=await admin.from("league_data").select("payload").limit(1).maybeSingle();
+     const matches=Array.isArray(data?.payload?.matches)?data.payload.matches:[];
+     const done=matches.filter((m:any)=>m.result_type==="normal"&&m.winner||m.result_type==="tech"&&m.tech_loss_team).length;
+     const upcoming=matches.filter((m:any)=>!m.winner&&!m.tech_loss_team&&m.team1&&m.team2).slice(0,7);
+     const recent=matches.filter((m:any)=>m.winner||m.tech_loss_team).slice(-5).reverse();
+     const lines=[...recent.map((m:any)=>"• #"+(m.match_no??"?")+" "+esc(m.team1)+" — "+esc(m.team2)+" · "+(m.result_type==="tech"?"ТТ "+esc(m.tech_loss_team):"победа "+esc(m.winner))),...upcoming.map((m:any)=>"• #"+(m.match_no??"?")+" "+esc(m.date||"Дата уточняется")+" "+esc(m.time||"")+" · "+esc(m.team1)+" — "+esc(m.team2))];
+     await renderPanel(bot,callbackChatId,callback.message.message_id,"🏆 <b>КИБЕРСПОРТИВНАЯ ЛИГА ARQON</b>\\nМатчей в расписании: "+matches.length+"\\nС результатом: "+done+"\\n\\n<b>Результаты и ближайшие матчи</b>\\n"+(lines.join("\\n")||"Пока нет данных."),{inline_keyboard:[[{text:"↻ Обновить",callback_data:"league"}],[{text:"↩️ Главное меню",callback_data:"menu"}]]});
+    }else if(action==="teams"){
+     const {data}=await admin.from("tournament").select("data").order("id",{ascending:false}).limit(1).maybeSingle();
+     const teams=Array.isArray(data?.data?.teams)?data.data.teams:[];
+     const rows=teams.slice(0,18).map((t:any)=>"• <b>"+esc(t.name||t.teamName||"Команда")+"</b>"+(Array.isArray(t.players)?" · "+t.players.length+" игроков":""));
+     await renderPanel(bot,callbackChatId,callback.message.message_id,"👥 <b>КОМАНДЫ ARQON</b>\\n\\n"+(rows.join("\\n")||"Список команд пока пуст.")+"\\n\\nПолные составы и карточки команд появятся здесь по нажатию на название.",{inline_keyboard:[[{text:"↻ Обновить",callback_data:"teams"}],[{text:"↩️ Главное меню",callback_data:"menu"}]]});
+    }else if(action==="players"){
+     const {data,error}=await admin.from("profiles").select("arqon_id,display_name,steam_persona_name,cs2_faceit_elo,dota2_mmr").eq("is_public",true).order("arqon_id",{ascending:true}).limit(15);
+     const rows=(data||[]).map((p:any)=>"• <b>"+esc(p.display_name||p.steam_persona_name||("Игрок #"+p.arqon_id))+"</b> · #"+p.arqon_id+" · FACEIT "+(p.cs2_faceit_elo??"—"));
+     await renderPanel(bot,callbackChatId,callback.message.message_id,"🎯 <b>ИГРОКИ ARQON</b>\\n\\n"+(error?"Не удалось загрузить игроков.":rows.join("\\n")||"Публичных профилей пока нет.")+"\\n\\nПоиск и открытие карточек игроков добавим следующим этапом.",{inline_keyboard:[[{text:"↻ Обновить",callback_data:"players"}],[{text:"↩️ Главное меню",callback_data:"menu"}]]});
+    }else if(action==="support"){
+     const link=await linkedUser(admin,callbackChatId);
+     if(!link){await renderPanel(bot,callbackChatId,callback.message.message_id,"🛟 <b>ПОДДЕРЖКА ARQON</b>\\n\\nПодключи Telegram к своему аккаунту, чтобы видеть обращения и переписываться с администрацией прямо здесь.",{inline_keyboard:[[{text:"↩️ Главное меню",callback_data:"menu"}]]})}
+     else{
+      const {data:tickets,error}=await admin.from("support_tickets").select("id,subject,status,updated_at").eq("user_id",link.user_id).order("updated_at",{ascending:false}).limit(8);
+      const rows=(tickets||[]).map((t:any)=>"• <b>#"+t.id+" · "+esc(t.subject)+"</b> — "+esc(t.status));
+      await renderPanel(bot,callbackChatId,callback.message.message_id,"🛟 <b>ТВОИ ОБРАЩЕНИЯ</b>\\n\\n"+(error?"Не удалось загрузить обращения.":rows.join("\\n")||"У тебя пока нет обращений.")+"\\n\\nЧтобы ответить в обращении, отправь: <code>/ticket НОМЕР текст</code>",{inline_keyboard:[[{text:"↻ Обновить",callback_data:"support"}],[{text:"↩️ Главное меню",callback_data:"menu"}]]});
+     }
+    }else if(action==="organizer"){
+     const {data}=await admin.rpc("get_support_admin_telegram_chats");
+     const allowed=(data||[]).some((x:any)=>String(x.chat_id)===callbackChatId);
+     await renderPanel(bot,callbackChatId,callback.message.message_id,allowed?"🛡 <b>ПАНЕЛЬ ОРГАНИЗАТОРА</b>\\n\\nДоступ подтверждён. Административные действия и управление турниром добавим в защищённые разделы этого меню.":"⛔ Нет доступа к панели организатора.",{inline_keyboard:[[{text:"↩️ Главное меню",callback_data:"menu"}]]});
     }
    }
    return json({ok:true});
