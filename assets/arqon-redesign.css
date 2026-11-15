@@ -395,3 +395,51 @@ header>#player-account-widget{order:7!important;flex:0 0 auto!important;min-widt
   header>.brand,header>.brand img{max-width:68px!important;width:68px!important}
   header>#steam-header-entry{max-width:74px!important;font-size:8px!important}
 }
+
+
+/* Mobile drawer final fix v11: fixed nav must not be trapped by header backdrop-filter */
+@media(max-width:900px){
+  header{
+    -webkit-backdrop-filter:none!important;
+    backdrop-filter:none!important;
+    filter:none!important;
+    transform:none!important;
+    perspective:none!important;
+    contain:none!important;
+    isolation:auto!important;
+    overflow:visible!important;
+  }
+  header>nav{
+    position:fixed!important;
+    inset:0 auto 0 0!important;
+    width:min(390px,92vw)!important;
+    min-width:min(280px,92vw)!important;
+    max-width:390px!important;
+    height:100vh!important;
+    height:100dvh!important;
+    min-height:100vh!important;
+    max-height:100dvh!important;
+    flex:0 0 min(390px,92vw)!important;
+    box-sizing:border-box!important;
+    padding: max(16px,env(safe-area-inset-top)) 16px max(24px,env(safe-area-inset-bottom))!important;
+    margin:0!important;
+    overflow-x:hidden!important;
+    overflow-y:auto!important;
+    overscroll-behavior:contain!important;
+    -webkit-overflow-scrolling:touch!important;
+    z-index:1001!important;
+    transform:translate3d(-105%,0,0)!important;
+    visibility:hidden!important;
+  }
+  header>nav.arqon-nav-open{
+    width:min(390px,92vw)!important;
+    max-width:390px!important;
+    transform:translate3d(0,0,0)!important;
+    visibility:visible!important;
+  }
+  header>nav .arqon-nav-group,
+  header>nav .arqon-nav-head{width:100%!important;min-width:0!important;flex:0 0 auto!important}
+  header>nav button[data-tab],
+  header>nav a.nav-social-btn{width:100%!important;max-width:100%!important;min-height:46px!important;flex:0 0 auto!important;white-space:normal!important;overflow-wrap:anywhere!important}
+  .arqon-menu-backdrop{position:fixed!important;inset:0!important;z-index:1000!important}
+}
