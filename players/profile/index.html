@@ -591,7 +591,7 @@ async function uploadProfileMedia(file,kind){
       // Load the signed-in owner's row first: private profile settings must not depend
       // on the public-profile RPC being available or the profile being public.
       if(ownerUser){
-        const mineResponse=await db.from('profiles').select('arqon_id,display_name,steam_persona_name,steam_avatar_url,bio,avatar_url,cover_url,is_public,show_steam,steam_id,created_at,cs2_faceit_url,cs2_faceit_elo,dota2_profile_url,dota2_mmr,looking_for_team,preferred_role,equipped_frame_id,equipped_theme_id,equipped_title_id,equipped_badge_id').eq('user_id',ownerUser.id).maybeSingle();
+        const mineResponse=await db.from('profiles').select('arqon_id,display_name,steam_persona_name,steam_avatar_url,bio,avatar_url,cover_url,is_public,show_steam,steam_id,created_at,cs2_faceit_url,cs2_faceit_elo,dota2_profile_url,dota2_mmr,looking_for_team,preferred_role,equipped_frame_id,equipped_theme_id,equipped_title_id,equipped_badge_id,exclusive_profile_title,exclusive_profile_bg_color,exclusive_avatar_border_color').eq('user_id',ownerUser.id).maybeSingle();
         if(mineResponse.error)console.warn('Owner profile query failed:',mineResponse.error);
         else mine=mineResponse.data;
       }
@@ -624,7 +624,15 @@ async function uploadProfileMedia(file,kind){
       if(frameClass)el('avatar').classList.add(frameClass);
       const themeClass={theme_void:'shop-theme-void',theme_crimson:'shop-theme-crimson'}[profile.equipped_theme_id]||'';
       if(themeClass)document.body.classList.add(themeClass);
-      const titleText={title_tactician:'ТАКТИК',title_fragger:'FRAGGER'}[profile.equipped_title_id]||'';
+      if(/^#[0-9a-f]{6}$/i.test(profile.exclusive_profile_bg_color||'')){
+        document.body.style.backgroundColor=profile.exclusive_profile_bg_color;
+        document.body.style.backgroundImage='radial-gradient(ellipse at 50% -15%,'+profile.exclusive_profile_bg_color+'66,transparent 48%),radial-gradient(ellipse at 100% 80%,'+profile.exclusive_profile_bg_color+'44,transparent 35%)';
+      }
+      if(/^#[0-9a-f]{6}$/i.test(profile.exclusive_avatar_border_color||'')){
+        el('avatar').style.borderColor=profile.exclusive_avatar_border_color;
+        el('avatar').style.boxShadow='0 0 24px '+profile.exclusive_avatar_border_color+'88';
+      }
+      const titleText=profile.exclusive_profile_title||({title_tactician:'ТАКТИК',title_fragger:'FRAGGER'}[profile.equipped_title_id]||'');
       el('cosmetic-title').textContent=titleText;
       el('cosmetic-title').classList.toggle('hidden',!titleText);
       const badgeText={badge_arqon_core:'✦ ARQON CORE'}[profile.equipped_badge_id]||'';
