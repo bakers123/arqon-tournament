@@ -19,6 +19,8 @@
   };
 
   window.isAdmin = () => ['owner', 'admin', 'editor'].includes(organizerRole);
+  window.isFullAdmin = () => ['owner', 'admin'].includes(organizerRole);
+  setVisible(byId('admin-exclusive-profile-card'), false);
 
   function installPlayerAccountUi() {
     const header = document.querySelector('header');
@@ -385,6 +387,7 @@
       organizerRole = null;
     }
     window.dispatchEvent(new CustomEvent('arqon:organizer-role-ready', { detail: { role: organizerRole } }));
+    setVisible(byId('admin-exclusive-profile-card'), window.isFullAdmin());
 
     if (window.isAdmin()) {
       setLogoutVisible(true);
