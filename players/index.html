@@ -1060,6 +1060,7 @@
     <div id="arqon-account-email" class="hint" style="margin-top:10px;"></div>
     <div id="arqon-account-steam" class="hint" style="margin-top:5px;"></div>
     <button id="arqon-link-steam" class="btn ghost" type="button" onclick="linkSteamFromAccount()" style="display:none;width:100%;margin-top:14px;">Привязать Steam</button>
+    <a id="arqon-open-profile" class="btn ghost" href="/players/profile/" style="display:block;text-align:center;width:100%;margin-top:10px;">Открыть публичный профиль</a>
     <div id="arqon-account-message" class="msg hidden" role="status" style="margin-top:12px;"></div>
     <div style="display:flex;gap:10px;margin-top:16px;">
       <button class="btn" type="button" onclick="saveArqonAccountName()">Сохранить имя</button>
@@ -4251,6 +4252,8 @@ async function loadArqonAccount() {
     const email = document.getElementById('arqon-account-email');
     const steam = document.getElementById('arqon-account-steam');
     if (id) id.textContent = '#' + profile.arqon_id;
+    const publicProfileLink = document.getElementById('arqon-open-profile');
+    if (publicProfileLink) publicProfileLink.href = '/players/profile/?id=' + encodeURIComponent(profile.arqon_id);
     if (name && document.activeElement !== name) name.value = profile.display_name || '';
     if (email) email.textContent = user.email ? ('Email: ' + user.email + (user.email_confirmed_at ? ' · подтверждён' : ' · не подтверждён')) : 'Email пока не добавлен';
     if (steam) steam.textContent = profile.steam_id ? 'Steam: привязан' : 'Steam: не привязан';
