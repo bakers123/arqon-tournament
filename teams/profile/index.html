@@ -216,4 +216,4 @@ el('save-team-profile').addEventListener('click',saveTeamProfile);
 el('recruitment-apply').addEventListener('click',submitRecruitment);
 db.auth.onAuthStateChange(()=>{refreshRequestStatus().catch(console.error);loadAdminRequests().catch(console.error);loadTeamManagement().catch(console.error)});
 load().catch(e=>{console.error(e);el('team-name').textContent='Не удалось загрузить команду';el('notice').textContent='Попробуй обновить страницу.';el('notice').classList.remove('hidden')});
-</script></body></html>
+</script><script src="/assets/arqon-notifications.js?v=1" defer></script></body></html>
