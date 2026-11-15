@@ -193,6 +193,10 @@
   }
 
   window.checkUserRole = async function(uid) {
+    // A valid auth event means the session exists: keep logout visible even when
+    // this Steam account has not yet been mapped to the legacy players table.
+    installSessionLogoutButton();
+    setLogoutVisible(!!uid);
     try {
       const { data: role, error: roleError } = await supabaseClient.rpc('current_organizer_role');
       if (roleError) throw roleError;
@@ -282,7 +286,8 @@
       if (typeof startDraftListener === 'function') startDraftListener(uid);
       if (typeof applyPathRoute === 'function') applyPathRoute();
     } else {
-      setLogoutVisible(false);
+      // The account may be new and have no legacy players row yet.
+      // Do not hide logout: the Supabase session is still active.
       if (typeof handleNoAuth === 'function') handleNoAuth();
     }
   };
