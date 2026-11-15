@@ -921,14 +921,30 @@
 </head>
 <body>
 
-<!-- ЭКРАН ВХОДА -->
+<!-- ВХОД И РЕГИСТРАЦИЯ ИГРОКА -->
 <div id="auth-screen" class="modal" style="display: none; align-items: center; justify-content: center;">
-  <div class="modal-content" style="text-align: center; max-width: 400px;">
-    <h2 style="margin-bottom: 20px;">Вход для игрока</h2>
-    <div class="hint" style="margin-bottom: 15px;">Введи код доступа, который выдал админ</div>
-    <input id="auth-code" placeholder="Например: A7X9K2" style="text-align: center; font-size: 24px; letter-spacing: 5px; margin-bottom: 15px; text-transform: uppercase;" />
-    <button class="btn" id="login-btn" onclick="loginWithCode()" style="width: 100%;">Войти</button>
-    <div id="auth-error" class="msg error hidden" style="margin-top: 15px;"></div>
+  <div class="modal-content" style="text-align: center; max-width: 430px;">
+    <h2 style="margin-bottom: 12px;">Аккаунт ARQON</h2>
+    <div id="steam-login-actions">
+      <p class="hint" style="margin-bottom: 15px;">Вход и регистрация через Steam. После первой привязки потребуется подтвердить email.</p>
+      <button class="btn" id="steam-login-btn" onclick="startSteamAuth('login')" style="width: 100%; margin-bottom: 10px;">Войти через Steam</button>
+      <button class="btn ghost" id="steam-register-btn" onclick="startSteamAuth('register')" style="width: 100%;">Создать аккаунт через Steam</button>
+      <div id="steam-auth-message" class="msg hidden" role="status" style="margin-top: 14px;"></div>
+    </div>
+    <div id="steam-email-step" class="hidden" style="text-align:left;">
+      <p style="margin:10px 0;color:#ddd;">Steam успешно привязан. Теперь укажи email — на него придёт письмо для подтверждения аккаунта.</p>
+      <label for="steam-email" class="label">Email</label>
+      <input id="steam-email" type="email" autocomplete="email" placeholder="name@example.com" style="margin-bottom:12px;">
+      <button class="btn" id="steam-email-submit" onclick="saveSteamEmail()" style="width:100%;">Отправить письмо подтверждения</button>
+      <div id="steam-email-message" class="msg hidden" role="status" style="margin-top:12px;"></div>
+    </div>
+    <details style="margin-top:18px;text-align:left;border-top:1px solid var(--border);padding-top:12px;">
+      <summary style="cursor:pointer;color:var(--text-dim);font-size:12px;">Старый вход по коду (временно)</summary>
+      <div class="hint" style="margin:12px 0;">Введи код доступа, который выдал администратор.</div>
+      <input id="auth-code" placeholder="Например: A7X9K2" style="text-align:center;font-size:22px;letter-spacing:5px;margin-bottom:12px;text-transform:uppercase;">
+      <button class="btn" id="login-btn" onclick="loginWithCode()" style="width:100%;">Войти по коду</button>
+      <div id="auth-error" class="msg error hidden" style="margin-top:12px;"></div>
+    </details>
   </div>
 </div>
 
@@ -4118,6 +4134,117 @@ function openAuthScreen() {
   document.getElementById('auth-screen').style.display = 'flex';
 }
 
+function setSteamMessage(message, isError = false) {
+  const box = document.getElementById('steam-auth-message');
+  if (!box) return;
+  box.textContent = message;
+  box.classList.remove('hidden', 'error', 'success');
+  box.classList.add('msg', isError ? 'error' : 'success');
+}
+
+async function startSteamAuth(mode) {
+  const loginButton = document.getElementById('steam-login-btn');
+  const registerButton = document.getElementById('steam-register-btn');
+  if (loginButton) loginButton.disabled = true;
+  if (registerButton) registerButton.disabled = true;
+  setSteamMessage('Подготавливаем безопасное соединение со Steam…');
+  try {
+    let { data: sessionData, error: sessionError } = await supabaseClient.auth.getSession();
+    if (sessionError) throw sessionError;
+    if (mode === 'register' && !sessionData.session?.user) {
+      const { error } = await supabaseClient.auth.signInAnonymously();
+      if (error) throw error;
+      ({ data: sessionData, error: sessionError } = await supabaseClient.auth.getSession());
+      if (sessionError) throw sessionError;
+    }
+    const { data, error } = await supabaseClient.functions.invoke('steam-openid-start', { body: {} });
+    if (error) throw error;
+    if (!data?.url) throw new Error(data?.error || 'Steam не вернул ссылку для входа.');
+    window.location.assign(data.url);
+  } catch (error) {
+    setSteamMessage(error.message || 'Не удалось начать вход через Steam.', true);
+    if (loginButton) loginButton.disabled = false;
+    if (registerButton) registerButton.disabled = false;
+  }
+}
+
+async function saveSteamEmail() {
+  const input = document.getElementById('steam-email');
+  const button = document.getElementById('steam-email-submit');
+  const box = document.getElementById('steam-email-message');
+  const email = (input?.value || '').trim();
+  if (!email || !/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email)) {
+    if (box) { box.textContent = 'Укажи корректный email.'; box.className = 'msg error'; }
+    return;
+  }
+  if (button) { button.disabled = true; button.textContent = 'Отправляем…'; }
+  try {
+    const { data: userData, error: userError } = await supabaseClient.auth.getUser();
+    if (userError || !userData?.user) throw new Error('Сессия не найдена. Повтори привязку Steam.');
+    if (userData.user.email_confirmed_at) {
+      if (box) { box.textContent = 'Email уже подтверждён.'; box.className = 'msg success'; }
+      return;
+    }
+    const { error } = await supabaseClient.auth.updateUser(
+      { email },
+      { emailRedirectTo: window.location.origin + '/players/?steam=email-confirmed' }
+    );
+    if (error) throw error;
+    if (box) {
+      box.textContent = 'Письмо отправлено. Открой его и подтверди адрес — после этого аккаунт будет готов к использованию.';
+      box.className = 'msg success';
+    }
+  } catch (error) {
+    if (box) {
+      box.textContent = error.message || 'Не удалось отправить письмо. Проверь настройки подтверждения email.';
+      box.className = 'msg error';
+    }
+  } finally {
+    if (button) { button.disabled = false; button.textContent = 'Отправить письмо подтверждения'; }
+  }
+}
+
+async function handleSteamReturn(user) {
+  const params = new URLSearchParams(window.location.search);
+  const status = params.get('steam');
+  if (!status) return;
+  const authScreen = document.getElementById('auth-screen');
+  const actions = document.getElementById('steam-login-actions');
+  const emailStep = document.getElementById('steam-email-step');
+  const clearReturn = () => window.history.replaceState({}, document.title, window.location.pathname + window.location.hash);
+
+  if (status === 'linked') {
+    if (authScreen) authScreen.style.display = 'flex';
+    actions?.classList.add('hidden');
+    emailStep?.classList.remove('hidden');
+    clearReturn();
+    return;
+  }
+  if (status === 'email-confirmed') {
+    const { data } = await supabaseClient.auth.getUser();
+    if (data?.user?.email_confirmed_at) {
+      if (authScreen) authScreen.style.display = 'none';
+      alert('Email подтверждён! Аккаунт ARQON готов.');
+    } else {
+      if (authScreen) authScreen.style.display = 'flex';
+      setSteamMessage('Пока не видим подтверждение email. Открой письмо по ссылке ещё раз или запроси новое.', true);
+    }
+    clearReturn();
+    return;
+  }
+  if (status === 'signed_in') {
+    clearReturn();
+    return;
+  }
+  if (authScreen) authScreen.style.display = 'flex';
+  actions?.classList.remove('hidden');
+  emailStep?.classList.add('hidden');
+  if (status === 'not_found') setSteamMessage('Аккаунт с этим Steam ещё не создан. Если ты новый игрок, выбери «Создать аккаунт через Steam».', true);
+  else if (status === 'email_required') setSteamMessage('Для этого аккаунта не подтверждён email. Войди со старого устройства и заверши подтверждение либо обратись в поддержку.', true);
+  else setSteamMessage('Не удалось завершить вход через Steam. Попробуй ещё раз.', true);
+  clearReturn();
+}
+
 // ==========================================
 // ЭКСПОРТ В WINDOW (всё что вызывается из HTML)
 // ==========================================
@@ -4162,6 +4289,8 @@ async function startApp() {
   } catch (error) {
     console.error('Не удалось проверить сессию ARQON:', error);
   }
+
+  await handleSteamReturn(session?.user || null);
 
   if (session?.user) {
     currentUser = session.user;
