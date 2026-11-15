@@ -340,7 +340,7 @@ async function createSupportTicket(event){
  const ticketId=Number(data);
  el('support-ticket-subject').value='';el('support-ticket-message').value='';
  const notice=await db.functions.invoke('telegram-bot',{body:{event:'support_ticket_created',ticket_id:ticketId}});
- el('support-ticket-note').textContent=notice.error?'Обращение создано. Не удалось уведомить поддержку через Telegram.':'Обращение #'+ticketId+' создано. Ожидай ответ в Telegram и здесь.';
+ el('support-ticket-note').textContent=notice.error?'Обращение создано, но не удалось уведомить поддержку через Telegram.':notice.data?.sent===0?'Обращение #'+ticketId+' сохранено. Пока ни один администратор не подключил Telegram к своему аккаунту ARQON — уведомление не доставлено.':'Обращение #'+ticketId+' создано. Ожидай ответ в Telegram и здесь.';
  await loadSupportTickets();await openSupportTicket(ticketId);
 }
 async function replySupportTicket(event){
@@ -353,7 +353,7 @@ async function replySupportTicket(event){
  if(error){el('support-ticket-note').textContent=supportErrorText(error);return}
  input.value='';
  const notice=await db.functions.invoke('telegram-bot',{body:{event:'support_ticket_message',ticket_id:activeSupportTicketId}});
- if(notice.error)el('support-ticket-note').textContent='Сообщение сохранено, но уведомление поддержки не отправлено.';
+ if(notice.error||notice.data?.sent===0)el('support-ticket-note').textContent='Сообщение сохранено, но администраторы пока не подключили Telegram к своим аккаунтам ARQON.';
  await loadSupportTickets();
 }
 
