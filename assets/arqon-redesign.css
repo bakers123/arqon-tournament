@@ -140,3 +140,14 @@ button.primary{background:linear-gradient(110deg,#6d28d9,#8b5cf6)!important;bord
  .portal-actions{flex-wrap:wrap!important}
  .portal-actions .btn{flex:1 1 auto!important}
 }
+
+
+/* Account and authentication dialogs */
+#arqon-account-modal .modal-content,.modal .modal-content{
+  border:1px solid rgba(167,139,250,.3)!important;border-radius:20px!important;
+  background:linear-gradient(155deg,#1b1528,#100e18 70%)!important;
+  box-shadow:0 28px 90px rgba(0,0,0,.62),0 0 35px rgba(109,40,217,.12)!important;
+}
+#arqon-account-modal h2{color:#e9ddff!important}
+#arqon-account-modal .btn{min-height:42px!important}
+#arqon-account-modal input{width:100%!important;min-height:44px!important;padding:0 12px!important}
