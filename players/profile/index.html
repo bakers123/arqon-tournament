@@ -152,25 +152,32 @@
       });
     }
     async function loadTeamOffers(){
-      if(!ownerUser)return;
-      const {data,error}=await db.rpc('list_my_team_player_offers');
-      if(error){console.warn(error);return}
-      const host=el('team-offers-list');host.replaceChildren();
-      const pending=(data||[]).filter(x=>x.status==='pending');
-      if(!pending.length)return;
-      el('team-offers-card').classList.remove('hidden');
-      pending.forEach(offer=>{
-        const row=document.createElement('div');row.className='history-item';
-        const info=document.createElement('div');info.className='history-event';
-        const title=document.createElement('strong');title.textContent=offer.team_name;
-        const detail=document.createElement('small');detail.textContent=(offer.offered_role||'Роль не указана')+' · '+(offer.message||'Без сообщения');
-        info.append(title,detail);
-        const actions=document.createElement('div');actions.style.display='flex';actions.style.gap='7px';
-        [['Принять','accepted'],['Отклонить','rejected']].forEach(([label,response])=>{const b=document.createElement('button');b.className='button';b.textContent=label;b.style.padding='7px 10px';b.onclick=async()=>{b.disabled=true;const {error:err}=await db.rpc('respond_team_player_offer',{p_offer_id:offer.id,p_response:response});if(err){b.disabled=false;showNotice(err.message||'Не удалось ответить на предложение.',true);return}await loadTeamOffers();if(response==='accepted')showNotice('Предложение принято! Команда сможет связаться с тобой для оформления перехода.')};actions.append(b)});
-        row.append(info,actions);host.append(row);
-      });
-    }
-    async function uploadProfileMedia(file,kind){
+ if(!ownerUser)return;
+ const {data,error}=await db.rpc('list_my_team_player_offers');
+ if(error){console.warn(error);return}
+ const host=el('team-offers-list');host.replaceChildren();
+ const visible=(data||[]).filter(x=>['pending','accepted','completed'].includes(x.status)).slice(0,8);
+ if(!visible.length){el('team-offers-card').classList.add('hidden');return}
+ el('team-offers-card').classList.remove('hidden');
+ const labels={pending:'Ожидает твоего ответа',accepted:'Ты согласился · капитан должен оформить переход',completed:'Переход оформлен · ты в составе команды'};
+ visible.forEach(offer=>{
+  const row=document.createElement('div');row.className='history-item';
+  const info=document.createElement('div');info.className='history-event';
+  const title=document.createElement('strong');title.textContent=offer.team_name;
+  const detail=document.createElement('small');detail.textContent=(offer.offered_role||'Роль не указана')+' · '+(offer.message||'Без сообщения')+' · '+(labels[offer.status]||offer.status);
+  info.append(title,detail);
+  const actions=document.createElement('div');actions.style.display='flex';actions.style.gap='7px';
+  if(offer.status==='pending'){
+   [['Принять','accepted'],['Отклонить','rejected']].forEach(([label,response])=>{
+    const b=document.createElement('button');b.className='button';b.textContent=label;b.style.padding='7px 10px';
+    b.onclick=async()=>{b.disabled=true;const {error:err}=await db.rpc('respond_team_player_offer',{p_offer_id:offer.id,p_response:response});if(err){b.disabled=false;showNotice(err.message||'Не удалось ответить на предложение.',true);return}await loadTeamOffers();if(response==='accepted')showNotice('Предложение принято! Теперь капитан команды сможет оформить переход.')};
+    actions.append(b);
+   });
+  }
+  row.append(info,actions);host.append(row);
+ });
+}
+async function uploadProfileMedia(file,kind){
       if(!file)return null;
       const allowed=['image/jpeg','image/png','image/webp'];
       if(!allowed.includes(file.type))throw new Error('Поддерживаются только JPG, PNG и WEBP.');
