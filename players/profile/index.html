@@ -104,7 +104,7 @@
         </div>
       </div>
     </section>
-    <section class="card" style="width:min(1040px,calc(100% - 28px));margin:16px auto 0"><h2>УРОВЕНЬ И ОПЫТ</h2><div class="xp-total"><span id="xp-total">0</span> XP</div><div class="progress-wrap"><div class="progress-meta"><span id="xp-level">Уровень 1</span><span id="xp-next">0 / 250 XP</span></div><div class="progress-track"><div class="progress-fill" id="xp-progress"></div></div></div><p class="muted" style="font-size:13px;margin:0">XP за опубликованные результаты: 1 место — 100, 2 место — 70, 3 место — 50, MVP — дополнительно 50 XP.</p></section><section class="card hidden" id="profile-achievements" style="width:min(1040px,calc(100% - 28px));margin:16px auto 0"><h2>ДОСТИЖЕНИЯ</h2><div class="achievement-grid" id="achievement-grid"></div></section><section class="card hidden" id="profile-award-collection" style="width:min(1040px,calc(100% - 28px));margin:16px auto 0">
+    <section class="card" style="width:min(1040px,calc(100% - 28px));margin:16px auto 0"><h2>УРОВЕНЬ И ОПЫТ</h2><div class="xp-total"><span id="xp-total">0</span> XP</div><div class="progress-wrap"><div class="progress-meta"><span id="xp-level">Уровень 1</span><span id="xp-next">0 / 250 XP</span></div><div class="progress-track"><div class="progress-fill" id="xp-progress"></div></div></div><div class="stat"><span>Титул</span><strong id="xp-title">Новичок ARQON</strong></div><p id="xp-next-reward" class="muted" style="font-size:13px;margin:10px 0 0">Следующий титул открывается на 5 уровне.</p><div id="xp-history" class="history-list" style="margin-top:16px"></div><p class="muted" style="font-size:12px;margin:12px 0 0">За турнир: 1 место — 100 XP, 2 место — 70 XP, 3 место — 50 XP, MVP — +50 XP. За матч Live Center — 10 XP. За рубежи опыта — бонусные достижения.</p></section><section class="card hidden" id="profile-achievements" style="width:min(1040px,calc(100% - 28px));margin:16px auto 0"><h2>ДОСТИЖЕНИЯ</h2><div class="achievement-grid" id="achievement-grid"></div></section><section class="card hidden" id="profile-award-collection" style="width:min(1040px,calc(100% - 28px));margin:16px auto 0">
       <h2>КОЛЛЕКЦИЯ НАГРАД ARQON</h2>
       <div id="profile-award-list" class="achievement-grid"></div>
     </section>
@@ -214,12 +214,37 @@
       section.classList.remove('hidden');
     }
 
-    function renderProgressAndAchievements(name,rows){
+    async function renderProgressAndAchievements(name,rows){
       const key=playerKey(name);
+      const {data:xpRows,error:xpError}=await db.from('arqon_xp_events')
+        .select('xp_amount,source_type,source_label,created_at')
+        .eq('arqon_id',arqonId).order('created_at',{ascending:false}).limit(500);
+      if(xpError)console.warn('XP ledger unavailable:',xpError);
+      const ledger=Array.isArray(xpRows)?xpRows:[];
+      const xp=ledger.reduce((sum,row)=>sum+Math.max(0,Number(row.xp_amount)||0),0);
+      const level=Math.floor(xp/250)+1,within=xp%250,nextLevelXp=250;
+      const titles=[{level:1,title:'Новичок ARQON'},{level:5,title:'Претендент ARQON'},{level:10,title:'Ветеран ARQON'},{level:20,title:'Элита ARQON'},{level:30,title:'Легенда ARQON'},{level:50,title:'Икона ARQON'}];
+      const currentTitle=[...titles].reverse().find(item=>level>=item.level)||titles[0];
+      const nextTitle=titles.find(item=>item.level>level);
+      el('xp-total').textContent=String(xp);
+      el('xp-level').textContent='Уровень '+level;
+      el('xp-next').textContent=within+' / '+nextLevelXp+' XP';
+      el('xp-progress').style.width=(within/nextLevelXp*100)+'%';
+      el('xp-title').textContent=currentTitle.title;
+      el('xp-next-reward').textContent=nextTitle?'Следующий титул: '+nextTitle.title+' · уровень '+nextTitle.level+'. До него осталось '+Math.max(0,(nextTitle.level-level)*250-within)+' XP.':'Открыт максимальный титул ARQON. Продолжай накапливать опыт!';
+      const history=el('xp-history');history.replaceChildren();
+      const recent=ledger.slice(0,6);
+      if(!recent.length){const empty=document.createElement('p');empty.className='history-empty';empty.textContent='Пока нет начислений XP. Опыт появится после турниров и матчей Live Center.';history.append(empty)}
+      recent.forEach(row=>{
+        const item=document.createElement('div');item.className='history-item';
+        const info=document.createElement('div');info.className='history-event';
+        const title=document.createElement('strong');title.textContent=row.source_label||({tournament:'Турнир ARQON',live_match:'Матч Live Center',achievement:'Достижение ARQON'}[row.source_type]||'Активность ARQON');
+        const date=document.createElement('small');date.textContent=({tournament:'Турнир',live_match:'Матч',achievement:'Достижение'}[row.source_type]||'Активность')+' · '+new Date(row.created_at).toLocaleDateString('ru-RU');
+        info.append(title,date);
+        const amount=document.createElement('div');amount.className='history-result';amount.textContent='+'+row.xp_amount+' XP';
+        item.append(info,amount);history.append(item);
+      });
       const played=(rows||[]).map(row=>({place:playerKey(row.place_1)===key?1:playerKey(row.place_2)===key?2:playerKey(row.place_3)===key?3:0,mvp:playerKey(row.mvp)===key})).filter(x=>x.place||x.mvp);
-      const xp=played.reduce((sum,x)=>sum+(x.place===1?100:x.place===2?70:x.place===3?50:0)+(x.mvp?50:0),0);
-      const level=Math.floor(xp/250)+1,within=xp%250;
-      el('xp-total').textContent=String(xp);el('xp-level').textContent='Уровень '+level;el('xp-next').textContent=within+' / 250 XP';el('xp-progress').style.width=(within/250*100)+'%';
       const wins=played.filter(x=>x.place===1).length,podiums=played.filter(x=>x.place>0).length,mvps=played.filter(x=>x.mvp).length;
       const achievements=[
         {icon:'🎮',name:'Первый результат',desc:'Попал в опубликованные результаты турнира',earned:played.length>=1},
@@ -450,7 +475,7 @@ async function uploadProfileMedia(file,kind){
       ]);
       const stats=getTournamentStats(profile.player_name,resultsResponse.data||[]);
       renderTournamentHistory(profile.player_name,resultsResponse.data||[]);
-      renderProgressAndAchievements(profile.player_name,resultsResponse.data||[]);
+      await renderProgressAndAchievements(profile.player_name,resultsResponse.data||[]);
       await loadManualAwards();
       const meta=getTournamentPlayerMeta(tournamentResponse.data?.data,profile.player_name);
       const teamNode=el('team-name');teamNode.textContent=meta.teamName||'Свободный игрок';
