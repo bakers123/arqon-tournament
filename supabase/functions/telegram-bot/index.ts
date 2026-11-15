@@ -76,7 +76,7 @@ Deno.serve(async(req)=>{
     if(action==="menu"){
      let isSupportAdmin=false;try{const {data}=await admin.rpc("get_support_admin_telegram_chats");isSupportAdmin=(data||[]).some((x:any)=>String(x.chat_id)===callbackChatId)}catch{}
      const text="<b>ＡＲＱＯＮ  ＥＳＰＯＲＴＳ</b>\n<i>YOUR GAME. YOUR LEGACY.</i>\n\nВыбери нужный раздел 👇";
-     try{await telegram(bot,"editMessageText",{chat_id:callbackChatId,message_id:callback.message.message_id,text,parse_mode:"HTML",disable_web_page_preview:true,reply_markup:menuMarkup(isSupportAdmin)})}catch{}
+     try{await telegram(bot,"editMessageText",{chat_id:callbackChatId,message_id:callback.message.message_id,text,parse_mode:"HTML",disable_web_page_preview:true,reply_markup:menuMarkup(isSupportAdmin,await getTelegramProfileUrl(admin,callbackChatId))})}catch{}
     }else if(action==="profile"){
      const link=await linkedUser(admin,callbackChatId);
      if(!link){
@@ -264,7 +264,7 @@ Deno.serve(async(req)=>{
    return json({ok:true});
   }
   await setBotCommands(bot).catch(e=>console.warn("Bot commands setup failed",e));
-  await send(bot,chatId,"Не понял команду. Открой меню ARQON — там все основные разделы и быстрые переходы 💜",menuMarkup(false));
+  await send(bot,chatId,"Не понял команду. Открой меню ARQON — там все основные разделы и быстрые переходы 💜",menuMarkup(false,await getTelegramProfileUrl(admin,chatId)));
   return json({ok:true});
  }
  const jwt=(req.headers.get("authorization")??"").replace(/^Bearer\s+/i,"");
