@@ -122,7 +122,7 @@ async function load(){
  const tourneyMvps=mineResults.filter(r=>names.includes(norm(r.mvp))).length;
  const myStats=stats.filter(s=>names.includes(norm(s.player_name)));
  const matchCount=new Set(myStats.map(s=>s.live_match_id)).size;
- const avg=(field,valid)=>{const vals=myStats.map(s=>Number(s[field])).filter(v=>Number.isFinite(v)&&(valid?valid(v):true));return vals.length?vals.reduce((a,b)=>a+b,0)/vals.length:0};
+ const avg=(field,valid)=>{const vals=myStats.map(s=>s[field]).filter(v=>v!==null&&v!==undefined&&v!=='' ).map(Number).filter(v=>Number.isFinite(v)&&(valid?valid(v):true));return vals.length?vals.reduce((a,b)=>a+b,0)/vals.length:0};
  const avgKills=avg('kills'),avgAssists=avg('assists'),avgAdr=avg('adr',v=>v!==null);
  const liveMvps=matches.filter(m=>names.includes(norm(m.mvp_name))).length;
  const earnedKeys=new Set((automatic.data||[]).map(x=>x.achievement_key));
