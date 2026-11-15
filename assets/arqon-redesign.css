@@ -151,3 +151,24 @@ button.primary{background:linear-gradient(110deg,#6d28d9,#8b5cf6)!important;bord
 #arqon-account-modal h2{color:#e9ddff!important}
 #arqon-account-modal .btn{min-height:42px!important}
 #arqon-account-modal input{width:100%!important;min-height:44px!important;padding:0 12px!important}
+
+/* Lightweight motion layer: preserve the purple ARQON look without taxing mobile GPUs. */
+header{backdrop-filter:blur(8px)!important;-webkit-backdrop-filter:blur(8px)!important}
+.arqon-menu-backdrop{backdrop-filter:none!important;-webkit-backdrop-filter:none!important;transition:opacity .2s,visibility .2s!important}
+header nav{transition:transform .22s cubic-bezier(.2,.8,.2,1),visibility .22s!important}
+.card,.portal-card,.arqon-team-card,.league-panel,.league-hero{
+  transition:transform .18s ease,border-color .18s ease,box-shadow .18s ease!important;
+}
+button,.btn,input,select,textarea{transition:background-color .16s ease,border-color .16s ease,color .16s ease,opacity .16s ease!important}
+@media(max-width:900px){
+  header{backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
+  .arqon-menu-backdrop{background:rgba(3,2,8,.64)!important}
+  .card,.portal-card,.arqon-team-card,.league-panel,.league-hero{box-shadow:0 7px 22px rgba(0,0,0,.2)!important}
+}
+@media(hover:none){
+  .portal-card:hover,.arqon-team-card:hover{transform:none!important;box-shadow:0 7px 22px rgba(0,0,0,.2)!important}
+  button.btn:hover,.btn:hover{transform:none!important;filter:none!important}
+}
+@media(prefers-reduced-motion:reduce){
+  *,*::before,*::after{scroll-behavior:auto!important;animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
+}
