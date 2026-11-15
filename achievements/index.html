@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#090812">
+<meta name="description" content="Достижения ARQON Esports — условия получения, прогресс и награды игроков.">
+<title>Достижения — ARQON Esports</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;800&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<style>
+:root{color-scheme:dark;--bg:#090812;--panel:#141120;--line:rgba(173,132,255,.2);--violet:#9b5cff;--pink:#c084fc;--muted:#a39ab4;--white:#f7f3ff}
+*{box-sizing:border-box}body{margin:0;min-height:100vh;background:radial-gradient(ellipse at 50% -15%,rgba(117,61,207,.28),transparent 48%),var(--bg);color:var(--white);font-family:Rajdhani,system-ui,sans-serif}
+a{color:inherit;text-decoration:none}.top{height:68px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;padding:0 clamp(16px,5vw,72px);background:#090812;position:sticky;top:0;z-index:5}.brand{font:800 17px Orbitron;letter-spacing:3px}.brand span{color:var(--pink)}.top-links{display:flex;gap:9px;align-items:center}.top-links a{padding:9px 13px;border:1px solid var(--line);border-radius:10px;color:#ded2f6;font-weight:700}
+main{width:min(1050px,calc(100% - 28px));margin:32px auto 70px}.hero{padding:26px;border:1px solid var(--line);border-radius:20px;background:linear-gradient(120deg,#21133b,#151126 70%);box-shadow:0 15px 40px #0005}.eyebrow{font:700 10px Orbitron;letter-spacing:3px;color:#bd9aff}.hero h1{font:800 clamp(25px,5vw,42px) Orbitron;margin:9px 0}.hero p{margin:0;color:#c9bfd9;font-size:17px}.summary{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin:16px 0}.summary-card{border:1px solid var(--line);background:#141120;border-radius:13px;padding:12px 16px;color:#cfc3e4;font-weight:700}.summary-card strong{color:#fff;font:800 20px Orbitron;margin-right:6px}
+.notice{padding:13px 15px;border:1px solid #9b5cff55;background:#8b5cf612;border-radius:12px;color:#d9cafa;margin:14px 0}.notice a{color:#d9baff;text-decoration:underline;font-weight:800}
+.filters{display:flex;gap:8px;flex-wrap:wrap;margin:20px 0 12px}.filters button{border:1px solid var(--line);border-radius:999px;padding:8px 14px;background:#ffffff06;color:#d8cce9;font:700 14px Rajdhani;cursor:pointer}.filters button.active{background:#8b5cf633;border-color:#a879ff;color:white}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.achievement{display:flex;gap:13px;align-items:flex-start;min-width:0;padding:16px;border:1px solid #ffffff16;border-radius:15px;background:linear-gradient(145deg,#171426ee,#100f19f2)}.achievement.earned{border-color:#a879ff88;background:linear-gradient(145deg,#26183e,#141120)}.icon{width:48px;height:48px;flex:0 0 48px;border-radius:13px;display:grid;place-items:center;background:#7136c933;border:1px solid #9b5cff66;font-size:23px}.copy{flex:1;min-width:0}.title-line{display:flex;align-items:center;justify-content:space-between;gap:8px}.title-line h2{font:700 13px Orbitron;letter-spacing:.6px;margin:2px 0 5px}.state{flex:0 0 auto;font:700 9px Orbitron;letter-spacing:.8px;color:#a9a0b7}.earned .state{color:#d7baff}.desc{color:#bdb3cc;font-size:14px;line-height:1.25}.progress-meta{display:flex;justify-content:space-between;gap:8px;margin-top:12px;color:#d2c6e4;font-size:13px;font-weight:700}.progress-track{height:8px;margin-top:6px;background:#2a2437;border-radius:99px;overflow:hidden}.progress-fill{height:100%;width:0;background:linear-gradient(90deg,#7436d1,#c084fc);border-radius:99px;transition:width .25s ease}.empty{grid-column:1/-1;padding:22px;border:1px dashed #a879ff55;border-radius:14px;text-align:center;color:var(--muted)}
+@media(max-width:650px){.top{height:60px;padding:0 13px}.brand{font-size:13px;letter-spacing:2px}.top-links a{font-size:12px;padding:8px 10px}.grid{grid-template-columns:1fr}.hero{padding:20px}.summary-card{flex:1}.achievement{padding:13px}}
+@media(prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<header class="top"><a class="brand" href="/"><span>ARQON</span> ESPORTS</a><nav class="top-links"><a href="/players/">Игроки</a><a href="/shop/">Магазин</a></nav></header>
+<main>
+<section class="hero"><div class="eyebrow">ARQON · PLAYER PROGRESSION</div><h1>ДОСТИЖЕНИЯ</h1><p>Полный список достижений ARQON. Смотри условия, отслеживай прогресс и открывай новые награды за турниры и матчи Live Center.</p></section>
+<div class="summary"><div class="summary-card"><strong id="earned-count">—</strong> получено</div><div class="summary-card"><strong id="total-count">12</strong> достижений в каталоге</div></div>
+<div id="notice" class="notice" role="status" aria-live="polite">Проверяем аккаунт…</div>
+<div class="filters" aria-label="Фильтр достижений"><button type="button" class="active" data-filter="all">Все</button><button type="button" data-filter="earned">Полученные</button><button type="button" data-filter="locked">Не полученные</button><button type="button" data-filter="tournament">Турниры</button><button type="button" data-filter="live">Live Center</button></div>
+<section id="achievement-grid" class="grid"><div class="empty">Загружаем достижения…</div></section>
+</main>
+<script>
+(()=>{
+const URL='https://uscnaqcvuwjrmkjyuklp.supabase.co';
+const KEY='sb_publishable_oE2Bc1wPAcDt6HE8bOUj3Q_0-2FfIxB';
+const db=window.supabase.createClient(URL,KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true,storageKey:'sb-uscnaqcvuwjrmkjyuklp-auth-token'}});
+const $=id=>document.getElementById(id);
+const norm=v=>String(v||'').trim().toLocaleLowerCase('ru-RU');
+const catalog=[
+{key:'tournament_first',icon:'🎮',name:'Первый результат',desc:'Попади в опубликованные результаты любого турнира ARQON.',group:'tournament',goal:1,unit:'результат'},
+{key:'tournament_podium',icon:'🥉',name:'Первый пьедестал',desc:'Займи 1-е, 2-е или 3-е место на турнире.',group:'tournament',goal:1,unit:'пьедестал'},
+{key:'tournament_champion',icon:'🏆',name:'Чемпион',desc:'Займи первое место на турнире ARQON.',group:'tournament',goal:1,unit:'победа'},
+{key:'tournament_mvp',icon:'⭐',name:'MVP турнира',desc:'Получи награду самого ценного игрока турнира.',group:'tournament',goal:1,unit:'MVP'},
+{key:'tournament_veteran',icon:'🔥',name:'Ветеран',desc:'Пять раз попади в опубликованные результаты турниров.',group:'tournament',goal:5,unit:'результатов'},
+{key:'tournament_legend',icon:'👑',name:'Легенда ARQON',desc:'Одержи пять побед на турнирах.',group:'tournament',goal:5,unit:'побед'},
+{key:'live_first_match',icon:'🎯',name:'Первый матч',desc:'Получи статистику хотя бы за один матч Live Center.',group:'live',goal:1,unit:'матч'},
+{key:'live_stability',icon:'🧱',name:'Стабильность',desc:'Сыграй минимум пять матчей со внесённой статистикой.',group:'live',goal:5,unit:'матчей'},
+{key:'live_adr_100',icon:'💥',name:'ADR 100+',desc:'Подними средний ADR до 100 или выше по матчам Live Center.',group:'live',goal:100,unit:'ADR'},
+{key:'live_fragger',icon:'🔥',name:'Фраггер',desc:'Достигни среднего показателя не менее 20 убийств за матч.',group:'live',goal:20,unit:'убийств'},
+{key:'live_team_player',icon:'🤝',name:'Командный игрок',desc:'Достигни среднего показателя не менее 8 ассистов за матч.',group:'live',goal:8,unit:'ассистов'},
+{key:'live_mvp',icon:'🌟',name:'MVP Live',desc:'Получи отметку MVP минимум в одном матче Live Center.',group:'live',goal:1,unit:'MVP'}
+];
+let rows=[],filter='all';
+function make(tag,cls,txt){const n=document.createElement(tag);if(cls)n.className=cls;if(txt!==undefined)n.textContent=txt;return n}
+async function allRows(table,columns){
+ let out=[],from=0,step=1000;
+ for(let page=0;page<20;page++){
+  const {data,error}=await db.from(table).select(columns).range(from,from+step-1);
+  if(error)throw error;
+  out=out.concat(data||[]);
+  if(!data||data.length<step)break;
+  from+=step;
+ }
+ return out;
+}
+function setProgress(item,value,label,earned){
+ const raw=Number(value)||0;
+ if(item.key==='live_adr_100'||item.key==='live_fragger'||item.key==='live_team_player'){
+  item.progress=Math.max(0,Math.min(100,raw/item.goal*100));
+  item.progressLabel=label;
+ }else{
+  item.progress=Math.max(0,Math.min(100,raw/item.goal*100));
+  item.progressLabel=label||Math.min(raw,item.goal)+' / '+item.goal+' '+item.unit;
+ }
+ item.earned=!!earned;
+}
+function render(){
+ const host=$('achievement-grid');host.replaceChildren();
+ const shown=rows.filter(x=>filter==='all'||(filter==='earned'?x.earned:filter==='locked'?!x.earned:x.group===filter));
+ if(!shown.length){host.append(make('div','empty','В этой категории пока нет достижений.'));return}
+ shown.forEach(item=>{
+  const card=make('article','achievement'+(item.earned?' earned':''));
+  card.append(make('div','icon',item.icon));
+  const copy=make('div','copy'),line=make('div','title-line');
+  line.append(make('h2','',item.name),make('span','state',item.earned?'ПОЛУЧЕНО':'В ПРОЦЕССЕ'));
+  copy.append(line,make('div','desc',item.desc));
+  const meta=make('div','progress-meta');meta.append(make('span','',item.earned?'Цель выполнена':'Твой прогресс'),make('span','',item.progressLabel||'0%'));
+  const track=make('div','progress-track'),fill=make('div','progress-fill');fill.style.width=item.earned?'100%':item.progress+'%';track.append(fill);copy.append(meta,track);card.append(copy);host.append(card);
+ });
+}
+function wireFilters(){document.querySelectorAll('.filters button').forEach(b=>b.addEventListener('click',()=>{filter=b.dataset.filter;document.querySelectorAll('.filters button').forEach(x=>x.classList.toggle('active',x===b));render()}))}
+async function load(){
+ wireFilters();
+ const {data:{user}}=await db.auth.getUser();
+ if(!user){
+  $('notice').innerHTML='Войди через Steam, чтобы видеть личный прогресс. Пока можешь изучить все условия достижений. <a href="/players/">Войти / открыть игроков</a>';
+  rows=catalog.map(x=>({...x,progress:0,progressLabel:'Войди, чтобы увидеть прогресс',earned:false}));
+  $('earned-count').textContent='0';render();return;
+ }
+ const {data:profile,error:profileError}=await db.from('profiles').select('arqon_id,display_name,steam_persona_name,is_public').eq('user_id',user.id).maybeSingle();
+ if(profileError)throw profileError;
+ if(!profile){
+  $('notice').innerHTML='Аккаунт найден, но профиль ARQON ещё не создан. <a href="/players/">Открой раздел игроков и заверши настройку профиля.</a>';
+  rows=catalog.map(x=>({...x,progress:0,progressLabel:'Профиль не настроен',earned:false}));$('earned-count').textContent='0';render();return;
+ }
+ if(profile.is_public===false)$('notice').textContent='Прогресс виден только тебе, потому что профиль закрытый.';
+ else $('notice').textContent='Отслеживаем прогресс профиля #'+profile.arqon_id+'. Данные обновляются автоматически после публикации результатов и внесения статистики.';
+ const names=[profile.display_name,profile.steam_persona_name].map(norm).filter(Boolean);
+ const [results,stats,matches,automatic]=await Promise.all([
+  allRows('results','id,place_1,place_2,place_3,mvp'),
+  allRows('live_match_player_stats','live_match_id,player_name,kills,assists,adr'),
+  allRows('live_matches','id,mvp_name'),
+  db.from('arqon_automatic_achievements').select('achievement_key').eq('arqon_id',profile.arqon_id)
+ ]);
+ if(automatic.error)throw automatic.error;
+ const mineResults=results.filter(r=>[r.place_1,r.place_2,r.place_3,r.mvp].some(n=>names.includes(norm(n))));
+ const played=mineResults.filter(r=>[r.place_1,r.place_2,r.place_3].some(n=>names.includes(norm(n))));
+ const wins=mineResults.filter(r=>names.includes(norm(r.place_1))).length;
+ const podiums=mineResults.filter(r=>[r.place_1,r.place_2,r.place_3].some(n=>names.includes(norm(n)))).length;
+ const tourneyMvps=mineResults.filter(r=>names.includes(norm(r.mvp))).length;
+ const myStats=stats.filter(s=>names.includes(norm(s.player_name)));
+ const matchCount=new Set(myStats.map(s=>s.live_match_id)).size;
+ const avg=(field,valid)=>{const vals=myStats.map(s=>Number(s[field])).filter(v=>Number.isFinite(v)&&(valid?valid(v):true));return vals.length?vals.reduce((a,b)=>a+b,0)/vals.length:0};
+ const avgKills=avg('kills'),avgAssists=avg('assists'),avgAdr=avg('adr',v=>v!==null);
+ const liveMvps=matches.filter(m=>names.includes(norm(m.mvp_name))).length;
+ const earnedKeys=new Set((automatic.data||[]).map(x=>x.achievement_key));
+ rows=catalog.map(x=>({...x}));
+ const values={
+  tournament_first:[played.length,played.length>=1,played.length+' / 1 результат'],
+  tournament_podium:[podiums,podiums>=1,podiums+' / 1 пьедестал'],
+  tournament_champion:[wins,wins>=1,wins+' / 1 победа'],
+  tournament_mvp:[tourneyMvps,tourneyMvps>=1,tourneyMvps+' / 1 MVP'],
+  tournament_veteran:[played.length,played.length>=5,Math.min(played.length,5)+' / 5 результатов'],
+  tournament_legend:[wins,wins>=5,Math.min(wins,5)+' / 5 побед'],
+  live_first_match:[matchCount,earnedKeys.has('live_first_match'),matchCount+' / 1 матч'],
+  live_stability:[matchCount,earnedKeys.has('live_stability'),Math.min(matchCount,5)+' / 5 матчей'],
+  live_adr_100:[avgAdr,earnedKeys.has('live_adr_100'),avgAdr.toFixed(1)+' / 100 ADR'],
+  live_fragger:[avgKills,earnedKeys.has('live_fragger'),avgKills.toFixed(1)+' / 20 убийств'],
+  live_team_player:[avgAssists,earnedKeys.has('live_team_player'),avgAssists.toFixed(1)+' / 8 ассистов'],
+  live_mvp:[liveMvps,earnedKeys.has('live_mvp'),liveMvps+' / 1 MVP']
+ };
+ rows.forEach(x=>{const v=values[x.key];setProgress(x,v[0],v[2],v[1])});
+ $('earned-count').textContent=rows.filter(x=>x.earned).length;render();
+}
+load().catch(err=>{$('notice').textContent='Не удалось загрузить прогресс: '+(err.message||'ошибка соединения');$('achievement-grid').replaceChildren(make('div','empty','Попробуй обновить страницу позже.'))});
+})();
+</script>
+</body>
+</html>
