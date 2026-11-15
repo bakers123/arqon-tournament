@@ -51,7 +51,7 @@
     <div class="cover" id="cover"><img id="cover-image" class="hidden" alt=""></div>
     <section class="profile">
       <div class="avatar" id="avatar">A</div>
-      <div class="identity"><div class="eyebrow">PLAYER PROFILE</div><h1 class="name" id="name">Загрузка профиля…</h1><div class="id" id="arqon-id"></div><div id="cosmetic-title" class="muted" style="font:700 11px Orbitron;letter-spacing:1.2px;margin-top:7px"></div></div>
+      <div class="identity"><div class="eyebrow">PLAYER PROFILE</div><h1 class="name" id="name">Загрузка профиля…</h1><div class="id" id="arqon-id"></div><div id="cosmetic-title" class="muted" style="font:700 11px Orbitron;letter-spacing:1.2px;margin-top:7px"></div><div id="cosmetic-badge" class="muted hidden" style="font:700 10px Orbitron;letter-spacing:1px;margin-top:5px;color:#f3c969">✦ ARQON CORE</div></div>
       <div class="actions"><button class="button hidden" id="edit-toggle" type="button">Настроить профиль</button></div>
     </section>
     <div class="content">
@@ -512,6 +512,9 @@ async function uploadProfileMedia(file,kind){
       const titleText={title_tactician:'ТАКТИК',title_fragger:'FRAGGER'}[profile.equipped_title_id]||'';
       el('cosmetic-title').textContent=titleText;
       el('cosmetic-title').classList.toggle('hidden',!titleText);
+      const badgeText={badge_arqon_core:'✦ ARQON CORE'}[profile.equipped_badge_id]||'';
+      el('cosmetic-badge').textContent=badgeText;
+      el('cosmetic-badge').classList.toggle('hidden',!badgeText);
       el('arqon-id').textContent='ARQON ID · #'+profile.arqon_id;
       el('stat-id').textContent='#'+profile.arqon_id;
       el('player-name').textContent=profile.player_name||'Не указан';
