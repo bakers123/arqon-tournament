@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#090812"><meta name="robots" content="noindex,nofollow">
+<title>Уведомления — ARQON Esports</title><link rel="icon" href="/logo.png">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;800&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/assets/arqon-redesign.css?v=13">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-2YLPZGQZSX"></script><script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments)}gtag('js',new Date());gtag('config','G-2YLPZGQZSX');</script>
+<style>
+:root{color-scheme:dark;--n-line:#a78bfa35;--n-muted:#a69bb8;--n-text:#f6f1ff}
+*{box-sizing:border-box}html{min-height:100%;background:#090812}body{margin:0;min-height:100vh;color:var(--n-text);font-family:Rajdhani,system-ui,sans-serif;background:radial-gradient(ellipse at 50% -15%,#753dce45,transparent 48%),#090812}
+.ntop{height:74px;display:flex;align-items:center;justify-content:space-between;padding:0 clamp(16px,5vw,72px);border-bottom:1px solid var(--n-line);background:#090812dd;position:sticky;top:0;z-index:20}
+.nbrand{font:800 16px Orbitron,sans-serif;letter-spacing:1.4px;color:#fff;text-decoration:none}.nbrand span{color:#a78bfa}.ntop nav{display:flex;gap:9px}.ntop nav a{padding:8px 12px;border:1px solid var(--n-line);border-radius:10px;color:#e9ddff;text-decoration:none;font-weight:700}
+.nwrap{width:min(920px,calc(100% - 30px));margin:38px auto 70px}.neyebrow{font:700 11px Orbitron,sans-serif;letter-spacing:2px;color:#b79aff}.nhero h1{font:800 clamp(25px,5vw,38px) Orbitron,sans-serif;margin:10px 0}.nhero p{color:var(--n-muted);font-size:17px;margin:0 0 23px}
+.ncard{border:1px solid var(--n-line);border-radius:18px;background:linear-gradient(145deg,#181427f5,#0e0d17fa);box-shadow:0 18px 50px #0005;overflow:hidden}
+.ntoolbar{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:16px;border-bottom:1px solid #ffffff14;flex-wrap:wrap}
+.nfilters{display:flex;gap:7px;flex-wrap:wrap}.nfilter,.naction{border:1px solid var(--n-line);background:#ffffff08;color:#dcd0f4;border-radius:9px;padding:8px 12px;font:700 13px Rajdhani,sans-serif;cursor:pointer}.nfilter.active{background:#8b5cf633;border-color:#a78bfa99;color:#fff}.naction.primary{background:linear-gradient(120deg,#7540d7,#9b5cff);color:#fff}
+.nsummary{padding:0 17px;color:var(--n-muted);font-size:13px}
+.nlist{min-height:180px}.nitem{display:grid;grid-template-columns:10px minmax(0,1fr) auto;gap:12px;align-items:start;padding:16px 18px;border-bottom:1px solid #ffffff10;cursor:pointer;transition:background .16s}.nitem:hover,.nitem.unread{background:#8b5cf612}.ndot{width:8px;height:8px;border-radius:50%;background:#a78bfa;margin-top:7px}.nitem:not(.unread) .ndot{background:#4d465d}.ncontent{min-width:0}.ncontent h3{font:700 16px Rajdhani,sans-serif;margin:0 0 3px;color:#fff;overflow-wrap:anywhere}.ncontent p{margin:0;color:#b9b0ca;font-size:15px;line-height:1.4;white-space:pre-wrap;overflow-wrap:anywhere}.nmeta{color:#8f849f;font-size:12px;margin-top:7px}.ntag{font:700 10px Orbitron,sans-serif;letter-spacing:.4px;color:#c4a8ff;border:1px solid #a78bfa33;border-radius:20px;padding:5px 7px;white-space:nowrap}
+.nempty{padding:50px 20px;text-align:center;color:var(--n-muted)}.nempty strong{display:block;color:#eee5ff;font:700 16px Orbitron,sans-serif;margin-bottom:8px}.nfoot{padding:15px;text-align:center}.nnotice{margin:0 0 14px;padding:12px 14px;border:1px solid var(--n-line);border-radius:11px;color:#d8cafa;background:#8b5cf615}.nnotice a{color:#d8c7ff}
+@media(max-width:600px){.nwrap{margin:24px auto 48px}.ntop{height:64px;padding:0 14px}.ntop nav a{font-size:12px;padding:7px 9px}.ntoolbar{align-items:flex-start}.nfilters{width:100%}.nfilter{flex:1;padding:8px 7px}.nitem{padding:14px 12px;gap:9px}.ntag{display:none}}
+@media(prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<header class="ntop"><a class="nbrand" href="/">ARQON <span>ESPORTS</span></a><nav><a href="/">На главную</a><a href="/players/">Профиль</a></nav></header>
+<main class="nwrap">
+<section class="nhero"><div class="neyebrow">ARQON · PERSONAL CENTER</div><h1>УВЕДОМЛЕНИЯ</h1><p>Здесь собраны ответы поддержки, приглашения в команды и другие события аккаунта.</p></section>
+<div id="nnotice" class="nnotice" hidden></div>
+<section class="ncard" aria-label="История уведомлений">
+<div class="ntoolbar"><div class="nfilters" role="group" aria-label="Фильтр уведомлений">
+<button class="nfilter active" data-filter="all">Все</button><button class="nfilter" data-filter="unread">Непрочитанные</button><button class="nfilter" data-filter="support">Поддержка</button><button class="nfilter" data-filter="teams">Команды</button><button class="nfilter" data-filter="system">Система</button>
+</div><button id="nreadall" class="naction primary" type="button">Прочитать все</button></div>
+<div class="nsummary" id="nsummary">Загрузка…</div><div id="nlist" class="nlist"><div class="nempty">Загружаем уведомления…</div></div>
+<div class="nfoot"><button id="nmore" class="naction" type="button" hidden>Загрузить ещё</button></div>
+</section>
+</main>
+<script>
+(()=>{const URL='https://uscnaqcvuwjrmkjyuklp.supabase.co',KEY='sb_publishable_oE2Bc1wPAcDt6HE8bOUj3Q_0-2FfIxB';const db=window.supabase.createClient(URL,KEY,{auth:{storageKey:'sb-uscnaqcvuwjrmkjyuklp-auth-token',persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
+const $=id=>document.getElementById(id),list=$('nlist'),summary=$('nsummary'),notice=$('nnotice');let uid=null,rows=[],offset=0,more=true,filter='all',busy=false,channel=null;
+const labels={support_reply:'Поддержка',support_status:'Поддержка',team_invitation:'Команды',team_offer:'Команды',team_status:'Команды',system:'Система'};
+const category=t=>labels[t]||'События';
+const safePath=v=>{try{const u=new URL(v||'/',location.origin);return u.origin===location.origin?u.pathname+u.search+u.hash:'/'}catch{return '/'}};
+const ago=v=>{const d=Date.now()-new Date(v).getTime();if(d<60000)return'только что';if(d<3600000)return Math.floor(d/60000)+' мин. назад';if(d<86400000)return Math.floor(d/3600000)+' ч. назад';return new Date(v).toLocaleString('ru-RU',{dateStyle:'medium',timeStyle:'short'})};
+const visible=()=>rows.filter(n=>filter==='all'||(filter==='unread'?!n.is_read:filter==='support'?category(n.notification_type)==='Поддержка':filter==='teams'?category(n.notification_type)==='Команды':category(n.notification_type)==='Система'));
+function render(){const arr=visible(),unread=rows.filter(n=>!n.is_read).length;summary.textContent='Загружено: '+rows.length+' · Непрочитанных: '+unread;list.replaceChildren();if(!arr.length){const e=document.createElement('div');e.className='nempty';const strong=document.createElement('strong');strong.textContent=filter==='unread'?'Всё прочитано': 'Здесь пока пусто';e.append(strong,document.createTextNode(filter==='unread'?'Непрочитанных уведомлений нет.':'Уведомления этой категории появятся здесь.'));list.append(e)}else arr.forEach(n=>{const item=document.createElement('article');item.className='nitem'+(!n.is_read?' unread':'');item.tabIndex=0;item.setAttribute('role','button');const dot=document.createElement('i');dot.className='ndot';const content=document.createElement('div');content.className='ncontent';const h=document.createElement('h3');h.textContent=n.title||'Уведомление ARQON';const p=document.createElement('p');p.textContent=n.body||'';const meta=document.createElement('div');meta.className='nmeta';meta.textContent=ago(n.created_at);content.append(h,p,meta);const tag=document.createElement('span');tag.className='ntag';tag.textContent=category(n.notification_type);item.append(dot,content,tag);const go=async()=>{if(!n.is_read){const {error}=await db.from('user_notifications').update({is_read:true}).eq('id',n.id).eq('user_id',uid);if(!error)n.is_read=true;render()}const path=safePath(n.target_url);if(path!=='/'||n.target_url)location.href=path};item.addEventListener('click',go);item.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();go()}});list.append(item)});$('nmore').hidden=!more}
+async function load(reset=false){if(busy)return;busy=true;try{if(reset){rows=[];offset=0;more=true}const {data,error}=await db.from('user_notifications').select('id,notification_type,title,body,target_url,is_read,created_at').eq('user_id',uid).order('created_at',{ascending:false}).range(offset,offset+49);if(error)throw error;const batch=data||[];rows=reset?batch:rows.concat(batch);offset+=batch.length;more=batch.length===50;render()}catch(e){notice.textContent='Не удалось загрузить уведомления. Обнови страницу или попробуй позже.';notice.hidden=false;console.warn(e)}finally{busy=false}}
+document.querySelectorAll('[data-filter]').forEach(b=>b.addEventListener('click',()=>{filter=b.dataset.filter;document.querySelectorAll('[data-filter]').forEach(x=>x.classList.toggle('active',x===b));render()}));
+$('nreadall').addEventListener('click',async()=>{const {error}=await db.from('user_notifications').update({is_read:true}).eq('user_id',uid).eq('is_read',false);if(error){notice.textContent='Не удалось отметить уведомления прочитанными.';notice.hidden=false;return}rows=rows.map(n=>({...n,is_read:true}));render()});
+$('nmore').addEventListener('click',()=>load(false));
+async function start(session){if(channel){await db.removeChannel(channel);channel=null}uid=session?.user?.id||null;if(!uid){notice.hidden=false;notice.textContent='Войди в аккаунт ARQON, чтобы посмотреть свои уведомления. Перейти к ';const a=document.createElement('a');a.href='/players/';a.textContent='профилю';notice.append(a);list.innerHTML='<div class="nempty"><strong>Нужен вход</strong>История уведомлений доступна только владельцу аккаунта.</div>';$('nreadall').disabled=true;$('nmore').hidden=true;summary.textContent='';return}notice.hidden=true;$('nreadall').disabled=false;await load(true);channel=db.channel('arqon-notifications-page-'+uid).on('postgres_changes',{event:'INSERT',schema:'public',table:'user_notifications',filter:'user_id=eq.'+uid},p=>{if(p.new&&!rows.some(n=>n.id===p.new.id)){rows.unshift(p.new);render()}}).subscribe()}
+db.auth.getSession().then(({data,error})=>{if(error)throw error;return start(data.session)}).catch(()=>{notice.hidden=false;notice.textContent='Не удалось проверить вход. Обнови страницу.'});
+db.auth.onAuthStateChange((_,s)=>setTimeout(()=>start(s),0));
+})();
+</script>
+<script src="/assets/arqon-notifications.js?v=2"></script>
+</body></html>
