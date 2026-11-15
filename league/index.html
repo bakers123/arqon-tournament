@@ -3671,6 +3671,10 @@ function leagueToggleResult(i){const type=document.getElementById('lm-type-'+i)?
 function leagueRenderAdmin(){
   const box=document.getElementById('league-admin-matches'); if(!box||!leagueData)return;
   const mvpInput=document.getElementById('league-mvp-input');
+  const finishButton=document.getElementById('league-finish-button');
+  const addMatchButton=document.querySelector('button[onclick="leagueAddMatch()"]');
+  if(finishButton)finishButton.style.display=leagueData.completed_at?'none':'';
+  if(addMatchButton)addMatchButton.style.display=leagueData.completed_at?'none':'';
   if(leagueData.completed_at){
     const podium=(leagueData.final_standings||[]).slice(0,3);
     box.innerHTML='<div class="league-panel"><h2>🔒 Лига завершена</h2><p class="league-muted">Результаты зафиксированы '+new Date(leagueData.completed_at).toLocaleString('ru-RU')+'. Изменение результатов и расписания заблокировано.</p><div class="league-match-grid">'+podium.map((t,i)=>'<article class="league-match"><div class="league-match-top"><span>'+['🥇 ЧЕМПИОН','🥈 2 МЕСТО','🥉 3 МЕСТО'][i]+'</span></div><div class="league-match-teams">'+leagueEscape(t.team)+'</div><div class="league-result">'+t.points+' очков · '+t.wins+' побед</div></article>').join('')+'</div></div>';
@@ -3688,7 +3692,7 @@ async function loadLeague(adminView=false){
   if(status)status.textContent='Загружаем данные Лиги…';
   try{
     await leagueFetch(); leagueRenderPublic(); if(adminView)leagueRenderAdmin();
-    if(status)status.textContent=`Загружено ${leagueData.matches.length} матчей и ${leagueData.teams.length} команд. Изменения сохраняются в Supabase.`;
+    if(status)status.textContent=leagueData.completed_at?'Сезон завершён. Итоговые места зафиксированы.':`Загружено ${leagueData.matches.length} матчей и ${leagueData.teams.length} команд. Изменения сохраняются в Supabase.`;
   }catch(e){
     const msg=`Не удалось загрузить Лигу: ${e.message||e}. Проверь, что создана таблица league_data (SQL-файл league_data_setup.sql).`;
     if(status)status.innerHTML=leagueEscape(msg);
