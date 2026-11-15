@@ -128,19 +128,26 @@ Deno.serve(async(req)=>{
       buttons.push([{text:"↩️ К командам",callback_data:"teams"},{text:"Главное меню",callback_data:"menu"}]);
       await renderPanel(bot,callbackChatId,callback.message.message_id,"👥 <b>"+esc(team.name)+"</b>\nИгроков: "+roster.length+"\n\n"+(rows.join("\n")||"Состав пока не заполнен."),{inline_keyboard:buttons});
      }
-    }else if(action==="players"){
+    }else if(action==="players"||action.startsWith("players:page:")){
+     const pageMatch=action.match(/^players:page:(\\d+)$/),page=Math.max(0,Number(pageMatch?.[1]??0));
      const teams=await loadTournamentTeams(admin),roster=teams.flatMap((t:any)=>(Array.isArray(t.players)?t.players:[]).map((p:any)=>({...p,teamName:t.name,teamId:t.id})));
-     const unique=Array.from(new Map(roster.map((p:any)=>[String(p.account_id||p.name),p])).values()).slice(0,30) as any[];
-     const keyboard:any[][]=unique.map((p:any)=>[{text:"🎯 "+String(p.name||"Игрок").slice(0,45),callback_data:"player:"+String(p.account_id||"").slice(0,45)}]);
-     keyboard.push([{text:"↻ Обновить",callback_data:"players"},{text:"↩️ Главное меню",callback_data:"menu"}]);
-     await renderPanel(bot,callbackChatId,callback.message.message_id,"🎯 <b>ИГРОКИ ARQON</b>\n\nИгроков в составах: "+roster.length+"\nВыбери игрока, чтобы посмотреть его игровые данные.",{inline_keyboard:keyboard});
+     const unique=Array.from(new Map(roster.map((p:any)=>[String(p.account_id||p.name),p])).values()) as any[];
+     const pageSize=5,totalPages=Math.max(1,Math.ceil(unique.length/pageSize)),currentPage=Math.min(page,totalPages-1),visible=unique.slice(currentPage*pageSize,(currentPage+1)*pageSize);
+     const keyboard:any[][]=visible.map((p:any)=>[{text:"🎯 "+String(p.name||"Игрок").slice(0,45),callback_data:"player:"+String(p.account_id||"").slice(0,45)+":"+currentPage}]);
+     const nav:any[]=[];
+     if(currentPage>0)nav.push({text:"⬅️ Назад",callback_data:"players:page:"+(currentPage-1)});
+     nav.push({text:(currentPage+1)+" / "+totalPages,callback_data:"players:page:"+currentPage});
+     if(currentPage<totalPages-1)nav.push({text:"Вперёд ➡️",callback_data:"players:page:"+(currentPage+1)});
+     if(nav.length)keyboard.push(nav);
+     keyboard.push([{text:"↻ Обновить",callback_data:"players:page:"+currentPage},{text:"↩️ Главное меню",callback_data:"menu"}]);
+     await renderPanel(bot,callbackChatId,callback.message.message_id,"🎯 <b>ИГРОКИ ARQON</b>\n\nВсего игроков в составах: "+roster.length+"\nСтраница "+(currentPage+1)+" из "+totalPages+" · по 5 игроков\n\nВыбери игрока, чтобы посмотреть его игровые данные.",{inline_keyboard:keyboard});
     }else if(action.startsWith("player:")){
-     const playerId=action.slice(7),teams=await loadTournamentTeams(admin);
+     const playerParts=action.slice(7).split(":"),playerId=playerParts[0],returnPage=Math.max(0,Number(playerParts[1]??0)),teams=await loadTournamentTeams(admin);
      let found:any=null;for(const t of teams){const p=(t.players||[]).find((x:any)=>String(x.account_id)===playerId);if(p){found={...p,teamName:t.name};break}}
      if(!found){await renderPanel(bot,callbackChatId,callback.message.message_id,"Игрок не найден в текущих составах.",backMenu)}
      else{
       const text="🎯 <b>"+esc(found.name)+"</b>\nКоманда: "+esc(found.teamName||"Свободный агент")+"\nFACEIT: "+(found.faceitLevel??"не указан")+"\nРейтинг ARQON: "+(found.arqonRating??"не указан")+"\nРоль: "+esc(found.rosterRole||"основной состав");
-      await renderPanel(bot,callbackChatId,callback.message.message_id,text,{inline_keyboard:[[{text:"↩️ К игрокам",callback_data:"players"}],[{text:"↩️ Главное меню",callback_data:"menu"}]]});
+      await renderPanel(bot,callbackChatId,callback.message.message_id,text,{inline_keyboard:[[{text:"↩️ К игрокам",callback_data:"players:page:"+returnPage}],[{text:"↩️ Главное меню",callback_data:"menu"}]]});
      }
     }else if(action==="support"){
      const link=await linkedUser(admin,callbackChatId);
