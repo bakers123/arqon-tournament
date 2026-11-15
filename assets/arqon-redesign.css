@@ -1,0 +1,77 @@
+/* ARQON unified visual system v1 */
+:root{
+  --arq-bg:#08070d;--arq-surface:#11101a;--arq-surface-2:#171422;
+  --arq-border:rgba(196,181,253,.16);--arq-border-strong:rgba(167,139,250,.34);
+  --arq-purple:#8b5cf6;--arq-purple-2:#a78bfa;--arq-lilac:#ddd6fe;
+  --arq-text:#f5f3ff;--arq-muted:#a6a0b7;
+  --arq-shadow:0 22px 70px rgba(0,0,0,.42);
+}
+html{background:var(--arq-bg);scroll-behavior:smooth}
+body{background:radial-gradient(ellipse at 50% -18%,rgba(109,40,217,.17),transparent 43%),var(--arq-bg);color:var(--arq-text)}
+body.arqon-menu-open{overflow:hidden}
+header{
+  position:sticky!important;top:0!important;z-index:800!important;
+  display:flex!important;align-items:center!important;gap:14px!important;
+  min-height:76px!important;padding:12px clamp(14px,3vw,34px)!important;
+  background:rgba(9,8,15,.88)!important;border-bottom:1px solid var(--arq-border)!important;
+  box-shadow:0 8px 32px rgba(0,0,0,.22)!important;backdrop-filter:blur(18px)!important;
+}
+header .brand{display:flex!important;align-items:center!important;min-width:0!important;flex:0 0 auto!important}
+header .brand img{width:clamp(132px,15vw,190px)!important;max-width:100%!important;height:auto!important}
+.arqon-menu-trigger{
+  width:44px!important;height:44px!important;min-width:44px!important;display:grid!important;place-items:center!important;
+  padding:0!important;border:1px solid var(--arq-border-strong)!important;border-radius:13px!important;
+  background:linear-gradient(145deg,rgba(139,92,246,.22),rgba(139,92,246,.07))!important;
+  color:#e9ddff!important;cursor:pointer!important;box-shadow:inset 0 1px rgba(255,255,255,.08),0 5px 18px rgba(109,40,217,.12)!important;
+}
+.arqon-menu-trigger:hover{border-color:rgba(196,181,253,.62)!important;background:rgba(139,92,246,.25)!important}
+.arqon-menu-trigger svg{width:21px;height:21px}
+header nav{
+  position:fixed!important;z-index:1002!important;top:0!important;left:0!important;bottom:0!important;
+  width:min(350px,88vw)!important;max-width:350px!important;height:100dvh!important;max-height:100dvh!important;
+  display:flex!important;flex-direction:column!important;align-items:stretch!important;justify-content:flex-start!important;
+  gap:10px!important;padding:18px 15px 28px!important;margin:0!important;
+  overflow-y:auto!important;overflow-x:hidden!important;white-space:normal!important;
+  background:linear-gradient(165deg,#171126 0%,#100e19 45%,#0b0a11 100%)!important;
+  border-right:1px solid var(--arq-border-strong)!important;box-shadow:var(--arq-shadow)!important;
+  transform:translateX(-105%)!important;visibility:hidden!important;transition:transform .28s cubic-bezier(.2,.8,.2,1),visibility .28s!important;
+  overscroll-behavior:contain!important;
+}
+header nav.arqon-nav-open{transform:translateX(0)!important;visibility:visible!important}
+header nav .arqon-nav-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:7px 5px 15px;border-bottom:1px solid var(--arq-border);margin-bottom:3px}
+.arqon-nav-brand{font:800 17px Orbitron,Arial,sans-serif;letter-spacing:1.6px;color:#f4edff}
+.arqon-nav-brand span{color:#a78bfa}
+.arqon-nav-close{width:34px!important;height:34px!important;min-height:34px!important;padding:0!important;border-radius:10px!important;background:rgba(255,255,255,.06)!important;border:1px solid var(--arq-border)!important;color:#ddd6fe!important;font-size:20px!important}
+header nav .arqon-nav-group{display:flex;flex-direction:column;gap:5px;padding:7px 0;border-bottom:1px solid rgba(196,181,253,.09)}
+header nav .arqon-nav-group-title{padding:4px 10px;color:#8e87a4;font-size:10px!important;font-weight:800!important;letter-spacing:1.7px!important;text-transform:uppercase}
+header nav button[data-tab]{
+  display:flex!important;align-items:center!important;justify-content:flex-start!important;gap:11px!important;
+  width:100%!important;min-height:44px!important;height:auto!important;flex:0 0 auto!important;
+  margin:0!important;padding:10px 12px!important;border:1px solid transparent!important;border-radius:11px!important;
+  background:transparent!important;color:#c7c0d8!important;text-align:left!important;white-space:normal!important;
+  font-size:13px!important;font-weight:650!important;letter-spacing:.15px!important;transition:background .18s,border-color .18s,color .18s!important;
+}
+header nav button[data-tab]:hover{background:rgba(167,139,250,.10)!important;border-color:var(--arq-border)!important;color:#fff!important}
+header nav button[data-tab].active{background:linear-gradient(100deg,rgba(124,58,237,.28),rgba(139,92,246,.09))!important;border-color:rgba(167,139,250,.30)!important;color:#fff!important;box-shadow:inset 3px 0 #a78bfa!important}
+header nav .nav-social-btn{display:flex!important;align-items:center!important;gap:10px!important;width:100%!important;min-height:42px!important;padding:10px 12px!important;margin:2px 0 0!important;border-radius:11px!important;border:1px solid var(--arq-border)!important;background:rgba(255,255,255,.035)!important;color:#d8ccf4!important;text-decoration:none!important;font-size:12px!important}
+header nav .nav-social-btn:hover{background:rgba(139,92,246,.12)!important}
+.arqon-menu-backdrop{position:fixed;inset:0;z-index:1001;background:rgba(3,2,8,.68);backdrop-filter:blur(3px);opacity:0;visibility:hidden;transition:opacity .25s,visibility .25s}
+.arqon-menu-backdrop.is-open{opacity:1;visibility:visible}
+#arqon-account-button{margin-left:auto!important;border-radius:12px!important;border:1px solid var(--arq-border-strong)!important;background:rgba(139,92,246,.12)!important;color:#e9ddff!important;min-height:42px!important;padding:0 15px!important}
+.mobile-nav-scrollbar{display:none!important}
+main{width:min(1440px,100%)!important;margin:0 auto!important;padding:clamp(14px,2.5vw,30px)!important}
+.card,.league-panel,.league-hero,.arqon-hub-panel,.arqon-team-card{
+  border-color:var(--arq-border)!important;box-shadow:0 10px 34px rgba(0,0,0,.18)!important;
+}
+.card{border-radius:16px!important;background:linear-gradient(145deg,rgba(24,21,36,.94),rgba(14,13,21,.96))!important}
+button.btn,.btn{border-radius:11px!important;transition:transform .18s,border-color .18s,filter .18s!important}
+button.btn:hover,.btn:hover{filter:brightness(1.12);transform:translateY(-1px)}
+input,select,textarea{border-radius:10px!important;border-color:rgba(196,181,253,.2)!important;background-color:#100e18!important;color:#f5f3ff!important}
+input:focus,select:focus,textarea:focus{outline:none!important;border-color:#a78bfa!important;box-shadow:0 0 0 3px rgba(139,92,246,.14)!important}
+@media(max-width:900px){
+  header{min-height:64px!important;padding:9px 12px!important;gap:10px!important}
+  header .brand img{width:clamp(118px,35vw,156px)!important}
+  #arqon-account-button{font-size:11px!important;min-height:38px!important;padding:0 10px!important}
+  main{padding:12px 10px 90px!important}
+}
+@media(max-width:390px){header{gap:7px!important}header .brand img{width:112px!important}#arqon-account-button{font-size:10px!important;padding:0 8px!important}}
