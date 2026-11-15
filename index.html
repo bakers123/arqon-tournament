@@ -3582,7 +3582,7 @@ async function loadNews() {
           <div style="font-size: 12px; color: var(--text-dim); margin-bottom: 5px;">${date}</div>
           <div style="display: flex; justify-content: space-between; align-items: center;">
             <h3 style="font-size: 18px; margin-bottom: 10px; color: var(--accent);">${escapeHtml(item.title)}</h3>
-            ${isAdmin() ? `<button class="btn danger" style="padding: 2px 8px; font-size: 10px;" onclick="removeNews(${item.id})">Удалить</button>` : ''}
+            ${isAdmin() ? `<div style="display:flex;gap:6px;flex:0 0 auto"><button class="btn ghost" style="padding:2px 8px;font-size:10px" onclick="editNews(${Number(item.id)})">Изменить</button><button class="btn danger" style="padding:2px 8px;font-size:10px" onclick="removeNews(${Number(item.id)})">Удалить</button></div>` : ''}
           </div>
           <p style="color: #ccc; line-height: 1.5; margin-bottom: 10px;">${escapeHtml(item.content).replace(/\n/g, '<br>')}</p>
         </div>
@@ -3593,11 +3593,45 @@ async function loadNews() {
   container.innerHTML = html;
 }
 
+async function editNews(id) {
+  if (!isAdmin() || !Number.isSafeInteger(Number(id))) return;
+  const { data, error } = await supabaseClient.from('news').select('id,title,content').eq('id', id).maybeSingle();
+  if (error || !data) { alert('Не удалось загрузить новость для редактирования.'); return; }
+
+  document.getElementById('news-edit-modal')?.remove();
+  const overlay = document.createElement('div');
+  overlay.id = 'news-edit-modal';
+  overlay.style.cssText = 'position:fixed;inset:0;z-index:30000;display:flex;align-items:center;justify-content:center;padding:16px;background:rgba(3,2,10,.84);backdrop-filter:blur(8px)';
+  const dialog = document.createElement('section');
+  dialog.setAttribute('role','dialog'); dialog.setAttribute('aria-modal','true'); dialog.setAttribute('aria-labelledby','news-edit-title');
+  dialog.style.cssText = 'width:min(620px,100%);max-height:90vh;overflow:auto;padding:20px;border:1px solid rgba(167,139,250,.45);border-radius:16px;background:#12101d;color:#f7f3ff;box-shadow:0 24px 90px #000a';
+  const heading = document.createElement('h2'); heading.id='news-edit-title'; heading.textContent='Редактировать новость'; heading.style.cssText='font:700 15px Orbitron,sans-serif;margin:0 0 16px;color:#d9c4ff';
+  const titleLabel=document.createElement('label');titleLabel.textContent='Заголовок';titleLabel.style.cssText='display:block;font-weight:700;margin:10px 0 6px';
+  const title=document.createElement('input');title.type='text';title.maxLength=160;title.value=data.title||'';title.style.cssText='width:100%;padding:11px;border:1px solid #51436f;border-radius:9px;background:#090812;color:#fff;font:600 15px Rajdhani';
+  const bodyLabel=document.createElement('label');bodyLabel.textContent='Текст новости';bodyLabel.style.cssText='display:block;font-weight:700;margin:14px 0 6px';
+  const body=document.createElement('textarea');body.maxLength=12000;body.value=data.content||'';body.rows=9;body.style.cssText='width:100%;min-height:180px;resize:vertical;padding:11px;border:1px solid #51436f;border-radius:9px;background:#090812;color:#fff;font:600 15px Rajdhani';
+  const status=document.createElement('p');status.setAttribute('role','status');status.style.cssText='min-height:20px;color:#c4b5fd;font-size:13px';
+  const actions=document.createElement('div');actions.style.cssText='display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap';
+  const cancel=document.createElement('button');cancel.type='button';cancel.className='btn ghost';cancel.textContent='Отмена';
+  const save=document.createElement('button');save.type='button';save.className='btn';save.textContent='Сохранить';
+  const close=()=>overlay.remove();cancel.addEventListener('click',close);overlay.addEventListener('click',event=>{if(event.target===overlay)close()});
+  save.addEventListener('click',async()=>{
+    if(!isAdmin())return;
+    const nextTitle=title.value.trim(),nextBody=body.value.trim();
+    if(!nextTitle||!nextBody){status.textContent='Заполни заголовок и текст новости.';return}
+    save.disabled=true;save.textContent='Сохраняем…';status.textContent='';
+    const {data:updated,error:updateError}=await supabaseClient.from('news').update({title:nextTitle,content:nextBody}).eq('id',id).select('id').maybeSingle();
+    if(updateError||!updated){status.textContent=updateError?.message||'Новость не обновлена. Проверь права доступа.';save.disabled=false;save.textContent='Сохранить';return}
+    close();await loadNews();
+  });
+  actions.append(cancel,save);dialog.append(heading,titleLabel,title,bodyLabel,body,status,actions);overlay.append(dialog);document.body.append(overlay);title.focus();
+}
 async function removeNews(id) {
-  if (!isAdmin()) return;
+  if (!isAdmin() || !Number.isSafeInteger(Number(id))) return;
   if (!confirm('Удалить эту новость?')) return;
-  await supabaseClient.from('news').delete().eq('id', id);
-  loadNews();
+  const { error } = await supabaseClient.from('news').delete().eq('id', id);
+  if (error) { alert('Не удалось удалить новость: ' + error.message); return; }
+  await loadNews();
 }
 
 
