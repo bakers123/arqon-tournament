@@ -78,7 +78,17 @@
 }
 </style>
   <link rel="stylesheet" href="/assets/arqon-redesign.css?v=13">
-</head>
+<style>
+.bracket-team-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:7px;margin-top:10px}
+.bracket-team-option{display:flex;align-items:center;gap:9px;padding:9px 11px;border:1px solid #393047;border-radius:9px;background:#100e18;cursor:pointer;min-width:0}
+.bracket-team-option input{accent-color:#9b72ff;width:17px;height:17px;flex:0 0 auto}
+.bracket-team-option span{font-weight:700;overflow-wrap:anywhere}
+.bracket-team-option small{margin-left:auto;color:#9488a8;font-size:10px}
+.bracket-placements-wrap{margin-top:18px;padding-top:14px;border-top:1px solid #393047}
+.placement-row{display:grid;grid-template-columns:26px 75px minmax(0,1fr);gap:9px;align-items:center;padding:8px 0;border-bottom:1px solid #ffffff12;font-size:13px}
+.placement-row strong{overflow-wrap:anywhere;text-align:right;color:#e8ddff}
+@media(max-width:600px){.bracket-team-list{grid-template-columns:1fr}.placement-row{grid-template-columns:24px 64px minmax(0,1fr)}}
+</style></head>
 <body>
 <div class="shell">
   <header class="top">
@@ -171,7 +181,7 @@ const sb=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
 const $=id=>document.getElementById(id);
 const MAPS=['Ancient','Anubis','Cache','Dust2','Inferno','Mirage','Nuke','Overpass','Train','Vertigo'];
 const BO=['BO1','BO3','BO5'];
-let session=null,role=null,docs=[],current=null,data=null,zoom=1,undoStack=[],redoStack=[],connecting=null,dragState=null,assignments=[],judges=[];
+let session=null,role=null,docs=[],current=null,data=null,zoom=1,undoStack=[],redoStack=[],connecting=null,dragState=null,assignments=[],judges=[],availableBracketTeams=[],selectedBracketTeams=[];
 const freshData=()=>({sections:[{id:uid(),title:'Этап 1',x:45,y:35}],nodes:[],edges:[],teams:[]});
 function uid(){return crypto.randomUUID?crypto.randomUUID():'n'+Math.random().toString(36).slice(2,12)}
 function esc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
@@ -216,8 +226,9 @@ function matchCard(n,mode='admin'){
  const fmt=structure?'<select data-field="format" data-node="'+n.id+'">'+BO.map(v=>'<option '+(n.format===v?'selected':'')+'>'+v+'</option>').join('')+'</select>':'<span class="badge">'+esc(n.format)+'</span>';
  const status=edit?'<select data-field="status" data-node="'+n.id+'"><option value="pending" '+(n.status==='pending'?'selected':'')+'>Ожидание</option><option value="live" '+(n.status==='live'?'selected':'')+'>Идёт</option><option value="completed" '+(n.status==='completed'?'selected':'')+'>Завершён</option><option value="technical" '+(n.status==='technical'?'selected':'')+'>Технический</option><option value="cancelled" '+(n.status==='cancelled'?'selected':'')+'>Отменён</option></select>':'<span class="badge '+(n.status==='live'?'live':n.status==='completed'?'done':'')+'">'+esc(n.status)+'</span>';
  const result=edit?'<select data-field="resultType" data-node="'+n.id+'"><option value="normal" '+(n.resultType==='normal'?'selected':'')+'>Обычный результат</option><option value="technical_win" '+(n.resultType==='technical_win'?'selected':'')+'>Техническая победа</option><option value="technical_loss" '+(n.resultType==='technical_loss'?'selected':'')+'>Техническое поражение</option><option value="disqualified" '+(n.resultType==='disqualified'?'selected':'')+'>Дисквалификация</option><option value="cancelled" '+(n.resultType==='cancelled'?'selected':'')+'>Отмена</option></select>':'';
+ const conditionNote=n.conditionalOn?'<div class="hint" style="margin:7px 0;padding:7px;border:1px solid #a78bfa55;border-radius:7px;color:#d7c4ff">Решающий сброс: играть только если нижняя сетка выиграла первый гранд-финал.</div>':'';
  const winner=edit&&n.resultType!=='normal'?'<select data-field="winnerSide" data-node="'+n.id+'"><option value="">Победитель не выбран</option><option value="1" '+(n.winnerSide===1?'selected':'')+'>Победитель: команда A</option><option value="2" '+(n.winnerSide===2?'selected':'')+'>Победитель: команда B</option></select>':'';
- return '<article class="node" data-node-card="'+n.id+'" style="left:'+Number(n.x||0)+'px;top:'+Number(n.y||0)+'px">'+port('in','team1')+port('in','team2')+port('out','winner')+port('out','loser')+'<div class="node-head" data-drag="'+n.id+'">'+(structure?'<input class="node-title-input" data-field="title" data-node="'+n.id+'" value="'+esc(n.title||'Матч')+'">':'<span class="node-title">'+esc(n.title||'Матч')+'</span>')+'<div class="node-tools">'+fmt+(structure?'<button data-action="remove" data-node="'+n.id+'" title="Удалить матч">×</button>':'')+'</div></div><div class="node-body"><div class="team-line">'+teamField('team1',t.a)+'<b>'+((win===1)?'✓':'')+'</b></div><div class="team-line">'+teamField('team2',t.b)+'<b>'+((win===2)?'✓':'')+'</b></div>'+mapRows+'<div class="node-meta">'+status+result+'</div>'+winner+(winnerName(n)?'<div class="winner-label">Победитель: '+esc(winnerName(n))+'</div>':'')+(mode==='judge'?'<button data-action="save-result" data-node="'+n.id+'" class="primary" style="width:100%;margin-top:8px">Сохранить результат</button>':'')+'</div><div class="node-footer"><span>'+esc(n.id.slice(0,8))+'</span><span>'+esc(n.sectionId||'Без этапа')+'</span></div></article>';
+ return '<article class="node" data-node-card="'+n.id+'" style="left:'+Number(n.x||0)+'px;top:'+Number(n.y||0)+'px">'+port('in','team1')+port('in','team2')+port('out','winner')+port('out','loser')+'<div class="node-head" data-drag="'+n.id+'">'+(structure?'<input class="node-title-input" data-field="title" data-node="'+n.id+'" value="'+esc(n.title||'Матч')+'">':'<span class="node-title">'+esc(n.title||'Матч')+'</span>')+'<div class="node-tools">'+fmt+(structure?'<button data-action="remove" data-node="'+n.id+'" title="Удалить матч">×</button>':'')+'</div></div><div class="node-body"><div class="team-line">'+teamField('team1',t.a)+'<b>'+((win===1)?'✓':'')+'</b></div><div class="team-line">'+teamField('team2',t.b)+'<b>'+((win===2)?'✓':'')+'</b></div>'+mapRows+conditionNote+'<div class="node-meta">'+status+result+'</div>'+winner+(winnerName(n)?'<div class="winner-label">Победитель: '+esc(winnerName(n))+'</div>':'')+(mode==='judge'?'<button data-action="save-result" data-node="'+n.id+'" class="primary" style="width:100%;margin-top:8px">Сохранить результат</button>':'')+'</div><div class="node-footer"><span>'+esc(n.id.slice(0,8))+'</span><span>'+esc(n.sectionId||'Без этапа')+'</span></div></article>';
 }
 let judgeAllowedIds=new Set();
 function renderWorld(worldId,contentId,svgId,mode){
@@ -226,7 +237,7 @@ function renderWorld(worldId,contentId,svgId,mode){
  content.innerHTML=sections.map(s=>'<div class="section-label" style="left:'+Number(s.x||45)+'px;top:'+Number(s.y||35)+'px">'+esc(s.title)+'</div>').join('')+nodes.map(n=>matchCard(n,mode)).join('');
  if(svg){svg.innerHTML='';nodes.forEach(n=>{['winner','loser'].forEach(portName=>{const edge=data.edges.find(e=>e.fromId===n.id&&e.fromPort===portName);if(!edge)return;const target=nodeBy(edge.toId);if(!target)return;const sourceEl=content.querySelector('[data-node-card="'+n.id+'"] .port[data-port="'+portName+'"]');const targetEl=content.querySelector('[data-node-card="'+target.id+'"] .port[data-in="'+edge.toSlot+'"]');if(!sourceEl||!targetEl)return;const a=sourceEl.getBoundingClientRect(),b=targetEl.getBoundingClientRect(),r=world.getBoundingClientRect(),x1=(a.left+a.width/2-r.left)/zoom,y1=(a.top+a.height/2-r.top)/zoom,x2=(b.left+b.width/2-r.left)/zoom,y2=(b.top+b.height/2-r.top)/zoom,dx=Math.max(55,Math.abs(x2-x1)*.45);const p=document.createElementNS('http://www.w3.org/2000/svg','path');p.setAttribute('d','M '+x1+' '+y1+' C '+(x1+dx)+' '+y1+', '+(x2-dx)+' '+y2+', '+x2+' '+y2);p.setAttribute('class','edge-path '+(portName==='loser'?'loser':''));svg.appendChild(p)})})}
 }
-function renderEditor(){if(!data)return;const t=$('doc-title');if(t&&document.activeElement!==t)t.value=current?.title||'';$('doc-format').value=current?.format||'custom';$('teams-input').value=(data.teams||[]).join('\n');$('team-options').innerHTML=(data.teams||[]).map(x=>'<option value="'+esc(x)+'">').join('');renderWorld('world','world-content','edge-layer','admin');$('zoom-label').textContent=Math.round(zoom*100)+'%';refreshUndo()}
+function renderEditor(){if(!data)return;const t=$('doc-title');if(t&&document.activeElement!==t)t.value=current?.title||'';$('doc-format').value=current?.format||'custom';$('teams-input').value=(data.teams||[]).join('\n');$('team-options').innerHTML=(data.teams||[]).map(x=>'<option value="'+esc(x)+'">').join('');renderWorld('world','world-content','edge-layer','admin');$('zoom-label').textContent=Math.round(zoom*100)+'%';refreshUndo();renderBracketPlacements()}
 function renderPublic(doc){
  const d=doc?.published_data||{};data={sections:d.sections||[],nodes:d.nodes||[],edges:d.edges||[],teams:d.teams||[]};$('public-empty').classList.toggle('hidden',!!doc);$('canvas-shell').classList.toggle('hidden',!doc);$('editor-panel').querySelector('.admin-tabs')?.classList.add('hidden');
  if(doc){$('editor-panel').classList.remove('hidden');$('editor-panel').querySelector('.panel').classList.add('hidden');$('editor-panel').querySelector('.layout aside')?.classList.add('hidden');$('editor-panel').querySelector('.layout').style.gridTemplateColumns='1fr';renderWorld('world','world-content','edge-layer','public')}
@@ -258,7 +269,92 @@ async function loadSideData(){
  $('assignment-match').innerHTML='<option value="">Весь турнир</option>'+data.nodes.map(n=>'<option value="'+esc(n.id)+'">'+esc(n.title)+'</option>').join('');
  $('assignment-list').innerHTML=assignments.map(x=>'<div class="audit-item">'+esc(judges.find(j=>j.user_id===x.judge_user_id)?.username||'Судья')+' · '+esc(x.match_id?data.nodes.find(n=>n.id===x.match_id)?.title||x.match_id:'Весь турнир')+' <button data-remove-assignment="'+x.id+'" style="padding:2px 5px">×</button></div>').join('')||'Назначений пока нет.';
  $('audit-list').innerHTML=(h||[]).map(x=>{const d=x.details||{};const label=x.action==='published'?'Сетка опубликована':x.action==='saved_draft'?'Черновик сохранён':x.action==='match_result_updated'?'Обновлён результат матча':x.action;const changes=[];if(d.changedPositions?.length)changes.push('Позиции матчей: '+d.changedPositions.length);if(d.edgesChanged)changes.push('Изменены соединения');if(d.matchCount!=null)changes.push('Матчей: '+d.matchCount);return '<div class="audit-item">'+esc(label)+(x.match_id?' · '+esc(x.match_id):'')+(changes.length?' · '+esc(changes.join(' · ')):'')+'<small>'+new Date(x.created_at).toLocaleString('ru-RU')+'</small></div>'}).join('')||'История пока пустая.';
+ await loadAvailableBracketTeams();
 }
+
+async function loadAvailableBracketTeams(){
+ const [{data:tournament,error:te},{data:profiles,error:pe}]=await Promise.all([
+  sb.from('tournament').select('data').eq('id',1).maybeSingle(),
+  sb.from('team_profiles').select('team_id,team_name,logo_url').order('team_name')
+ ]);
+ if(te)throw te;
+ const merged=[],seen=new Set();
+ const add=(id,name,logo)=>{const clean=String(name||'').trim();if(!clean)return;const key=clean.toLocaleLowerCase();if(seen.has(key))return;seen.add(key);merged.push({id:String(id||''),name:clean,logo:String(logo||'')})};
+ (tournament?.data?.teams||[]).forEach(t=>add(t.id,t.name,t.logo||t.logo_url));
+ if(!pe)(profiles||[]).forEach(t=>add(t.team_id,t.team_name,t.logo_url));
+ availableBracketTeams=merged;renderBracketTeamPicker();
+}
+function renderBracketTeamPicker(){
+ const host=$('bracket-team-list');if(!host)return;
+ const selected=new Set(selectedBracketTeams.map(x=>x.name.toLocaleLowerCase()));
+ host.innerHTML=availableBracketTeams.length?availableBracketTeams.map(t=>'<label class="bracket-team-option"><input type="checkbox" data-bracket-team="'+esc(t.name)+'" '+(selected.has(t.name.toLocaleLowerCase())?'checked':'')+'><span>'+esc(t.name)+'</span><small>'+(t.id?'Команда ARQON':'')+'</small></label>').join(''):'<p class="hint">Созданных команд пока не найдено.</p>';
+ $('bracket-team-count').textContent='Выбрано: '+selectedBracketTeams.length;
+}
+function getBracketMatchResult(id){
+ const n=nodeBy(id);if(!n)return null;
+ const teams=resolvedTeams(n),side=matchWinnerSide(n,teams);if(!side)return null;
+ return {winner:side===1?teams.a:teams.b,loser:side===1?teams.b:teams.a,side};
+}
+function renderBracketPlacements(){
+ const host=$('bracket-placements');if(!host)return;
+ const meta=data?.bracketMeta;
+ if(!meta?.type||meta.type!=='double4'){host.innerHTML='<p class="hint">После генерации сетки здесь будут автоматически определяться призовые места.</p>';return}
+ const l1=getBracketMatchResult(meta.lowerRound1),l2=getBracketMatchResult(meta.lowerFinal),gf1=getBracketMatchResult(meta.grandFinal),gf2=getBracketMatchResult(meta.resetFinal);
+ let first='Ожидается гранд-финал',second='Ожидается гранд-финал';
+ if(gf1?.side===1){first=gf1.winner;second=gf1.loser}
+ else if(gf1?.side===2){first=gf2?.winner||'Нужен решающий гранд-финал';second=gf2?.loser||'Нужен решающий гранд-финал'}
+ const rows=[['🥇','1 место',first],['🥈','2 место',second],['🥉','3 место',l2?.loser||'Ожидается результат нижнего финала'],['4️⃣','4 место',l1?.loser||'Ожидается результат первого раунда нижней сетки']];
+ host.innerHTML=rows.map(([medal,label,value])=>'<div class="placement-row"><span>'+medal+'</span><b>'+label+'</b><strong>'+esc(value)+'</strong></div>').join('')+(gf1?.side===2&&!gf2?'<p class="hint">Нижняя сетка выиграла первый гранд-финал. Обязательно сыграйте решающий матч.</p>':'');
+}
+function createGeneratedMatch(title,team1,team2,x,y,sectionId){
+ const n=addMatch(x,y,sectionId);n.title=title;n.team1=team1||'';n.team2=team2||'';n.format='BO3';n.status='pending';n.resultType='normal';n.winnerSide=null;return n;
+}
+function linkBracket(from,port,to,slot){data.edges.push({fromId:from.id,fromPort:port,toId:to.id,toSlot:slot})}
+function generateSelectedBracket(){
+ const teams=selectedBracketTeams.map(x=>x.name),format=$('doc-format').value;
+ if(teams.length<2){say('bracket-generate-status','Выбери минимум две команды.','error');return}
+ if(format==='double'&&teams.length!==4){say('bracket-generate-status','Для Double Elimination выбери ровно 4 команды.','error');return}
+ if(format==='single'&&((teams.length&(teams.length-1))!==0||teams.length>16)){say('bracket-generate-status','Для Single Elimination выбери 2, 4, 8 или 16 команд.','error');return}
+ if(format==='custom'){say('bracket-generate-status','Выбери Single, Double или круговой формат.','error');return}
+ if(!confirm('Сгенерировать новую сетку для '+teams.length+' команд? Текущая структура матчей этого черновика будет заменена.'))return;
+ mutate(()=>{
+  data.teams=teams;data.nodes=[];data.edges=[];data.sections=[];delete data.bracketMeta;
+  if(format==='double'){
+   const upper={id:uid(),title:'ВЕРХНЯЯ СЕТКА',x:35,y:35},lower={id:uid(),title:'НИЖНЯЯ СЕТКА',x:820,y:690},grand={id:uid(),title:'ГРАНД-ФИНАЛ',x:1740,y:210};data.sections=[upper,lower,grand];
+   const u1=createGeneratedMatch('Верхняя сетка · Полуфинал 1',teams[0],teams[3],330,110,upper.id);
+   const u2=createGeneratedMatch('Верхняя сетка · Полуфинал 2',teams[1],teams[2],330,570,upper.id);
+   const wf=createGeneratedMatch('Финал верхней сетки','','',790,330,upper.id);
+   const lr1=createGeneratedMatch('Нижняя сетка · Раунд 1','','',790,850,lower.id);
+   const lf=createGeneratedMatch('Финал нижней сетки','','',1240,850,lower.id);
+   const gf=createGeneratedMatch('Гранд-финал · Матч 1','','',1710,330,grand.id);
+   const reset=createGeneratedMatch('Гранд-финал · Матч 2 (сброс)','','',2140,330,grand.id);
+   reset.conditionalOn={matchId:gf.id,winnerSide:2};
+   linkBracket(u1,'winner',wf,'team1');linkBracket(u2,'winner',wf,'team2');
+   linkBracket(u1,'loser',lr1,'team1');linkBracket(u2,'loser',lr1,'team2');
+   linkBracket(lr1,'winner',lf,'team1');linkBracket(wf,'loser',lf,'team2');
+   linkBracket(wf,'winner',gf,'team1');linkBracket(lf,'winner',gf,'team2');
+   linkBracket(gf,'winner',reset,'team1');linkBracket(gf,'loser',reset,'team2');
+   data.bracketMeta={type:'double4',lowerRound1:lr1.id,lowerFinal:lf.id,grandFinal:gf.id,resetFinal:reset.id};
+  }else if(format==='single'){
+   const rounds=Math.log2(teams.length),sections=[];
+   for(let r=0;r<rounds;r++)sections.push({id:uid(),title:r===rounds-1?'ФИНАЛ':('РАУНД '+(r+1)),x:35+r*560,y:35});
+   data.sections=sections;
+   if(teams.length===2){const n=createGeneratedMatch('Финал',teams[0],teams[1],360,220,sections[0].id);data.bracketMeta={type:'single',final:n.id}}
+   else{
+    let previous=[];
+    for(let i=0;i<teams.length/2;i++)previous.push(createGeneratedMatch('Раунд 1 · Матч '+(i+1),teams[i],teams[teams.length-1-i],330,100+i*420,sections[0].id));
+    for(let r=1;r<rounds;r++){const next=[];for(let i=0;i<previous.length/2;i++){const n=createGeneratedMatch(r===rounds-1?'Финал':('Раунд '+(r+1)+' · Матч '+(i+1)),'','',330+r*560,180+i*500,sections[r].id);linkBracket(previous[i*2],'winner',n,'team1');linkBracket(previous[i*2+1],'winner',n,'team2');next.push(n)}previous=next}
+    data.bracketMeta={type:'single',final:previous[0]?.id};
+   }
+  }else if(format==='round_robin'){
+   const section={id:uid(),title:'КРУГОВОЙ ЭТАП',x:35,y:35};data.sections=[section];let k=0;
+   for(let i=0;i<teams.length;i++)for(let j=i+1;j<teams.length;j++){const n=createGeneratedMatch('Матч '+(++k),teams[i],teams[j],330+(k%4)*380,130+Math.floor((k-1)/4)*420,section.id);n.format='BO1';n.maps=[{map:'Mirage',score1:'',score2:'',status:'not_started'}]}
+   data.bracketMeta={type:'round_robin'};
+  }
+ });
+ say('bracket-generate-status','Сетка создана. Проверь пары, затем сохрани черновик и опубликуй.','success');renderBracketPlacements();
+}
+
 function newDoc(){current={id:uid(),title:'Новая сетка',format:'custom',status:'draft',data:freshData()};data=JSON.parse(JSON.stringify(current.data));docs.unshift(current);$('doc-select').innerHTML=docs.map(d=>'<option value="'+d.id+'">'+esc(d.title)+'</option>').join('');$('doc-select').value=current.id;undoStack=[];redoStack=[];renderEditor();say('editor-status','Создан новый черновик. Сохрани его, чтобы продолжить позже.')}
 async function saveDoc(publish){
  if(!admin()||!current)return;
@@ -341,6 +437,11 @@ function initAdminTabs(){
  defs.forEach(([id,label],i)=>{const b=document.createElement('button');b.type='button';b.className='admin-tab';b.dataset.adminTab=id;b.id='admin-tab-'+id;b.setAttribute('role','tab');b.setAttribute('aria-controls','admin-pane-'+id);b.setAttribute('aria-selected',i===0?'true':'false');b.textContent=label;tabs.appendChild(b);panes[id].id='admin-pane-'+id;panes[id].setAttribute('role','tabpanel');panes[id].setAttribute('aria-labelledby',b.id)});
  const panelFor=(node,title,desc)=>{const panel=document.createElement('div');panel.className='panel';if(title){const h=document.createElement('h3');h.textContent=title;panel.appendChild(h)}if(desc){const d=document.createElement('p');d.className='admin-tab-note';d.textContent=desc;panel.appendChild(d)}if(node)panel.appendChild(node);return panel};
  if(rows[0])panes.tournament.appendChild(panelFor(rows[0],'Параметры турнира','Создавай сетки, переключайся между ними и задавай формат соревнования.'));
+ const generatorPanel=document.createElement('div');generatorPanel.className='panel';generatorPanel.innerHTML='<h3>Генератор сетки из команд ARQON</h3><p class="admin-tab-note">Выбери уже созданные команды. Порядок выбора задаёт посев: первая команда — первый номер.</p><div id="bracket-team-list" class="bracket-team-list"><p class="hint">Загружаем команды…</p></div><div id="bracket-team-count" class="hint" style="margin:8px 0">Выбрано: 0</div><button id="generate-selected-bracket" class="primary" type="button" style="width:100%">Сгенерировать сетку</button><div id="bracket-generate-status" class="hint" role="status" style="margin-top:8px"></div><div class="bracket-placements-wrap"><h3>Итоговые места</h3><div id="bracket-placements"><p class="hint">После генерации сетки здесь будут автоматически определяться призовые места.</p></div></div>';
+ panes.tournament.appendChild(generatorPanel);
+ generatorPanel.querySelector('#generate-selected-bracket').addEventListener('click',generateSelectedBracket);
+ generatorPanel.querySelector('#bracket-team-list').addEventListener('change',e=>{const input=e.target.closest('[data-bracket-team]');if(!input)return;const name=input.dataset.bracketTeam,key=name.toLocaleLowerCase();if(input.checked){const team=availableBracketTeams.find(x=>x.name.toLocaleLowerCase()===key);if(team&&!selectedBracketTeams.some(x=>x.name.toLocaleLowerCase()===key))selectedBracketTeams.push(team)}else selectedBracketTeams=selectedBracketTeams.filter(x=>x.name.toLocaleLowerCase()!==key);renderBracketTeamPicker()});
+
  if(rows[1])panes.builder.appendChild(panelFor(rows[1],'Инструменты редактора','Добавляй матчи и этапы, соединяй исходы матчей, перемещай карточки и меняй масштаб.'));
  const canvasLayout=document.createElement('div');canvasLayout.className='layout';canvasLayout.appendChild(canvasWrap);panes.builder.appendChild(canvasLayout);
  const publishControls=document.createElement('div');publishControls.className='toolbar';['save-draft','publish-doc'].forEach(id=>{const el=$(id);if(el)publishControls.appendChild(el)});
