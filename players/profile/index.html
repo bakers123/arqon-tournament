@@ -104,7 +104,20 @@
         </div>
       </div>
     </section>
-    <section class="card" style="width:min(1040px,calc(100% - 28px));margin:16px auto 0"><h2>УРОВЕНЬ И ОПЫТ</h2><div class="xp-total"><span id="xp-total">0</span> XP</div><div class="progress-wrap"><div class="progress-meta"><span id="xp-level">Уровень 1</span><span id="xp-next">0 / 250 XP</span></div><div class="progress-track"><div class="progress-fill" id="xp-progress"></div></div></div><div class="stat"><span>Титул</span><strong id="xp-title">Новичок ARQON</strong></div><p id="xp-next-reward" class="muted" style="font-size:13px;margin:10px 0 0">Следующий титул открывается на 5 уровне.</p><div id="xp-history" class="history-list" style="margin-top:16px"></div><p class="muted" style="font-size:12px;margin:12px 0 0">За турнир: 1 место — 100 XP, 2 место — 70 XP, 3 место — 50 XP, MVP — +50 XP. За матч Live Center — 10 XP. За рубежи опыта — бонусные достижения.</p></section><section class="card hidden" id="profile-achievements" style="width:min(1040px,calc(100% - 28px));margin:16px auto 0"><h2>ДОСТИЖЕНИЯ</h2><div class="achievement-grid" id="achievement-grid"></div></section><section class="card hidden" id="profile-award-collection" style="width:min(1040px,calc(100% - 28px));margin:16px auto 0">
+    <section class="card" style="width:min(1040px,calc(100% - 28px));margin:16px auto 0"><h2>УРОВЕНЬ И ОПЫТ</h2><div class="xp-total"><span id="xp-total">0</span> XP</div><div class="progress-wrap"><div class="progress-meta"><span id="xp-level">Уровень 1</span><span id="xp-next">0 / 250 XP</span></div><div class="progress-track"><div class="progress-fill" id="xp-progress"></div></div></div><div class="stat"><span>Титул</span><strong id="xp-title">Новичок ARQON</strong></div><p id="xp-next-reward" class="muted" style="font-size:13px;margin:10px 0 0">Следующий титул открывается на 5 уровне.</p><div id="xp-history" class="history-list" style="margin-top:16px"></div><p class="muted" style="font-size:12px;margin:12px 0 0">За турнир: 1 место — 100 XP, 2 место — 70 XP, 3 место — 50 XP, MVP — +50 XP. За матч Live Center — 10 XP. За рубежи опыта — бонусные достижения.</p></section><section class="card hidden" id="profile-prediction-stats" style="width:min(1040px,calc(100% - 28px));margin:16px auto 0">
+      <h2>ПРОГНОЗЫ ARQON</h2>
+      <div class="achievement-grid" style="grid-template-columns:repeat(4,minmax(0,1fr))">
+        <div class="achievement"><div><small class="muted">ТОЧНОСТЬ</small><strong id="prediction-accuracy">0%</strong></div></div>
+        <div class="achievement"><div><small class="muted">ПОБЕДИТЕЛЬ</small><strong id="prediction-winners">0</strong></div></div>
+        <div class="achievement"><div><small class="muted">ТОЧНЫЙ СЧЁТ</small><strong id="prediction-scores">0</strong></div></div>
+        <div class="achievement"><div><small class="muted">MVP</small><strong id="prediction-mvps">0</strong></div></div>
+      </div>
+      <div class="stat"><span>Рассчитано прогнозов</span><strong id="prediction-total">0</strong></div>
+      <div class="stat"><span>Заработано за прогнозы</span><strong id="prediction-coins">◈ 0 Coins</strong></div>
+      <h2 style="margin-top:18px">ПОСЛЕДНИЕ ПРОГНОЗЫ</h2>
+      <div id="prediction-history" class="history-list"><p class="history-empty">Загружаем прогнозы…</p></div>
+    </section>
+    <section class="card hidden" id="profile-achievements" style="width:min(1040px,calc(100% - 28px));margin:16px auto 0"><h2>ДОСТИЖЕНИЯ</h2><div class="achievement-grid" id="achievement-grid"></div></section><section class="card hidden" id="profile-award-collection" style="width:min(1040px,calc(100% - 28px));margin:16px auto 0">
       <h2>КОЛЛЕКЦИЯ НАГРАД ARQON</h2>
       <div id="profile-award-list" class="achievement-grid"></div>
     </section>
@@ -212,6 +225,39 @@
         copy.append(title,desc,meta,reason);card.append(icon,copy);host.append(card);
       });
       section.classList.remove('hidden');
+    }
+
+    async function loadPredictionProfileStats(){
+      const section=el('profile-prediction-stats');
+      const {data,error}=await db.rpc('get_arqon_prediction_stats',{p_arqon_id:arqonId});
+      if(error){console.warn('Prediction profile stats unavailable:',error);return}
+      if(!data||!Object.keys(data).length){section.classList.add('hidden');return}
+      section.classList.remove('hidden');
+      el('prediction-accuracy').textContent=Number(data.accuracy_percent||0).toLocaleString('ru-RU')+'%';
+      el('prediction-winners').textContent=String(data.winner_correct||0);
+      el('prediction-scores').textContent=String(data.score_correct||0);
+      el('prediction-mvps').textContent=String(data.mvp_correct||0);
+      el('prediction-total').textContent=String(data.predictions||0);
+      el('prediction-coins').textContent='◈ '+Number(data.coins_earned||0).toLocaleString('ru-RU')+' Coins';
+      const host=el('prediction-history');host.replaceChildren();
+      const recent=Array.isArray(data.recent)?data.recent:[];
+      if(!recent.length){
+        const empty=document.createElement('p');empty.className='history-empty';empty.textContent='Пока нет рассчитанных прогнозов. Статистика появится после завершения матчей.';host.append(empty);return;
+      }
+      recent.forEach(row=>{
+        const item=document.createElement('div');item.className='history-item';
+        const info=document.createElement('div');info.className='history-event';
+        const title=document.createElement('strong');title.textContent=row.match_title||((row.team1||'Команда 1')+' vs '+(row.team2||'Команда 2'));
+        const details=document.createElement('small');
+        const predictedWinner=row.predicted_winner==='team1'?row.team1:row.team2;
+        details.textContent='Победитель: '+(predictedWinner||'—')+' · счёт '+row.predicted_score1+':'+row.predicted_score2+' · MVP: '+row.predicted_mvp;
+        info.append(title,details);
+        const result=document.createElement('div');result.className='history-result';
+        const flags=[row.winner_correct?'Победитель ✓':'Победитель ✕',row.score_correct?'Счёт ✓':'Счёт ✕',row.mvp_correct?'MVP ✓':'MVP ✕'];
+        const flagText=document.createElement('small');flagText.textContent=flags.join(' · ');
+        const coins=document.createElement('strong');coins.textContent='+'+Number(row.coins_awarded||0)+' Coins';
+        result.append(flagText,coins);item.append(info,result);host.append(item);
+      });
     }
 
     async function renderProgressAndAchievements(name,rows){
@@ -483,6 +529,7 @@ async function uploadProfileMedia(file,kind){
       const stats=getTournamentStats(profile.player_name,resultsResponse.data||[]);
       renderTournamentHistory(profile.player_name,resultsResponse.data||[]);
       await renderProgressAndAchievements(profile.player_name,resultsResponse.data||[]);
+      await loadPredictionProfileStats();
       await loadManualAwards();
       const meta=getTournamentPlayerMeta(tournamentResponse.data?.data,profile.player_name);
       const teamNode=el('team-name');teamNode.textContent=meta.teamName||'Свободный игрок';
