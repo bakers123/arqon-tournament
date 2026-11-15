@@ -47,6 +47,8 @@
     drawer.innerHTML = '<div class="arqon-admin-drawer-head"><div class="arqon-admin-drawer-brand">ARQON <span>ADMIN</span></div><button id="arqon-admin-drawer-close" type="button" aria-label="Закрыть меню">×</button></div><div id="arqon-admin-drawer-items"></div><a class="arqon-admin-link support" href="/support/admin/">✦ Техподдержка · обращения игроков</a>';
     document.body.append(backdrop,drawer);
 
+    const items = drawer.querySelector('#arqon-admin-drawer-items');
+
     const builderLink = document.createElement('a');
     builderLink.className = 'arqon-admin-link';
     builderLink.href = '/bracket-builder/';
@@ -60,7 +62,6 @@
       {name:'МАТЧИ И РЕЗУЛЬТАТЫ',match:/чат текущего матча|расписание|результаты турнира/i},
       {name:'КИБЕРСПОРТИВНАЯ ЛИГА',match:/управление турниром.*лига/i}
     ];
-    const items = drawer.querySelector('#arqon-admin-drawer-items');
     const cards = Array.from(root.children).filter(el => el.classList?.contains('card'));
     const used = new Set();
     groups.forEach(group => {
