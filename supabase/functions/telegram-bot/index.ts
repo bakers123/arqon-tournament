@@ -68,7 +68,7 @@ Deno.serve(async(req)=>{
    const {data,error}=await admin.rpc("support_ticket_admin_reply",{p_chat_id:chatId,p_ticket_id:ticketId,p_message:reply[2].trim()});
    if(error||!data?.[0]){await send(bot,chatId,"⛔ Не удалось отправить ответ. Проверь номер обращения и права администратора.");return json({ok:true})}
    const target=data[0].player_chat_id;
-   if(target)await send(bot,target,`💬 <b>Ответ техподдержки ARQON · обращение #${ticketId}</b>\n\n${esc(reply[2].trim())}\n\nПродолжить диалог можно на сайте в профиле.`);
+   if(target)await send(bot,target,`💬 <b>Ответ техподдержки ARQON · обращение #${ticketId}</b>\n\n${esc(reply[2].trim())}\n\nОтветить в Telegram: /ticket \${ticketId} текст`);
    await send(bot,chatId,`✅ Ответ по обращению #${ticketId} отправлен игроку.`);
    return json({ok:true});
   }
