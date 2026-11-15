@@ -1525,11 +1525,13 @@ let state = {
 // ==========================================
 
 supabaseClient.auth.onAuthStateChange((event, session) => {
-  if (isAdmin()) return;
-  if (session) {
+  // startApp() handles the first restored session; skip duplicate startup work.
+  if (event === 'INITIAL_SESSION' || event === 'TOKEN_REFRESHED') return;
+  if (window.isAdmin?.()) return;
+  if (session?.user) {
     currentUser = session.user;
     loadArqonAccount();
-    checkUserRole(session.user.id)
+    Promise.resolve(window.checkUserRole?.(session.user.id))
       .then(() => applyPathRoute())
       .catch(error => console.error('Ошибка проверки роли пользователя:', error));
   } else {
