@@ -476,7 +476,7 @@ async function uploadProfileMedia(file,kind){
       // Load the signed-in owner's row first: private profile settings must not depend
       // on the public-profile RPC being available or the profile being public.
       if(ownerUser){
-        const mineResponse=await db.from('profiles').select('arqon_id,display_name,steam_persona_name,steam_avatar_url,bio,avatar_url,cover_url,is_public,show_steam,steam_id,created_at,cs2_faceit_url,cs2_faceit_elo,dota2_profile_url,dota2_mmr,looking_for_team,preferred_role,equipped_frame_id,equipped_theme_id,equipped_title_id').eq('user_id',ownerUser.id).maybeSingle();
+        const mineResponse=await db.from('profiles').select('arqon_id,display_name,steam_persona_name,steam_avatar_url,bio,avatar_url,cover_url,is_public,show_steam,steam_id,created_at,cs2_faceit_url,cs2_faceit_elo,dota2_profile_url,dota2_mmr,looking_for_team,preferred_role,equipped_frame_id,equipped_theme_id,equipped_title_id,equipped_badge_id').eq('user_id',ownerUser.id).maybeSingle();
         if(mineResponse.error)console.warn('Owner profile query failed:',mineResponse.error);
         else mine=mineResponse.data;
       }
