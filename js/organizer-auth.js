@@ -384,6 +384,7 @@
       console.error('Organizer role lookup failed:', error);
       organizerRole = null;
     }
+    window.dispatchEvent(new CustomEvent('arqon:organizer-role-ready', { detail: { role: organizerRole } }));
 
     if (window.isAdmin()) {
       setLogoutVisible(true);
