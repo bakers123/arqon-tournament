@@ -220,13 +220,13 @@ async function uploadProfileMedia(file,kind){
       // Load the signed-in owner's row first: private profile settings must not depend
       // on the public-profile RPC being available or the profile being public.
       if(ownerUser){
-        const mineResponse=await db.from('profiles').select('arqon_id,display_name,bio,avatar_url,cover_url,is_public,show_steam,steam_id,created_at,cs2_faceit_url,cs2_faceit_elo,dota2_profile_url,dota2_mmr,looking_for_team,preferred_role').eq('user_id',ownerUser.id).maybeSingle();
+        const mineResponse=await db.from('profiles').select('arqon_id,display_name,steam_persona_name,steam_avatar_url,bio,avatar_url,cover_url,is_public,show_steam,steam_id,created_at,cs2_faceit_url,cs2_faceit_elo,dota2_profile_url,dota2_mmr,looking_for_team,preferred_role').eq('user_id',ownerUser.id).maybeSingle();
         if(mineResponse.error)console.warn('Owner profile query failed:',mineResponse.error);
         else mine=mineResponse.data;
       }
       if(mine?.arqon_id===arqonId){
         ownProfile=mine;
-        profile={...mine,player_name:null,steam_id:mine.show_steam?mine.steam_id:null};
+        profile={...mine,display_name:mine.display_name||mine.steam_persona_name,avatar_url:mine.avatar_url||mine.steam_avatar_url,player_name:null,steam_id:mine.show_steam?mine.steam_id:null};
         el('edit-toggle').classList.remove('hidden');
       }else{
         const publicResponse=await db.rpc('get_public_arqon_profile',{p_arqon_id:arqonId});
@@ -239,7 +239,7 @@ async function uploadProfileMedia(file,kind){
         showNotice(publicProfileError?'Не удалось получить данные профиля. Обнови страницу или попробуй позже.':'Игрок скрыл профиль или такого ARQON ID не существует.',true);
         return;
       }
-      el('name').textContent=profile.display_name||profile.player_name||'Игрок ARQON';
+      el('name').textContent=profile.display_name||profile.steam_persona_name||profile.player_name||'Игрок ARQON';
       el('arqon-id').textContent='ARQON ID · #'+profile.arqon_id;
       el('stat-id').textContent='#'+profile.arqon_id;
       el('player-name').textContent=profile.player_name||'Не указан';
@@ -265,7 +265,7 @@ async function uploadProfileMedia(file,kind){
       el('tournament-points').textContent=String(stats.points);
       el('tournament-wins').textContent=stats.wins+' / '+stats.podiums;
       const initial=(profile.display_name||profile.player_name||'A').trim().charAt(0).toUpperCase();el('avatar').textContent=initial;
-      const visibleAvatar=profile.avatar_url||meta.avatar;
+      const visibleAvatar=profile.avatar_url||profile.steam_avatar_url||meta.avatar;
       if(visibleAvatar)setImage('avatar',visibleAvatar,'Аватар игрока');
       if(profile.cover_url){el('cover-image').src=profile.cover_url;el('cover-image').classList.remove('hidden')}
       if(ownProfile){
