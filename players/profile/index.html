@@ -93,11 +93,11 @@
     el('edit-form').addEventListener('submit',async event=>{
       event.preventDefault();if(!ownerUser||!ownProfile)return;
       const message=el('edit-message');message.textContent='Сохраняем…';
-      const display_name=el('display-name').value.trim().replace(/\\s+/g,' ');
+      const display_name=el('display-name').value.trim().split(' ').filter(Boolean).join(' ');
       const bio=el('bio-input').value.trim();
       const avatar_url=el('avatar-input').value.trim()||null;
       const cover_url=el('cover-input').value.trim()||null;
-      for(const url of [avatar_url,cover_url])if(url&&!/^https:\\/\\//i.test(url)){message.textContent='Ссылки на изображения должны начинаться с https://';return}
+      for(const url of [avatar_url,cover_url])if(url&&url.slice(0,8)!=='https://'){message.textContent='Ссылки на изображения должны начинаться с https://';return}
       if(!display_name||display_name.length>32){message.textContent='Имя должно быть от 1 до 32 символов.';return}
       const {error}=await db.from('profiles').update({display_name,bio,avatar_url,cover_url,is_public:el('public-input').checked,show_steam:el('steam-input').checked}).eq('user_id',ownerUser.id);
       if(error){message.textContent=error.message;return}
