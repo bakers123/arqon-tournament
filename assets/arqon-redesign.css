@@ -207,3 +207,34 @@ header button:focus-visible,header a:focus-visible,button.btn:focus-visible,.btn
  header>#steam-header-entry,header>#arqon-account-button{max-width:29vw!important;font-size:9px!important;padding-inline:7px!important}
  header>#arqon-session-logout{min-width:54px!important;padding-inline:6px!important;font-size:9px!important}
 }
+
+
+/* ARQON header action layout + reliable menu close alignment */
+header{position:sticky!important;isolation:isolate}
+header #arqon-session-logout{
+  position:absolute!important;right:clamp(12px,2.5vw,28px)!important;top:50%!important;
+  transform:translateY(-50%)!important;margin:0!important;z-index:6!important;
+  min-width:66px!important;min-height:38px!important;padding:0 12px!important;
+  box-shadow:0 5px 18px rgba(127,29,29,.16)!important;
+}
+header #arqon-session-logout:hover{background:rgba(127,29,29,.32)!important;border-color:rgba(248,113,113,.72)!important}
+header nav .arqon-nav-head{align-items:center!important;min-height:48px!important}
+header nav .arqon-nav-close{
+  appearance:none!important;display:grid!important;place-items:center!important;
+  flex:0 0 36px!important;width:36px!important;height:36px!important;min-width:36px!important;min-height:36px!important;
+  margin:0!important;padding:0!important;line-height:1!important;font-family:Arial,sans-serif!important;
+  font-size:23px!important;font-weight:400!important;text-align:center!important;
+  vertical-align:middle!important;transform:none!important;box-sizing:border-box!important;
+}
+header nav .arqon-nav-close>*{display:block!important;line-height:1!important;margin:0!important;padding:0!important}
+@media(max-width:900px){
+  header #arqon-session-logout{right:10px!important;min-width:62px!important;min-height:36px!important;padding:0 9px!important;font-size:11px!important}
+  header:has(#arqon-session-logout){padding-right:84px!important}
+  header:has(#arqon-session-logout) .brand{max-width:calc(100% - 84px)!important;min-width:0!important}
+  header:has(#arqon-session-logout) .brand img{width:clamp(104px,30vw,142px)!important}
+}
+@media(max-width:390px){
+  header #arqon-session-logout{right:8px!important;min-width:58px!important;padding:0 7px!important;font-size:10px!important}
+  header:has(#arqon-session-logout){padding-right:74px!important}
+  header:has(#arqon-session-logout) .brand{max-width:calc(100% - 74px)!important}
+}
