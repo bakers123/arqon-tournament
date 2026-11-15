@@ -1058,6 +1058,7 @@
     <input id="arqon-account-name" maxlength="32" placeholder="Как тебя показывать на ARQON">
     <div id="arqon-account-email" class="hint" style="margin-top:10px;"></div>
     <div id="arqon-account-steam" class="hint" style="margin-top:5px;"></div>
+    <button id="arqon-link-steam" class="btn ghost" type="button" onclick="linkSteamFromAccount()" style="display:none;width:100%;margin-top:14px;">Привязать Steam</button>
     <div id="arqon-account-message" class="msg hidden" role="status" style="margin-top:12px;"></div>
     <div style="display:flex;gap:10px;margin-top:16px;">
       <button class="btn" type="button" onclick="saveArqonAccountName()">Сохранить имя</button>
@@ -4241,6 +4242,8 @@ async function loadArqonAccount() {
     if (name && document.activeElement !== name) name.value = profile.display_name || '';
     if (email) email.textContent = user.email ? ('Email: ' + user.email + (user.email_confirmed_at ? ' · подтверждён' : ' · не подтверждён')) : 'Email пока не добавлен';
     if (steam) steam.textContent = profile.steam_id ? 'Steam: привязан' : 'Steam: не привязан';
+    const linkButton = document.getElementById('arqon-link-steam');
+    if (linkButton) linkButton.style.display = profile.steam_id ? 'none' : 'block';
   } catch (error) {
     console.warn('Не удалось загрузить профиль ARQON:', error);
     button.style.display = 'none';
@@ -4255,6 +4258,12 @@ function closeArqonAccount() {
   const modal = document.getElementById('arqon-account-modal');
   if (modal) modal.style.display = 'none';
 }
+function linkSteamFromAccount() {
+  closeArqonAccount();
+  startSteamAuth('register');
+}
+window.linkSteamFromAccount = linkSteamFromAccount;
+
 async function saveArqonAccountName() {
   const input = document.getElementById('arqon-account-name');
   const message = document.getElementById('arqon-account-message');
