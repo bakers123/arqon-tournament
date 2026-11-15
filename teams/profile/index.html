@@ -192,6 +192,13 @@ async function loadTeamAchievements(){
  let streak=0,bestStreak=0;played.forEach(m=>{if(m.outcome==='win'){streak++;bestStreak=Math.max(bestStreak,streak)}else streak=0});
  const stats=[['Матчи',played.length],['Победы',wins],['Поражения',losses],['Лучшая серия',bestStreak]];
  statsHost.replaceChildren();stats.forEach(([label,value])=>{const box=document.createElement('div');box.className='achievement-stat';const l=document.createElement('span');l.textContent=label;const v=document.createElement('strong');v.textContent=String(value);box.append(l,v);statsHost.append(box)});
+ const finalStandings=Array.isArray(payload.final_standings)?payload.final_standings:[];
+ const finalPlace=payload.completed_at?finalStandings.find(x=>normalizeTeamName(x.team)===normalizeTeamName(currentTeam.name))?.place:null;
+ const podiumAwards=[
+  {key:'league_champion',icon:'🥇',name:'Чемпион ARQON',desc:'Занять 1 место в завершённой лиге',place:1},
+  {key:'league_silver',icon:'🥈',name:'Серебряный призёр',desc:'Занять 2 место в завершённой лиге',place:2},
+  {key:'league_bronze',icon:'🥉',name:'Бронзовый призёр',desc:'Занять 3 место в завершённой лиге',place:3}
+ ].map(a=>({...a,progress:finalPlace===a.place?1:0,goal:1,desc:payload.completed_at?(finalPlace===a.place?'Итоговое место команды: '+finalPlace:'Сезон завершён · итоговое место: '+(finalPlace||'вне призовой тройки')):'Награда будет выдана после официального завершения сезона'}));
  const catalog=[
   {key:'first_win',icon:'🏆',name:'Первая победа',desc:'Одержать первую победу в лиге',progress:wins,goal:1},
   {key:'five_wins',icon:'⚔️',name:'На победной волне',desc:'Выиграть 5 матчей',progress:wins,goal:5},
@@ -199,7 +206,8 @@ async function loadTeamAchievements(){
   {key:'three_streak',icon:'🔥',name:'На серии',desc:'Одержать 3 победы подряд',progress:bestStreak,goal:3},
   {key:'five_streak',icon:'💜',name:'Без остановки',desc:'Одержать 5 побед подряд',progress:bestStreak,goal:5},
   {key:'ten_matches',icon:'🎯',name:'Боевой опыт',desc:'Сыграть 10 матчей',progress:played.length,goal:10},
-  {key:'twentyfive_matches',icon:'🛡️',name:'Ветераны лиги',desc:'Сыграть 25 матчей',progress:played.length,goal:25}
+  {key:'twentyfive_matches',icon:'🛡️',name:'Ветераны лиги',desc:'Сыграть 25 матчей',progress:played.length,goal:25},
+  ...podiumAwards
  ];
  host.replaceChildren();let earned=0;
  catalog.forEach(item=>{const unlocked=item.progress>=item.goal;if(unlocked)earned++;const card=document.createElement('article');card.className='achievement-card '+(unlocked?'earned':'locked');const head=document.createElement('div');head.className='achievement-head';const icon=document.createElement('span');icon.className='achievement-icon';icon.textContent=item.icon;const name=document.createElement('strong');name.className='achievement-name';name.textContent=item.name;head.append(icon,name);const desc=document.createElement('div');desc.className='achievement-desc';desc.textContent=item.desc;const bar=document.createElement('div');bar.className='achievement-progress';const fill=document.createElement('i');fill.style.width=Math.min(100,item.progress/item.goal*100)+'%';bar.append(fill);const state=document.createElement('div');state.className='achievement-state';state.textContent=unlocked?'✓ Получено':'Прогресс: '+Math.min(item.progress,item.goal)+' / '+item.goal;card.append(head,desc,bar,state);host.append(card)});
