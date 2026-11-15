@@ -1,0 +1,25 @@
+-- Cover foreign keys flagged by the Supabase performance advisor.
+create index if not exists steam_openid_states_user_id_idx on private.steam_openid_states(user_id);
+create index if not exists arqon_player_awards_granted_by_idx on public.arqon_player_awards(granted_by);
+create index if not exists arqon_player_awards_revoked_by_idx on public.arqon_player_awards(revoked_by);
+create index if not exists arqon_predictions_arqon_id_idx on public.arqon_predictions(arqon_id);
+create index if not exists arqon_predictions_user_id_idx on public.arqon_predictions(user_id);
+create index if not exists arqon_shop_inventory_item_id_idx on public.arqon_shop_inventory(item_id);
+create index if not exists live_match_events_created_by_idx on public.live_match_events(created_by);
+create index if not exists live_matches_created_by_idx on public.live_matches(created_by);
+create index if not exists live_matches_updated_by_idx on public.live_matches(updated_by);
+create index if not exists support_ticket_messages_sender_user_id_idx on public.support_ticket_messages(sender_user_id);
+create index if not exists team_invitations_invited_by_idx on public.team_invitations(invited_by);
+create index if not exists team_invitations_target_arqon_id_idx on public.team_invitations(target_arqon_id);
+create index if not exists team_membership_requests_arqon_id_idx on public.team_membership_requests(arqon_id);
+create index if not exists team_membership_requests_reviewed_by_idx on public.team_membership_requests(reviewed_by);
+create index if not exists team_membership_requests_user_id_idx on public.team_membership_requests(user_id);
+create index if not exists team_player_offers_created_by_idx on public.team_player_offers(created_by);
+create index if not exists team_player_offers_player_arqon_id_idx on public.team_player_offers(player_arqon_id);
+create index if not exists team_player_offers_player_user_id_idx on public.team_player_offers(player_user_id);
+create index if not exists team_profiles_captain_arqon_id_idx on public.team_profiles(captain_arqon_id);
+create index if not exists team_profiles_updated_by_idx on public.team_profiles(updated_by);
+create index if not exists team_recruitment_requests_arqon_id_idx on public.team_recruitment_requests(arqon_id);
+create index if not exists team_recruitment_requests_reviewed_by_idx on public.team_recruitment_requests(reviewed_by);
+create index if not exists team_recruitment_requests_user_id_idx on public.team_recruitment_requests(user_id);
+create index if not exists telegram_link_tokens_user_id_idx on public.telegram_link_tokens(user_id);
