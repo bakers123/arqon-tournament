@@ -14,17 +14,17 @@ function cors(origin: string | null) {
     "Access-Control-Allow-Headers": "authorization, apikey, x-client-info, content-type",
     "Access-Control-Allow-Methods": "POST, OPTIONS",
     "Vary": "Origin",
+    "Cache-Control": "no-store",
   };
 }
 
 Deno.serve(async (req: Request) => {
-  const headers = cors(req.headers.get("Origin"));
+  const originHeader = req.headers.get("Origin");
+  const headers = cors(originHeader);
   if (req.method === "OPTIONS") return new Response("ok", { headers });
   if (req.method !== "POST") return Response.json({ error: "Method not allowed" }, { status: 405, headers });
-
-  const authorization = req.headers.get("Authorization");
-  if (!authorization?.startsWith("Bearer ")) {
-    return Response.json({ error: "Authentication required" }, { status: 401, headers });
+  if (!originHeader || !allowedOrigins.has(originHeader)) {
+    return Response.json({ error: "Origin not allowed" }, { status: 403, headers });
   }
 
   try {
@@ -37,26 +37,34 @@ Deno.serve(async (req: Request) => {
       return Response.json({ error: "Server configuration incomplete" }, { status: 500, headers });
     }
 
-    const userClient = createClient(url, publishableKey, {
-      global: { headers: { Authorization: authorization } },
-      auth: { persistSession: false, autoRefreshToken: false },
-    });
-    const { data: { user }, error: userError } = await userClient.auth.getUser(authorization.slice(7));
-    if (userError || !user) return Response.json({ error: "Invalid session" }, { status: 401, headers });
-
-    const origin = req.headers.get("Origin") || "https://arqon-esports.ru";
-    if (!allowedOrigins.has(origin)) return Response.json({ error: "Origin not allowed" }, { status: 403, headers });
-
     const admin = createClient(url, serviceKey, { auth: { persistSession: false, autoRefreshToken: false } });
-    const { data: profile, error: profileError } = await admin.from("profiles").select("steam_id").eq("user_id", user.id).maybeSingle();
-    if (profileError || !profile) return Response.json({ error: "Profile not found" }, { status: 404, headers });
-    if (profile.steam_id) return Response.json({ error: "Steam is already linked to this ARQON account" }, { status: 409, headers });
+    let userId: string | null = null;
+    const authorization = req.headers.get("Authorization");
+    if (authorization) {
+      if (!authorization.startsWith("Bearer ")) {
+        return Response.json({ error: "Invalid authorization" }, { status: 401, headers });
+      }
+      const userClient = createClient(url, publishableKey, {
+        global: { headers: { Authorization: authorization } },
+        auth: { persistSession: false, autoRefreshToken: false },
+      });
+      const { data: { user }, error: userError } = await userClient.auth.getUser(authorization.slice(7));
+      if (userError || !user) return Response.json({ error: "Invalid session" }, { status: 401, headers });
+      userId = user.id;
+
+      const { data: profile, error: profileError } = await admin
+        .from("profiles").select("steam_id").eq("user_id", user.id).maybeSingle();
+      if (profileError || !profile) return Response.json({ error: "Profile not found" }, { status: 404, headers });
+      if (profile.steam_id) {
+        return Response.json({ error: "Steam is already linked to this ARQON account" }, { status: 409, headers });
+      }
+    }
 
     const state = crypto.randomUUID();
     const { error: insertError } = await admin.from("steam_openid_states").insert({
       state,
-      user_id: user.id,
-      return_origin: origin,
+      user_id: userId,
+      return_origin: originHeader,
       expires_at: new Date(Date.now() + 10 * 60 * 1000).toISOString(),
     });
     if (insertError) throw insertError;
@@ -72,7 +80,7 @@ Deno.serve(async (req: Request) => {
     steam.searchParams.set("openid.identity", "http://specs.openid.net/auth/2.0/identifier_select");
     steam.searchParams.set("openid.claimed_id", "http://specs.openid.net/auth/2.0/identifier_select");
 
-    return Response.json({ url: steam.toString() }, { headers, status: 200 });
+    return Response.json({ url: steam.toString(), mode: userId ? "link" : "login" }, { headers, status: 200 });
   } catch (_error) {
     return Response.json({ error: "Could not start Steam verification" }, { status: 500, headers });
   }
