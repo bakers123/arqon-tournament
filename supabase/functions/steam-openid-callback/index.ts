@@ -80,11 +80,13 @@ Deno.serve(async(req:Request)=>{
     const {data:updated,error:updateError}=await admin.from("profiles").update({steam_id:steamId})
       .eq("user_id",consumed.user_id).is("steam_id",null).select("user_id").maybeSingle();
     if(updateError||!updated) return redirect(origin,"already_linked");
-    await syncSteamProfile(admin,steamId,consumed.user_id);\n    return redirect(origin,"linked");
+    await syncSteamProfile(admin,steamId,consumed.user_id);
+    return redirect(origin,"linked");
   }
   const {data:profile,error:profileError}=await admin.from("profiles").select("user_id").eq("steam_id",steamId).maybeSingle();
   if(profileError||!profile) return redirect(origin,"not_found");
-  await syncSteamProfile(admin,steamId,profile.user_id);\n  const {data:userResult,error:userError}=await admin.auth.admin.getUserById(profile.user_id);
+  await syncSteamProfile(admin,steamId,profile.user_id);
+  const {data:userResult,error:userError}=await admin.auth.admin.getUserById(profile.user_id);
   const user=userResult?.user;
   if(userError||!user||!user.email||!user.email_confirmed_at) return redirect(origin,"email_required");
   const {data:generated,error:generateError}=await admin.auth.admin.generateLink({type:"magiclink",email:user.email});
