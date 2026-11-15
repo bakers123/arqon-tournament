@@ -1237,6 +1237,7 @@
         <button class="btn" onclick="loadLeague(true)">↻ Обновить матчи</button>
         <button class="btn ghost" onclick="leagueAddMatch()">＋ Добавить матч</button>
         <button class="btn ghost" onclick="leagueExportBackup()">⇩ Экспорт JSON</button>
+        <button class="btn" id="league-finish-button" onclick="leagueCompleteSeason()">🏁 Завершить лигу и зафиксировать призёров</button>
       </div>
       <div id="league-admin-matches"></div>
     </div>
@@ -3637,6 +3638,7 @@ function leagueRenderPublic(){
   const upcoming=(leagueData.matches||[]).filter(m=>m.result_type==='pending');
   const done=(leagueData.matches||[]).filter(m=>m.result_type!=='pending'&&m.team1&&m.team2);
   const mvpName=String(leagueData.mvp||'').trim();
+  const podiumBanner=leagueData.completed_at&&Array.isArray(leagueData.final_standings)?'<div class="league-panel" style="border-color:#a78bfa88;background:linear-gradient(135deg,#26183c,#15121e)"><h2>🏆 СЕЗОН ЗАВЕРШЁН</h2><p class="league-muted">Итоговые места зафиксированы '+new Date(leagueData.completed_at).toLocaleDateString('ru-RU')+'. Награды отображаются в профилях команд.</p><div class="league-match-grid">'+leagueData.final_standings.slice(0,3).map((t,i)=>'<article class="league-match"><div class="league-match-top"><span>'+['🥇 ЧЕМПИОН','🥈 2 МЕСТО','🥉 3 МЕСТО'][i]+'</span></div><div class="league-match-teams">'+leagueEscape(t.team)+'</div><div class="league-result">'+t.points+' очков · '+t.wins+' побед</div></article>').join('')+'</div></div>':'';
   box.innerHTML=`
     <div class="league-stats">
       <div class="league-stat"><small>Команд</small><strong>${standings.length}</strong></div>
@@ -3644,6 +3646,7 @@ function leagueRenderPublic(){
       <div class="league-stat"><small>Всего матчей</small><strong>${total}</strong></div>
       <div class="league-stat"><small>Осталось</small><strong>${Math.max(0,total-played)}</strong></div>
     </div>
+    ${podiumBanner}
     <div class="league-panel"><h2>🏆 Турнирная таблица</h2><div class="league-table-scroll"><table class="league-table"><thead><tr><th>#</th><th>Команда</th><th>И</th><th>В</th><th>П</th><th>ТЛ</th><th>О</th><th>Статус</th></tr></thead><tbody>${standings.map((t,i)=>`<tr class="${i<4?'playoff-zone':''}"><td class="league-rank"><span class="league-rank-badge rank-${i+1}">${i===0?'🥇':i===1?'🥈':i===2?'🥉':i+1}</span></td><td class="league-team-name"><button type="button" class="league-team-link" data-team="${leagueEscape(t.team)}" onclick="openTeamProfile(this.dataset.team)">${leagueEscape(t.team)}</button>${t.dq?'<span class="league-dq">DQ</span>':''}</td><td>${t.played}</td><td>${t.wins}</td><td>${t.losses}</td><td>${t.tech}</td><td><b>${t.points}</b></td><td>${t.dq?'<span class="league-status dq">ДИСКВАЛИФИКАЦИЯ</span>':'<span class="league-status">В турнире</span>'}</td></tr>`).join('')}</tbody></table></div><p class="league-muted" style="margin-top:10px">И — игры, В — победы, П — поражения, ТЛ — технические поражения, О — очки. При 3 технических поражениях команда автоматически получает статус DQ. Топ-4 выделены как зона плей-офф. Нажми на название команды, чтобы открыть профиль.</p></div>
     <div class="league-panel"><h2>Последние результаты</h2>${done.length?`<div class="league-match-grid">${done.slice().reverse().slice(0,12).map(m=>`<article class="league-match"><div class="league-match-top"><span>Матч №${m.match_no||'—'}</span><span>${leagueEscape(m.date)} ${leagueEscape(m.time)}</span></div><div class="league-match-teams">${leagueEscape(m.team1)} <span style="color:var(--text-dim)">vs</span> ${leagueEscape(m.team2)}</div><div class="league-result">${m.result_type==='tech'?'Тех. поражение: '+leagueEscape(m.tech_loss_team):'Победитель: '+leagueEscape(m.winner)}${m.score?' · '+leagueEscape(m.score):''}</div></article>`).join('')}</div>`:'<p class="league-muted">Результаты ещё не внесены. Они появятся здесь после сохранения администратором.</p>'}</div>
     <div class="league-panel"><h2>Расписание матчей</h2><div class="league-match-grid">${upcoming.filter(m=>m.team1&&m.team2).map(m=>`<article class="league-match"><div class="league-match-top"><span>Матч №${m.match_no||'—'}</span><span>${leagueEscape(m.date)} ${leagueEscape(m.time)}</span></div><div class="league-match-teams">${leagueEscape(m.team1)} <span style="color:var(--text-dim)">vs</span> ${leagueEscape(m.team2)}</div><div class="league-match-meta">${leagueEscape(m.venue||'Место не указано')} · <span class="league-status">ОЖИДАЕТСЯ</span></div></article>`).join('')||'<p class="league-muted">Нет матчей с заполненными командами.</p>'}</div></div>`;
@@ -3672,6 +3675,12 @@ function leagueToggleResult(i){const type=document.getElementById('lm-type-'+i)?
 function leagueRenderAdmin(){
   const box=document.getElementById('league-admin-matches'); if(!box||!leagueData)return;
   const mvpInput=document.getElementById('league-mvp-input');
+  if(leagueData.completed_at){
+    const podium=(leagueData.final_standings||[]).slice(0,3);
+    box.innerHTML='<div class="league-panel"><h2>🔒 Лига завершена</h2><p class="league-muted">Результаты зафиксированы '+new Date(leagueData.completed_at).toLocaleString('ru-RU')+'. Изменение результатов и расписания заблокировано.</p><div class="league-match-grid">'+podium.map((t,i)=>'<article class="league-match"><div class="league-match-top"><span>'+['🥇 ЧЕМПИОН','🥈 2 МЕСТО','🥉 3 МЕСТО'][i]+'</span></div><div class="league-match-teams">'+leagueEscape(t.team)+'</div><div class="league-result">'+t.points+' очков · '+t.wins+' побед</div></article>').join('')+'</div></div>';
+    const status=document.getElementById('league-admin-status');if(status)status.textContent='Сезон закрыт. Призовые места сохранены.';
+    return;
+  }
   if(mvpInput && document.activeElement!==mvpInput) mvpInput.value=leagueData.mvp||'';
   const filter=document.getElementById('league-admin-filter')?.value||'all';
   const list=(leagueData.matches||[]).map((m,i)=>({m,i})).filter(x=>filter==='all'||(filter==='pending'?x.m.result_type==='pending':x.m.result_type!=='pending'));
@@ -3709,7 +3718,7 @@ async function leagueSaveMvp(){
   }
 }
 async function leagueSaveMatch(i){
-  if(!isAdmin())return; const m=leagueData?.matches?.[i];if(!m)return;
+  if(!isAdmin()||leagueData?.completed_at){if(leagueData?.completed_at)alert('Лига уже завершена.');return;} const m=leagueData?.matches?.[i];if(!m)return;
   const t1=document.getElementById('lm-t1-'+i).value.trim(),t2=document.getElementById('lm-t2-'+i).value.trim();
   const type=document.getElementById('lm-type-'+i).value,score=document.getElementById('lm-score-'+i).value.trim();
   if(!t1||!t2||t1.toLocaleLowerCase()===t2.toLocaleLowerCase()){alert('Укажи две разные команды.');return;}
@@ -3720,9 +3729,39 @@ async function leagueSaveMatch(i){
   [t1,t2].forEach(t=>{if(!leagueData.teams.includes(t))leagueData.teams.push(t);});
   try{await leaguePersist();leagueRenderPublic();leagueRenderAdmin();const s=document.getElementById('league-admin-status');if(s)s.textContent=`Матч №${m.match_no||'—'} сохранён.`;}catch(e){alert('Не удалось сохранить: '+e.message);}
 }
-async function leagueClearMatch(i){if(!isAdmin())return;const m=leagueData.matches[i];if(!confirm(`Сбросить результат матча №${m.match_no||'—'}?`))return;m.result_type='pending';m.winner='';m.score='';m.tech_loss_team='';try{await leaguePersist();leagueRenderPublic();leagueRenderAdmin();}catch(e){alert('Ошибка сохранения: '+e.message);}}
-async function leagueAddMatch(){if(!isAdmin()||!leagueData)return;const next=Math.max(0,...leagueData.matches.map(m=>Number(m.match_no)||0))+1;leagueData.matches.push({id:'league-'+next+'-'+Date.now(),match_no:next,date:'',time:'',team1:'',team2:'',venue:'',result_type:'pending',winner:'',score:'',tech_loss_team:''});try{await leaguePersist();leagueRenderAdmin();}catch(e){alert('Ошибка добавления матча: '+e.message);}}
+async function leagueClearMatch(i){if(!isAdmin()||leagueData?.completed_at){if(leagueData?.completed_at)alert('Лига уже завершена.');return;}const m=leagueData.matches[i];if(!confirm(`Сбросить результат матча №${m.match_no||'—'}?`))return;m.result_type='pending';m.winner='';m.score='';m.tech_loss_team='';try{await leaguePersist();leagueRenderPublic();leagueRenderAdmin();}catch(e){alert('Ошибка сохранения: '+e.message);}}
+async function leagueAddMatch(){if(!isAdmin()||!leagueData||leagueData.completed_at){if(leagueData?.completed_at)alert('Лига уже завершена.');return;}const next=Math.max(0,...leagueData.matches.map(m=>Number(m.match_no)||0))+1;leagueData.matches.push({id:'league-'+next+'-'+Date.now(),match_no:next,date:'',time:'',team1:'',team2:'',venue:'',result_type:'pending',winner:'',score:'',tech_loss_team:''});try{await leaguePersist();leagueRenderAdmin();}catch(e){alert('Ошибка добавления матча: '+e.message);}}
 function leagueExportBackup(){if(!isAdmin()||!leagueData)return;const blob=new Blob([JSON.stringify(leagueData,null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='ARQON_Liga_backup.json';a.click();URL.revokeObjectURL(a.href);}
+async function leagueCompleteSeason(){
+ if(!isAdmin()||!leagueData)return;
+ if(leagueData.completed_at){alert('Лига уже завершена.');return;}
+ const matches=(leagueData.matches||[]).filter(m=>String(m.team1||'').trim()&&String(m.team2||'').trim());
+ const unresolved=matches.filter(m=>{
+  if(m.result_type==='normal')return ![m.team1,m.team2].includes(m.winner);
+  if(m.result_type==='tech')return ![m.team1,m.team2].includes(m.tech_loss_team);
+  return true;
+ });
+ if(unresolved.length){
+  const status=document.getElementById('league-admin-status');
+  if(status)status.textContent='Нельзя завершить лигу: осталось матчей без корректного результата — '+unresolved.length+'.';
+  alert('Сначала внеси результаты всех матчей. Осталось: '+unresolved.length+'.');
+  return;
+ }
+ const finalStandings=leagueStandings().filter(t=>!t.dq);
+ if(finalStandings.length<3){alert('Для фиксации пьедестала нужно минимум три команды без дисквалификации.');return;}
+ if(!confirm('Завершить сезон? Итоговая таблица и призовые места будут зафиксированы, редактирование матчей заблокируется.'))return;
+ const previous={completed_at:leagueData.completed_at,final_standings:leagueData.final_standings};
+ leagueData.completed_at=new Date().toISOString();
+ leagueData.final_standings=finalStandings.map((t,i)=>({place:i+1,team:t.team,played:t.played,wins:t.wins,losses:t.losses,tech:t.tech,points:t.points,dq:false}));
+ try{
+  await leaguePersist();
+  leagueRenderPublic();leagueRenderAdmin();
+  const status=document.getElementById('league-admin-status');if(status)status.textContent='Лига завершена. Призёры сохранены в профилях команд.';
+ }catch(e){
+  leagueData.completed_at=previous.completed_at;leagueData.final_standings=previous.final_standings;
+  alert('Не удалось завершить лигу: '+(e.message||e));
+ }
+}
 
 // ==========================================
 // РАСПИСАНИЕ
