@@ -41,7 +41,7 @@
           <div class="field"><label for="display-name">ИМЯ ПРОФИЛЯ</label><input id="display-name" maxlength="32" placeholder="Как тебя называть"></div>
           <div class="field"><label for="bio-input">О СЕБЕ · ДО 280 СИМВОЛОВ</label><textarea id="bio-input" maxlength="280" placeholder="Расскажи немного о себе"></textarea></div>
           <div class="field"><label for="avatar-input">ССЫЛКА НА АВАТАР (HTTPS)</label><input id="avatar-input" type="url" placeholder="https://…"></div>
-          <div class="field"><label for="cover-input">ССЫЛКА НА ОБЛОЖКУ (HTTPS)</label><input id="cover-input" type="url" placeholder="https://…"></div>
+          <div class="field"><label for="avatar-file">ЗАГРУЗИТЬ АВАТАР · JPG, PNG, WEBP · ДО 5 МБ</label><input id="avatar-file" type="file" accept="image/jpeg,image/png,image/webp"></div>\n          <div class="field"><label for="cover-file">ЗАГРУЗИТЬ ОБЛОЖКУ · JPG, PNG, WEBP · ДО 5 МБ</label><input id="cover-file" type="file" accept="image/jpeg,image/png,image/webp"></div>\n          <div class="field"><label for="avatar-input">ИЛИ ССЫЛКА НА АВАТАР (HTTPS)</label><input id="avatar-input" type="url" placeholder="https://…"></div>\n          <div class="field"><label for="cover-input">ИЛИ ССЫЛКА НА ОБЛОЖКУ (HTTPS)</label><input id="cover-input" type="url" placeholder="https://…"></div>
           <div class="checks"><label><input id="public-input" type="checkbox"> Публичный профиль</label><label><input id="steam-input" type="checkbox"> Показывать Steam ID</label></div>
           <button class="button" type="submit">Сохранить изменения</button><div id="edit-message" class="muted" role="status" style="margin-top:10px"></div>
         </form>
@@ -60,6 +60,17 @@
     const el=id=>document.getElementById(id);
     function showNotice(message,isError=false){const n=el('notice');n.textContent=message;n.classList.remove('hidden');if(isError)n.classList.add('error')}
     function setImage(containerId,url,alt){const container=el(containerId);if(!url)return;const img=document.createElement('img');img.src=url;img.alt=alt;img.referrerPolicy='no-referrer';img.onerror=()=>img.remove();container.replaceChildren(img)}
+    async function uploadProfileMedia(file,kind){
+      if(!file)return null;
+      const allowed=['image/jpeg','image/png','image/webp'];
+      if(!allowed.includes(file.type))throw new Error('Поддерживаются только JPG, PNG и WEBP.');
+      if(file.size>5*1024*1024)throw new Error('Размер изображения не должен превышать 5 МБ.');
+      const ext=file.type==='image/jpeg'?'jpg':file.type==='image/png'?'png':'webp';
+      const path=ownerUser.id+'/'+kind+'-'+Date.now()+'-'+Math.random().toString(36).slice(2,8)+'.'+ext;
+      const {error}=await db.storage.from('player-media').upload(path,file,{contentType:file.type,upsert:false,cacheControl:'3600'});
+      if(error)throw error;
+      return db.storage.from('player-media').getPublicUrl(path).data.publicUrl;
+    }
     async function load(){
       if(!Number.isSafeInteger(arqonId)||arqonId<1){showNotice('В ссылке не указан корректный ARQON ID.',true);el('name').textContent='Профиль не найден';return}
       const {data:auth}=await db.auth.getUser();ownerUser=auth?.user||null;
@@ -95,12 +106,19 @@
       const message=el('edit-message');message.textContent='Сохраняем…';
       const display_name=el('display-name').value.trim().split(' ').filter(Boolean).join(' ');
       const bio=el('bio-input').value.trim();
-      const avatar_url=el('avatar-input').value.trim()||null;
-      const cover_url=el('cover-input').value.trim()||null;
+      let avatar_url=el('avatar-input').value.trim()||null;
+      let cover_url=el('cover-input').value.trim()||null;
       for(const url of [avatar_url,cover_url])if(url&&url.slice(0,8)!=='https://'){message.textContent='Ссылки на изображения должны начинаться с https://';return}
       if(!display_name||display_name.length>32){message.textContent='Имя должно быть от 1 до 32 символов.';return}
+      try{
+        const uploadedAvatar=await uploadProfileMedia(el('avatar-file').files[0],'avatar');
+        const uploadedCover=await uploadProfileMedia(el('cover-file').files[0],'cover');
+        if(uploadedAvatar)avatar_url=uploadedAvatar;
+        if(uploadedCover)cover_url=uploadedCover;
+      }catch(uploadError){message.textContent=uploadError.message||'Не удалось загрузить изображение.';return}
       const {error}=await db.from('profiles').update({display_name,bio,avatar_url,cover_url,is_public:el('public-input').checked,show_steam:el('steam-input').checked}).eq('user_id',ownerUser.id);
       if(error){message.textContent=error.message;return}
+      el('avatar-file').value='';el('cover-file').value='';
       message.textContent='Профиль сохранён.';await load();
     });
     load().catch(error=>{console.error(error);showNotice('Не удалось загрузить профиль. Попробуй обновить страницу.',true)});
