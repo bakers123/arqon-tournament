@@ -47,6 +47,12 @@
     drawer.innerHTML = '<div class="arqon-admin-drawer-head"><div class="arqon-admin-drawer-brand">ARQON <span>ADMIN</span></div><button id="arqon-admin-drawer-close" type="button" aria-label="Закрыть меню">×</button></div><div id="arqon-admin-drawer-items"></div><a class="arqon-admin-link support" href="/support/admin/">✦ Техподдержка · обращения игроков</a>';
     document.body.append(backdrop,drawer);
 
+    const builderLink = document.createElement('a');
+    builderLink.className = 'arqon-admin-link';
+    builderLink.href = '/bracket-builder/';
+    builderLink.textContent = '🎯 Конструктор турнирных сеток';
+    items.appendChild(builderLink);
+
     const groups = [
       {name:'ТУРНИР',match:/настройки турнира|сгенерировать сетку|открыть пики|сбросить всё/i},
       {name:'ИГРОКИ И КОМАНДЫ',match:/добавить игрока|соло игроки|свободные игроки|составы и команды/i},
