@@ -11,6 +11,19 @@
 header{height:70px;position:sticky;top:0;z-index:5;display:flex;align-items:center;justify-content:space-between;padding:0 clamp(14px,4vw,52px);background:rgba(9,8,18,.92);border-bottom:1px solid var(--line);backdrop-filter:blur(14px)}
 .brand{font:800 16px Orbitron,sans-serif;letter-spacing:1.5px;color:white;text-decoration:none}.brand span{color:#a78bfa}
 header nav{display:flex;gap:8px}a.nav,button{font:700 14px Rajdhani,sans-serif}a.nav{padding:9px 13px;border:1px solid var(--line);border-radius:10px;color:#e9ddff;text-decoration:none}
+.menu-trigger{display:none;width:42px;height:42px;border:1px solid var(--line);border-radius:11px;background:#171329;align-items:center;justify-content:center;flex-direction:column;gap:5px;cursor:pointer}
+.menu-trigger span{display:block;width:19px;height:2px;border-radius:3px;background:#eee5ff;transition:transform .2s,opacity .2s}
+.drawer-backdrop{position:fixed;inset:0;z-index:20;background:rgba(3,2,10,.68);opacity:0;visibility:hidden;transition:opacity .2s,visibility .2s}
+.admin-drawer{position:fixed;z-index:21;inset:0 auto 0 0;width:min(340px,88vw);padding:18px 16px 28px;background:linear-gradient(160deg,#171329,#0b0a13);border-right:1px solid var(--line);box-shadow:24px 0 70px rgba(0,0,0,.48);transform:translateX(-105%);transition:transform .24s;overflow-y:auto}
+.drawer-head{display:flex;align-items:center;justify-content:space-between;padding:3px 2px 17px;border-bottom:1px solid var(--line);margin-bottom:16px;font:800 13px Orbitron,sans-serif}.drawer-head span{color:#a78bfa}
+.drawer-head button{width:38px;height:38px;border:1px solid var(--line);border-radius:10px;background:#211a32;color:white;font-size:23px;cursor:pointer}
+.drawer-label{font:700 10px Orbitron,sans-serif;letter-spacing:1.5px;color:#9d91b6;padding:14px 9px 7px}
+.admin-drawer>a{display:flex;align-items:center;min-height:43px;padding:9px 11px;margin:3px 0;border:1px solid transparent;border-radius:9px;color:#e9e0f8;text-decoration:none;font-weight:700}
+.admin-drawer>a:hover,.admin-drawer>a:focus-visible{background:rgba(139,92,246,.13);border-color:rgba(167,139,250,.24);outline:none}
+body.menu-open{overflow:hidden}body.menu-open .drawer-backdrop{opacity:1;visibility:visible}body.menu-open .admin-drawer{transform:translateX(0)}
+@media(max-width:760px){.menu-trigger{display:flex}.desktop-nav{display:none!important}}
+@media(prefers-reduced-motion:reduce){.drawer-backdrop,.admin-drawer,.menu-trigger span{transition:none}}
+
 .wrap{width:min(1440px,calc(100% - 28px));margin:28px auto 60px}.eyebrow{font:700 10px Orbitron,sans-serif;letter-spacing:2px;color:#b79aff}.hero h1{font:800 clamp(24px,4vw,36px) Orbitron,sans-serif;margin:9px 0}.hero p{color:var(--muted);margin:0 0 22px;font-size:16px}
 .notice{display:none;margin:12px 0;padding:12px 14px;border:1px solid var(--line);border-radius:11px;background:rgba(139,92,246,.09);color:#e2d6ff}.notice.error{display:block;border-color:rgba(248,113,113,.4);background:rgba(248,113,113,.08);color:#fecaca}
 .layout{display:grid;grid-template-columns:minmax(270px,.75fr) minmax(0,1.6fr);gap:16px;align-items:start}.card{background:linear-gradient(145deg,rgba(24,20,39,.97),rgba(14,13,23,.98));border:1px solid var(--line);border-radius:17px;padding:17px;min-width:0}.card h2{font:700 14px Orbitron,sans-serif;margin:0 0 13px;color:#f4edff}
@@ -22,7 +35,8 @@ header nav{display:flex;gap:8px}a.nav,button{font:700 14px Rajdhani,sans-serif}a
 @media(max-width:760px){.wrap{margin:20px auto 40px}.layout{grid-template-columns:1fr}.ticket-list{max-height:260px}.chat{min-height:420px}.messages{min-height:230px;max-height:48vh}.chat-head{flex-direction:column}.compose{flex-direction:column;align-items:stretch}.compose .btn{width:100%}header{height:62px}header nav a:first-child{display:none}}
 </style></head>
 <body>
-<header><a class="brand" href="/">ARQON <span>ESPORTS</span></a><nav><a class="nav" href="/support/">Обращения игроков</a><a class="nav" href="/">На главную</a></nav></header>
+<header><a class="brand" href="/">ARQON <span>ESPORTS</span></a><button class="menu-trigger" id="admin-menu-trigger" type="button" aria-expanded="false" aria-controls="admin-drawer" aria-label="Открыть меню"><span></span><span></span><span></span></button><nav class="desktop-nav"><a class="nav" href="/support/">Обращения игроков</a><a class="nav" href="/">На главную</a></nav></header>
+<div class="drawer-backdrop" id="admin-drawer-backdrop"></div><aside class="admin-drawer" id="admin-drawer" aria-label="Меню администратора"><div class="drawer-head"><b>ARQON <span>ADMIN</span></b><button id="admin-menu-close" type="button" aria-label="Закрыть меню">×</button></div><div class="drawer-label">УПРАВЛЕНИЕ</div><a href="/support/admin/">✦ Техподдержка</a><a href="/support/">Обращения игроков</a><a href="/bracket-builder/">Конструктор сеток</a><div class="drawer-label">ПЛАТФОРМА</div><a href="/players/">Игроки</a><a href="/teams/">Команды</a><a href="/game_grid/">Турнирная сетка</a><a href="/">Главная ARQON</a></aside>
 <main class="wrap">
 <section class="hero"><div class="eyebrow">ARQON · INTERNAL TOOLS</div><h1>УПРАВЛЕНИЕ ПОДДЕРЖКОЙ</h1><p>Все обращения игроков, переписка, ответы и статусы — в одном месте.</p></section>
 <div id="notice" class="notice" role="status" aria-live="polite"></div>
@@ -34,6 +48,12 @@ header nav{display:flex;gap:8px}a.nav,button{font:700 14px Rajdhani,sans-serif}a
 </main>
 <script>
 (()=>{
+const menuTrigger=document.getElementById('admin-menu-trigger'),menuClose=document.getElementById('admin-menu-close'),menuBackdrop=document.getElementById('admin-drawer-backdrop');
+const closeMenu=()=>{document.body.classList.remove('menu-open');menuTrigger?.setAttribute('aria-expanded','false')};
+menuTrigger?.addEventListener('click',()=>{document.body.classList.add('menu-open');menuTrigger.setAttribute('aria-expanded','true');menuClose?.focus()});
+menuClose?.addEventListener('click',closeMenu);menuBackdrop?.addEventListener('click',closeMenu);
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeMenu()});
+document.querySelectorAll('.admin-drawer a').forEach(a=>a.addEventListener('click',closeMenu));
 const URL='https://uscnaqcvuwjrmkjyuklp.supabase.co',KEY='sb_publishable_oE2Bc1wPAcDt6HE8bOUj3Q_0-2FfIxB',db=window.supabase.createClient(URL,KEY);
 const $=id=>document.getElementById(id),labels={open:'Открыто',waiting_admin:'Ждёт поддержки',waiting_user:'Ждёт игрока',closed:'Закрыто'};
 let tickets=[],selected=null,filter='active',busy=false,session=null;
