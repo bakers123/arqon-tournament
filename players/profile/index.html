@@ -40,8 +40,10 @@
         <form class="edit" id="edit-form">
           <div class="field"><label for="display-name">ИМЯ ПРОФИЛЯ</label><input id="display-name" maxlength="32" placeholder="Как тебя называть"></div>
           <div class="field"><label for="bio-input">О СЕБЕ · ДО 280 СИМВОЛОВ</label><textarea id="bio-input" maxlength="280" placeholder="Расскажи немного о себе"></textarea></div>
-          <div class="field"><label for="avatar-input">ССЫЛКА НА АВАТАР (HTTPS)</label><input id="avatar-input" type="url" placeholder="https://…"></div>
-          <div class="field"><label for="avatar-file">ЗАГРУЗИТЬ АВАТАР · JPG, PNG, WEBP · ДО 5 МБ</label><input id="avatar-file" type="file" accept="image/jpeg,image/png,image/webp"></div>\n          <div class="field"><label for="cover-file">ЗАГРУЗИТЬ ОБЛОЖКУ · JPG, PNG, WEBP · ДО 5 МБ</label><input id="cover-file" type="file" accept="image/jpeg,image/png,image/webp"></div>\n          <div class="field"><label for="avatar-input">ИЛИ ССЫЛКА НА АВАТАР (HTTPS)</label><input id="avatar-input" type="url" placeholder="https://…"></div>\n          <div class="field"><label for="cover-input">ИЛИ ССЫЛКА НА ОБЛОЖКУ (HTTPS)</label><input id="cover-input" type="url" placeholder="https://…"></div>
+          <div class="field"><label for="avatar-file">ЗАГРУЗИТЬ АВАТАР · JPG, PNG, WEBP · ДО 5 МБ</label><input id="avatar-file" type="file" accept="image/jpeg,image/png,image/webp"></div>
+          <div class="field"><label for="cover-file">ЗАГРУЗИТЬ ОБЛОЖКУ · JPG, PNG, WEBP · ДО 5 МБ</label><input id="cover-file" type="file" accept="image/jpeg,image/png,image/webp"></div>
+          <div class="field"><label for="avatar-input">ИЛИ ССЫЛКА НА АВАТАР (HTTPS)</label><input id="avatar-input" type="url" placeholder="https://…"></div>
+          <div class="field"><label for="cover-input">ИЛИ ССЫЛКА НА ОБЛОЖКУ (HTTPS)</label><input id="cover-input" type="url" placeholder="https://…"></div>
           <div class="checks"><label><input id="public-input" type="checkbox"> Публичный профиль</label><label><input id="steam-input" type="checkbox"> Показывать Steam ID</label></div>
           <button class="button" type="submit">Сохранить изменения</button><div id="edit-message" class="muted" role="status" style="margin-top:10px"></div>
         </form>
@@ -67,7 +69,7 @@
         if(!value||typeof value!=='object')return;
         if(Array.isArray(value)){value.forEach(visit);return}
         if(playerKey(value.name)===key){
-          if(typeof value.avatar==='string'&&/^https?:\\/\\//i.test(value.avatar.trim()))meta.avatar=value.avatar.trim();
+          if(typeof value.avatar==='string'&&/^https?:\/\//i.test(value.avatar.trim()))meta.avatar=value.avatar.trim();
           const level=Number(value.faceitLevel);if(Number.isInteger(level)&&level>=1&&level<=10)meta.faceitLevel=level;
           const rating=Number(value.arqonRating);if(Number.isInteger(rating)&&rating>=0&&rating<=100)meta.arqonRating=rating;
         }
