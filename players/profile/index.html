@@ -86,7 +86,7 @@
     function setImage(containerId,url,alt){const container=el(containerId);if(!url)return;const img=document.createElement('img');img.src=url;img.alt=alt;img.referrerPolicy='no-referrer';img.onerror=()=>img.remove();container.replaceChildren(img)}
     function playerKey(value){return String(value||'').trim().toLocaleLowerCase()}
     function getTournamentPlayerMeta(source,name){
-      const key=playerKey(name),meta={avatar:null,faceitLevel:0,arqonRating:null,teamName:null};
+      const key=playerKey(name),meta={avatar:null,faceitLevel:0,arqonRating:null,teamName:null,teamId:null};
       const visit=value=>{
         if(!value||typeof value!=='object')return;
         if(Array.isArray(value)){value.forEach(visit);return}
@@ -98,10 +98,10 @@
         Object.values(value).forEach(visit);
       };
       visit(source);
-      (source?.teams||[]).forEach(team=>(team.players||[]).forEach(player=>{if(playerKey(player.name)===key)meta.teamName=team.name||null}));
+      (source?.teams||[]).forEach(team=>(team.players||[]).forEach(player=>{if(playerKey(player.name)===key){meta.teamName=team.name||null;meta.teamId=team.id||null}}));
       const free=(source?.freeAgents||[]).find(player=>playerKey(player.name)===key);
       if(!meta.teamName&&free?.freeAgentTeamName)meta.teamName=free.freeAgentTeamName;
-      if(!meta.teamName&&free?.assignedTeamId){const team=(source?.teams||[]).find(item=>String(item.id)===String(free.assignedTeamId));if(team)meta.teamName=team.name}
+      if(!meta.teamName&&free?.assignedTeamId){const team=(source?.teams||[]).find(item=>String(item.id)===String(free.assignedTeamId));if(team){meta.teamName=team.name;meta.teamId=team.id}}
       return meta;
     }
     function getTournamentStats(name,results){
@@ -192,7 +192,8 @@
       renderTournamentHistory(profile.player_name,resultsResponse.data||[]);
       renderProgressAndAchievements(profile.player_name,resultsResponse.data||[]);
       const meta=getTournamentPlayerMeta(tournamentResponse.data?.data,profile.player_name);
-      el('team-name').textContent=meta.teamName||'Свободный игрок';
+      const teamNode=el('team-name');teamNode.textContent=meta.teamName||'Свободный игрок';
+      if(meta.teamId){const teamLink=document.createElement('a');teamLink.href='/teams/profile/?id='+encodeURIComponent(meta.teamId);teamLink.textContent=meta.teamName;teamLink.style.color='#d9baff';teamLink.style.textDecoration='underline';teamNode.replaceChildren(teamLink)}
       el('arqon-rating').textContent=meta.arqonRating===null?'—':meta.arqonRating+'/100';
       el('faceit-level').textContent=meta.faceitLevel?'Level '+meta.faceitLevel:'—';
       el('tournament-points').textContent=String(stats.points);
