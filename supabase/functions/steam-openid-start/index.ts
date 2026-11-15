@@ -4,6 +4,10 @@ function cors(origin: string | null) {
   const allowed = origin && allowedOrigins.has(origin) ? origin : "https://arqon-esports.ru";
   return {"Access-Control-Allow-Origin":allowed,"Access-Control-Allow-Headers":"authorization, apikey, x-client-info, content-type","Access-Control-Allow-Methods":"POST, OPTIONS","Vary":"Origin","Cache-Control":"no-store"};
 }
+async function hashIp(ip:string) {
+  const digest=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(ip));
+  return Array.from(new Uint8Array(digest)).map((value)=>value.toString(16).padStart(2,"0")).join("");
+}
 Deno.serve(async (req: Request) => {
   const origin = req.headers.get("Origin");
   const headers = cors(origin);
@@ -18,6 +22,16 @@ Deno.serve(async (req: Request) => {
     const serviceKey=secretKeys.default||Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
     if(!url||!publishableKey||!serviceKey) return Response.json({error:"Server configuration incomplete"},{status:500,headers});
     const admin=createClient(url,serviceKey,{auth:{persistSession:false,autoRefreshToken:false}});
+    const now=new Date();
+    await admin.from("steam_openid_states").delete().lt("expires_at",now.toISOString());
+    const forwarded=req.headers.get("cf-connecting-ip")||req.headers.get("x-forwarded-for")?.split(",")[0].trim()||"";
+    const ipHash=forwarded?await hashIp(forwarded):null;
+    if(ipHash){
+      const since=new Date(now.getTime()-15*60*1000).toISOString();
+      const {count,error:rateError}=await admin.from("steam_openid_states").select("state",{count:"exact",head:true}).eq("request_ip_hash",ipHash).gte("created_at",since);
+      if(rateError) throw rateError;
+      if((count||0)>=10) return Response.json({error:"Слишком много попыток. Подожди 15 минут и попробуй снова."},{status:429,headers});
+    }
     let userId:string|null=null;
     const authorization=req.headers.get("Authorization");
     if(authorization){
@@ -31,7 +45,7 @@ Deno.serve(async (req: Request) => {
       if(profile.steam_id) return Response.json({error:"Steam is already linked to this ARQON account"},{status:409,headers});
     }
     const state=crypto.randomUUID();
-    const {error:insertError}=await admin.from("steam_openid_states").insert({state,user_id:userId,return_origin:origin,expires_at:new Date(Date.now()+600000).toISOString()});
+    const {error:insertError}=await admin.from("steam_openid_states").insert({state,user_id:userId,request_ip_hash:ipHash,return_origin:origin,expires_at:new Date(Date.now()+600000).toISOString()});
     if(insertError) throw insertError;
     const callback=new URL("/functions/v1/steam-openid-callback",url);
     callback.searchParams.set("state",state);
