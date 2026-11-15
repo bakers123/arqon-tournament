@@ -117,7 +117,8 @@
       <h2 style="margin-top:18px">ПОСЛЕДНИЕ ПРОГНОЗЫ</h2>
       <div id="prediction-history" class="history-list"><p class="history-empty">Загружаем прогнозы…</p></div>
     </section>
-    <section class="card hidden" id="profile-achievements" style="width:min(1040px,calc(100% - 28px));margin:16px auto 0"><h2>ДОСТИЖЕНИЯ</h2><div class="achievement-grid" id="achievement-grid"></div></section><section class="card hidden" id="profile-award-collection" style="width:min(1040px,calc(100% - 28px));margin:16px auto 0">
+    <section class="card hidden" id="profile-achievements" style="width:min(1040px,calc(100% - 28px));margin:16px auto 0"><h2>ДОСТИЖЕНИЯ</h2><div class="achievement-grid" id="achievement-grid"></div></section>
+    <section class="card hidden" id="profile-coin-rewards" style="width:min(1040px,calc(100% - 28px));margin:16px auto 0"><h2>ИСТОРИЯ НАГРАД ЗА ДОСТИЖЕНИЯ</h2><div id="achievement-coin-history" class="history-list"><p class="history-empty">Загружаем награды…</p></div></section><section class="card hidden" id="profile-award-collection" style="width:min(1040px,calc(100% - 28px));margin:16px auto 0">
       <h2>КОЛЛЕКЦИЯ НАГРАД ARQON</h2>
       <div id="profile-award-list" class="achievement-grid"></div>
     </section>
@@ -313,24 +314,53 @@
       if(automaticError)console.warn('Automatic achievements unavailable:',automaticError);
       const automaticKeys=new Set((automaticRows||[]).map(row=>row.achievement_key));
       const achievements=[
-        {icon:'🎮',name:'Первый результат',desc:'Попал в опубликованные результаты турнира',earned:played.length>=1},
-        {icon:'🥉',name:'Первый пьедестал',desc:'Попал в топ-3 турнира',earned:podiums>=1},
-        {icon:'🏆',name:'Чемпион',desc:'Занял первое место',earned:wins>=1},
-        {icon:'⭐',name:'MVP турнира',desc:'Получил награду самого ценного игрока турнира',earned:mvps>=1},
-        {icon:'🔥',name:'Ветеран',desc:'Пять попаданий в опубликованные результаты',earned:played.length>=5},
-        {icon:'👑',name:'Легенда ARQON',desc:'Пять побед на турнирах',earned:wins>=5},
-        {icon:'🎯',name:'Первый матч',desc:'Получил статистику хотя бы за один матч Live Center',earned:automaticKeys.has('live_first_match')},
-        {icon:'🧱',name:'Стабильность',desc:'Сыграл минимум пять матчей со внесённой статистикой',earned:automaticKeys.has('live_stability')},
-        {icon:'💥',name:'ADR 100+',desc:'Средний ADR не ниже 100 по матчам Live Center',earned:automaticKeys.has('live_adr_100')},
-        {icon:'🔥',name:'Фраггер',desc:'В среднем не менее 20 убийств за матч',earned:automaticKeys.has('live_fragger')},
-        {icon:'🤝',name:'Командный игрок',desc:'В среднем не менее 8 ассистов за матч',earned:automaticKeys.has('live_team_player')},
-        {icon:'🌟',name:'MVP Live',desc:'Получил отметку MVP минимум в одном матче Live Center',earned:automaticKeys.has('live_mvp')}
+        {key:'tournament_first',reward:20,icon:'🎮',name:'Первый результат',desc:'Попал в опубликованные результаты турнира',earned:automaticKeys.has('tournament_first')||played.length>=1},
+        {key:'tournament_podium',reward:30,icon:'🥉',name:'Первый пьедестал',desc:'Попал в топ-3 турнира',earned:automaticKeys.has('tournament_podium')||podiums>=1},
+        {key:'tournament_champion',reward:60,icon:'🏆',name:'Чемпион',desc:'Занял первое место',earned:automaticKeys.has('tournament_champion')||wins>=1},
+        {key:'tournament_mvp',reward:50,icon:'⭐',name:'MVP турнира',desc:'Получил награду самого ценного игрока турнира',earned:automaticKeys.has('tournament_mvp')||mvps>=1},
+        {key:'tournament_veteran',reward:75,icon:'🔥',name:'Ветеран',desc:'Пять попаданий в опубликованные результаты',earned:automaticKeys.has('tournament_veteran')||played.length>=5},
+        {key:'tournament_legend',reward:150,icon:'👑',name:'Легенда ARQON',desc:'Пять побед на турнирах',earned:automaticKeys.has('tournament_legend')||wins>=5},
+        {key:'live_first_match',reward:20,icon:'🎯',name:'Первый матч',desc:'Получил статистику хотя бы за один матч Live Center',earned:automaticKeys.has('live_first_match')},
+        {key:'live_stability',reward:50,icon:'🧱',name:'Стабильность',desc:'Сыграл минимум пять матчей со внесённой статистикой',earned:automaticKeys.has('live_stability')},
+        {key:'live_adr_100',reward:75,icon:'💥',name:'ADR 100+',desc:'Средний ADR не ниже 100 по матчам Live Center',earned:automaticKeys.has('live_adr_100')},
+        {key:'live_fragger',reward:75,icon:'🔥',name:'Фраггер',desc:'В среднем не менее 20 убийств за матч',earned:automaticKeys.has('live_fragger')},
+        {key:'live_team_player',reward:50,icon:'🤝',name:'Командный игрок',desc:'В среднем не менее 8 ассистов за матч',earned:automaticKeys.has('live_team_player')},
+        {key:'live_mvp',reward:60,icon:'🌟',name:'MVP Live',desc:'Получил отметку MVP минимум в одном матче Live Center',earned:automaticKeys.has('live_mvp')}
       ];
       const host=el('achievement-grid');host.replaceChildren();
       const earnedAchievements=achievements.filter(x=>x.earned);
       const achievementsSection=el('profile-achievements');
       if(achievementsSection)achievementsSection.classList.toggle('hidden',earnedAchievements.length===0);
-      earnedAchievements.forEach(x=>{const card=document.createElement('div');card.className='achievement';const icon=document.createElement('div');icon.className='achievement-icon';icon.textContent=x.icon;const copy=document.createElement('div');copy.style.minWidth='0';const title=document.createElement('strong');title.textContent=x.name;const desc=document.createElement('small');desc.textContent='Получено · '+x.desc;copy.append(title,desc);card.append(icon,copy);host.append(card)});
+      earnedAchievements.forEach(x=>{const card=document.createElement('div');card.className='achievement';const icon=document.createElement('div');icon.className='achievement-icon';icon.textContent=x.icon;const copy=document.createElement('div');copy.style.minWidth='0';const title=document.createElement('strong');title.textContent=x.name;const desc=document.createElement('small');desc.textContent='Получено · +'+x.reward+' Coins · '+x.desc;copy.append(title,desc);card.append(icon,copy);host.append(card)});
+
+      const coinSection=el('profile-coin-rewards');
+      const coinHistory=el('achievement-coin-history');
+      if(coinSection&&coinHistory){
+        coinSection.classList.toggle('hidden',!ownProfile);
+        if(ownProfile){
+          coinHistory.replaceChildren();
+          const {data:coinRows,error:coinError}=await db.from('arqon_coin_transactions')
+            .select('amount,description,created_at,reference_key')
+            .eq('arqon_id',arqonId).eq('transaction_type','achievement')
+            .like('reference_key','achievement:%')
+            .order('created_at',{ascending:false}).limit(12);
+          if(coinError){
+            const err=document.createElement('p');err.className='history-empty';err.textContent='Не удалось загрузить историю наград Coins.';coinHistory.append(err);
+          }else if(!coinRows?.length){
+            const empty=document.createElement('p');empty.className='history-empty';empty.textContent='Пока нет наград за достижения. Они появятся здесь автоматически.';coinHistory.append(empty);
+          }else{
+            coinRows.forEach(row=>{
+              const item=document.createElement('div');item.className='history-item';
+              const info=document.createElement('div');info.className='history-event';
+              const title=document.createElement('strong');title.textContent=row.description||'Награда за достижение';
+              const date=document.createElement('small');date.textContent=new Date(row.created_at).toLocaleDateString('ru-RU');
+              info.append(title,date);
+              const amount=document.createElement('div');amount.className='history-result';amount.textContent='+'+Number(row.amount||0)+' Coins';
+              item.append(info,amount);coinHistory.append(item);
+            });
+          }
+        }
+      }
     }
     function renderTournamentHistory(name,rows){
       const key=playerKey(name),host=el('tournament-history');
