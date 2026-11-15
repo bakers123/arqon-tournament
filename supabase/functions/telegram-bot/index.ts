@@ -210,12 +210,12 @@ Deno.serve(async(req)=>{
       }else{
        const [{data:ticket,error:ticketError},{data:messages}]=await Promise.all([
         admin.from("support_tickets").select("id,arqon_id,subject,status,created_at,updated_at").eq("id",ticketId).maybeSingle(),
-        admin.from("support_ticket_messages").select("sender_role,message,created_at").eq("ticket_id",ticketId).order("created_at",{ascending:true}).limit(8)
+        admin.from("support_ticket_messages").select("sender_role,message,created_at").eq("ticket_id",ticketId).order("created_at",{ascending:false}).limit(6)
        ]);
        if(ticketError||!ticket){
         await renderPanel(bot,callbackChatId,callback.message.message_id,"Обращение не найдено.",{inline_keyboard:[[{text:"↩️ К обращениям",callback_data:"org:tickets"}]]});
        }else{
-        const history=(messages||[]).map((m:any)=>"["+(m.sender_role==="admin"?"Админ":"Игрок")+"] "+esc(String(m.message||"").slice(0,700)));
+        const history=(messages||[]).slice().reverse().map((m:any)=>"["+(m.sender_role==="admin"?"Админ":"Игрок")+"] "+esc(String(m.message||"").slice(0,240)));
         const detail="🛟 <b>ОБРАЩЕНИЕ #"+ticket.id+"</b>\n"+esc(ticket.subject)+"\nARQON #"+(ticket.arqon_id??"—")+" · "+esc(ticket.status)+"\n\n"+(history.join("\n\n")||"Сообщений пока нет.")+"\n\nОтветить: <code>/reply "+ticket.id+" текст</code>";
         const keyboard:any[][]=[];
         if(ticket.status!=="closed")keyboard.push([{text:"🔒 Закрыть обращение",callback_data:"org:close:"+ticket.id}]);
