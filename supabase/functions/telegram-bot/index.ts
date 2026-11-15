@@ -3,8 +3,8 @@ const cors = {"Access-Control-Allow-Origin":"https://arqon-esports.ru","Access-C
 const json=(body:unknown,status=200)=>new Response(JSON.stringify(body),{status,headers:{...cors,"Content-Type":"application/json"}});
 const esc=(v:unknown)=>String(v??"").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;");
 const SITE="https://arqon-esports.ru";
-const menuMarkup=(isAdmin=false)=>({inline_keyboard:[
- [{text:"👤 Мой профиль",url:SITE+"/players/profile/?me=1"}],
+const menuMarkup=(isAdmin=false,profileUrl=SITE+"/players/")=>({inline_keyboard:[
+ [{text:"👤 Мой профиль",url:profileUrl}],
  [{text:"🔔 Уведомления",callback_data:"notifications"}],
  [{text:"🏆 Киберспортивная лига",callback_data:"league"}],
  [{text:"👥 Команды",callback_data:"teams"},{text:"🎯 Игроки",callback_data:"players"}],
@@ -36,11 +36,18 @@ async function telegram(token:string,method:string,body:Record<string,unknown>){
 async function send(token:string,chatId:string,text:string,reply_markup?:unknown){
  return await telegram(token,"sendMessage",{chat_id:chatId,text,parse_mode:"HTML",disable_web_page_preview:true,...(reply_markup?{reply_markup}:{})});
 }
+async function getTelegramProfileUrl(admin:any,chatId:string){
+ const link=await linkedUser(admin,chatId);
+ if(!link?.user_id)return SITE+"/players/";
+ const {data:profile}=await admin.from("profiles").select("arqon_id").eq("user_id",link.user_id).maybeSingle();
+ const id=Number(profile?.arqon_id);
+ return Number.isSafeInteger(id)&&id>0?SITE+"/players/profile/?id="+id:SITE+"/players/";
+}
 async function showMenu(token:string,chatId:string,admin:any){
  let isSupportAdmin=false;
  try{const {data}=await admin.rpc("get_support_admin_telegram_chats");isSupportAdmin=(data||[]).some((x:any)=>String(x.chat_id)===chatId)}catch{}
  const greeting="<b>ＡＲＱＯＮ  ＥＳＰＯＲＴＳ</b>\n< i >YOUR GAME. YOUR LEGACY.</i>\n\nДобро пожаловать в ARQON! Управляй своим аккаунтом, следи за лигой и общайся с командой прямо здесь.\n\nВыбери раздел 👇".replace("< i >","<i>");
- await send(token,chatId,greeting,menuMarkup(isSupportAdmin));
+ const profileUrl=await getTelegramProfileUrl(admin,chatId);\n await send(token,chatId,greeting,menuMarkup(isSupportAdmin,profileUrl));
 }
 async function setBotCommands(token:string){
  await telegram(token,"setMyCommands",{commands:[
@@ -80,7 +87,7 @@ Deno.serve(async(req)=>{
        await renderPanel(bot,callbackChatId,callback.message.message_id,"👤 <b>МОЙ ПРОФИЛЬ ARQON</b>\n\nTelegram подключён, но игровой профиль ARQON ещё не создан.",{inline_keyboard:[[{text:"Открыть создание профиля",url:SITE+"/"}],[{text:"↩️ Главное меню",callback_data:"menu"}]]});
       }else{
        const name=esc(profile.display_name||profile.steam_persona_name||("Игрок #"+profile.arqon_id));
-       const profileUrl=SITE+"/players/profile/?me=1";
+       const profileUrl=await getTelegramProfileUrl(admin,callbackChatId);
        const text="👤 <b>"+name+"</b>\nARQON ID: <b>#"+profile.arqon_id+"</b>\nCS2 FACEIT ELO: "+(profile.cs2_faceit_elo??"—")+"\nDota 2 MMR: "+(profile.dota2_mmr??"—")+"\n\nТвой личный профиль ARQON готов.";
        await renderPanel(bot,callbackChatId,callback.message.message_id,text,{inline_keyboard:[[{text:"↗️ Открыть мой профиль на сайте",url:profileUrl}],[{text:"↩️ Главное меню",callback_data:"menu"}]]});
       }
@@ -182,7 +189,7 @@ Deno.serve(async(req)=>{
    if(error)return json({error:"link_save_failed"},500);
    await admin.from("telegram_link_tokens").delete().eq("token",link.token);
    await setBotCommands(bot).catch(e=>console.warn("Bot commands setup failed",e));
-   await send(bot,chatId,"<b>ＡＲＱＯＮ  ＥＳＰＯＲＴＳ</b>\n<i>YOUR GAME. YOUR LEGACY.</i>\n\n✅ <b>Telegram успешно подключён!</b>\nТеперь сюда будут приходить уведомления ARQON и ответы техподдержки.\n\nДобро пожаловать в команду 💜",menuMarkup(false));
+   await send(bot,chatId,"<b>ＡＲＱＯＮ  ＥＳＰＯＲＴＳ</b>\n<i>YOUR GAME. YOUR LEGACY.</i>\n\n✅ <b>Telegram успешно подключён!</b>\nТеперь сюда будут приходить уведомления ARQON и ответы техподдержки.\n\nДобро пожаловать в команду 💜",menuMarkup(false,await getTelegramProfileUrl(admin,chatId)));
    return json({ok:true});
   }
   if(/^\/(start|menu|help)(?:@\w+)?$/i.test(txt)){
@@ -195,7 +202,7 @@ Deno.serve(async(req)=>{
    if(!link){await send(bot,chatId,"👤 <b>МОЙ ПРОФИЛЬ ARQON</b>\n\nСначала подключи Telegram к аккаунту на сайте.",{inline_keyboard:[[{text:"🔗 Подключить аккаунт",url:SITE+"/"}],[{text:"↩️ Главное меню",callback_data:"menu"}]]})}
    else{
     const {data:profile}=await admin.from("profiles").select("arqon_id,display_name,steam_persona_name").eq("user_id",link.user_id).maybeSingle();
-    if(profile?.arqon_id)await send(bot,chatId,"👤 <b>"+esc(profile.display_name||profile.steam_persona_name||"Мой профиль")+"</b> · ARQON #"+profile.arqon_id,{inline_keyboard:[[{text:"↗️ Открыть мой профиль на сайте",url:SITE+"/players/profile/?me=1"}],[{text:"↩️ Главное меню",callback_data:"menu"}]]});
+    if(profile?.arqon_id)await send(bot,chatId,"👤 <b>"+esc(profile.display_name||profile.steam_persona_name||"Мой профиль")+"</b> · ARQON #"+profile.arqon_id,{inline_keyboard:[[{text:"↗️ Открыть мой профиль на сайте",url:await getTelegramProfileUrl(admin,chatId)}],[{text:"↩️ Главное меню",callback_data:"menu"}]]});
     else await send(bot,chatId,"Игровой профиль ARQON ещё не создан.",backMenu);
    }
    return json({ok:true});
