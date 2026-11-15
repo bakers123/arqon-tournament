@@ -69,10 +69,10 @@ async function sendPlayerOffer(){
  const arqonId=Number(el('offer-arqon-id').value),status=el('offer-status'),button=el('send-player-offer');
  if(!Number.isSafeInteger(arqonId)||arqonId<1){status.textContent='Укажи корректный ARQON ID.';return}
  button.disabled=true;status.textContent='Отправляем предложение…';
- const {error}=await db.rpc('create_team_player_offer',{p_team_id:String(currentTeam.id),p_arqon_id:arqonId,p_role:el('offer-role').value.trim(),p_message:el('offer-message').value.trim()});
+ const {data:offer,error}=await db.rpc('create_team_player_offer',{p_team_id:String(currentTeam.id),p_arqon_id:arqonId,p_role:el('offer-role').value.trim(),p_message:el('offer-message').value.trim()});
  button.disabled=false;
  if(error){status.textContent=({player_not_available:'Игрок не включил поиск команды или скрыл профиль.',player_already_in_team:'Игрок уже состоит в команде.',not_authorized:'Отправлять предложения может капитан команды или организатор.'})[error.message]||error.message||'Не удалось отправить предложение.';return}
- status.textContent='Предложение отправлено игроку.';el('offer-arqon-id').value='';el('offer-role').value='';el('offer-message').value='';
+ status.textContent='Предложение отправлено игроку.';if(offer)await notifyTelegram('offer_created',offer);el('offer-arqon-id').value='';el('offer-role').value='';el('offer-message').value='';
 }
 async function loadSentPlayerOffers(){
  const host=el('team-offers-list');if(!host)return;
@@ -149,14 +149,17 @@ async function loadTeamProfile(){const {data,error}=await db.from('team_profiles
 async function uploadTeamImage(file,kind){if(!file)return null;if(!['image/jpeg','image/png','image/webp'].includes(file.type)||file.size>5242880)throw new Error('JPG, PNG или WebP до 5 МБ.');const ext=file.type==='image/png'?'png':file.type==='image/webp'?'webp':'jpg',path=String(currentTeam.id)+'/'+kind+'-'+Date.now()+'.'+ext;const {error}=await db.storage.from('team-media').upload(path,file,{contentType:file.type,upsert:false});if(error)throw error;return db.storage.from('team-media').getPublicUrl(path).data.publicUrl}
 async function saveTeamProfile(){const status=el('team-profile-status'),button=el('save-team-profile');button.disabled=true;status.textContent='Сохраняем…';try{const {data:{user}}=await db.auth.getUser();if(!user)throw new Error('Нет сессии организатора.');let logo=currentTeamProfile?.logo_url||null,cover=currentTeamProfile?.cover_url||null;if(el('team-logo-file').files[0])logo=await uploadTeamImage(el('team-logo-file').files[0],'logo');if(el('team-cover-file').files[0])cover=await uploadTeamImage(el('team-cover-file').files[0],'cover');const captain=el('team-captain-edit').value;const payload={team_id:String(currentTeam.id),team_name:String(currentTeam.name||'Команда').slice(0,100),description:el('team-description-edit').value.trim(),recruiting:el('team-recruiting-edit').checked,roles_needed:el('team-roles-edit').value.trim(),logo_url:logo,cover_url:cover,captain_arqon_id:captain?Number(captain):null,updated_by:user.id,updated_at:new Date().toISOString()};const {data,error}=await db.from('team_profiles').upsert(payload,{onConflict:'team_id'}).select().single();if(error)throw error;currentTeamProfile=data;await loadTeamProfile();render(currentTeam);status.textContent='Профиль команды сохранён.';el('team-logo-file').value='';el('team-cover-file').value=''}catch(e){status.textContent=e.message||'Ошибка сохранения'}finally{button.disabled=false}}
 async function setupTeamProfileEditor(){const {data:allowed,error}=await db.rpc('has_organizer_role',{required_role:'editor'});if(error||!allowed)return;el('team-description-edit').value=currentTeamProfile?.description||'';el('team-recruiting-edit').checked=!!currentTeamProfile?.recruiting;el('team-roles-edit').value=currentTeamProfile?.roles_needed||'';const select=el('team-captain-edit');select.replaceChildren(new Option('Не выбран',''));(currentTeam.players||[]).forEach(p=>{if(p.arqonId)select.append(new Option((p.name||'Игрок')+' · ARQON #'+p.arqonId,String(p.arqonId)))});const captain=currentTeamProfile?.captain_arqon_id||currentTeam.captainArqonId;if(captain)select.value=String(captain)}
+async function notifyTelegram(event,offerId){
+ try{await db.functions.invoke('telegram-bot',{body:{event,offer_id:offerId}})}catch(e){console.warn('Telegram notification failed',e)}
+}
 async function sendCaptainPlayerOffer(){
  const arqonId=Number(el('captain-offer-arqon-id').value),status=el('captain-offer-status'),button=el('captain-offer-send');
  if(!Number.isSafeInteger(arqonId)||arqonId<1){status.textContent='Укажи корректный ARQON ID.';return}
  button.disabled=true;status.textContent='Отправляем предложение…';
- const {error}=await db.rpc('create_team_player_offer',{p_team_id:String(currentTeam.id),p_arqon_id:arqonId,p_role:el('captain-offer-role').value.trim(),p_message:el('captain-offer-message').value.trim()});
+ const {data:offer,error}=await db.rpc('create_team_player_offer',{p_team_id:String(currentTeam.id),p_arqon_id:arqonId,p_role:el('captain-offer-role').value.trim(),p_message:el('captain-offer-message').value.trim()});
  button.disabled=false;
  if(error){status.textContent=({player_not_available:'Игрок не включил поиск команды или скрыл профиль.',player_already_in_team:'Игрок уже состоит в команде.',not_authorized:'Отправлять предложения может капитан команды или организатор.'})[error.message]||error.message||'Не удалось отправить предложение.';return}
- status.textContent='Предложение отправлено игроку.';el('captain-offer-arqon-id').value='';el('captain-offer-role').value='';el('captain-offer-message').value='';
+ status.textContent='Предложение отправлено игроку.';if(offer)await notifyTelegram('offer_created',offer);el('captain-offer-arqon-id').value='';el('captain-offer-role').value='';el('captain-offer-message').value='';
  await loadCaptainSentOffers();
 }
 async function loadCaptainSentOffers(){
