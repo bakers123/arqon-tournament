@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#090812"><meta name="description" content="ARQON Live Center — матчи, счёт, составы, события и трансляции.">
+<title>Live Center — ARQON Esports</title><link rel="icon" href="/logo.png">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;800&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-2YLPZGQZSX"></script><script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments)}gtag('js',new Date());gtag('config','G-2YLPZGQZSX');</script>
+<style>
+:root{color-scheme:dark;--bg:#090812;--panel:#151322;--line:#a879ff33;--violet:#9b5cff;--muted:#a59bb6;--white:#f7f3ff}
+*{box-sizing:border-box}body{margin:0;min-height:100vh;background:radial-gradient(ellipse at 50% -15%,#7136c944,transparent 48%),var(--bg);color:var(--white);font-family:Rajdhani,system-ui,sans-serif}
+a{color:inherit;text-decoration:none}button,input,select,textarea{font:inherit}
+.top{height:70px;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:0 clamp(14px,5vw,64px);border-bottom:1px solid var(--line);background:#090812e8;position:sticky;top:0;z-index:5;backdrop-filter:blur(14px)}
+.brand{font:800 16px Orbitron;letter-spacing:2px;white-space:nowrap}.brand span{color:#c4a5ff}.top nav{display:flex;gap:8px}.top nav a{border:1px solid var(--line);border-radius:10px;padding:8px 12px;color:#e8ddfb;font-weight:700}
+.wrap{width:min(1280px,calc(100% - 28px));margin:30px auto 70px}.eyebrow{font:700 10px Orbitron;letter-spacing:2px;color:#b79aff}.hero h1{font:800 clamp(26px,5vw,42px) Orbitron;margin:10px 0}.hero p{color:var(--muted);font-size:17px;margin:0 0 22px}
+.notice{display:none;margin:12px 0;padding:12px 14px;border:1px solid var(--line);border-radius:11px;background:#8b5cf615;color:#e5d9ff}.notice.show{display:block}.notice.error{border-color:#f8717166;background:#f8717115;color:#fecaca}
+.stats{display:flex;gap:9px;flex-wrap:wrap;margin:18px 0}.stat{padding:8px 12px;border:1px solid var(--line);border-radius:10px;background:#ffffff06;color:#d8cafa;font-weight:700}
+.layout{display:grid;grid-template-columns:minmax(280px,.8fr) minmax(0,1.6fr);gap:16px;align-items:start}.panel{min-width:0;border:1px solid var(--line);border-radius:18px;padding:18px;background:linear-gradient(155deg,#191528,#100f19);box-shadow:0 14px 40px #0003}.panel h2{font:700 14px Orbitron;margin:0 0 14px;letter-spacing:.5px}
+.match-list{display:grid;gap:9px}.match-card{width:100%;text-align:left;padding:13px;border:1px solid #ffffff18;border-radius:13px;background:#ffffff05;color:inherit;cursor:pointer}.match-card.active{border-color:#a78bfa;background:#8b5cf622}.match-card strong{display:block;font-size:16px;overflow-wrap:anywhere}.match-meta{font-size:12px;color:var(--muted);margin-top:5px}.match-score{font:800 19px Orbitron;color:#e5d4ff;margin-top:7px}.status{display:inline-flex;margin-top:7px;padding:3px 8px;border-radius:20px;background:#8b5cf626;color:#d9c7ff;font-size:11px;font-weight:800}.status.live{background:#ef476f24;color:#ff9db0}.status.finished{background:#22c55e1c;color:#9ae6b4}
+.detail-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;padding-bottom:14px;border-bottom:1px solid #ffffff16}.detail-head h2{font:800 clamp(18px,3vw,25px) Orbitron;margin:0 0 7px}.scoreline{display:flex;align-items:center;justify-content:center;gap:16px;margin:22px 0;padding:20px 12px;border:1px solid #ffffff12;border-radius:15px;background:#08070d88}.scoreline strong{font:800 clamp(30px,7vw,54px) Orbitron;color:#eee3ff}.scoreline span{color:#9f96b1;font:700 13px Orbitron}.teams{display:grid;grid-template-columns:1fr 1fr;gap:12px}.team-box{border:1px solid #ffffff12;border-radius:13px;padding:13px;background:#ffffff04;min-width:0}.team-box h3{font:700 13px Orbitron;margin:0 0 9px;overflow-wrap:anywhere}.team-box p{margin:0;color:#b9afc9;white-space:pre-line;overflow-wrap:anywhere}
+.section-title{font:700 12px Orbitron;color:#d9c4ff;margin:20px 0 9px}.event-list{display:grid;gap:8px}.event{padding:10px 12px;border:1px solid #ffffff12;border-radius:10px;background:#ffffff04}.event small{display:block;color:var(--muted);font-size:11px;margin-bottom:4px}.event p{margin:0;overflow-wrap:anywhere}.mvp{padding:12px;border:1px solid #c084fc55;border-radius:12px;background:#8b5cf616;color:#e8d7ff;font-weight:800}
+.btn{border:1px solid #c4b5fd55;border-radius:10px;padding:10px 14px;background:linear-gradient(120deg,#7540d7,#9b5cff);color:white;font-weight:800;cursor:pointer;min-height:40px}.btn.secondary{background:#ffffff08;color:#e6dcff}.btn:disabled{opacity:.5;cursor:wait}
+.field{display:block;margin:10px 0}.field span{display:block;color:#c9c1d8;font-size:12px;font-weight:700;margin-bottom:5px}.field input,.field select,.field textarea{width:100%;min-width:0;border:1px solid #a879ff44;border-radius:10px;padding:10px 12px;background:#0b0a13;color:#fff;outline:none}.field textarea{min-height:76px;resize:vertical}
+.admin-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.admin-grid .wide{grid-column:1/-1}.admin-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.empty{padding:28px;text-align:center;color:var(--muted);border:1px dashed #a879ff44;border-radius:12px}
+@media(max-width:800px){.layout{grid-template-columns:1fr}.match-list{grid-template-columns:repeat(2,minmax(0,1fr))}.detail-head{flex-direction:column}.top{height:auto;min-height:64px;flex-wrap:wrap;padding:10px 14px}.top nav{width:100%;overflow-x:auto}.top nav a{white-space:nowrap;font-size:12px}}
+@media(max-width:520px){.wrap{margin:20px auto 45px}.panel{padding:14px}.match-list{grid-template-columns:1fr}.teams{grid-template-columns:1fr}.scoreline{gap:10px;padding:15px 8px}.admin-grid{grid-template-columns:1fr}.admin-grid .wide{grid-column:auto}.brand{font-size:13px}}
+@media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;transition:none!important}}
+</style></head>
+<body>
+<header class="top"><a class="brand" href="/">ARQON <span>ESPORTS</span></a><nav aria-label="Навигация"><a href="/">Главная</a><a href="/players/">Игроки</a><a href="/teams/">Команды</a></nav></header>
+<main class="wrap">
+<section class="hero"><div class="eyebrow">ARQON · LIVE CENTER</div><h1>ЦЕНТР МАТЧЕЙ</h1><p>Следи за несколькими матчами одновременно: счёт, статус, составы, игровые события и трансляции в одном месте.</p></section>
+<div class="stats"><span class="stat" id="stat-live">LIVE: —</span><span class="stat" id="stat-scheduled">Запланировано: —</span><span class="stat" id="stat-finished">Завершено: —</span></div>
+<div id="notice" class="notice" role="status" aria-live="polite"></div>
+<div class="layout">
+<section class="panel"><h2>МАТЧИ ARQON</h2><div id="match-list" class="match-list"><div class="empty">Загружаем матчи…</div></div></section>
+<section class="panel">
+<div id="match-detail"><div class="empty">Выбери матч слева, чтобы открыть центр матча.</div></div>
+</section>
+</div>
+<section id="admin-panel" class="panel" style="margin-top:16px" hidden>
+<h2>УПРАВЛЕНИЕ LIVE CENTER</h2><p style="color:var(--muted);margin:-5px 0 12px">Панель видна только организаторам. Матчи Live Center хранятся отдельно и не изменяют турнирную лигу.</p>
+<form id="create-form">
+<div class="admin-grid">
+<label class="field"><span>Название события</span><input id="new-title" maxlength="120" placeholder="Например: ARQON Cup · Финал" required></label>
+<label class="field"><span>Игра</span><select id="new-game"><option>CS2</option><option>Dota 2</option><option>Other</option></select></label>
+<label class="field"><span>Команда 1</span><input id="new-team1" maxlength="100" required></label>
+<label class="field"><span>Команда 2</span><input id="new-team2" maxlength="100" required></label>
+<label class="field"><span>Дата и время</span><input id="new-start" type="datetime-local"></label>
+<label class="field"><span>Формат</span><select id="new-bo"><option value="1">BO1</option><option value="3">BO3</option><option value="5">BO5</option></select></label>
+</div><button class="btn" id="create-btn" type="submit">Создать матч</button>
+</form>
+<div id="edit-wrap" hidden style="margin-top:18px;padding-top:16px;border-top:1px solid #ffffff18">
+<h2>РЕДАКТИРОВАТЬ ВЫБРАННЫЙ МАТЧ</h2>
+<div class="admin-grid">
+<label class="field"><span>Статус</span><select id="edit-status"><option value="scheduled">Запланирован</option><option value="live">LIVE</option><option value="paused">Пауза</option><option value="finished">Завершён</option><option value="cancelled">Отменён</option></select></label>
+<label class="field"><span>Карта / режим</span><input id="edit-map" maxlength="80"></label>
+<label class="field"><span>Счёт команды 1</span><input id="edit-score1" type="number" min="0" max="999"></label>
+<label class="field"><span>Счёт команды 2</span><input id="edit-score2" type="number" min="0" max="999"></label>
+<label class="field"><span>Ссылка на трансляцию</span><input id="edit-stream" type="url" maxlength="2048" placeholder="https://..."></label>
+<label class="field"><span>Платформа</span><select id="edit-platform"><option value="twitch">Twitch</option><option value="youtube">YouTube</option><option value="other">Другая</option></select></label>
+<label class="field wide"><span>MVP матча</span><input id="edit-mvp" maxlength="100" placeholder="Ник игрока"></label>
+<label class="field"><span>Состав команды 1 · по одному нику в строке</span><textarea id="edit-lineup1"></textarea></label>
+<label class="field"><span>Состав команды 2 · по одному нику в строке</span><textarea id="edit-lineup2"></textarea></label>
+</div>
+<div class="admin-actions"><button class="btn" id="save-match" type="button">Сохранить матч</button><button class="btn secondary" id="delete-match" type="button">Удалить матч</button></div>
+<div class="section-title">ДОБАВИТЬ СОБЫТИЕ МАТЧА</div>
+<form id="event-form"><div class="admin-grid">
+<label class="field"><span>Тип события</span><select id="event-type"><option value="info">Информация</option><option value="round">Раунд</option><option value="kill">Фраг / ключевой момент</option><option value="map">Карта</option><option value="score">Изменение счёта</option><option value="mvp">MVP</option></select></label>
+<label class="field"><span>Команда</span><select id="event-team"><option value="">Без команды</option></select></label>
+<label class="field"><span>Игрок</span><input id="event-player" maxlength="100"></label>
+<label class="field wide"><span>Описание события</span><input id="event-description" maxlength="300" required placeholder="Например: выигран решающий раунд"></label>
+</div><button class="btn" id="event-btn" type="submit">Добавить событие</button></form>
+</div>
+</section>
+</main>
+<script>
+(()=>{
+const URL='https://uscnaqcvuwjrmkjyuklp.supabase.co',KEY='sb_publishable_oE2Bc1wPAcDt6HE8bOUj3Q_0-2FfIxB';
+const db=window.supabase.createClient(URL,KEY,{auth:{storageKey:'sb-uscnaqcvuwjrmkjyuklp-auth-token',persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
+const $=id=>document.getElementById(id);let matches=[],selected=null,events=[],isEditor=false,channel=null,eventChannel=null;
+const statusText={scheduled:'Запланирован',live:'LIVE',paused:'Пауза',finished:'Завершён',cancelled:'Отменён'};
+const notice=(msg,error=false)=>{const n=$('notice');n.textContent=msg;n.className='notice show'+(error?' error':'')};
+const clearNotice=()=>{$('notice').className='notice'};
+const safeHttp=v=>{try{const u=new URL(v);return u.protocol==='https:'?u.href:''}catch{return ''}};
+const fmt=v=>v?new Date(v).toLocaleString('ru-RU',{dateStyle:'medium',timeStyle:'short'}):'Время не указано';
+const make=(tag,cls,txt)=>{const e=document.createElement(tag);if(cls)e.className=cls;if(txt!==undefined)e.textContent=txt;return e};
+function renderList(){
+ const host=$('match-list');host.replaceChildren();
+ const counts={live:0,scheduled:0,finished:0};matches.forEach(m=>{if(m.status==='live'||m.status==='paused')counts.live++;else if(m.status==='scheduled')counts.scheduled++;else if(m.status==='finished')counts.finished++});
+ $('stat-live').textContent='LIVE: '+counts.live;$('stat-scheduled').textContent='Запланировано: '+counts.scheduled;$('stat-finished').textContent='Завершено: '+counts.finished;
+ if(!matches.length){host.append(make('div','empty','Пока нет матчей. Организатор может добавить первый матч в панели ниже.'));return}
+ matches.forEach(m=>{
+  const b=make('button','match-card'+(m.id===selected?' active':''));b.type='button';
+  b.append(make('strong','',m.team1+' vs '+m.team2),make('div','match-meta',m.title+' · '+fmt(m.starts_at)),make('div','match-score',m.score1+' : '+m.score2));
+  b.append(make('span','status'+(m.status==='live'?' live':m.status==='finished'?' finished':''),statusText[m.status]||m.status));
+  b.addEventListener('click',()=>openMatch(m.id));host.append(b);
+ });
+}
+function renderDetail(){
+ const m=matches.find(x=>x.id===selected),host=$('match-detail');host.replaceChildren();
+ if(!m){host.append(make('div','empty','Выбери матч слева, чтобы открыть центр матча.'));$('edit-wrap').hidden=true;return}
+ const head=make('div','detail-head'),copy=make('div');copy.append(make('h2','',m.title),make('div','match-meta',m.game+' · '+fmt(m.starts_at)+' · BO'+m.best_of));head.append(copy,make('span','status'+(m.status==='live'?' live':m.status==='finished'?' finished':''),statusText[m.status]||m.status));host.append(head);
+ const score=make('div','scoreline');score.append(make('strong','',String(m.score1)),make('span','','VS'),make('strong','',String(m.score2)));host.append(score);
+ const teams=make('div','teams');
+ [[m.team1,m.lineup1],[m.team2,m.lineup2]].forEach(([name,lineup])=>{const box=make('div','team-box');box.append(make('h3','',name),make('p','',(Array.isArray(lineup)&&lineup.length?lineup.join('\n'):'Состав пока не опубликован')));teams.append(box)});host.append(teams);
+ if(m.map_name)host.append(make('div','section-title','КАРТА / РЕЖИМ'),make('p','',m.map_name));
+ if(m.mvp_name){host.append(make('div','section-title','MVP МАТЧА'));host.append(make('div','mvp','★ '+m.mvp_name))}
+ if(safeHttp(m.stream_url)){const wrap=make('div');wrap.style.marginTop='16px';const a=make('a','btn','СМОТРЕТЬ ТРАНСЛЯЦИЮ ↗');a.href=safeHttp(m.stream_url);a.target='_blank';a.rel='noopener noreferrer';wrap.append(a);host.append(wrap)}
+ host.append(make('div','section-title','ЛЕНТА СОБЫТИЙ'));const timeline=make('div','event-list');
+ if(!events.length)timeline.append(make('div','empty','События пока не добавлены.'));
+ events.forEach(ev=>{const item=make('article','event');item.append(make('small','',fmt(ev.created_at)+' · '+({info:'Информация',round:'Раунд',kill:'Ключевой момент',map:'Карта',score:'Счёт',mvp:'MVP'}[ev.event_type]||'Событие')));const label=[ev.team_name,ev.player_name].filter(Boolean).join(' · ');item.append(make('p','',(label?label+' — ':'')+ev.description));timeline.append(item)});
+ host.append(timeline);
+ $('edit-wrap').hidden=!isEditor;
+ if(isEditor){
+  $('edit-status').value=m.status;$('edit-map').value=m.map_name||'';$('edit-score1').value=m.score1;$('edit-score2').value=m.score2;$('edit-stream').value=m.stream_url||'';$('edit-platform').value=m.stream_platform||'other';$('edit-mvp').value=m.mvp_name||'';
+  $('edit-lineup1').value=(m.lineup1||[]).join('\n');$('edit-lineup2').value=(m.lineup2||[]).join('\n');
+  const team=$('event-team');team.replaceChildren(new Option('Без команды',''),new Option(m.team1,m.team1),new Option(m.team2,m.team2));
+ }
+}
+async function loadEvents(){
+ events=[];if(!selected)return;
+ const {data,error}=await db.from('live_match_events').select('*').eq('live_match_id',selected).order('created_at',{ascending:false}).limit(100);
+ if(error)throw error;events=data||[];
+}
+async function openMatch(id){selected=id;try{await loadEvents();renderList();renderDetail()}catch(e){notice('Не удалось загрузить события матча: '+e.message,true)}}
+async function loadMatches(keep=true){
+ const {data,error}=await db.from('live_matches').select('*').order('starts_at',{ascending:false,nullsFirst:false}).order('created_at',{ascending:false});
+ if(error)throw error;matches=data||[];
+ if(!keep||!matches.some(m=>m.id===selected))selected=matches[0]?.id||null;
+ if(selected)await loadEvents();renderList();renderDetail();
+}
+async function checkRole(){
+ const {data:{user}}=await db.auth.getUser();if(!user)return;
+ const {data,error}=await db.rpc('has_organizer_role',{required_role:'editor'});
+ if(!error&&data===true){isEditor=true;$('admin-panel').hidden=false}
+}
+$('create-form').addEventListener('submit',async e=>{
+ e.preventDefault();if(!isEditor)return;const btn=$('create-btn');btn.disabled=true;
+ try{const payload={title:$('new-title').value.trim(),game:$('new-game').value,team1:$('new-team1').value.trim(),team2:$('new-team2').value.trim(),starts_at:$('new-start').value?new Date($('new-start').value).toISOString():null,best_of:Number($('new-bo').value),created_by:(await db.auth.getUser()).data.user.id};
+ const {data,error}=await db.from('live_matches').insert(payload).select('id').single();if(error)throw error;
+ $('create-form').reset();await loadMatches(false);await openMatch(data.id);notice('Матч добавлен в Live Center.');}
+ catch(err){notice('Не удалось создать матч: '+err.message,true)}finally{btn.disabled=false}
+});
+$('save-match').addEventListener('click',async()=>{
+ if(!isEditor||!selected)return;const btn=$('save-match');btn.disabled=true;
+ try{
+ const stream=$('edit-stream').value.trim();if(stream&&!safeHttp(stream))throw new Error('Ссылка на трансляцию должна начинаться с https://');
+ const payload={status:$('edit-status').value,map_name:$('edit-map').value.trim(),score1:Number($('edit-score1').value),score2:Number($('edit-score2').value),stream_url:stream,stream_platform:$('edit-platform').value,mvp_name:$('edit-mvp').value.trim(),lineup1:$('edit-lineup1').value.split('\n').map(x=>x.trim()).filter(Boolean).slice(0,10),lineup2:$('edit-lineup2').value.split('\n').map(x=>x.trim()).filter(Boolean).slice(0,10),updated_by:(await db.auth.getUser()).data.user.id,updated_at:new Date().toISOString()};
+ const {error}=await db.from('live_matches').update(payload).eq('id',selected);if(error)throw error;
+ await loadMatches();notice('Данные матча обновлены.');}
+ catch(err){notice('Не удалось сохранить матч: '+err.message,true)}finally{btn.disabled=false}
+});
+$('delete-match').addEventListener('click',async()=>{
+ if(!isEditor||!selected||!confirm('Удалить матч и его ленту событий?'))return;
+ const {error}=await db.from('live_matches').delete().eq('id',selected);if(error){notice('Не удалось удалить матч: '+error.message,true);return}
+ selected=null;await loadMatches(false);notice('Матч удалён.');
+});
+$('event-form').addEventListener('submit',async e=>{
+ e.preventDefault();if(!isEditor||!selected)return;const btn=$('event-btn');btn.disabled=true;
+ try{const user=(await db.auth.getUser()).data.user;const {error}=await db.from('live_match_events').insert({live_match_id:selected,event_type:$('event-type').value,team_name:$('event-team').value,player_name:$('event-player').value.trim(),description:$('event-description').value.trim(),created_by:user.id});if(error)throw error;
+ $('event-description').value='';$('event-player').value='';await loadEvents();renderDetail();notice('Событие добавлено в ленту матча.');}
+ catch(err){notice('Не удалось добавить событие: '+err.message,true)}finally{btn.disabled=false}
+});
+async function boot(){
+ try{await checkRole();await loadMatches(false);
+ channel=db.channel('arqon-live-matches').on('postgres_changes',{event:'*',schema:'public',table:'live_matches'},()=>loadMatches().catch(e=>notice('Ошибка обновления: '+e.message,true))).subscribe();
+ eventChannel=db.channel('arqon-live-events').on('postgres_changes',{event:'*',schema:'public',table:'live_match_events'},p=>{if(p.new?.live_match_id===selected||p.old?.live_match_id===selected)openMatch(selected)}).subscribe();
+ }catch(e){notice('Не удалось загрузить Live Center: '+e.message,true);$('match-list').replaceChildren(make('div','empty','Проверь подключение к базе данных и доступ к Live Center.'))}
+}
+boot();
+})();
+</script><script src="/assets/arqon-notifications.js?v=2" defer></script>
+</body></html>
