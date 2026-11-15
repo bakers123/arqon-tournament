@@ -1873,12 +1873,17 @@ function playerCardHTML(p, removeFn, allowTeamAssignment = false) {
     : '';
   const freeAgentTeam = isAdmin() && allowTeamAssignment
     ? `<div style="display:flex;align-items:center;gap:7px;margin-top:7px;flex-wrap:wrap;">
-        <span class="hint" style="margin:0;color:#c4a4ff;">Свободный агент</span>
-        <select aria-label="Выбрать команду для ${escapeHtml(p.name)}"
+        <span class="hint" style="margin:0;color:#c4a4ff;">Свободный агент${p.freeAgentTeamName ? ' · ' + escapeHtml(p.freeAgentTeamName) : ''}</span>
+        <button type="button" class="btn ghost" aria-label="Добавить метку команды для ${escapeHtml(p.name)}" title="Добавить отображаемую метку команды" style="padding:3px 8px;margin:0!important;font-size:13px;line-height:1" onclick="event.stopPropagation();editFreeAgentTeam(this)">＋</button>
+        <div class="free-agent-team-editor" style="display:none;align-items:center;gap:6px;flex-wrap:wrap;width:100%">
+          <input type="text" maxlength="60" value="${escapeHtml(p.freeAgentTeamName || '')}" placeholder="Название команды для отображения" aria-label="Метка команды" style="min-width:0;flex:1;padding:6px 8px;font-size:12px" onclick="event.stopPropagation()">
+          <button type="button" class="btn ghost" style="padding:5px 8px;margin:0!important;font-size:11px" onclick="event.stopPropagation();saveFreeAgentTeam(this,'${escapeHtml(p.account_id)}')">Сохранить</button>
+        </div>
+        <select aria-label="Добавить ${escapeHtml(p.name)} в состав команды"
           style="width:auto;max-width:190px;min-width:145px;padding:6px 28px 6px 9px;font-size:12px;"
           onclick="event.stopPropagation()"
           onchange="event.stopPropagation();assignFreeAgentToTeam(this,'${escapeHtml(p.account_id)}')">
-          <option value="">Выбрать команду…</option>
+          <option value="">Перевести в состав…</option>
           ${(state.teams || []).map(t => `<option value="${escapeHtml(t.id)}">${escapeHtml(t.name)}</option>`).join('')}
         </select>
       </div>`
