@@ -1063,7 +1063,20 @@
     <div id="arqon-account-steam" class="hint" style="margin-top:5px;"></div>
     <button id="arqon-link-steam" class="btn ghost" type="button" onclick="linkSteamFromAccount()" style="display:none;width:100%;margin-top:14px;">Привязать Steam</button>
     <a id="arqon-open-profile" class="btn ghost" href="/players/profile/" style="display:block;text-align:center;width:100%;margin-top:10px;padding:11px 22px;border-radius:6px;text-decoration:none;border:1px solid var(--border);color:var(--text-dim);">Открыть публичный профиль</a>
-    <a id="arqon-telegram-settings-link" class="btn" href="/players/profile/" style="display:block;text-align:center;width:100%;margin-top:9px;padding:11px 22px;border-radius:10px;text-decoration:none;background:linear-gradient(110deg,#6d28d9,#8b5cf6);color:#fff;">Настроить Telegram-уведомления</a>
+    <button id="arqon-telegram-settings-toggle" class="btn" type="button" onclick="toggleTelegramAccountSettings()" style="display:block;text-align:center;width:100%;margin-top:9px;padding:11px 22px;border-radius:10px;background:linear-gradient(110deg,#6d28d9,#8b5cf6);color:#fff;">Настроить Telegram-уведомления</button>
+    <section id="arqon-telegram-account-panel" style="display:none;margin-top:12px;padding:14px;border:1px solid rgba(139,92,246,.35);border-radius:12px;background:rgba(139,92,246,.06);">
+      <div id="arqon-telegram-account-status" class="hint" role="status">Проверяем подключение…</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;">
+        <button id="arqon-telegram-account-connect" class="btn" type="button" onclick="connectTelegramFromAccount()">Подключить Telegram</button>
+        <button id="arqon-telegram-account-unlink" class="btn ghost" type="button" onclick="unlinkTelegramFromAccount()" style="display:none;">Отключить</button>
+      </div>
+      <div id="arqon-telegram-account-codebox" style="display:none;margin-top:10px;">
+        <p class="hint">Открой бота и отправь ему команду в течение 10 минут:</p>
+        <code id="arqon-telegram-account-code" style="display:block;overflow-wrap:anywhere;padding:10px;background:#171321;border-radius:10px;"></code>
+        <button class="btn ghost" type="button" onclick="copyTelegramAccountCode()" style="margin-top:8px;">Скопировать команду</button>
+        <a id="arqon-telegram-account-bot" class="btn" href="https://t.me/arqon_esports_bot" target="_blank" rel="noopener" style="display:inline-block;margin:8px 0 0 6px;text-decoration:none;">Открыть @arqon_esports_bot</a>
+      </div>
+    </section>
     <section style="margin-top:16px;padding:14px;border:1px solid rgba(139,92,246,.35);border-radius:12px;background:rgba(139,92,246,.06);"><h3 style="font:700 12px Orbitron,sans-serif;letter-spacing:1.5px;color:#d9c4ff;margin:0 0 10px;">ПРИГЛАШЕНИЯ В КОМАНДЫ</h3><div id="arqon-team-invitations" class="hint" aria-live="polite">Загружаем приглашения…</div></section>
     <div id="arqon-account-message" class="msg hidden" role="status" style="margin-top:12px;"></div>
     <div style="display:flex;gap:10px;margin-top:16px;">
@@ -4265,8 +4278,7 @@ async function loadArqonAccount() {
     if (id) id.textContent = '#' + profile.arqon_id;
     const publicProfileLink = document.getElementById('arqon-open-profile');
     if (publicProfileLink) publicProfileLink.href = '/players/profile/?id=' + encodeURIComponent(profile.arqon_id);
-    const telegramSettingsLink = document.getElementById('arqon-telegram-settings-link');
-    if (telegramSettingsLink) telegramSettingsLink.href = '/players/profile/?id=' + encodeURIComponent(profile.arqon_id) + '#telegram-settings';
+
     if (name && document.activeElement !== name) name.value = profile.display_name || profile.steam_persona_name || '';
     if (email) email.textContent = user.email ? ('Email: ' + user.email + (user.email_confirmed_at ? ' · подтверждён' : ' · не подтверждён')) : 'Email пока не добавлен';
     if (steam) steam.textContent = profile.steam_id ? 'Steam: привязан' : 'Steam: не привязан';
@@ -4276,6 +4288,63 @@ async function loadArqonAccount() {
     console.warn('Не удалось загрузить профиль ARQON:', error);
     button.style.display = 'none';
   }
+}
+let arqonTelegramAccountToken = '';
+async function toggleTelegramAccountSettings() {
+  const panel=document.getElementById('arqon-telegram-account-panel');
+  const button=document.getElementById('arqon-telegram-settings-toggle');
+  if(!panel)return;
+  const opening=panel.style.display==='none';
+  panel.style.display=opening?'block':'none';
+  if(button)button.textContent=opening?'Скрыть настройки Telegram':'Настроить Telegram-уведомления';
+  if(opening)await loadTelegramAccountSettings();
+}
+async function loadTelegramAccountSettings(){
+  const status=document.getElementById('arqon-telegram-account-status');
+  const connect=document.getElementById('arqon-telegram-account-connect');
+  const unlink=document.getElementById('arqon-telegram-account-unlink');
+  if(status)status.textContent='Проверяем подключение…';
+  const {data,error}=await supabaseClient.rpc('get_telegram_link_status');
+  if(error){if(status)status.textContent='Не удалось проверить Telegram: '+(error.message||'ошибка');return}
+  const state=data?.[0];
+  if(state?.is_linked){
+    if(status)status.textContent='Telegram подключён'+(state.telegram_username?' · @'+state.telegram_username:'')+'. Уведомления включены.';
+    if(connect)connect.style.display='none';if(unlink)unlink.style.display='inline-flex';
+  }else{
+    if(status)status.textContent='Telegram не подключён. Подключи бота, чтобы получать уведомления ARQON.';
+    if(connect)connect.style.display='inline-flex';if(unlink)unlink.style.display='none';
+  }
+}
+async function connectTelegramFromAccount(){
+  const button=document.getElementById('arqon-telegram-account-connect');
+  const status=document.getElementById('arqon-telegram-account-status');
+  if(button){button.disabled=true;button.textContent='Создаём код…'}
+  const {data,error}=await supabaseClient.rpc('create_telegram_link_token');
+  if(button){button.disabled=false;button.textContent='Подключить Telegram'}
+  if(error){if(status)status.textContent=error.message||'Не удалось создать код.';return}
+  const token=data?.[0]?.link_token;
+  if(!token){if(status)status.textContent='Сервер не вернул код подключения.';return}
+  arqonTelegramAccountToken='/start '+token;
+  const code=document.getElementById('arqon-telegram-account-code');
+  const box=document.getElementById('arqon-telegram-account-codebox');
+  const bot=document.getElementById('arqon-telegram-account-bot');
+  if(code)code.textContent=arqonTelegramAccountToken;
+  if(bot)bot.href='https://t.me/arqon_esports_bot?start='+encodeURIComponent(token);
+  if(box)box.style.display='block';
+  if(status)status.textContent='Код действует 10 минут и используется один раз.';
+}
+async function unlinkTelegramFromAccount(){
+  if(!confirm('Отключить Telegram от ARQON?'))return;
+  const {error}=await supabaseClient.rpc('unlink_telegram_account');
+  const status=document.getElementById('arqon-telegram-account-status');
+  if(error){if(status)status.textContent=error.message||'Не удалось отключить Telegram.';return}
+  const box=document.getElementById('arqon-telegram-account-codebox');if(box)box.style.display='none';
+  await loadTelegramAccountSettings();
+}
+async function copyTelegramAccountCode(){
+  const status=document.getElementById('arqon-telegram-account-status');
+  try{await navigator.clipboard.writeText(arqonTelegramAccountToken);if(status)status.textContent='Команда скопирована.'}
+  catch(_){if(status)status.textContent='Не удалось скопировать — выдели команду вручную.'}
 }
 async function loadArqonTeamInvitations() {
   const host=document.getElementById('arqon-team-invitations');if(!host)return;
