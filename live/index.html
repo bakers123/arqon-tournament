@@ -28,6 +28,12 @@ a{color:inherit;text-decoration:none}button,input,select,textarea{font:inherit}
 .prediction-grid label{display:block;color:#c9c1d8;font-size:12px;font-weight:700}
 .prediction-grid input,.prediction-grid select{width:100%;min-width:0;margin-top:5px;border:1px solid #a879ff44;border-radius:9px;padding:9px;background:#0b0a13;color:white}
 .prediction-result{margin-top:9px;color:#c4b5fd;font-weight:700;font-size:13px}
+.prediction-rank{width:100%;border-collapse:collapse;font-size:14px}
+.prediction-rank th,.prediction-rank td{padding:10px 12px;border-bottom:1px solid #ffffff14;text-align:left}
+.prediction-rank th{color:#bda7e8;font:700 10px Orbitron}
+.prediction-rank tr:first-child td:first-child{color:#fbbf24;font-weight:900}
+.prediction-rank .coin-value{color:#d9c4ff;font-weight:900}
+.prediction-rank .player-name{font-weight:800}
 @media(max-width:520px){.prediction-grid{grid-template-columns:1fr}}.chat-messages{display:grid;gap:8px;max-height:340px;overflow-y:auto;padding:3px}.chat-message{padding:9px 11px;border:1px solid #ffffff12;border-radius:10px;background:#ffffff05;overflow-wrap:anywhere}.chat-message strong{color:#d8c4ff;font-size:13px}.chat-message small{float:right;color:#8f879d;font-size:10px}.chat-message p{margin:5px 0 0;color:#eee8f7;font-size:14px}.chat-compose{display:flex;gap:8px}.chat-compose input{flex:1;min-width:0;border:1px solid #a879ff44;border-radius:10px;padding:10px 12px;background:#0b0a13;color:white}.chat-login{color:var(--muted);font-size:13px}.stat-empty{padding:12px;color:var(--muted);text-align:center}
 .btn{border:1px solid #c4b5fd55;border-radius:10px;padding:10px 14px;background:linear-gradient(120deg,#7540d7,#9b5cff);color:white;font-weight:800;cursor:pointer;min-height:40px}.btn.secondary{background:#ffffff08;color:#e6dcff}.btn:disabled{opacity:.5;cursor:wait}
 .field{display:block;margin:10px 0}.field span{display:block;color:#c9c1d8;font-size:12px;font-weight:700;margin-bottom:5px}.field input,.field select,.field textarea{width:100%;min-width:0;border:1px solid #a879ff44;border-radius:10px;padding:10px 12px;background:#0b0a13;color:#fff;outline:none}.field textarea{min-height:76px;resize:vertical}
@@ -42,6 +48,7 @@ a{color:inherit;text-decoration:none}button,input,select,textarea{font:inherit}
 <main class="wrap">
 <section class="hero"><div class="eyebrow">ARQON · LIVE CENTER</div><h1>ЦЕНТР МАТЧЕЙ</h1><p>Следи за несколькими матчами одновременно: счёт, статус, составы, игровые события и трансляции в одном месте.</p></section>
 <div class="stats"><span class="stat" id="stat-live">LIVE: —</span><span class="stat" id="stat-scheduled">Запланировано: —</span><span class="stat" id="stat-finished">Завершено: —</span></div>
+<section class="panel" style="margin:0 0 16px"><h2>ТОП ПРОГНОЗИСТОВ ARQON</h2><p style="color:var(--muted);margin:-7px 0 12px">Рейтинг игроков по Coins, заработанным за правильные прогнозы.</p><div id="prediction-leaderboard" class="stats-scroll"><div class="stat-empty">Загружаем рейтинг…</div></div></section>
 <div id="notice" class="notice" role="status" aria-live="polite"></div>
 <div class="layout">
 <section class="panel"><h2>МАТЧИ ARQON</h2><div id="match-list" class="match-list"><div class="empty">Загружаем матчи…</div></div></section>
@@ -110,6 +117,18 @@ const clearNotice=()=>{$('notice').className='notice'};
 const safeHttp=v=>{try{const u=new URL(v);return u.protocol==='https:'?u.href:''}catch{return ''}};
 const fmt=v=>v?new Date(v).toLocaleString('ru-RU',{dateStyle:'medium',timeStyle:'short'}):'Время не указано';
 const make=(tag,cls,txt)=>{const e=document.createElement(tag);if(cls)e.className=cls;if(txt!==undefined)e.textContent=txt;return e};
+async function loadPredictionLeaderboard(){
+ const host=$('prediction-leaderboard');if(!host)return;
+ const {data,error}=await db.rpc('get_arqon_prediction_leaderboard',{p_limit:20});
+ if(error)throw error;
+ host.replaceChildren();
+ if(!data?.length){host.append(make('div','stat-empty','Рейтинг появится после первых завершённых матчей с прогнозами.'));return}
+ const table=make('table','prediction-rank'),thead=make('thead',''),hr=make('tr','');
+ ['#','Игрок','Прогнозов','Верных ответов','Coins'].forEach(t=>hr.append(make('th','',t)));thead.append(hr);table.append(thead);
+ const body=make('tbody','');
+ data.forEach((p,i)=>{const tr=make('tr','');tr.append(make('td','',String(i+1)),make('td','player-name',p.display_name+' · #'+p.arqon_id),make('td','',String(p.predictions_count)),make('td','',String(p.correct_answers)),make('td','coin-value','◈ '+Number(p.coins_earned||0).toLocaleString('ru-RU')));body.append(tr)});
+ table.append(body);host.append(table);
+}
 function renderList(){
  const host=$('match-list');host.replaceChildren();
  const counts={live:0,scheduled:0,finished:0};matches.forEach(m=>{if(m.status==='live'||m.status==='paused')counts.live++;else if(m.status==='scheduled')counts.scheduled++;else if(m.status==='finished')counts.finished++});
@@ -302,11 +321,12 @@ $('event-form').addEventListener('submit',async e=>{
  catch(err){notice('Не удалось добавить событие: '+err.message,true)}finally{btn.disabled=false}
 });
 async function boot(){
- try{await checkRole();await loadPredictionRewards();await loadMatches(false);
- channel=db.channel('arqon-live-matches').on('postgres_changes',{event:'*',schema:'public',table:'live_matches'},()=>loadMatches().catch(e=>notice('Ошибка обновления: '+e.message,true))).subscribe();
+ try{await checkRole();await loadPredictionRewards();await Promise.all([loadMatches(false),loadPredictionLeaderboard()]);
+ channel=db.channel('arqon-live-matches').on('postgres_changes',{event:'*',schema:'public',table:'live_matches'},()=>{loadMatches().catch(e=>notice('Ошибка обновления: '+e.message,true));loadPredictionLeaderboard().catch(()=>{})}).subscribe();
  eventChannel=db.channel('arqon-live-events').on('postgres_changes',{event:'*',schema:'public',table:'live_match_events'},p=>{if(p.new?.live_match_id===selected||p.old?.live_match_id===selected)openMatch(selected)}).subscribe();
  chatChannel=db.channel('arqon-live-chat').on('postgres_changes',{event:'INSERT',schema:'public',table:'live_match_chat'},p=>{if(p.new?.live_match_id===selected){loadChat().then(renderDetail).catch(e=>notice('Ошибка чата: '+e.message,true))}}).subscribe();
  statsChannel=db.channel('arqon-live-stats').on('postgres_changes',{event:'*',schema:'public',table:'live_match_player_stats'},p=>{if(p.new?.live_match_id===selected||p.old?.live_match_id===selected)loadStats().then(renderDetail).catch(e=>notice('Ошибка статистики: '+e.message,true))}).subscribe();
+ db.channel('arqon-prediction-leaderboard').on('postgres_changes',{event:'*',schema:'public',table:'arqon_predictions'},()=>loadPredictionLeaderboard().catch(()=>{})).subscribe();
  }catch(e){notice('Не удалось загрузить Live Center: '+e.message,true);$('match-list').replaceChildren(make('div','empty','Проверь подключение к базе данных и доступ к Live Center.'))}
 }
 
