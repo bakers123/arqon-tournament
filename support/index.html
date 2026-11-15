@@ -47,7 +47,7 @@
     .support-compose{display:flex;gap:9px;align-items:flex-end;border-top:1px solid rgba(173,132,255,.13);padding-top:13px}.support-compose textarea{flex:1;min-height:48px;max-height:130px;resize:vertical;background:#0c0b14;border:1px solid rgba(173,132,255,.25);border-radius:10px;color:white;padding:12px;font:600 15px Rajdhani,sans-serif}
     .support-empty{display:grid;place-items:center;text-align:center;color:#9f98b1;min-height:250px;padding:20px}
     .support-footer-note{margin-top:14px;color:#827b92;font-size:12px}
-    @media(max-width:780px){.support-wrap{margin:22px auto 45px}.support-grid{grid-template-columns:1fr}.support-card{padding:16px}.support-ticket-list{max-height:260px}.support-chat{min-height:400px}.support-chat-head{flex-direction:column}.support-compose{flex-direction:column;align-items:stretch}.support-compose .support-btn{width:100%}.support-top{padding:0 16px}.support-top nav{gap:5px}.support-top nav a{font-size:12px;padding:8px 9px}}
+    @media(max-width:780px){.support-grid > .support-grid{grid-template-columns:1fr!important}.support-chat{min-width:0}.support-messages{max-height:55vh}.support-compose textarea{width:100%}}@media(max-width:780px){.support-wrap{margin:22px auto 45px}.support-grid{grid-template-columns:1fr}.support-card{padding:16px}.support-ticket-list{max-height:260px}.support-chat{min-height:400px}.support-chat-head{flex-direction:column}.support-compose{flex-direction:column;align-items:stretch}.support-compose .support-btn{width:100%}.support-top{padding:0 16px}.support-top nav{gap:5px}.support-top nav a{font-size:12px;padding:8px 9px}}
     @media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;transition:none!important}}
   </style>
 </head>
@@ -108,7 +108,7 @@
   const SUPABASE_KEY = 'sb_publishable_oE2Bc1wPAcDt6HE8bOUj3Q_0-2FfIxB';
   const client = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
   const $ = (id) => document.getElementById(id);
-  let session = null, selectedTicket = null, tickets = [], telegramLinked = false;
+  let session = null, selectedTicket = null, tickets = [], telegramLinked = false, refreshing = false;
   const statusLabels = {open:'Открыто',waiting_admin:'Ждёт ответа поддержки',waiting_user:'Нужен твой ответ',closed:'Закрыто'};
   const notice = (message, error=false) => { const el=$('support-global-notice');el.textContent=message;el.className='support-notice'+(error?' error':'');el.hidden=!message; };
   const escapeError = (err) => {
@@ -169,7 +169,7 @@
     $('support-reply-form').hidden=!ticket||ticket.status==='closed'||!telegramLinked;
   };
   const openTicket = async (id) => {selectedTicket=id;renderTickets();try{await loadMessages(id);}catch(e){notice(escapeError(e),true);}};
-  const refresh = async () => {try{notice('');await loadTelegramStatus();await loadTickets();}catch(e){notice(escapeError(e),true);}};
+  const refresh = async (silent=false) => {if(refreshing)return;refreshing=true;try{if(!silent)notice('');await loadTelegramStatus();await loadTickets();}catch(e){notice(escapeError(e),true);}finally{refreshing=false;}};
   $('support-create-form').addEventListener('submit',async e=>{
     e.preventDefault();if(!session||!telegramLinked)return;
     const btn=$('support-create-btn');btn.disabled=true;btn.textContent='Отправляем…';
@@ -209,6 +209,8 @@
     }catch(e){notice(escapeError(e),true);}
   };
   client.auth.onAuthStateChange((_event,next)=>{session=next;boot();});
+  document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&session)refresh(true);});
+  window.setInterval(()=>{if(document.visibilityState==='visible'&&session)refresh(true);},20000);
   boot();
 })();
 </script>
