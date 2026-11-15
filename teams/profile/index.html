@@ -106,12 +106,13 @@ async function loadTeamManagement(){
  el('team-management').classList.remove('hidden');
  const host=el('manage-roster-list');host.replaceChildren();
  (currentTeam?.players||[]).forEach(player=>{
+  const isCaptainPlayer=String(player.arqonId||'')===String(currentTeamProfile?.captain_arqon_id||currentTeam?.captainArqonId||'');
   const row=document.createElement('div');row.className='request-row';
   const info=document.createElement('div');info.style.minWidth='0';
   const name=document.createElement('strong');name.textContent=(player.name||'Игрок')+(player.rosterRole==='reserve'?' · запасной':' · основной');
   const arqon=document.createElement('div');arqon.className='team-status';arqon.textContent=player.arqonId?'ARQON #'+player.arqonId:'Старый профиль состава';
   info.append(name,arqon);row.append(info);
-  if(player.account_id){
+  if(player.account_id&&!isCaptainPlayer){
    const actions=document.createElement('div');actions.className='request-actions';
    const choices=player.rosterRole==='reserve'?[['В основной','promote']]:[['В запас','demote']];
    choices.push(['Освободить','release']);
