@@ -18,7 +18,7 @@ Deno.serve(async(req:Request)=>{
   const {data:pending,error:pendingError}=await admin.from("steam_openid_states").select("user_id,return_origin,expires_at,consumed_at").eq("state",state).maybeSingle();
   if(pendingError||!pending||pending.consumed_at||new Date(pending.expires_at).getTime()<=Date.now()) return new Response("Steam verification expired. Return to ARQON and try again.",{status:400});
   const origin=pending.return_origin;
-  const allowedOrigins=new Set(["https://arqon-esports.ru","https://www.arqon-esports.ru","https://arqon-esports.online","https://www.arqon-esports.online"]);
+  const allowedOrigins=new Set(["https://arqon-esports.ru","https://www.arqon-esports.ru"]);
   if(!allowedOrigins.has(origin)) return new Response("Invalid return origin",{status:400});
   const params=requestUrl.searchParams;
   const claimedId=params.get("openid.claimed_id")||"";
