@@ -7,14 +7,15 @@
   const hideAdminNavigation = () => {
     const button = byId('admin-tab-btn');
     const section = byId('tab-admin');
-    if (button) { button.classList.add('hidden'); button.style.display = 'none'; }
-    if (section) { section.classList.add('hidden'); section.style.display = 'none'; }
+    if (button) { button.classList.add('hidden'); button.style.setProperty('display', 'none', 'important'); }
+    if (section) { section.classList.add('hidden'); section.style.setProperty('display', 'none', 'important'); }
   };
   hideAdminNavigation();
   const setVisible = (el, visible) => {
     if (!el) return;
     el.classList.toggle('hidden', !visible);
-    el.style.display = visible ? '' : 'none';
+    if (visible) el.style.removeProperty('display');
+    else el.style.setProperty('display', 'none', 'important');
   };
 
   window.isAdmin = () => ['owner', 'admin', 'editor'].includes(organizerRole);
@@ -50,6 +51,38 @@
     }
   }
 
+  function installSessionLogoutButton() {
+    const header = document.querySelector('header');
+    if (!header || byId('arqon-session-logout')) return;
+    const button = document.createElement('button');
+    button.id = 'arqon-session-logout';
+    button.type = 'button';
+    button.textContent = 'ВЫЙТИ';
+    button.setAttribute('aria-label', 'Выйти из аккаунта ARQON');
+    button.style.cssText = 'display:none;align-items:center;justify-content:center;min-height:38px;padding:0 14px;margin-left:10px;border:1px solid rgba(248,113,113,.45);border-radius:9px;background:rgba(127,29,29,.16);color:#fecaca;font:700 12px Rajdhani,sans-serif;letter-spacing:1px;cursor:pointer;flex:0 0 auto';
+    button.addEventListener('click', async () => {
+      if (button.disabled) return;
+      button.disabled = true;
+      button.textContent = 'ВЫХОД…';
+      try {
+        localStorage.removeItem('arqon_current_uid');
+        localStorage.removeItem('arqon_current_name');
+        await supabaseClient.auth.signOut({ scope: 'local' });
+      } catch (error) {
+        console.error('Не удалось завершить сессию ARQON:', error);
+      } finally {
+        window.location.replace('/');
+      }
+    });
+    header.appendChild(button);
+  }
+
+  function setLogoutVisible(visible) {
+    installSessionLogoutButton();
+    const button = byId('arqon-session-logout');
+    if (button) button.style.display = visible ? 'inline-flex' : 'none';
+  }
+
   function setPlayerAccount(player) {
     if (!player) return;
     const widget = byId('player-account-widget');
@@ -83,6 +116,7 @@
 
   function installOrganizerUi() {
     installPlayerAccountUi();
+    installSessionLogoutButton();
     const home = byId('tab-home');
     if (home && !byId('organizer-login-btn')) {
       const footer = document.createElement('div');
@@ -169,6 +203,7 @@
     }
 
     if (window.isAdmin()) {
+      setLogoutVisible(true);
       const adminButton = byId('admin-tab-btn');
       if (adminButton) { adminButton.classList.remove('hidden'); adminButton.style.display = 'inline-block'; }
       const auth = byId('auth-screen');
@@ -196,8 +231,10 @@
         activeButton.textContent = 'Выйти из панели';
         loginButton.replaceWith(activeButton);
         activeButton.addEventListener('click', async () => {
-          await supabaseClient.auth.signOut();
-          window.location.reload();
+          localStorage.removeItem('arqon_current_uid');
+          localStorage.removeItem('arqon_current_name');
+          await supabaseClient.auth.signOut({ scope: 'local' });
+          window.location.replace('/');
         });
       }
       return;
@@ -205,6 +242,7 @@
 
     // A missing/ordinary player role must never leave organizer navigation visible.
     hideAdminNavigation();
+    setLogoutVisible(!!(await supabaseClient.auth.getSession()).data?.session?.user);
 
     // Steam-linked player accounts stay in onboarding until their email is verified.
     try {
@@ -240,10 +278,12 @@
         }
       }
       setPlayerAccount(account);
+      setLogoutVisible(true);
       if (typeof startDraftListener === 'function') startDraftListener(uid);
       if (typeof applyPathRoute === 'function') applyPathRoute();
-    } else if (typeof handleNoAuth === 'function') {
-      handleNoAuth();
+    } else {
+      setLogoutVisible(false);
+      if (typeof handleNoAuth === 'function') handleNoAuth();
     }
   };
 
