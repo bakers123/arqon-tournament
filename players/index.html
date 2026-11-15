@@ -4258,7 +4258,7 @@ function closeArqonAccount() {
 async function saveArqonAccountName() {
   const input = document.getElementById('arqon-account-name');
   const message = document.getElementById('arqon-account-message');
-  const value = (input?.value || '').trim().replace(/\\s+/g, ' ');
+  const value = (input?.value || '').trim().replace(/\s+/g, ' ');
   if (!value || value.length > 32) {
     if (message) { message.textContent = 'Имя должно содержать от 1 до 32 символов.'; message.className = 'msg error'; }
     return;
