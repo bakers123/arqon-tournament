@@ -2,10 +2,38 @@ import { createClient } from "npm:@supabase/supabase-js@2";
 const cors = {"Access-Control-Allow-Origin":"https://arqon-esports.ru","Access-Control-Allow-Headers":"authorization, x-client-info, apikey, content-type, x-telegram-bot-api-secret-token","Access-Control-Allow-Methods":"POST, OPTIONS"};
 const json=(body:unknown,status=200)=>new Response(JSON.stringify(body),{status,headers:{...cors,"Content-Type":"application/json"}});
 const esc=(v:unknown)=>String(v??"").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;");
-async function send(token:string,chatId:string,text:string){
- const r=await fetch(`https://api.telegram.org/bot${token}/sendMessage`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({chat_id:chatId,text,parse_mode:"HTML",disable_web_page_preview:true})});
+const SITE="https://arqon-esports.ru";
+const menuMarkup=(isAdmin=false)=>({inline_keyboard:[
+ [{text:"👤 Мой профиль",callback_data:"profile"},{text:"🔔 Уведомления",url:SITE+"/notifications/"}],
+ [{text:"🏆 Киберспортивная лига",url:SITE+"/league/"}],
+ [{text:"👥 Команды",url:SITE+"/teams/"},{text:"🎯 Игроки",url:SITE+"/players/"}],
+ [{text:"🛟 Поддержка",url:SITE+"/support/"}],
+ ...(isAdmin?[[{text:"🛡 Панель организатора",url:SITE+"/support/admin/"}]]:[]),
+ [{text:"🌐 Открыть ARQON",url:SITE}]
+]});
+async function telegram(token:string,method:string,body:Record<string,unknown>){
+ const r=await fetch(`https://api.telegram.org/bot${token}/${method}`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});
  const payload=await r.json().catch(()=>({}));
- if(!r.ok||payload?.ok!==true)throw new Error("telegram_send_failed");
+ if(!r.ok||payload?.ok!==true)throw new Error("telegram_"+method+"_failed");
+ return payload.result;
+}
+async function send(token:string,chatId:string,text:string,reply_markup?:unknown){
+ return await telegram(token,"sendMessage",{chat_id:chatId,text,parse_mode:"HTML",disable_web_page_preview:true,...(reply_markup?{reply_markup}:{})});
+}
+async function showMenu(token:string,chatId:string,admin:any){
+ let isSupportAdmin=false;
+ try{const {data}=await admin.rpc("get_support_admin_telegram_chats");isSupportAdmin=(data||[]).some((x:any)=>String(x.chat_id)===chatId)}catch{}
+ const greeting="<b>ＡＲＱＯＮ  ＥＳＰＯＲＴＳ</b>\n< i >YOUR GAME. YOUR LEGACY.</i>\n\nДобро пожаловать в пространство ARQON! Здесь собраны быстрые переходы к лиге, игрокам, командам и поддержке.\n\nВыбери нужный раздел 👇".replace("< i >","<i>");
+ await send(token,chatId,greeting,menuMarkup(isSupportAdmin));
+}
+async function setBotCommands(token:string){
+ await telegram(token,"setMyCommands",{commands:[
+  {command:"start",description:"Открыть главное меню ARQON"},
+  {command:"menu",description:"Показать меню"},
+  {command:"profile",description:"Статус подключения Telegram"},
+  {command:"help",description:"Команды и помощь"}
+ ]});
+ await telegram(token,"setChatMenuButton",{menu_button:{type:"commands"}});
 }
 Deno.serve(async(req)=>{
  if(req.method==="OPTIONS")return new Response("ok",{headers:cors});
@@ -15,7 +43,28 @@ Deno.serve(async(req)=>{
  const admin=createClient(url,service,{auth:{persistSession:false}});
  if(new URL(req.url).searchParams.get("mode")==="webhook"){
   if(req.headers.get("x-telegram-bot-api-secret-token")!==secret)return json({error:"unauthorized_webhook"},401);
-  const update=await req.json().catch(()=>({})),msg=update?.message,chat=msg?.chat?.id,txt=String(msg?.text??"").trim();
+  const update=await req.json().catch(()=>({}));
+  const callback=update?.callback_query;
+  if(callback){
+   const callbackChat=callback?.message?.chat?.id,callbackId=String(callback?.id??""),action=String(callback?.data??"");
+   if(callbackId)try{await telegram(bot,"answerCallbackQuery",{callback_query_id:callbackId})}catch{}
+   if(callbackChat){
+    const callbackChatId=String(callbackChat);
+    if(action==="menu"){
+     let isSupportAdmin=false;try{const {data}=await admin.rpc("get_support_admin_telegram_chats");isSupportAdmin=(data||[]).some((x:any)=>String(x.chat_id)===callbackChatId)}catch{}
+     const text="<b>ＡＲＱＯＮ  ＥＳＰＯＲＴＳ</b>\n<i>YOUR GAME. YOUR LEGACY.</i>\n\nВыбери нужный раздел 👇";
+     try{await telegram(bot,"editMessageText",{chat_id:callbackChatId,message_id:callback.message.message_id,text,parse_mode:"HTML",disable_web_page_preview:true,reply_markup:menuMarkup(isSupportAdmin)})}catch{}
+    }else if(action==="profile"){
+     const {data:account}=await admin.from("telegram_accounts").select("telegram_username,first_name,linked_at").eq("chat_id",callbackChatId).maybeSingle();
+     const profileText=account
+      ? "👤 <b>ТВОЙ ARQON АККАУНТ</b>\n\n< i >Статус:</i> <b>подключён</b>\nTelegram: "+(account.telegram_username?"@"+esc(account.telegram_username):esc(account.first_name||"аккаунт подключён"))+"\nДата подключения: "+new Date(account.linked_at).toLocaleDateString("ru-RU")+"\n\nТвой Telegram привязан к ARQON. Управлять подключением можно в настройках профиля на сайте.".replace("< i >","<i>")
+      : "👤 <b>ТВОЙ ARQON АККАУНТ</b>\n\n< i >Статус:</i> <b>не подключён</b>\n\nОткрой сайт ARQON → «Мой профиль» → «Подключить Telegram», затем отправь боту команду подключения.".replace("< i >","<i>");
+     try{await telegram(bot,"editMessageText",{chat_id:callbackChatId,message_id:callback.message.message_id,text:profileText,parse_mode:"HTML",reply_markup:{inline_keyboard:[[{text:"⚙️ Настройки профиля",url:SITE+"/"}],[{text:"↩️ Главное меню",callback_data:"menu"}]]}})}catch{}
+    }
+   }
+   return json({ok:true});
+  }
+  const msg=update?.message,chat=msg?.chat?.id,txt=String(msg?.text??"").trim();
   if(!chat)return json({ok:true});
   const chatId=String(chat);
   const start=txt.match(/^\/start\s+([a-f0-9]{40,80})$/i);
@@ -25,7 +74,19 @@ Deno.serve(async(req)=>{
    const {error}=await admin.from("telegram_accounts").upsert({user_id:link.user_id,chat_id:chatId,telegram_username:msg?.from?.username??null,first_name:msg?.from?.first_name??null,linked_at:new Date().toISOString()},{onConflict:"user_id"});
    if(error)return json({error:"link_save_failed"},500);
    await admin.from("telegram_link_tokens").delete().eq("token",link.token);
-   await send(bot,chatId,"✅ Telegram успешно подключён к ARQON! Теперь сюда будут приходить уведомления и ответы техподдержки.");
+   await setBotCommands(bot).catch(e=>console.warn("Bot commands setup failed",e));
+   await send(bot,chatId,"<b>ＡＲＱＯＮ  ＥＳＰＯＲＴＳ</b>\n<i>YOUR GAME. YOUR LEGACY.</i>\n\n✅ <b>Telegram успешно подключён!</b>\nТеперь сюда будут приходить уведомления ARQON и ответы техподдержки.\n\nДобро пожаловать в команду 💜",menuMarkup(false));
+   return json({ok:true});
+  }
+  if(/^\/(start|menu|help)(?:@\w+)?$/i.test(txt)){
+   await setBotCommands(bot).catch(e=>console.warn("Bot commands setup failed",e));
+   await showMenu(bot,chatId,admin);
+   return json({ok:true});
+  }
+  if(/^\/profile(?:@\w+)?$/i.test(txt)){
+   const {data:account}=await admin.from("telegram_accounts").select("telegram_username,first_name,linked_at").eq("chat_id",chatId).maybeSingle();
+   const status=account?"✅ <b>Telegram подключён</b>\n"+(account.telegram_username?"@"+esc(account.telegram_username):esc(account.first_name||"Аккаунт подключён")):"⚪ <b>Telegram не подключён к профилю ARQON</b>\nОткрой сайт → «Мой профиль» → «Подключить Telegram».";
+   await send(bot,chatId,"👤 <b>ТВОЙ ПРОФИЛЬ</b>\n\n"+status, {inline_keyboard:[[{text:"↩️ Главное меню",callback_data:"menu"}]]});
    return json({ok:true});
   }
   const ticketReply=txt.match(/^\/ticket(?:@\w+)?\s+(\d+)\s+([\s\S]+)$/i);
@@ -84,7 +145,8 @@ Deno.serve(async(req)=>{
    await send(bot,chatId,`✅ Обращение #${ticketId} закрыто.`);
    return json({ok:true});
   }
-  await send(bot,chatId,"🤖 <b>ARQON Support</b>\nПодключи Telegram в окне «Мой профиль» на сайте.\nОтветить в своём обращении: <code>/ticket НОМЕР текст</code>\nАдминистратор отвечает: <code>/reply НОМЕР текст</code>\nЗакрыть обращение: <code>/close НОМЕР</code>");
+  await setBotCommands(bot).catch(e=>console.warn("Bot commands setup failed",e));
+  await send(bot,chatId,"Не понял команду. Открой меню ARQON — там все основные разделы и быстрые переходы 💜",menuMarkup(false));
   return json({ok:true});
  }
  const jwt=(req.headers.get("authorization")??"").replace(/^Bearer\s+/i,"");
