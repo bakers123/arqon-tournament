@@ -1,4 +1,8 @@
 
+alter table public.team_transfer_history drop constraint if exists team_transfer_history_event_type_check;
+alter table public.team_transfer_history add constraint team_transfer_history_event_type_check
+  check (event_type = any (array['joined','released','promoted','demoted','deputy_assigned','role_changed']::text[]));
+
 alter table public.team_transfer_history
   add column if not exists from_role text,
   add column if not exists to_role text,
