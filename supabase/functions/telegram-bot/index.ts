@@ -113,19 +113,25 @@ Deno.serve(async(req)=>{
      const recent=matches.filter((m:any)=>m.winner||m.tech_loss_team).slice(-5).reverse();
      const lines=[...recent.map((m:any)=>"• #"+(m.match_no??"?")+" "+esc(m.team1)+" — "+esc(m.team2)+" · "+(m.result_type==="tech"?"ТТ "+esc(m.tech_loss_team):"победа "+esc(m.winner))),...upcoming.map((m:any)=>"• #"+(m.match_no??"?")+" "+esc(m.date||"Дата уточняется")+" "+esc(m.time||"")+" · "+esc(m.team1)+" — "+esc(m.team2))];
      await renderPanel(bot,callbackChatId,callback.message.message_id,"🏆 <b>КИБЕРСПОРТИВНАЯ ЛИГА ARQON</b>\nМатчей в расписании: "+matches.length+"\nС результатом: "+done+"\n\n<b>Результаты и ближайшие матчи</b>\n"+(lines.join("\n")||"Пока нет данных."),{inline_keyboard:[[{text:"↻ Обновить",callback_data:"league"}],[{text:"↩️ Главное меню",callback_data:"menu"}]]});
-    }else if(action==="teams"){
-     const teams=await loadTournamentTeams(admin);
-     const keyboard:any[][]=teams.slice(0,18).map((t:any)=>[{text:"👥 "+String(t.name||"Команда").slice(0,45),callback_data:"team:"+String(t.id||"").slice(0,45)}]);
-     keyboard.push([{text:"↻ Обновить",callback_data:"teams"},{text:"↩️ Главное меню",callback_data:"menu"}]);
-     await renderPanel(bot,callbackChatId,callback.message.message_id,"👥 <b>КОМАНДЫ ARQON</b>\n\nВыбери команду, чтобы посмотреть её состав и игроков.",{inline_keyboard:keyboard});
+    }else if(action==="teams"||action.startsWith("teams:page:")){
+     const pageMatch=action.match(/^teams:page:(\\d+)$/),page=Math.max(0,Number(pageMatch?.[1]??0));
+     const teams=await loadTournamentTeams(admin),pageSize=5,totalPages=Math.max(1,Math.ceil(teams.length/pageSize)),currentPage=Math.min(page,totalPages-1),visible=teams.slice(currentPage*pageSize,(currentPage+1)*pageSize);
+     const keyboard:any[][]=visible.map((t:any)=>[{text:"👥 "+String(t.name||"Команда").slice(0,45),callback_data:"team:"+String(t.id||"").slice(0,40)+":"+currentPage}]);
+     const nav:any[]=[];
+     if(currentPage>0)nav.push({text:"⬅️ Назад",callback_data:"teams:page:"+(currentPage-1)});
+     nav.push({text:(currentPage+1)+" / "+totalPages,callback_data:"teams:page:"+currentPage});
+     if(currentPage<totalPages-1)nav.push({text:"Вперёд ➡️",callback_data:"teams:page:"+(currentPage+1)});
+     if(nav.length)keyboard.push(nav);
+     keyboard.push([{text:"↻ Обновить",callback_data:"teams:page:"+currentPage},{text:"↩️ Главное меню",callback_data:"menu"}]);
+     await renderPanel(bot,callbackChatId,callback.message.message_id,"👥 <b>КОМАНДЫ ARQON</b>\n\nВсего команд: "+teams.length+"\nСтраница "+(currentPage+1)+" из "+totalPages+" · по 5 команд\n\nВыбери команду, чтобы посмотреть её состав и игроков.",{inline_keyboard:keyboard});
     }else if(action.startsWith("team:")){
-     const teamId=action.slice(5),teams=await loadTournamentTeams(admin),team=teams.find((t:any)=>String(t.id)===teamId);
+     const teamParts=action.slice(5).split(":"),teamId=teamParts[0],returnPage=Math.max(0,Number(teamParts[1]??0)),teams=await loadTournamentTeams(admin),team=teams.find((t:any)=>String(t.id)===teamId);
      if(!team){await renderPanel(bot,callbackChatId,callback.message.message_id,"Команда не найдена или состав обновился.",backMenu)}
      else{
       const roster=Array.isArray(team.players)?team.players:[];
       const rows=roster.map((p:any)=>"• <b>"+esc(p.name)+"</b> · FACEIT "+(p.faceitLevel??"—")+" · ARQON "+(p.arqonRating??"—")+(p.rosterRole==="reserve"?" · запас":""));
       const buttons=roster.slice(0,20).map((p:any)=>[{text:"🎯 "+String(p.name||"Игрок").slice(0,45),callback_data:"player:"+String(p.account_id||"").slice(0,45)}]);
-      buttons.push([{text:"↩️ К командам",callback_data:"teams"},{text:"Главное меню",callback_data:"menu"}]);
+      buttons.push([{text:"↩️ К командам",callback_data:"teams:page:"+returnPage},{text:"Главное меню",callback_data:"menu"}]);
       await renderPanel(bot,callbackChatId,callback.message.message_id,"👥 <b>"+esc(team.name)+"</b>\nИгроков: "+roster.length+"\n\n"+(rows.join("\n")||"Состав пока не заполнен."),{inline_keyboard:buttons});
      }
     }else if(action==="players"||action.startsWith("players:page:")){
