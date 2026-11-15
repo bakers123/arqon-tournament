@@ -1,5 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-const allowedOrigins = new Set(["https://arqon-esports.ru","https://www.arqon-esports.ru","https://arqon-esports.online","https://www.arqon-esports.online"]);
+const allowedOrigins = new Set(["https://arqon-esports.ru","https://www.arqon-esports.ru"]);
 function cors(origin: string | null) {
   const allowed = origin && allowedOrigins.has(origin) ? origin : "https://arqon-esports.ru";
   return {"Access-Control-Allow-Origin":allowed,"Access-Control-Allow-Headers":"authorization, apikey, x-client-info, content-type","Access-Control-Allow-Methods":"POST, OPTIONS","Vary":"Origin","Cache-Control":"no-store"};
