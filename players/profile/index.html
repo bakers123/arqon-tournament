@@ -23,6 +23,7 @@
     .actions{margin-left:auto;padding-bottom:12px}.button{cursor:pointer;border:1px solid #9b5cff88;border-radius:11px;padding:10px 16px;background:linear-gradient(135deg,#7136c9,#9b5cff);color:white;font:700 14px Rajdhani;box-shadow:0 7px 25px #7136c944}
     .content{display:grid;grid-template-columns:1.35fr .65fr;gap:16px;margin-top:28px}.card{background:linear-gradient(160deg,#171426ee,#100f19f2);border:1px solid var(--line);border-radius:18px;padding:22px;box-shadow:0 14px 40px #0003}.card h2{font:700 12px Orbitron;letter-spacing:2px;color:#d9c4ff;margin:0 0 16px}.bio{font-size:18px;line-height:1.45;color:#ded8eb;white-space:pre-wrap}.muted{color:var(--muted)}.stat{display:flex;justify-content:space-between;gap:12px;padding:12px 0;border-bottom:1px solid #ffffff10;font-weight:700}.stat:last-child{border:0}.stat strong{color:#d9baff}
     .edit{display:none;margin-top:18px}.edit.open{display:block}.field{margin:12px 0}.field label{display:block;color:#b9aecb;font-size:12px;font-weight:700;letter-spacing:1px;margin-bottom:6px}.field input,.field textarea{width:100%;background:#0b0a12;border:1px solid var(--line);border-radius:10px;padding:12px;color:white;font:600 15px Rajdhani;outline:none}.field textarea{min-height:90px;resize:vertical}.checks{display:flex;gap:18px;flex-wrap:wrap;margin:14px 0;color:#d8cbea;font-weight:600}.checks label{display:flex;align-items:center;gap:7px}.notice{padding:20px;border:1px solid var(--line);background:#171426;border-radius:14px;color:#d6cce5;text-align:center;margin-top:24px}.error{color:#ff9aab}.hidden{display:none!important}
+    .history-list{display:grid;gap:10px}.history-item{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:13px 14px;border:1px solid #ffffff12;border-radius:12px;background:rgba(255,255,255,.025);min-width:0}.history-event{min-width:0}.history-event strong{display:block;font-size:16px;overflow-wrap:anywhere}.history-event small{display:block;color:var(--muted);margin-top:3px}.history-result{flex:0 0 auto;text-align:right;color:#d9baff;font-weight:800}.history-result small{display:block;color:#bca7dc;font-size:11px}.history-empty{color:var(--muted);margin:0;font-size:15px}
     @media(max-width:700px){.top{height:64px;padding:0 14px}.brand{font-size:clamp(12px,3.6vw,15px);letter-spacing:2.4px}.back{padding:8px 11px;font-size:14px;white-space:nowrap}main{width:calc(100% - 24px);margin:16px auto 48px}.cover{height:clamp(112px,32vw,150px);border-radius:18px}.profile{margin:-34px 10px 0;gap:12px;align-items:flex-end;flex-wrap:nowrap;min-width:0}.avatar{width:82px;height:82px;flex:0 0 82px;border-radius:17px;border-width:3px}.identity{padding:0 0 4px;flex:1;min-width:0}.eyebrow{font-size:9px;letter-spacing:1.5px}.name{font-size:clamp(17px,5.2vw,25px);line-height:1.16;margin:6px 0;overflow-wrap:anywhere;word-break:break-word}.id{font-size:12px;letter-spacing:1px;overflow-wrap:anywhere}.actions{display:none}.content{grid-template-columns:minmax(0,1fr);gap:12px;margin-top:24px}.content>*{min-width:0}.card{padding:17px;border-radius:16px}.bio{font-size:17px;overflow-wrap:anywhere}.stat{font-size:15px;align-items:flex-start}.stat span{min-width:0}.stat strong{max-width:52%;text-align:right;overflow-wrap:anywhere}.edit .button{width:100%}}
   </style>
 </head>
@@ -67,6 +68,10 @@
         </div>
       </div>
     </section>
+    <section class="card history-card" style="width:min(1040px,calc(100% - 28px));margin:16px auto 0">
+      <h2>ИСТОРИЯ ТУРНИРОВ</h2>
+      <div id="tournament-history" class="history-list"><p class="muted">Загружаем историю…</p></div>
+    </section>
     <div class="notice hidden" id="notice"></div>
   </main>
   <script>
@@ -107,6 +112,27 @@
       });
       return {points,wins,podiums,events};
     }
+    function renderTournamentHistory(name,rows){
+      const key=playerKey(name),host=el('tournament-history');
+      const entries=(rows||[]).map(row=>{
+        const place=playerKey(row.place_1)===key?1:playerKey(row.place_2)===key?2:playerKey(row.place_3)===key?3:0;
+        const isMvp=playerKey(row.mvp)===key;
+        return place||isMvp?{row,place,isMvp}:null;
+      }).filter(Boolean).sort((a,b)=>new Date(b.row.created_at||0)-new Date(a.row.created_at||0));
+      host.replaceChildren();
+      if(!entries.length){const empty=document.createElement('p');empty.className='history-empty';empty.textContent='Пока нет опубликованных результатов с участием игрока.';host.append(empty);return}
+      entries.forEach(({row,place,isMvp})=>{
+        const item=document.createElement('div');item.className='history-item';
+        const event=document.createElement('div');event.className='history-event';
+        const title=document.createElement('strong');title.textContent=row.tournament_name||'Турнир ARQON';
+        const date=document.createElement('small');date.textContent=row.created_at?new Date(row.created_at).toLocaleDateString('ru-RU'):'Дата не указана';
+        event.append(title,date);
+        const result=document.createElement('div');result.className='history-result';
+        result.textContent=place?place+' место':'MVP';
+        if(isMvp&&place){const tag=document.createElement('small');tag.textContent='MVP';result.append(tag)}
+        item.append(event,result);host.append(item);
+      });
+    }
     async function uploadProfileMedia(file,kind){
       if(!file)return null;
       const allowed=['image/jpeg','image/png','image/webp'];
@@ -141,10 +167,11 @@
       setExternalLink('public-cs2-link',profile.cs2_faceit_url,'Открыть FACEIT ↗');
       setExternalLink('public-dota-link',profile.dota2_profile_url,'Открыть профиль ↗');
       const [resultsResponse,tournamentResponse]=await Promise.all([
-        db.from('results').select('place_1,place_2,place_3,tournament_name').limit(500),
+        db.from('results').select('place_1,place_2,place_3,tournament_name,created_at,mvp').order('created_at',{ascending:false}).limit(500),
         db.from('tournament').select('data').eq('id',1).maybeSingle()
       ]);
       const stats=getTournamentStats(profile.player_name,resultsResponse.data||[]);
+      renderTournamentHistory(profile.player_name,resultsResponse.data||[]);
       const meta=getTournamentPlayerMeta(tournamentResponse.data?.data,profile.player_name);
       el('team-name').textContent=meta.teamName||'Свободный игрок';
       el('arqon-rating').textContent=meta.arqonRating===null?'—':meta.arqonRating+'/100';
