@@ -172,3 +172,38 @@ button,.btn,input,select,textarea{transition:background-color .16s ease,border-c
 @media(prefers-reduced-motion:reduce){
   *,*::before,*::after{scroll-behavior:auto!important;animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
 }
+
+
+/* ARQON header + control alignment hotfix v5 */
+header{box-sizing:border-box!important;flex-wrap:nowrap!important;justify-content:flex-start!important;min-width:0!important}
+header>.arqon-menu-trigger,header>button.arqon-menu-trigger{order:0!important;flex:0 0 44px!important;margin:0!important;position:relative!important;z-index:3!important}
+header>.brand{order:1!important;flex:0 1 auto!important;min-width:0!important;margin:0!important}
+header>.brand img{display:block!important;width:clamp(112px,14vw,176px)!important;max-width:100%!important;height:auto!important}
+header>nav{order:2!important}
+header>#steam-header-entry,header>#arqon-account-button{order:5!important;flex:0 0 auto!important;margin:0 0 0 auto!important;max-width:min(38vw,190px)!important;white-space:nowrap!important}
+header>#arqon-session-logout{order:6!important;flex:0 0 auto!important;position:relative!important;z-index:4!important;margin:0 0 0 9px!important;min-width:72px!important;min-height:40px!important;padding:0 13px!important;white-space:nowrap!important;box-sizing:border-box!important}
+header>#player-account-widget{order:7!important;flex:0 1 auto!important;min-width:0!important;margin:0 0 0 9px!important}
+header .arqon-nav-close{display:inline-flex!important;align-items:center!important;justify-content:center!important;flex:0 0 36px!important;width:36px!important;height:36px!important;min-width:36px!important;min-height:36px!important;padding:0!important;margin:0!important;line-height:1!important;font:400 25px/1 Arial,sans-serif!important;text-align:center!important;vertical-align:middle!important;transform:none!important}
+.arqon-menu-trigger{box-sizing:border-box!important;align-content:center!important;justify-items:center!important;line-height:1!important;overflow:hidden!important}
+.arqon-menu-trigger svg{display:block!important;flex:none!important;margin:auto!important}
+header button,header a.nav-social-btn{box-sizing:border-box!important}
+header button:focus-visible,header a:focus-visible,button.btn:focus-visible,.btn:focus-visible{outline:2px solid #c4b5fd!important;outline-offset:3px!important}
+@media(max-width:900px){
+ header{display:flex!important;flex-wrap:nowrap!important;gap:8px!important;min-height:62px!important;padding:8px 10px!important}
+ header>.brand{flex:0 1 auto!important;max-width:42vw!important}
+ header>.brand img{width:clamp(104px,31vw,138px)!important}
+ header>#steam-header-entry,header>#arqon-account-button{margin-left:auto!important;max-width:32vw!important;min-height:38px!important;padding:0 9px!important;overflow:hidden!important;text-overflow:ellipsis!important;font-size:10px!important}
+ header>#arqon-session-logout{min-width:60px!important;min-height:36px!important;margin-left:0!important;padding:0 8px!important;font-size:10px!important;letter-spacing:.5px!important}
+ header>#player-account-widget{margin-left:0!important;gap:5px!important}
+ header>#player-account-widget .player-match-trigger{display:none!important}
+ header>#player-account-widget .player-account-trigger{max-width:42px!important;padding:4px!important}
+ header>#player-account-widget .player-account-trigger span{display:none!important}
+ header>.mobile-nav-scrollbar{display:none!important}
+}
+@media(max-width:380px){
+ header{gap:6px!important;padding-inline:8px!important}
+ header>.brand{max-width:38vw!important}
+ header>.brand img{width:104px!important}
+ header>#steam-header-entry,header>#arqon-account-button{max-width:29vw!important;font-size:9px!important;padding-inline:7px!important}
+ header>#arqon-session-logout{min-width:54px!important;padding-inline:6px!important;font-size:9px!important}
+}
