@@ -6,6 +6,7 @@
 <section class="panel" style="margin-top:14px"><h2>ХОЧЕШЬ В КОМАНДУ?</h2><p class="sub" style="margin:0 0 12px">Отправь организаторам заявку на вступление.</p><textarea id="request-message" class="team-field" maxlength="500" placeholder="Расскажи о себе, роли и опыте (необязательно)"></textarea><button id="apply-button" class="team-btn" type="button" style="margin-top:10px">Подать заявку в команду</button><div id="request-status" class="team-status" role="status"></div></section>
 <section class="panel hidden" id="admin-requests" style="margin-top:14px"><h2>ЗАЯВКИ В КОМАНДУ · АДМИН</h2><div id="admin-request-list"></div></section>
 <section class="panel hidden" id="team-management" style="margin-top:14px"><h2>УПРАВЛЕНИЕ СОСТАВОМ · КАПИТАН / ОРГАНИЗАТОР</h2><p class="sub" style="margin:0 0 10px">Приглашение отправляется игроку по ARQON ID. Он сам принимает или отклоняет его.</p><div style="display:flex;gap:8px;align-items:center"><input id="invite-arqon-id" inputmode="numeric" type="number" min="1" placeholder="ARQON ID игрока" class="team-field" style="min-height:46px;resize:none"><button id="invite-player-button" class="team-btn" style="width:auto;white-space:nowrap">Пригласить</button></div><div id="management-status" class="team-status" role="status"></div><h2 style="margin-top:18px">ПРЕДЛОЖЕНИЯ ИГРОКАМ</h2><p class="sub">Отправь предложение игроку, который включил поиск команды. Игрок сам решает, принять его или отклонить.</p><input id="offer-arqon-id" class="team-field" type="number" min="1" placeholder="ARQON ID игрока" style="min-height:46px"><input id="offer-role" class="team-field" maxlength="80" placeholder="Роль в команде" style="min-height:46px;margin-top:8px"><textarea id="offer-message" class="team-field" maxlength="500" placeholder="Сообщение игроку" style="margin-top:8px"></textarea><button id="send-player-offer" class="team-btn" type="button" style="margin-top:8px">Отправить предложение</button><div id="offer-status" class="team-status" role="status"></div><div id="team-offers-list" class="team-status"></div><h2 style="margin-top:18px">ОТКЛИКИ НА НАБОР</h2><div id="recruitment-admin-list" class="team-status">Загрузка откликов…</div><div id="manage-roster-list"></div><hr style="border:0;border-top:1px solid #ffffff18;margin:18px 0"><h2>ОФОРМЛЕНИЕ ПРОФИЛЯ КОМАНДЫ</h2><label class="sub" for="team-description-edit">Описание команды</label><textarea id="team-description-edit" class="team-field" maxlength="600" placeholder="Расскажите о команде, целях и достижениях"></textarea><label style="display:flex;gap:9px;align-items:center;margin:12px 0"><input id="team-recruiting-edit" type="checkbox" style="width:18px;height:18px"> <span class="sub">Открыть набор игроков</span></label><label class="sub" for="team-roles-edit">Кого ищем (до 300 символов)</label><textarea id="team-roles-edit" class="team-field" maxlength="300" placeholder="Например: AWP и капитан"></textarea><label class="sub" for="team-captain-edit">Капитан</label><select id="team-captain-edit" class="team-field" style="min-height:46px;resize:none"></select><label class="sub" for="team-logo-file">Логотип · JPG, PNG или WebP, до 5 МБ</label><input id="team-logo-file" type="file" accept="image/jpeg,image/png,image/webp" class="team-field" style="min-height:48px"><label class="sub" for="team-cover-file">Обложка · JPG, PNG или WebP, до 5 МБ</label><input id="team-cover-file" type="file" accept="image/jpeg,image/png,image/webp" class="team-field" style="min-height:48px"><button id="save-team-profile" class="team-btn" type="button" style="margin-top:12px">Сохранить оформление</button><div id="team-profile-status" class="team-status" role="status"></div>
+<div id="captain-only-controls">
 <hr style="border:0;border-top:1px solid #ffffff18;margin:18px 0">
 <h2>ПЕРЕДАТЬ КАПИТАНСТВО</h2>
 <p class="sub">Выбери игрока из текущего состава. После передачи он станет капитаном и получит управление командой.</p>
@@ -16,6 +17,8 @@
 <h2>УДАЛЕНИЕ КОМАНДЫ</h2>
 <p class="sub">Команда и её публичный профиль будут удалены. История переходов игроков сохранится.</p>
 <button id="delete-team-button" class="team-btn" type="button" style="background:linear-gradient(110deg,#7d263e,#b83b5c);border-color:#e87991">Удалить команду</button>
+
+</div>
 <div id="delete-team-status" class="team-status" role="status"></div>
 </section>
 <section class="panel hidden" id="leave-team-panel" style="margin-top:14px">
@@ -40,7 +43,7 @@ function render(team){
  el('player-count').textContent=players.length;const ratings=players.map(p=>Number(p.arqonRating)).filter(n=>Number.isFinite(n)&&n>=0&&n<=100);el('team-rating').textContent=ratings.length?(ratings.reduce((a,b)=>a+b,0)/ratings.length).toFixed(1):'—';
  const faceit=players.map(p=>Number(p.faceitLevel)).filter(n=>Number.isInteger(n)&&n>=1&&n<=10);el('team-faceit').textContent=faceit.length?(faceit.reduce((a,b)=>a+b,0)/faceit.length).toFixed(1):'—';
  el('team-meta').textContent=(active.length+' основных'+(reserves.length?' · '+reserves.length+' запасных':''));const host=el('roster');host.replaceChildren();
- const add=(p,reserve)=>{const card=document.createElement('article');card.className='player';const avatar=document.createElement('img');avatar.className='avatar';avatar.alt='';avatar.src=safeImage(p.avatar)||'';avatar.onerror=()=>{avatar.removeAttribute('src')};const copy=document.createElement('div');copy.style.minWidth='0';const name=document.createElement('div');name.className='pname';name.textContent=p.name||'Игрок';const tags=document.createElement('div');tags.className='tags';if(String(p.arqonId||'')===String(currentTeamProfile?.captain_arqon_id||team.captainArqonId||'')){const t=document.createElement('span');t.className='tag';t.textContent='Капитан';tags.append(t)}if(reserve){const t=document.createElement('span');t.className='tag';t.textContent='Запасной';tags.append(t)}if(Number.isInteger(Number(p.faceitLevel))&&Number(p.faceitLevel)>=1&&Number(p.faceitLevel)<=10){const t=document.createElement('span');t.className='tag';t.textContent='FACEIT '+p.faceitLevel;tags.append(t)}if(Number.isInteger(Number(p.arqonRating))&&Number(p.arqonRating)>=0&&Number(p.arqonRating)<=100){const t=document.createElement('span');t.className='tag';t.textContent='ARQON '+p.arqonRating+'/100';tags.append(t)}copy.append(name,tags);card.append(avatar,copy);if(p.arqonId){card.classList.add('player-clickable');card.tabIndex=0;card.setAttribute('role','link');card.setAttribute('aria-label','Открыть профиль '+(p.name||'игрока'));const open=()=>location.href='/players/profile/?id='+encodeURIComponent(p.arqonId);card.addEventListener('click',open);card.addEventListener('keydown',event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();open()}})}host.append(card)};
+ const add=(p,reserve)=>{const card=document.createElement('article');card.className='player';const avatar=document.createElement('img');avatar.className='avatar';avatar.alt='';avatar.src=safeImage(p.avatar)||'';avatar.onerror=()=>{avatar.removeAttribute('src')};const copy=document.createElement('div');copy.style.minWidth='0';const name=document.createElement('div');name.className='pname';name.textContent=p.name||'Игрок';const tags=document.createElement('div');tags.className='tags';if(String(p.arqonId||'')===String(currentTeamProfile?.captain_arqon_id||team.captainArqonId||'')){const t=document.createElement('span');t.className='tag';t.textContent='Капитан';tags.append(t)}else if(p.rosterRole==='deputy'){const t=document.createElement('span');t.className='tag';t.textContent='Заместитель капитана';tags.append(t)}if(reserve){const t=document.createElement('span');t.className='tag';t.textContent='Запасной';tags.append(t)}if(Number.isInteger(Number(p.faceitLevel))&&Number(p.faceitLevel)>=1&&Number(p.faceitLevel)<=10){const t=document.createElement('span');t.className='tag';t.textContent='FACEIT '+p.faceitLevel;tags.append(t)}if(Number.isInteger(Number(p.arqonRating))&&Number(p.arqonRating)>=0&&Number(p.arqonRating)<=100){const t=document.createElement('span');t.className='tag';t.textContent='ARQON '+p.arqonRating+'/100';tags.append(t)}copy.append(name,tags);card.append(avatar,copy);if(p.arqonId){card.classList.add('player-clickable');card.tabIndex=0;card.setAttribute('role','link');card.setAttribute('aria-label','Открыть профиль '+(p.name||'игрока'));const open=()=>location.href='/players/profile/?id='+encodeURIComponent(p.arqonId);card.addEventListener('click',open);card.addEventListener('keydown',event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();open()}})}host.append(card)};
  active.forEach(p=>add(p,false));reserves.forEach(p=>add(p,true));if(!players.length){host.innerHTML='<p class="empty">Состав пока не опубликован.</p>'}
  currentTeam=team;
 }
@@ -119,21 +122,31 @@ async function loadTeamManagement(){
  ]);
  const captainId=currentTeamProfile?.captain_arqon_id||currentTeam?.captainArqonId;
  const isCaptain=!!ownerProfile&&String(ownerProfile.arqon_id)===String(captainId||'');
- if(error||(!allowed&&!isCaptain))return;
+ const isDeputy=!!ownerProfile&&(currentTeam?.players||[]).some(p=>String(p.arqonId||'')===String(ownerProfile.arqon_id)&&p.rosterRole==='deputy');
+ if(error||(!allowed&&!isCaptain&&!isDeputy))return;
  el('team-management').classList.remove('hidden');
  const host=el('manage-roster-list');host.replaceChildren();
  (currentTeam?.players||[]).forEach(player=>{
   const isCaptainPlayer=String(player.arqonId||'')===String(currentTeamProfile?.captain_arqon_id||currentTeam?.captainArqonId||'');
   const row=document.createElement('div');row.className='request-row';
   const info=document.createElement('div');info.style.minWidth='0';
-  const name=document.createElement('strong');name.textContent=(player.name||'Игрок')+(player.rosterRole==='reserve'?' · запасной':' · основной');
+  const roleLabels={deputy:'заместитель капитана',reserve:'запасной',main:'основной'};const name=document.createElement('strong');name.textContent=(player.name||'Игрок')+' · '+(roleLabels[player.rosterRole||'main']||'основной');
   const arqon=document.createElement('div');arqon.className='team-status';arqon.textContent=player.arqonId?'ARQON #'+player.arqonId:'Старый профиль состава';
   info.append(name,arqon);row.append(info);
   if(player.account_id&&!isCaptainPlayer){
    const actions=document.createElement('div');actions.className='request-actions';
-   const choices=player.rosterRole==='reserve'?[['В основной','promote']]:[['В запас','demote']];
-   choices.push(['Освободить','release']);
-   choices.forEach(([label,action])=>{const b=document.createElement('button');b.textContent=label;b.onclick=async()=>{if(action==='release'&&!confirm('Освободить игрока '+(player.name||'')+' из команды?'))return;b.disabled=true;const {error:changeError}=await db.rpc('manage_team_roster',{p_team_id:String(currentTeam.id),p_account_id:String(player.account_id),p_action:action});if(changeError){el('management-status').textContent=changeError.message||'Не удалось изменить состав.';b.disabled=false;return}el('management-status').textContent='Состав обновлён.';await reloadTeam();};actions.append(b)});
+   if(isCaptain){
+    const roleSelect=document.createElement('select');roleSelect.className='team-field';roleSelect.style.cssText='min-height:38px;width:auto;max-width:155px;padding:5px';
+    [['main','Основной'],['reserve','Запасной'],['deputy','Заместитель']].forEach(([value,label])=>roleSelect.append(new Option(label,value)));
+    roleSelect.value=['main','reserve','deputy'].includes(player.rosterRole)?player.rosterRole:'main';
+    const saveRole=document.createElement('button');saveRole.type='button';saveRole.textContent='Роль';saveRole.onclick=async()=>{saveRole.disabled=true;const {error:roleError}=await db.rpc('set_arqon_team_member_role',{p_team_id:String(currentTeam.id),p_account_id:String(player.account_id),p_role:roleSelect.value});saveRole.disabled=false;if(roleError){const messages={deputy_already_exists:'В команде уже есть заместитель.',main_roster_full:'В основном составе уже 5 игроков.',reserve_roster_full:'В запасе уже 2 игрока.',not_team_captain:'Менять роли может только капитан.'};el('management-status').textContent=messages[roleError.message]||roleError.message||'Не удалось изменить роль.';return}el('management-status').textContent='Роль игрока обновлена.';await reloadTeam()};
+    actions.append(roleSelect,saveRole);
+   }
+   if(!isDeputy||player.rosterRole!=='deputy'){
+    const choices=player.rosterRole==='reserve'?[['В основной','promote']]:[['В запас','demote']];
+    choices.push(['Освободить','release']);
+    choices.forEach(([label,action])=>{const b=document.createElement('button');b.textContent=label;b.onclick=async()=>{if(action==='release'&&!confirm('Освободить игрока '+(player.name||'')+' из команды?'))return;b.disabled=true;const {error:changeError}=await db.rpc('manage_team_roster',{p_team_id:String(currentTeam.id),p_account_id:String(player.account_id),p_action:action});if(changeError){el('management-status').textContent=({deputy_cannot_manage_deputy:'Заместитель не может управлять другим заместителем.'})[changeError.message]||changeError.message||'Не удалось изменить состав.';b.disabled=false;return}el('management-status').textContent='Состав обновлён.';await reloadTeam();};actions.append(b)});
+   }
    row.append(actions);
   }
   host.append(row);
@@ -181,7 +194,7 @@ async function saveTeamProfile(){const status=el('team-profile-status'),button=e
 async function setupTeamProfileEditor(){const {data:{user}}=await db.auth.getUser();const [{data:allowed,error},{data:ownerProfile}]=await Promise.all([db.rpc('has_organizer_role',{required_role:'editor'}),user?db.from('profiles').select('arqon_id').eq('user_id',user.id).maybeSingle():Promise.resolve({data:null})]);const captainId=currentTeamProfile?.captain_arqon_id||currentTeam?.captainArqonId;const isCaptain=!!ownerProfile&&String(ownerProfile.arqon_id)===String(captainId||'');if(error||(!allowed&&!isCaptain))return;el('team-description-edit').value=currentTeamProfile?.description||'';el('team-recruiting-edit').checked=!!currentTeamProfile?.recruiting;el('team-roles-edit').value=currentTeamProfile?.roles_needed||'';const select=el('team-captain-edit');select.replaceChildren(new Option('Не выбран',''));(currentTeam.players||[]).forEach(p=>{if(p.arqonId)select.append(new Option((p.name||'Игрок')+' · ARQON #'+p.arqonId,String(p.arqonId)))});const captain=currentTeamProfile?.captain_arqon_id||currentTeam.captainArqonId;if(captain)select.value=String(captain);select.disabled=isCaptain}
 async function setupTeamOwnershipControls(){
  const {data:{user}}=await db.auth.getUser();
- const leavePanel=el('leave-team-panel'),manage=el('team-management');
+ const leavePanel=el('leave-team-panel'),captainControls=el('captain-only-controls');
  if(!user||!currentTeam)return;
  const {data:profile}=await db.from('profiles').select('arqon_id').eq('user_id',user.id).maybeSingle();
  if(!profile)return;
@@ -189,7 +202,7 @@ async function setupTeamOwnershipControls(){
  const isCaptain=String(profile.arqon_id)===String(captainId||'');
  const isMember=(currentTeam.players||[]).some(p=>String(p.account_id||'')===String(user.id));
  if(isCaptain){
-  manage.classList.remove('hidden');
+  captainControls?.classList.remove('hidden');
   const select=el('transfer-captain-select');select.replaceChildren(new Option('Выбери нового капитана',''));
   (currentTeam.players||[]).filter(p=>p.arqonId&&String(p.arqonId)!==String(profile.arqon_id)).forEach(p=>select.append(new Option((p.name||'Игрок')+' · ARQON #'+p.arqonId,String(p.arqonId))));
   el('transfer-captain-button').onclick=async()=>{
@@ -212,7 +225,7 @@ async function setupTeamOwnershipControls(){
    location.href='/teams/';
   };
  }else{
-  manage.classList.add('hidden');
+  captainControls?.classList.add('hidden');
   if(isMember){
    leavePanel.classList.remove('hidden');
    el('leave-team-button').onclick=async()=>{
