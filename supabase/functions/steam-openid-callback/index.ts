@@ -83,8 +83,7 @@ Deno.serve(async (req: Request) => {
   if (!verified) return redirect(origin, "error");
 
   const steamId = steamMatch[1];
-  const { data: consumed, error: consumeError } = await admin.schema("private")
-    .from("steam_openid_states")
+  const { data: consumed, error: consumeError } = await admin.from("steam_openid_states")
     .update({ consumed_at: new Date().toISOString(), response_nonce: nonce })
     .eq("state", state)
     .is("consumed_at", null)
