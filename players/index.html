@@ -4211,7 +4211,7 @@ async function handleSteamReturn(user) {
   const authScreen = document.getElementById('auth-screen');
   const actions = document.getElementById('steam-login-actions');
   const emailStep = document.getElementById('steam-email-step');
-  const clearReturn = () => window.history.replaceState({}, document.title, window.location.pathname + window.location.hash);
+  const clearReturn = () => window.history.replaceState({}, document.title, window.location.pathname);
 
   if (status === 'linked') {
     if (authScreen) authScreen.style.display = 'flex';
@@ -4290,12 +4290,11 @@ async function startApp() {
     console.error('Не удалось проверить сессию ARQON:', error);
   }
 
-  await handleSteamReturn(session?.user || null);
-
   if (session?.user) {
     currentUser = session.user;
     // organizer-auth.js получает роль через current_organizer_role.
     await window.checkUserRole(session.user.id);
+    await handleSteamReturn(session.user);
     applyPathRoute();
     return;
   }
@@ -4310,6 +4309,7 @@ async function startApp() {
     if (authScreen) authScreen.style.display = 'none';
     if (typeof window.checkUserRole === 'function') {
       await window.checkUserRole(savedUid);
+      await handleSteamReturn(null);
     } else {
       const playerName = document.getElementById('player-display-name');
       if (playerName) playerName.textContent = savedName;
@@ -4317,11 +4317,13 @@ async function startApp() {
       if (main) main.style.display = 'block';
       startDraftListener(savedUid);
     }
+    await handleSteamReturn(null);
     applyPathRoute();
     return;
   }
 
   handleNoAuth();
+  await handleSteamReturn(null);
 }
   if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', startApp);
