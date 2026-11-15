@@ -120,11 +120,11 @@
       el('xp-total').textContent=String(xp);el('xp-level').textContent='Уровень '+level;el('xp-next').textContent=within+' / 250 XP';el('xp-progress').style.width=(within/250*100)+'%';
       const wins=played.filter(x=>x.place===1).length,podiums=played.filter(x=>x.place>0).length,mvps=played.filter(x=>x.mvp).length;
       const achievements=[
-        {icon:'🎮',name:'Первый турнир',desc:'Участвовал в опубликованном турнире',earned:played.length>=1},
+        {icon:'🎮',name:'Первый результат',desc:'Попал в опубликованные результаты турнира',earned:played.length>=1},
         {icon:'🥉',name:'Первый пьедестал',desc:'Попал в топ-3 турнира',earned:podiums>=1},
         {icon:'🏆',name:'Чемпион',desc:'Занял первое место',earned:wins>=1},
         {icon:'⭐',name:'MVP',desc:'Получил награду самого ценного игрока',earned:mvps>=1},
-        {icon:'🔥',name:'Ветеран',desc:'Пять опубликованных результатов',earned:played.length>=5},
+        {icon:'🔥',name:'Ветеран',desc:'Пять попаданий в опубликованные результаты',earned:played.length>=5},
         {icon:'👑',name:'Легенда ARQON',desc:'Пять побед на турнирах',earned:wins>=5}
       ];
       const host=el('achievement-grid');host.replaceChildren();
