@@ -94,3 +94,49 @@ header.top{background:rgba(9,8,15,.9)!important;border-bottom:1px solid var(--ar
 .panel,.side-panel,.canvas-shell{border-color:var(--arq-border)!important;border-radius:15px!important;background:linear-gradient(145deg,rgba(24,21,36,.96),rgba(13,12,20,.98))!important;box-shadow:0 10px 30px rgba(0,0,0,.18)!important}
 header.top .brand h1{color:#f4edff!important}
 button.primary{background:linear-gradient(110deg,#6d28d9,#8b5cf6)!important;border-color:rgba(196,181,253,.35)!important}
+
+
+/* Player hub — profile cards in the unified ARQON visual language */
+.portal-heading{margin:10px 0 24px!important}
+.portal-heading .home-kicker{color:#b69aff!important;letter-spacing:2.5px!important;font-weight:800!important}
+.portal-heading .home-title{letter-spacing:-.035em!important;line-height:1.08!important}
+.portal-heading .home-lead{max-width:720px!important;color:var(--arq-muted)!important;line-height:1.7!important}
+.portal-toolbar{display:flex!important;align-items:center!important;gap:12px!important;margin:18px 0 20px!important}
+.portal-toolbar input{max-width:480px!important;min-height:46px!important;padding:0 15px!important}
+.portal-grid{gap:16px!important}
+.portal-card,.home-data-card,#player-detail{
+  border:1px solid var(--arq-border)!important;border-radius:18px!important;
+  background:linear-gradient(150deg,rgba(26,22,40,.96),rgba(14,13,22,.98))!important;
+  box-shadow:0 14px 38px rgba(0,0,0,.22)!important;
+}
+.portal-card{position:relative!important;overflow:hidden!important;padding:20px!important;transition:transform .2s,border-color .2s,box-shadow .2s!important}
+.portal-card:before{content:"";position:absolute;inset:0 0 auto;height:2px;background:linear-gradient(90deg,transparent,#8b5cf6,#c4b5fd,transparent);opacity:.7}
+.portal-card:hover{transform:translateY(-3px)!important;border-color:rgba(167,139,250,.42)!important;box-shadow:0 18px 46px rgba(0,0,0,.32)!important}
+.portal-pill{border:1px solid rgba(167,139,250,.24)!important;background:rgba(139,92,246,.13)!important;color:#d9c8ff!important;letter-spacing:.08em!important}
+.portal-profile-top{gap:15px!important;align-items:center!important}
+.portal-profile-top h3,.portal-profile-top h2{color:#f5f3ff!important;letter-spacing:-.02em!important}
+.portal-profile-top p{color:var(--arq-muted)!important;line-height:1.5!important}
+.portal-avatar{border:1px solid rgba(196,181,253,.34)!important;box-shadow:0 0 0 4px rgba(139,92,246,.08)!important;background:linear-gradient(145deg,#5b21b6,#211632)!important}
+.portal-detail-grid{gap:9px!important;margin-top:17px!important}
+.portal-detail-stat{padding:12px!important;border:1px solid rgba(196,181,253,.11)!important;border-radius:12px!important;background:rgba(255,255,255,.025)!important}
+.portal-detail-stat small{color:#a8a0bb!important}
+.portal-detail-stat strong{color:#f1eaff!important}
+.arqon-rating-track{height:6px!important;background:rgba(255,255,255,.08)!important}
+.arqon-rating-track span{background:linear-gradient(90deg,#6d28d9,#a78bfa,#ddd6fe)!important}
+.portal-actions{gap:9px!important;margin-top:18px!important}
+.portal-actions .btn{min-height:40px!important;border:1px solid rgba(167,139,250,.26)!important;background:rgba(139,92,246,.14)!important;color:#e9ddff!important}
+.portal-actions .btn:hover{background:rgba(139,92,246,.24)!important}
+.arqon-public-id{display:inline-flex;align-items:center;gap:7px;margin-top:7px;padding:5px 9px;border:1px solid rgba(167,139,250,.22);border-radius:8px;background:rgba(139,92,246,.10);color:#bdb2d2;font-size:10px;font-weight:750;letter-spacing:1px}
+.arqon-public-id b{color:#e9ddff;font-size:12px;letter-spacing:.3px}
+#player-detail{padding:clamp(16px,3vw,28px)!important;scroll-margin-top:94px!important}
+#player-detail h2{font-size:clamp(22px,3vw,32px)!important}
+#player-detail h3{color:#e9ddff!important}
+@media(max-width:640px){
+ .portal-toolbar{align-items:stretch!important;flex-direction:column!important}
+ .portal-toolbar input{max-width:none!important;width:100%!important}
+ .portal-grid{grid-template-columns:1fr!important}
+ .portal-card{padding:16px!important}
+ .portal-detail-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+ .portal-actions{flex-wrap:wrap!important}
+ .portal-actions .btn{flex:1 1 auto!important}
+}
