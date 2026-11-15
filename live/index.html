@@ -20,7 +20,15 @@ a{color:inherit;text-decoration:none}button,input,select,textarea{font:inherit}
 .layout{display:grid;grid-template-columns:minmax(280px,.8fr) minmax(0,1.6fr);gap:16px;align-items:start}.panel{min-width:0;border:1px solid var(--line);border-radius:18px;padding:18px;background:linear-gradient(155deg,#191528,#100f19);box-shadow:0 14px 40px #0003}.panel h2{font:700 14px Orbitron;margin:0 0 14px;letter-spacing:.5px}
 .match-list{display:grid;gap:9px}.match-card{width:100%;text-align:left;padding:13px;border:1px solid #ffffff18;border-radius:13px;background:#ffffff05;color:inherit;cursor:pointer}.match-card.active{border-color:#a78bfa;background:#8b5cf622}.match-card strong{display:block;font-size:16px;overflow-wrap:anywhere}.match-meta{font-size:12px;color:var(--muted);margin-top:5px}.match-score{font:800 19px Orbitron;color:#e5d4ff;margin-top:7px}.status{display:inline-flex;margin-top:7px;padding:3px 8px;border-radius:20px;background:#8b5cf626;color:#d9c7ff;font-size:11px;font-weight:800}.status.live{background:#ef476f24;color:#ff9db0}.status.finished{background:#22c55e1c;color:#9ae6b4}
 .detail-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;padding-bottom:14px;border-bottom:1px solid #ffffff16}.detail-head h2{font:800 clamp(18px,3vw,25px) Orbitron;margin:0 0 7px}.scoreline{display:flex;align-items:center;justify-content:center;gap:16px;margin:22px 0;padding:20px 12px;border:1px solid #ffffff12;border-radius:15px;background:#08070d88}.scoreline strong{font:800 clamp(30px,7vw,54px) Orbitron;color:#eee3ff}.scoreline span{color:#9f96b1;font:700 13px Orbitron}.teams{display:grid;grid-template-columns:1fr 1fr;gap:12px}.team-box{border:1px solid #ffffff12;border-radius:13px;padding:13px;background:#ffffff04;min-width:0}.team-box h3{font:700 13px Orbitron;margin:0 0 9px;overflow-wrap:anywhere}.team-box p{margin:0;color:#b9afc9;white-space:pre-line;overflow-wrap:anywhere}
-.section-title{font:700 12px Orbitron;color:#d9c4ff;margin:20px 0 9px}.event-list{display:grid;gap:8px}.event{padding:10px 12px;border:1px solid #ffffff12;border-radius:10px;background:#ffffff04}.event small{display:block;color:var(--muted);font-size:11px;margin-bottom:4px}.event p{margin:0;overflow-wrap:anywhere}.mvp{padding:12px;border:1px solid #c084fc55;border-radius:12px;background:#8b5cf616;color:#e8d7ff;font-weight:800}.player-stats{width:100%;border-collapse:collapse;font-size:14px}.player-stats th,.player-stats td{padding:9px 7px;border-bottom:1px solid #ffffff14;text-align:left;white-space:nowrap}.player-stats th{color:#bda7e8;font:700 10px Orbitron}.stats-scroll{overflow-x:auto;border:1px solid #ffffff12;border-radius:11px}.stream-frame{position:relative;width:100%;aspect-ratio:16/9;overflow:hidden;border-radius:13px;background:#05040a;border:1px solid #ffffff16;margin-top:12px}.stream-frame iframe{position:absolute;inset:0;width:100%;height:100%;border:0}.chat-box{display:grid;gap:9px}.chat-messages{display:grid;gap:8px;max-height:340px;overflow-y:auto;padding:3px}.chat-message{padding:9px 11px;border:1px solid #ffffff12;border-radius:10px;background:#ffffff05;overflow-wrap:anywhere}.chat-message strong{color:#d8c4ff;font-size:13px}.chat-message small{float:right;color:#8f879d;font-size:10px}.chat-message p{margin:5px 0 0;color:#eee8f7;font-size:14px}.chat-compose{display:flex;gap:8px}.chat-compose input{flex:1;min-width:0;border:1px solid #a879ff44;border-radius:10px;padding:10px 12px;background:#0b0a13;color:white}.chat-login{color:var(--muted);font-size:13px}.stat-empty{padding:12px;color:var(--muted);text-align:center}
+.section-title{font:700 12px Orbitron;color:#d9c4ff;margin:20px 0 9px}.event-list{display:grid;gap:8px}.event{padding:10px 12px;border:1px solid #ffffff12;border-radius:10px;background:#ffffff04}.event small{display:block;color:var(--muted);font-size:11px;margin-bottom:4px}.event p{margin:0;overflow-wrap:anywhere}.mvp{padding:12px;border:1px solid #c084fc55;border-radius:12px;background:#8b5cf616;color:#e8d7ff;font-weight:800}.player-stats{width:100%;border-collapse:collapse;font-size:14px}.player-stats th,.player-stats td{padding:9px 7px;border-bottom:1px solid #ffffff14;text-align:left;white-space:nowrap}.player-stats th{color:#bda7e8;font:700 10px Orbitron}.stats-scroll{overflow-x:auto;border:1px solid #ffffff12;border-radius:11px}.stream-frame{position:relative;width:100%;aspect-ratio:16/9;overflow:hidden;border-radius:13px;background:#05040a;border:1px solid #ffffff16;margin-top:12px}.stream-frame iframe{position:absolute;inset:0;width:100%;height:100%;border:0}.chat-box{display:grid;gap:9px}
+.prediction-box{margin:18px 0;padding:14px;border:1px solid #a879ff55;border-radius:14px;background:linear-gradient(145deg,#8b5cf615,#ffffff04)}
+.prediction-box h3{font:700 12px Orbitron;color:#e3d3ff;margin:0 0 8px}
+.prediction-box p{color:var(--muted);font-size:13px;margin:0 0 10px}
+.prediction-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.prediction-grid label{display:block;color:#c9c1d8;font-size:12px;font-weight:700}
+.prediction-grid input,.prediction-grid select{width:100%;min-width:0;margin-top:5px;border:1px solid #a879ff44;border-radius:9px;padding:9px;background:#0b0a13;color:white}
+.prediction-result{margin-top:9px;color:#c4b5fd;font-weight:700;font-size:13px}
+@media(max-width:520px){.prediction-grid{grid-template-columns:1fr}}.chat-messages{display:grid;gap:8px;max-height:340px;overflow-y:auto;padding:3px}.chat-message{padding:9px 11px;border:1px solid #ffffff12;border-radius:10px;background:#ffffff05;overflow-wrap:anywhere}.chat-message strong{color:#d8c4ff;font-size:13px}.chat-message small{float:right;color:#8f879d;font-size:10px}.chat-message p{margin:5px 0 0;color:#eee8f7;font-size:14px}.chat-compose{display:flex;gap:8px}.chat-compose input{flex:1;min-width:0;border:1px solid #a879ff44;border-radius:10px;padding:10px 12px;background:#0b0a13;color:white}.chat-login{color:var(--muted);font-size:13px}.stat-empty{padding:12px;color:var(--muted);text-align:center}
 .btn{border:1px solid #c4b5fd55;border-radius:10px;padding:10px 14px;background:linear-gradient(120deg,#7540d7,#9b5cff);color:white;font-weight:800;cursor:pointer;min-height:40px}.btn.secondary{background:#ffffff08;color:#e6dcff}.btn:disabled{opacity:.5;cursor:wait}
 .field{display:block;margin:10px 0}.field span{display:block;color:#c9c1d8;font-size:12px;font-weight:700;margin-bottom:5px}.field input,.field select,.field textarea{width:100%;min-width:0;border:1px solid #a879ff44;border-radius:10px;padding:10px 12px;background:#0b0a13;color:#fff;outline:none}.field textarea{min-height:76px;resize:vertical}
 .admin-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.admin-grid .wide{grid-column:1/-1}.admin-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
@@ -82,6 +90,12 @@ a{color:inherit;text-decoration:none}button,input,select,textarea{font:inherit}
 <label class="field"><span>Assists</span><input id="stats-assists" type="number" min="0" max="999" value="0" required></label>
 <label class="field"><span>ADR</span><input id="stats-adr" type="number" min="0" max="999.99" step="0.01" value="0" required></label>
 </div><button class="btn" id="stats-btn" type="submit">Сохранить статистику игрока</button></form>
+<div class="section-title">НАГРАДЫ ЗА ПРОГНОЗЫ · COINS</div>
+<div class="admin-grid">
+<label class="field"><span>Угадан победитель · Coins</span><input id="reward-winner" type="number" min="0" max="10000" value="10"></label>
+<label class="field"><span>Угадан точный счёт · Coins</span><input id="reward-score" type="number" min="0" max="10000" value="25"></label>
+<label class="field"><span>Угадан MVP · Coins</span><input id="reward-mvp" type="number" min="0" max="10000" value="15"></label>
+</div><button class="btn secondary" id="save-prediction-rewards" type="button">Сохранить награды</button>
 </div>
 </section>
 </main>
@@ -89,7 +103,7 @@ a{color:inherit;text-decoration:none}button,input,select,textarea{font:inherit}
 (()=>{
 const URL='https://uscnaqcvuwjrmkjyuklp.supabase.co',KEY='sb_publishable_oE2Bc1wPAcDt6HE8bOUj3Q_0-2FfIxB';
 const db=window.supabase.createClient(URL,KEY,{auth:{storageKey:'sb-uscnaqcvuwjrmkjyuklp-auth-token',persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
-const $=id=>document.getElementById(id);let matches=[],selected=null,events=[],chatMessages=[],playerStats=[],isEditor=false,channel=null,eventChannel=null,chatChannel=null,statsChannel=null,currentUser=null;
+const $=id=>document.getElementById(id);let matches=[],selected=null,events=[],chatMessages=[],playerStats=[],isEditor=false,channel=null,eventChannel=null,chatChannel=null,statsChannel=null,currentUser=null,myPrediction=null,predictionRewards={winner_reward:10,score_reward:25,mvp_reward:15};
 const statusText={scheduled:'Запланирован',live:'LIVE',paused:'Пауза',finished:'Завершён',cancelled:'Отменён'};
 const notice=(msg,error=false)=>{const n=$('notice');n.textContent=msg;n.className='notice show'+(error?' error':'')};
 const clearNotice=()=>{$('notice').className='notice'};
@@ -134,6 +148,7 @@ function renderDetail(){
  if(!events.length)timeline.append(make('div','empty','События пока не добавлены.'));
  events.forEach(ev=>{const item=make('article','event');item.append(make('small','',fmt(ev.created_at)+' · '+({info:'Информация',round:'Раунд',kill:'Ключевой момент',map:'Карта',score:'Счёт',mvp:'MVP'}[ev.event_type]||'Событие')));const label=[ev.team_name,ev.player_name].filter(Boolean).join(' · ');item.append(make('p','',(label?label+' — ':'')+ev.description));timeline.append(item)});
  host.append(timeline);
+ renderPredictionBox(host,m);
  host.append(make('div','section-title','ЧАТ МАТЧА'));
  const chatBox=make('div','chat-box'),chatList=make('div','chat-messages');
  if(!chatMessages.length)chatList.append(make('div','stat-empty','Пока нет сообщений. Будь первым!'));
@@ -161,6 +176,52 @@ async function loadChat(){
  chatMessages=[];if(!selected)return;
  const {data,error}=await db.from('live_match_chat').select('id,live_match_id,user_id,display_name,message,created_at').eq('live_match_id',selected).order('created_at',{ascending:false}).limit(60);
  if(error)throw error;chatMessages=(data||[]).reverse();
+}
+async function loadPrediction(){
+ myPrediction=null;
+ if(!selected||!currentUser)return;
+ const {data,error}=await db.from('arqon_predictions').select('predicted_winner,predicted_score1,predicted_score2,predicted_mvp,winner_correct,score_correct,mvp_correct,coins_awarded,settled_at').eq('live_match_id',selected).eq('user_id',currentUser.id).maybeSingle();
+ if(error)throw error;myPrediction=data||null;
+}
+async function loadPredictionRewards(){
+ const {data,error}=await db.from('arqon_prediction_settings').select('winner_reward,score_reward,mvp_reward').eq('id',true).single();
+ if(error)throw error;predictionRewards=data;
+ if($('reward-winner')){$('reward-winner').value=data.winner_reward;$('reward-score').value=data.score_reward;$('reward-mvp').value=data.mvp_reward}
+}
+function renderPredictionBox(host,m){
+ const box=make('section','prediction-box');box.append(make('h3','','◈ ПРОГНОЗ ARQON'));
+ const isOpen=m.status==='scheduled'&&m.starts_at&&new Date(m.starts_at).getTime()>Date.now();
+ box.append(make('p','',isOpen?'Угадай победителя, точный счёт и MVP до начала матча. После старта прогноз изменить нельзя.':'Приём прогнозов закрыт. Награды начисляются автоматически после завершения матча.'));
+ if(myPrediction){
+  const winner=myPrediction.predicted_winner==='team1'?m.team1:m.team2;
+  box.append(make('div','prediction-result','Твой прогноз: '+winner+' · '+myPrediction.predicted_score1+':'+myPrediction.predicted_score2+' · MVP: '+myPrediction.predicted_mvp));
+  if(myPrediction.settled_at){
+   const earned=Number(myPrediction.coins_awarded||0);
+   box.append(make('div','prediction-result','Результат: '+(myPrediction.winner_correct?'победитель ✓':'победитель ✕')+' · '+(myPrediction.score_correct?'счёт ✓':'счёт ✕')+' · '+(myPrediction.mvp_correct?'MVP ✓':'MVP ✕')+' · '+earned+' Coins'));
+  }
+ }
+ if(isOpen&&currentUser){
+  const form=make('form','');form.id='prediction-form';
+  const grid=make('div','prediction-grid');
+  const winnerLabel=make('label','','Победитель'),winner=document.createElement('select');winner.id='prediction-winner';
+  winner.add(new Option(m.team1,'team1'));winner.add(new Option(m.team2,'team2'));winner.value=myPrediction?.predicted_winner||'team1';winnerLabel.append(winner);
+  const mvpLabel=make('label','','MVP матча'),mvp=document.createElement('input');mvp.id='prediction-mvp';mvp.maxLength=100;mvp.required=true;mvp.placeholder='Ник игрока';mvp.value=myPrediction?.predicted_mvp||'';mvpLabel.append(mvp);
+  const s1Label=make('label','','Счёт '+m.team1),s1=document.createElement('input');s1.id='prediction-score1';s1.type='number';s1.min='0';s1.max='99';s1.required=true;s1.value=myPrediction?.predicted_score1??0;s1Label.append(s1);
+  const s2Label=make('label','','Счёт '+m.team2),s2=document.createElement('input');s2.id='prediction-score2';s2.type='number';s2.min='0';s2.max='99';s2.required=true;s2.value=myPrediction?.predicted_score2??0;s2Label.append(s2);
+  [winnerLabel,mvpLabel,s1Label,s2Label].forEach(x=>grid.append(x));form.append(grid);
+  const save=make('button','btn',myPrediction?'Изменить прогноз':'Отправить прогноз');save.type='submit';save.style.marginTop='10px';form.append(save);
+  form.addEventListener('submit',async e=>{
+   e.preventDefault();save.disabled=true;
+   try{
+    const {error}=await db.rpc('submit_arqon_prediction',{p_live_match_id:m.id,p_predicted_winner:winner.value,p_score1:Number(s1.value),p_score2:Number(s2.value),p_mvp:mvp.value.trim()});
+    if(error)throw error;await loadPrediction();renderDetail();notice('Прогноз сохранён. Удачи!');
+   }catch(err){notice('Не удалось сохранить прогноз: '+err.message,true);save.disabled=false}
+  });
+  box.append(form);
+ }else if(!currentUser&&!myPrediction){
+  const a=make('a','chat-login','Войди в ARQON, чтобы оставить прогноз →');a.href='/players/';box.append(a);
+ }
+ host.append(box);
 }
 async function loadStats(){
  playerStats=[];if(!selected)return;
@@ -192,12 +253,12 @@ async function submitChat(e){
  }catch(err){notice('Не удалось отправить сообщение: '+err.message,true)}
  finally{const next=$('chat-form')?.querySelector('button');if(next)next.disabled=!currentUser}
 }
-async function openMatch(id){selected=id;try{await Promise.all([loadEvents(),loadChat(),loadStats()]);renderList();renderDetail()}catch(e){notice('Не удалось загрузить данные матча: '+e.message,true)}}
+async function openMatch(id){selected=id;try{await Promise.all([loadEvents(),loadChat(),loadStats(),loadPrediction()]);renderList();renderDetail()}catch(e){notice('Не удалось загрузить данные матча: '+e.message,true)}}
 async function loadMatches(keep=true){
  const {data,error}=await db.from('live_matches').select('*').order('starts_at',{ascending:false,nullsFirst:false}).order('created_at',{ascending:false});
  if(error)throw error;matches=data||[];
  if(!keep||!matches.some(m=>m.id===selected))selected=matches[0]?.id||null;
- if(selected){await Promise.all([loadEvents(),loadChat(),loadStats()])}renderList();renderDetail();
+ if(selected){await Promise.all([loadEvents(),loadChat(),loadStats(),loadPrediction()])}renderList();renderDetail();
 }
 async function checkRole(){
  const {data:{user}}=await db.auth.getUser();currentUser=user||null;if(!user)return;
@@ -241,13 +302,23 @@ $('event-form').addEventListener('submit',async e=>{
  catch(err){notice('Не удалось добавить событие: '+err.message,true)}finally{btn.disabled=false}
 });
 async function boot(){
- try{await checkRole();await loadMatches(false);
+ try{await checkRole();await loadPredictionRewards();await loadMatches(false);
  channel=db.channel('arqon-live-matches').on('postgres_changes',{event:'*',schema:'public',table:'live_matches'},()=>loadMatches().catch(e=>notice('Ошибка обновления: '+e.message,true))).subscribe();
  eventChannel=db.channel('arqon-live-events').on('postgres_changes',{event:'*',schema:'public',table:'live_match_events'},p=>{if(p.new?.live_match_id===selected||p.old?.live_match_id===selected)openMatch(selected)}).subscribe();
  chatChannel=db.channel('arqon-live-chat').on('postgres_changes',{event:'INSERT',schema:'public',table:'live_match_chat'},p=>{if(p.new?.live_match_id===selected){loadChat().then(renderDetail).catch(e=>notice('Ошибка чата: '+e.message,true))}}).subscribe();
  statsChannel=db.channel('arqon-live-stats').on('postgres_changes',{event:'*',schema:'public',table:'live_match_player_stats'},p=>{if(p.new?.live_match_id===selected||p.old?.live_match_id===selected)loadStats().then(renderDetail).catch(e=>notice('Ошибка статистики: '+e.message,true))}).subscribe();
  }catch(e){notice('Не удалось загрузить Live Center: '+e.message,true);$('match-list').replaceChildren(make('div','empty','Проверь подключение к базе данных и доступ к Live Center.'))}
 }
+
+$('save-prediction-rewards').addEventListener('click',async()=>{
+ if(!isEditor)return;const btn=$('save-prediction-rewards');btn.disabled=true;
+ try{
+  const values={winner_reward:Number($('reward-winner').value),score_reward:Number($('reward-score').value),mvp_reward:Number($('reward-mvp').value),updated_at:new Date().toISOString()};
+  if(Object.values(values).slice(0,3).some(v=>!Number.isInteger(v)||v<0||v>10000))throw new Error('Награда должна быть целым числом от 0 до 10000');
+  const {error}=await db.from('arqon_prediction_settings').update(values).eq('id',true);if(error)throw error;
+  predictionRewards=values;notice('Размер наград за прогнозы обновлён.');
+ }catch(err){notice('Не удалось сохранить награды: '+err.message,true)}finally{btn.disabled=false}
+});
 boot();
 })();
 </script><script src="/assets/arqon-notifications.js?v=2" defer></script>
