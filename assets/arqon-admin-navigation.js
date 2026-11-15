@@ -7,11 +7,11 @@
 
     const style = document.createElement('style');
     style.textContent = `
-      #arqon-admin-menu-bar{position:sticky;top:78px;z-index:10001;display:flex;justify-content:flex-start;padding:10px 0 12px}
+      #arqon-admin-menu-bar{position:sticky;top:78px;z-index:1600;isolation:isolate;display:flex;justify-content:flex-start;padding:10px 0 12px;pointer-events:auto}
       #arqon-admin-menu-trigger{display:inline-flex;align-items:center;gap:10px;min-height:43px;padding:0 16px;border:1px solid rgba(167,139,250,.48);border-radius:11px;background:linear-gradient(120deg,rgba(37,27,59,.98),rgba(24,18,42,.98));color:#f3eaff;font:700 13px Rajdhani,sans-serif;letter-spacing:1px;cursor:pointer;box-shadow:0 8px 24px rgba(0,0,0,.2)}
       #arqon-admin-menu-trigger svg{width:19px;height:19px;flex:0 0 auto}
-      #arqon-admin-drawer-backdrop{position:fixed;inset:0;z-index:10002;background:rgba(3,2,10,.68);opacity:0;visibility:hidden;transition:opacity .2s ease,visibility .2s ease}
-      #arqon-admin-drawer{position:fixed;z-index:10003;inset:0 auto 0 0;width:min(360px,88vw);padding:18px 16px 26px;background:linear-gradient(160deg,#171329,#0b0a13);border-right:1px solid rgba(167,139,250,.28);box-shadow:24px 0 70px rgba(0,0,0,.48);transform:translateX(-105%);transition:transform .24s ease;overflow-y:auto;color:#f7f3ff;font-family:Rajdhani,sans-serif}
+      #arqon-admin-drawer-backdrop{position:fixed;inset:0;z-index:20000;background:rgba(3,2,10,.68);opacity:0;visibility:hidden;transition:opacity .2s ease,visibility .2s ease}
+      #arqon-admin-drawer{position:fixed;z-index:20001;inset:0 auto 0 0;width:min(360px,88vw);padding:18px 16px 26px;background:linear-gradient(160deg,#171329,#0b0a13);border-right:1px solid rgba(167,139,250,.28);box-shadow:24px 0 70px rgba(0,0,0,.48);transform:translateX(-105%);transition:transform .24s ease;overflow-y:auto;color:#f7f3ff;font-family:Rajdhani,sans-serif}
       #arqon-admin-drawer.is-open{transform:translateX(0)}
       #arqon-admin-drawer-backdrop.is-open{opacity:1;visibility:visible}
       .arqon-admin-drawer-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:4px 3px 17px;border-bottom:1px solid rgba(173,132,255,.18);margin-bottom:14px}
@@ -129,6 +129,8 @@
     new MutationObserver(syncVisibility).observe(root,{attributes:true,attributeFilter:['class','style']});
     syncVisibility();
     window.addEventListener('resize',syncVisibility);
+    window.addEventListener('arqon:organizer-role-ready',syncVisibility);
+    window.addEventListener('pageshow',syncVisibility);
   };
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
 })();
