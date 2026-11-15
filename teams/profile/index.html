@@ -71,7 +71,7 @@ async function refreshRequestStatus(){
  if(requestError){setRequestStatus('Не удалось проверить заявку.');return}
  const request=requests?.[0];
  if(request?.status==='pending'){setRequestStatus('Твоя заявка уже отправлена и ожидает рассмотрения.');button.disabled=true;button.textContent='Заявка отправлена'}
- else if(request?.status==='accepted'){setRequestStatus('Заявка одобрена! Свяжись с организаторами для согласования вступления.');button.disabled=true;button.textContent='Заявка одобрена'}
+ else if(request?.status==='accepted'){setRequestStatus('Заявка одобрена. Проверь приглашение в профиле игрока и подтверди вступление.');button.disabled=true;button.textContent='Заявка одобрена'}
  else if(request?.status==='rejected'){setRequestStatus('Предыдущая заявка отклонена. Можно отправить новую.');button.disabled=false;button.textContent='Подать заявку повторно'}
  else {setRequestStatus('Заявка будет отправлена организаторам.');button.disabled=false;button.textContent='Подать заявку в команду'}
 }
