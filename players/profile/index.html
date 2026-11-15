@@ -262,11 +262,22 @@
 
     async function renderProgressAndAchievements(name,rows){
       const key=playerKey(name);
-      const {data:xpRows,error:xpError}=await db.from('arqon_xp_events')
-        .select('xp_amount,source_type,source_label,created_at')
-        .eq('arqon_id',arqonId).order('created_at',{ascending:false}).limit(500);
+      // Read the complete XP ledger in pages: a single 500-row request undercounted
+      // profiles with a long history and could silently lower their displayed level.
+      const ledger=[];
+      let xpOffset=0,xpError=null;
+      while(true){
+        const {data,error}=await db.from('arqon_xp_events')
+          .select('xp_amount,source_type,source_label,created_at')
+          .eq('arqon_id',arqonId).order('created_at',{ascending:false})
+          .order('id',{ascending:false}).range(xpOffset,xpOffset+999);
+        if(error){xpError=error;break}
+        const page=Array.isArray(data)?data:[];
+        ledger.push(...page);
+        if(page.length<1000)break;
+        xpOffset+=1000;
+      }
       if(xpError)console.warn('XP ledger unavailable:',xpError);
-      const ledger=Array.isArray(xpRows)?xpRows:[];
       const xp=ledger.reduce((sum,row)=>sum+Math.max(0,Number(row.xp_amount)||0),0);
       const level=Math.floor(xp/250)+1,within=xp%250,nextLevelXp=250;
       const titles=[{level:1,title:'Новичок ARQON'},{level:5,title:'Претендент ARQON'},{level:10,title:'Ветеран ARQON'},{level:20,title:'Элита ARQON'},{level:30,title:'Легенда ARQON'},{level:50,title:'Икона ARQON'}];
@@ -290,15 +301,39 @@
         const amount=document.createElement('div');amount.className='history-result';amount.textContent='+'+row.xp_amount+' XP';
         item.append(info,amount);history.append(item);
       });
+
       const played=(rows||[]).map(row=>({place:playerKey(row.place_1)===key?1:playerKey(row.place_2)===key?2:playerKey(row.place_3)===key?3:0,mvp:playerKey(row.mvp)===key})).filter(x=>x.place||x.mvp);
       const wins=played.filter(x=>x.place===1).length,podiums=played.filter(x=>x.place>0).length,mvps=played.filter(x=>x.mvp).length;
+
+      // Live achievements are calculated from the same organizer-entered stats
+      // used by the Live Center player performance table.
+      let liveStats=[],liveMvpMatches=[];
+      const [statsResult,mvpResult]=await Promise.all([
+        db.from('live_match_player_stats').select('live_match_id,kills,assists,adr').eq('player_name',name),
+        db.from('live_matches').select('id').eq('mvp_name',name)
+      ]);
+      if(statsResult.error)console.warn('Live achievement stats unavailable:',statsResult.error);
+      else liveStats=Array.isArray(statsResult.data)?statsResult.data:[];
+      if(mvpResult.error)console.warn('Live MVP achievement stats unavailable:',mvpResult.error);
+      else liveMvpMatches=Array.isArray(mvpResult.data)?mvpResult.data:[];
+      const liveMatchCount=new Set(liveStats.map(row=>row.live_match_id).filter(Boolean)).size;
+      const avgKills=liveStats.length?liveStats.reduce((sum,row)=>sum+Number(row.kills||0),0)/liveStats.length:0;
+      const avgAssists=liveStats.length?liveStats.reduce((sum,row)=>sum+Number(row.assists||0),0)/liveStats.length:0;
+      const adrRows=liveStats.filter(row=>row.adr!==null&&row.adr!==undefined&&Number.isFinite(Number(row.adr)));
+      const avgAdr=adrRows.length?adrRows.reduce((sum,row)=>sum+Number(row.adr),0)/adrRows.length:0;
       const achievements=[
         {icon:'🎮',name:'Первый результат',desc:'Попал в опубликованные результаты турнира',earned:played.length>=1},
         {icon:'🥉',name:'Первый пьедестал',desc:'Попал в топ-3 турнира',earned:podiums>=1},
         {icon:'🏆',name:'Чемпион',desc:'Занял первое место',earned:wins>=1},
-        {icon:'⭐',name:'MVP',desc:'Получил награду самого ценного игрока',earned:mvps>=1},
+        {icon:'⭐',name:'MVP турнира',desc:'Получил награду самого ценного игрока турнира',earned:mvps>=1},
         {icon:'🔥',name:'Ветеран',desc:'Пять попаданий в опубликованные результаты',earned:played.length>=5},
-        {icon:'👑',name:'Легенда ARQON',desc:'Пять побед на турнирах',earned:wins>=5}
+        {icon:'👑',name:'Легенда ARQON',desc:'Пять побед на турнирах',earned:wins>=5},
+        {icon:'🎯',name:'Первый матч',desc:'Получил статистику хотя бы за один матч Live Center',earned:liveMatchCount>=1},
+        {icon:'🧱',name:'Стабильность',desc:'Сыграл минимум пять матчей со внесённой статистикой',earned:liveMatchCount>=5},
+        {icon:'💥',name:'ADR 100+',desc:'Средний ADR не ниже 100 по матчам Live Center',earned:adrRows.length>0&&avgAdr>=100},
+        {icon:'🔥',name:'Фраггер',desc:'В среднем не менее 20 убийств за матч',earned:liveStats.length>0&&avgKills>=20},
+        {icon:'🤝',name:'Командный игрок',desc:'В среднем не менее 8 ассистов за матч',earned:liveStats.length>0&&avgAssists>=8},
+        {icon:'🌟',name:'MVP Live',desc:'Получил отметку MVP минимум в одном матче Live Center',earned:liveMvpMatches.length>=1}
       ];
       const host=el('achievement-grid');host.replaceChildren();
       const earnedAchievements=achievements.filter(x=>x.earned);
