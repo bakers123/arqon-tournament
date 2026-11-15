@@ -4142,7 +4142,7 @@ function setSteamMessage(message, isError = false) {
   box.classList.add('msg', isError ? 'error' : 'success');
 }
 
-async function startSteamAuth(mode) {
+async async function startSteamAuth(mode) {
   const loginButton = document.getElementById('steam-login-btn');
   const registerButton = document.getElementById('steam-register-btn');
   if (loginButton) loginButton.disabled = true;
@@ -4309,7 +4309,6 @@ async function startApp() {
     if (authScreen) authScreen.style.display = 'none';
     if (typeof window.checkUserRole === 'function') {
       await window.checkUserRole(savedUid);
-      await handleSteamReturn(null);
     } else {
       const playerName = document.getElementById('player-display-name');
       if (playerName) playerName.textContent = savedName;
