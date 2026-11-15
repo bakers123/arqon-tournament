@@ -165,12 +165,13 @@ async function invitePlayer(){
  el('invite-arqon-id').value='';status.textContent='Приглашение отправлено. Игрок увидит его в своём аккаунте ARQON.';
 }
 async function loadTeamHistory(){
- const {data,error}=await db.from('team_transfer_history').select('player_name,event_type,from_team_name,to_team_name,created_at').or('from_team_id.eq.'+id+',to_team_id.eq.'+id).order('created_at',{ascending:false}).limit(12);
+ const {data,error}=await db.from('team_transfer_history').select('player_name,event_type,from_team_name,to_team_name,from_role,to_role,created_at').or('from_team_id.eq.'+id+',to_team_id.eq.'+id).order('created_at',{ascending:false}).limit(20);
  const host=el('team-history');host.replaceChildren();
  if(error){host.textContent='История пока недоступна.';return}
- if(!data?.length){host.innerHTML='<p class="empty">Переходов пока нет.</p>';return}
- const labels={joined:'вступил(а) в команду',released:'покинул(а) команду',promoted:'переведён(а) в основной состав',demoted:'переведён(а) в запас'};
- data.forEach(item=>{const row=document.createElement('div');row.className='history-item';const strong=document.createElement('strong');strong.textContent=item.player_name;row.append(strong,document.createTextNode(' — '+(labels[item.event_type]||'изменение состава')+' · '+new Date(item.created_at).toLocaleDateString('ru-RU')));host.append(row)});
+ if(!data?.length){host.innerHTML='<p class="empty">Изменений состава пока нет.</p>';return}
+ const labels={joined:'вступил(а) в команду',released:'покинул(а) команду',promoted:'переведён(а) в основной состав',demoted:'переведён(а) в запас',deputy_assigned:'назначен(а) заместителем капитана'};
+ const roleNames={main:'основной состав',reserve:'запас',deputy:'заместитель капитана'};
+ data.forEach(item=>{const row=document.createElement('div');row.className='history-item';const strong=document.createElement('strong');strong.textContent=item.player_name;let action=labels[item.event_type]||'изменение состава';if(item.event_type==='role_changed'&&item.from_role&&item.to_role)action='смена роли: '+(roleNames[item.from_role]||item.from_role)+' → '+(roleNames[item.to_role]||item.to_role);row.append(strong,document.createTextNode(' — '+action+' · '+new Date(item.created_at).toLocaleDateString('ru-RU')));host.append(row)});
 }
 async function loadRecruitment(){
  const box=el('recruitment-box');if(!currentTeamProfile?.recruiting){box.classList.add('hidden');return}
