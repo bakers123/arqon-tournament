@@ -372,6 +372,6 @@ $('logout-btn').onclick=async()=>{await sb.auth.signOut();location.reload()};
 sb.auth.onAuthStateChange((_event,s)=>{if(s?.user){session=s;setTimeout(()=>boot(),0)}});
 boot().catch(e=>say('editor-status','Ошибка загрузки: '+e.message,'error'));
 </script>
-  <script src="/assets/arqon-navigation.js?v=1"></script>
+  <script src="/assets/arqon-navigation.js?v=2"></script>
 </body>
 </html>
