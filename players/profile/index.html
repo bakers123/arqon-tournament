@@ -465,7 +465,8 @@ async function loadTeamInvitations(){
      const teamNode=el('team-name');
      if(teamNode){const link=document.createElement('a');link.href='/teams/profile/?id='+encodeURIComponent(invitation.team_id);link.textContent=invitation.team_name||'Команда';link.style.color='#d9baff';link.style.textDecoration='underline';teamNode.replaceChildren(link)}
      status.textContent='Приглашение принято! Ты добавлен(а) в команду ('+(result==='reserve'?'запасной состав':'основной состав')+').';
-    }else status.textContent='Приглашение отклонено.';
+     showNotice(status.textContent);
+    }else{status.textContent='Приглашение отклонено.';showNotice(status.textContent)}
     row.remove();if(!host.children.length)card.classList.add('hidden');
    });
    actions.append(button);
