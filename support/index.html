@@ -78,6 +78,7 @@
         <p style="margin:10px 0 0"><a href="/players/" style="color:#d8c7ff;font-weight:700">Открыть профиль и подключить Telegram →</a></p>
       </div>
       <form id="support-create-form">
+        <label class="support-field"><span>Категория</span><select id="support-category" required><option value="bug">Ошибка на сайте</option><option value="idea">Предложение</option><option value="account">Аккаунт и профиль</option><option value="team">Команды и составы</option><option value="tournament">Турниры и матчи</option><option value="other">Другое</option></select></label>
         <label class="support-field"><span>Тема обращения</span><input id="support-subject" maxlength="100" minlength="4" placeholder="Например: Проблема с профилем" required></label>
         <label class="support-field"><span>Опиши проблему</span><textarea id="support-first-message" maxlength="2000" placeholder="Расскажи, что произошло и что ты уже пробовал…" required></textarea></label>
         <button id="support-create-btn" class="support-btn" type="submit">Отправить обращение</button>
@@ -110,6 +111,7 @@
   const $ = (id) => document.getElementById(id);
   let session = null, selectedTicket = null, tickets = [], telegramLinked = false, refreshing = false;
   const statusLabels = {open:'Открыто',waiting_admin:'Ждёт ответа поддержки',waiting_user:'Нужен твой ответ',closed:'Закрыто'};
+  const categoryLabels = {bug:'Ошибка',idea:'Предложение',account:'Аккаунт',team:'Команды',tournament:'Турнир',other:'Другое'};
   const notice = (message, error=false) => { const el=$('support-global-notice');el.textContent=message;el.className='support-notice'+(error?' error':'');el.hidden=!message; };
   const escapeError = (err) => {
     const raw=String(err?.message||err||'Неизвестная ошибка');
@@ -136,10 +138,11 @@
     tickets.forEach(ticket=>{
       const b=document.createElement('button');b.type='button';b.className='support-ticket'+(Number(ticket.ticket_id)===Number(selectedTicket)?' active':'');
       const title=document.createElement('strong');title.textContent='#'+ticket.ticket_id+' · '+ticket.subject;
+      const category=document.createElement('small');category.textContent='Категория: '+(categoryLabels[ticket.category]||'Другое');
       const date=document.createElement('small');date.textContent=new Date(ticket.updated_at||ticket.created_at).toLocaleString('ru-RU');
       const status=document.createElement('span');status.className='support-status';status.textContent=statusLabels[ticket.status]||ticket.status;
       const preview=document.createElement('small');preview.style.marginTop='5px';preview.textContent=String(ticket.last_message||'').slice(0,90);
-      b.append(title,date,status,preview);b.addEventListener('click',()=>openTicket(Number(ticket.ticket_id)));root.append(b);
+      b.append(title,category,date,status,preview);b.addEventListener('click',()=>openTicket(Number(ticket.ticket_id)));root.append(b);
     });
   };
   const loadTickets = async () => {
@@ -175,10 +178,11 @@
     const btn=$('support-create-btn');btn.disabled=true;btn.textContent='Отправляем…';
     try{
       const subject=$('support-subject').value.trim(),message=$('support-first-message').value.trim();
-      const {data,error}=await client.rpc('create_support_ticket',{p_subject:subject,p_message:message});
+      const category=$('support-category').value;
+      const {data,error}=await client.rpc('create_support_ticket',{p_subject:subject,p_message:message,p_category:category});
       if(error)throw error;
       const ticketId=Number(data);
-      $('support-subject').value='';$('support-first-message').value='';
+      $('support-subject').value='';$('support-first-message').value='';$('support-category').value='bug';
       selectedTicket=ticketId;
       let sent=true;try{await invokeNotification('support_ticket_created',ticketId);}catch(_){sent=false;}
       await loadTickets();
