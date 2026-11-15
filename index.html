@@ -1241,7 +1241,7 @@
       </div>
       <div id="league-admin-matches"></div>
     </div>
-    <div class="card" id="admin-exclusive-profile-card">
+    <div class="card hidden" id="admin-exclusive-profile-card">
       <h2>✦ Эксклюзивы профиля игрока</h2>
       <p class="hint" style="margin:0 0 14px">Выдавай персональные титулы и оформление, которых нет в магазине. Игрок не сможет купить или передать эти эксклюзивы.</p>
       <div class="row" style="flex-direction:column;gap:10px">
@@ -3864,7 +3864,7 @@ async function removeSchedule(id) {
 // РЕЗУЛЬТАТЫ
 // ==========================================
 async function adminSaveExclusiveProfile(){
-  if(!isAdmin())return;
+  if(!window.isFullAdmin?.())return;
   const id=Number(document.getElementById('exclusive-arqon-id').value);
   const title=document.getElementById('exclusive-title').value.trim();
   const bg=document.getElementById('exclusive-bg-color').value.trim();
@@ -3880,7 +3880,7 @@ async function adminSaveExclusiveProfile(){
   msg.innerHTML=error?'<span class="msg error">Ошибка: '+escapeHtml(error.message)+'</span>':'<span class="msg success">✓ Эксклюзивы игрока #'+id+' сохранены. Профиль обновится после перезагрузки.</span>';
 }
 async function adminClearExclusiveProfile(){
-  if(!isAdmin())return;
+  if(!window.isFullAdmin?.())return;
   const id=Number(document.getElementById('exclusive-arqon-id').value);
   const msg=document.getElementById('exclusive-profile-msg');
   if(!Number.isSafeInteger(id)||id<1){msg.textContent='Сначала укажи ARQON ID игрока.';return;}
