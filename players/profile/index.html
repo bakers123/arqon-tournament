@@ -104,7 +104,7 @@
         </div>
       </div>
     </section>
-    <section class="card" style="width:min(1040px,calc(100% - 28px));margin:16px auto 0"><h2>УРОВЕНЬ И ОПЫТ</h2><div class="xp-total"><span id="xp-total">0</span> XP</div><div class="progress-wrap"><div class="progress-meta"><span id="xp-level">Уровень 1</span><span id="xp-next">0 / 250 XP</span></div><div class="progress-track"><div class="progress-fill" id="xp-progress"></div></div></div><p class="muted" style="font-size:13px;margin:0">XP за опубликованные результаты: 1 место — 100, 2 место — 70, 3 место — 50, MVP — дополнительно 50 XP.</p></section><section class="card" style="width:min(1040px,calc(100% - 28px));margin:16px auto 0"><h2>ДОСТИЖЕНИЯ</h2><div class="achievement-grid" id="achievement-grid"></div></section><section class="card history-card" style="width:min(1040px,calc(100% - 28px));margin:16px auto 0">
+    <section class="card" style="width:min(1040px,calc(100% - 28px));margin:16px auto 0"><h2>УРОВЕНЬ И ОПЫТ</h2><div class="xp-total"><span id="xp-total">0</span> XP</div><div class="progress-wrap"><div class="progress-meta"><span id="xp-level">Уровень 1</span><span id="xp-next">0 / 250 XP</span></div><div class="progress-track"><div class="progress-fill" id="xp-progress"></div></div></div><p class="muted" style="font-size:13px;margin:0">XP за опубликованные результаты: 1 место — 100, 2 место — 70, 3 место — 50, MVP — дополнительно 50 XP.</p></section><section class="card hidden" id="profile-achievements" style="width:min(1040px,calc(100% - 28px));margin:16px auto 0"><h2>ДОСТИЖЕНИЯ</h2><div class="achievement-grid" id="achievement-grid"></div></section><section class="card history-card" style="width:min(1040px,calc(100% - 28px));margin:16px auto 0">
       <h2>ИСТОРИЯ ТУРНИРОВ</h2>
       <div id="tournament-history" class="history-list"><p class="muted">Загружаем историю…</p></div>
     </section>
@@ -203,7 +203,10 @@
         {icon:'👑',name:'Легенда ARQON',desc:'Пять побед на турнирах',earned:wins>=5}
       ];
       const host=el('achievement-grid');host.replaceChildren();
-      achievements.forEach(x=>{const card=document.createElement('div');card.className='achievement'+(x.earned?'':' locked');const icon=document.createElement('div');icon.className='achievement-icon';icon.textContent=x.icon;const copy=document.createElement('div');copy.style.minWidth='0';const title=document.createElement('strong');title.textContent=x.name;const desc=document.createElement('small');desc.textContent=x.earned?'Получено · '+x.desc:x.desc;copy.append(title,desc);card.append(icon,copy);host.append(card)});
+      const earnedAchievements=achievements.filter(x=>x.earned);
+      const achievementsSection=el('profile-achievements');
+      if(achievementsSection)achievementsSection.classList.toggle('hidden',earnedAchievements.length===0);
+      earnedAchievements.forEach(x=>{const card=document.createElement('div');card.className='achievement';const icon=document.createElement('div');icon.className='achievement-icon';icon.textContent=x.icon;const copy=document.createElement('div');copy.style.minWidth='0';const title=document.createElement('strong');title.textContent=x.name;const desc=document.createElement('small');desc.textContent='Получено · '+x.desc;copy.append(title,desc);card.append(icon,copy);host.append(card)});
     }
     function renderTournamentHistory(name,rows){
       const key=playerKey(name),host=el('tournament-history');
