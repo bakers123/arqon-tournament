@@ -454,3 +454,13 @@ header>#player-account-widget{order:7!important;flex:0 0 auto!important;min-widt
   header>nav.arqon-nav-open button,
   header>nav.arqon-nav-open a{pointer-events:auto!important}
 }
+
+/* ARQON support center navigation link */
+header nav .arqon-nav-support{
+  display:flex;align-items:center;gap:10px;width:100%;min-height:44px;
+  padding:10px 12px;margin:2px 0 0;border:1px solid rgba(167,139,250,.22);
+  border-radius:11px;background:rgba(139,92,246,.09);color:#e8dcff;
+  text-decoration:none;font-size:13px;font-weight:700;letter-spacing:.15px;
+  transition:background .18s,border-color .18s,color .18s;
+}
+header nav .arqon-nav-support:hover{background:rgba(139,92,246,.18);border-color:rgba(196,181,253,.48);color:#fff}
