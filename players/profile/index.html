@@ -596,13 +596,16 @@ async function uploadProfileMedia(file,kind){
     }
     async function load(){
       const {data:auth}=await db.auth.getUser();ownerUser=auth?.user||null;
-      let profile=null, publicProfileError=null, mine=null;
+      let profile=null, publicProfileError=null, mine=null, ownerPlayerName=null;
       // Load the signed-in owner's row first: private profile settings must not depend
       // on the public-profile RPC being available or the profile being public.
       if(ownerUser){
         const mineResponse=await db.from('profiles').select('arqon_id,display_name,steam_persona_name,steam_avatar_url,bio,avatar_url,cover_url,is_public,show_steam,steam_id,created_at,cs2_faceit_url,cs2_faceit_elo,dota2_profile_url,dota2_mmr,looking_for_team,preferred_role,equipped_frame_id,equipped_theme_id,equipped_title_id,equipped_badge_id,exclusive_profile_title,exclusive_profile_bg_color,exclusive_avatar_border_color').eq('user_id',ownerUser.id).maybeSingle();
         if(mineResponse.error)console.warn('Owner profile query failed:',mineResponse.error);
         else mine=mineResponse.data;
+        const playerNameResponse=await db.from('players').select('name').eq('uid',ownerUser.id).maybeSingle();
+        if(playerNameResponse.error)console.warn('Owner player name lookup failed:',playerNameResponse.error);
+        else ownerPlayerName=playerNameResponse.data?.name||null;
       }
       if(isOwnProfileRoute){
         arqonId=Number(mine?.arqon_id);
@@ -615,7 +618,7 @@ async function uploadProfileMedia(file,kind){
       if(!Number.isSafeInteger(arqonId)||arqonId<1){showNotice('В ссылке не указан корректный ARQON ID.',true);el('name').textContent='Профиль не найден';return}
       if(mine?.arqon_id===arqonId){
         ownProfile=mine;
-        profile={...mine,display_name:mine.display_name||mine.steam_persona_name,avatar_url:mine.avatar_url||mine.steam_avatar_url,player_name:null,steam_id:mine.show_steam?mine.steam_id:null};
+        profile={...mine,display_name:mine.display_name||mine.steam_persona_name,avatar_url:mine.avatar_url||mine.steam_avatar_url,player_name:ownerPlayerName||mine.player_name||null,steam_id:mine.show_steam?mine.steam_id:null};
         el('edit-toggle').classList.remove('hidden');
       }else{
         const publicResponse=await db.rpc('get_public_arqon_profile',{p_arqon_id:arqonId});
