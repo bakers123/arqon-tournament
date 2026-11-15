@@ -4242,7 +4242,8 @@ async function startSteamAuth(mode) {
 async function loadArqonAccount() {
   const button = document.getElementById('arqon-account-button');
   const steamEntry = document.getElementById('steam-header-entry');
-  if (!button || isAdmin()) return;
+  if (isAdmin()) { if (steamEntry) steamEntry.style.display = 'none'; return; }
+  if (!button) return;
   try {
     const { data: authData, error: authError } = await supabaseClient.auth.getUser();
     const user = authData?.user;
