@@ -1063,6 +1063,7 @@
     <div id="arqon-account-steam" class="hint" style="margin-top:5px;"></div>
     <button id="arqon-link-steam" class="btn ghost" type="button" onclick="linkSteamFromAccount()" style="display:none;width:100%;margin-top:14px;">Привязать Steam</button>
     <a id="arqon-open-profile" class="btn ghost" href="/players/profile/" style="display:block;text-align:center;width:100%;margin-top:10px;padding:11px 22px;border-radius:6px;text-decoration:none;border:1px solid var(--border);color:var(--text-dim);">Открыть публичный профиль</a>
+    <a id="arqon-telegram-settings-link" class="btn" href="/players/profile/" style="display:block;text-align:center;width:100%;margin-top:9px;padding:11px 22px;border-radius:10px;text-decoration:none;background:linear-gradient(110deg,#6d28d9,#8b5cf6);color:#fff;">Настроить Telegram-уведомления</a>
     <section style="margin-top:16px;padding:14px;border:1px solid rgba(139,92,246,.35);border-radius:12px;background:rgba(139,92,246,.06);"><h3 style="font:700 12px Orbitron,sans-serif;letter-spacing:1.5px;color:#d9c4ff;margin:0 0 10px;">ПРИГЛАШЕНИЯ В КОМАНДЫ</h3><div id="arqon-team-invitations" class="hint" aria-live="polite">Загружаем приглашения…</div></section>
     <div id="arqon-account-message" class="msg hidden" role="status" style="margin-top:12px;"></div>
     <div style="display:flex;gap:10px;margin-top:16px;">
@@ -4264,6 +4265,8 @@ async function loadArqonAccount() {
     if (id) id.textContent = '#' + profile.arqon_id;
     const publicProfileLink = document.getElementById('arqon-open-profile');
     if (publicProfileLink) publicProfileLink.href = '/players/profile/?id=' + encodeURIComponent(profile.arqon_id);
+    const telegramSettingsLink = document.getElementById('arqon-telegram-settings-link');
+    if (telegramSettingsLink) telegramSettingsLink.href = '/players/profile/?id=' + encodeURIComponent(profile.arqon_id) + '#telegram-settings';
     if (name && document.activeElement !== name) name.value = profile.display_name || profile.steam_persona_name || '';
     if (email) email.textContent = user.email ? ('Email: ' + user.email + (user.email_confirmed_at ? ' · подтверждён' : ' · не подтверждён')) : 'Email пока не добавлен';
     if (steam) steam.textContent = profile.steam_id ? 'Steam: привязан' : 'Steam: не привязан';
