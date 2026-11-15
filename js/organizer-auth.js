@@ -221,6 +221,73 @@
     screen.style.display = 'none';
   };
 
+  const ARQON_MANUAL_AWARDS = {
+    founder:{name:'Основатель ARQON',description:'Особый вклад в создание сообщества',icon:'👑'},
+    community:{name:'Душа сообщества',description:'Значимый вклад в развитие сообщества',icon:'💜'},
+    event_mvp:{name:'MVP события',description:'Лучший игрок отдельного события',icon:'🏆'},
+    champion:{name:'Чемпион ARQON',description:'Особое признание за чемпионский результат',icon:'🥇'},
+    fair_play:{name:'Честная игра',description:'Пример спортивного поведения',icon:'🤝'},
+    legend:{name:'Легенда ARQON',description:'Особое признание от организаторов',icon:'⚡'}
+  };
+  async function refreshAwardAdminList(){
+    const host=byId('arqon-awards-admin-list');if(!host)return;
+    host.textContent='Загружаем награды…';
+    const {data,error}=await supabaseClient.from('arqon_player_awards')
+      .select('id,arqon_id,award_name,award_icon,rarity,reason,granted_at,profiles(display_name)')
+      .is('revoked_at',null).order('granted_at',{ascending:false}).limit(100);
+    if(error){host.textContent='Не удалось загрузить награды: '+error.message;return}
+    host.replaceChildren();
+    if(!data?.length){host.textContent='Пока нет выданных наград.';return}
+    const labels={common:'Обычная',rare:'Редкая',epic:'Эпическая',legendary:'Легендарная'};
+    data.forEach(row=>{
+      const item=document.createElement('div');
+      item.style.cssText='display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 0;border-bottom:1px solid rgba(167,139,250,.16);flex-wrap:wrap';
+      const info=document.createElement('div');info.style.minWidth='0';info.style.flex='1';
+      const title=document.createElement('strong');title.textContent=(row.award_icon||'🏅')+' '+row.award_name+' · '+(row.profiles?.display_name||('#'+row.arqon_id));
+      const meta=document.createElement('small');meta.style.cssText='display:block;color:#aaa;margin-top:4px';meta.textContent=(labels[row.rarity]||row.rarity)+' · '+row.reason+' · '+new Date(row.granted_at).toLocaleDateString('ru-RU');
+      info.append(title,meta);
+      const revoke=document.createElement('button');revoke.type='button';revoke.className='btn ghost';revoke.textContent='Отозвать';revoke.dataset.revokeAward=String(row.id);
+      item.append(info,revoke);host.append(item);
+    });
+  }
+  async function installAwardAdminPanel(){
+    const section=byId('tab-admin');if(!section||byId('arqon-awards-admin'))return;
+    const card=document.createElement('div');card.className='card';card.id='arqon-awards-admin';
+    card.innerHTML='<h2>🏅 Награды игроков ARQON</h2><p style="color:#aaa">Выдача особых наград и управление активной коллекцией игроков.</p><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:10px"><label>Игрок<select id="arqon-award-player" style="width:100%;margin-top:5px"><option value="">Загрузка игроков…</option></select></label><label>Награда<select id="arqon-award-type" style="width:100%;margin-top:5px"><option value="founder">Основатель ARQON</option><option value="community">Душа сообщества</option><option value="event_mvp">MVP события</option><option value="champion">Чемпион ARQON</option><option value="fair_play">Честная игра</option><option value="legend">Легенда ARQON</option></select></label><label>Редкость<select id="arqon-award-rarity" style="width:100%;margin-top:5px"><option value="common">Обычная</option><option value="rare">Редкая</option><option value="epic">Эпическая</option><option value="legendary">Легендарная</option></select></label></div><label style="display:block;margin-top:12px">Причина выдачи<textarea id="arqon-award-reason" maxlength="300" rows="2" placeholder="За что игрок получает награду?" style="width:100%;margin-top:5px"></textarea></label><button type="button" class="btn" id="arqon-award-grant" style="margin-top:10px">Выдать награду</button><p id="arqon-award-status" role="status" style="color:#c4b5fd"></p><h3 style="margin-top:22px">Активные награды</h3><div id="arqon-awards-admin-list"></div>';
+    section.prepend(card);
+    const playerSelect=byId('arqon-award-player');
+    const {data:players,error}=await supabaseClient.rpc('list_public_player_profiles');
+    if(error){playerSelect.replaceChildren(new Option('Не удалось загрузить игроков',''));byId('arqon-award-status').textContent=error.message;return}
+    playerSelect.replaceChildren(new Option('Выбери игрока',''));
+    (players||[]).filter(p=>p.arqon_id).sort((a,b)=>String(a.player_name||'').localeCompare(String(b.player_name||''),'ru')).forEach(p=>{
+      const option=new Option((p.player_name||p.display_name||'Игрок')+' · #'+p.arqon_id,String(p.arqon_id));playerSelect.add(option);
+    });
+    byId('arqon-award-grant').addEventListener('click',async()=>{
+      const button=byId('arqon-award-grant'),status=byId('arqon-award-status');
+      const arqonId=Number(playerSelect.value),key=byId('arqon-award-type').value,rarity=byId('arqon-award-rarity').value,reason=byId('arqon-award-reason').value.trim();
+      if(!Number.isSafeInteger(arqonId)||arqonId<1){status.textContent='Сначала выбери игрока.';return}
+      if(reason.length<3){status.textContent='Укажи причину (не менее 3 символов).';return}
+      const award=ARQON_MANUAL_AWARDS[key];if(!award)return;
+      button.disabled=true;status.textContent='Выдаём награду…';
+      const {data:userData,error:userError}=await supabaseClient.auth.getUser();
+      if(userError||!userData?.user){status.textContent='Не удалось подтвердить администратора.';button.disabled=false;return}
+      const {error}=await supabaseClient.from('arqon_player_awards').insert({arqon_id:arqonId,award_key:key,award_name:award.name,award_description:award.description,award_icon:award.icon,rarity,reason,granted_by:userData.user.id});
+      button.disabled=false;
+      if(error){status.textContent=error.code==='23505'?'У этого игрока уже есть такая активная награда.':error.message;return}
+      status.textContent='Награда выдана.';byId('arqon-award-reason').value='';await refreshAwardAdminList();
+    });
+    byId('arqon-awards-admin-list').addEventListener('click',async event=>{
+      const button=event.target.closest('[data-revoke-award]');if(!button)return;
+      if(!window.confirm('Отозвать эту награду? Запись останется в истории.'))return;
+      button.disabled=true;
+      const {data:userData}=await supabaseClient.auth.getUser();
+      const {error}=await supabaseClient.from('arqon_player_awards').update({revoked_at:new Date().toISOString(),revoked_by:userData?.user?.id||null,revoke_reason:'Отозвана организатором'}).eq('id',Number(button.dataset.revokeAward)).is('revoked_at',null);
+      if(error){button.disabled=false;byId('arqon-award-status').textContent='Не удалось отозвать: '+error.message;return}
+      byId('arqon-award-status').textContent='Награда отозвана, запись сохранена.';await refreshAwardAdminList();
+    });
+    await refreshAwardAdminList();
+  }
+
   function installOrganizerUi() {
     installPlayerAccountUi();
     installSessionLogoutButton();
@@ -326,6 +393,7 @@
       if (main) main.style.display = 'block';
       setVisible(byId('tab-home'), true);
       const adminSection = byId('tab-admin');
+      await installAwardAdminPanel();
       if (adminSection && !byId('bracket-builder-admin-link')) {
         const card = document.createElement('div');
         card.className = 'card';
