@@ -68,7 +68,7 @@ insert into public.arqon_shop_items(id,name,description,category,price,rarity,pr
 ('frame_champion','CHAMPION CORE','Плотная золотисто-фиолетовая рамка','frame',500,'epic','champion'),
 ('theme_void','VOID PURPLE','Тёмная фиолетовая тема профиля','theme',300,'rare','void'),
 ('theme_crimson','CRIMSON PULSE','Контрастная красно-фиолетовая тема','theme',350,'epic','crimson'),
-('title_tactician','ТАКТИК','Титул под именем игрока','title',200,'common','tactician'),
+('title_tactician','ТАКТИК','Титул под именем игрока','title',50,'common','tactician'),
 ('title_fragger','FRAGGER','Титул для любителей энтри-фрагов','title',250,'rare','fragger'),
 ('badge_arqon_core','ARQON CORE','Значок коллекции ARQON','badge',400,'epic','core')
 on conflict(id) do update set name=excluded.name,description=excluded.description,category=excluded.category,price=excluded.price,rarity=excluded.rarity,preview_style=excluded.preview_style,is_active=true;
