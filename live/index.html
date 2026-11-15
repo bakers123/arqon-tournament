@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#090812"><meta name="description" content="ARQON Live Center — матчи, счёт, составы, события и трансляции.">
+<meta name="theme-color" content="#090812"><meta name="description" content="ARQON Live Center — матчи, трансляции, чат зрителей и статистика игроков.">
 <title>Live Center — ARQON Esports</title><link rel="icon" href="/logo.png">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;800&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -26,7 +26,7 @@ a{color:inherit;text-decoration:none}button,input,select,textarea{font:inherit}
 .admin-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.admin-grid .wide{grid-column:1/-1}.admin-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
 .empty{padding:28px;text-align:center;color:var(--muted);border:1px dashed #a879ff44;border-radius:12px}
 @media(max-width:800px){.layout{grid-template-columns:1fr}.match-list{grid-template-columns:repeat(2,minmax(0,1fr))}.detail-head{flex-direction:column}.top{height:auto;min-height:64px;flex-wrap:wrap;padding:10px 14px}.top nav{width:100%;overflow-x:auto}.top nav a{white-space:nowrap;font-size:12px}}
-@media(max-width:520px){.wrap{margin:20px auto 45px}.panel{padding:14px}.match-list{grid-template-columns:1fr}.teams{grid-template-columns:1fr}.scoreline{gap:10px;padding:15px 8px}.admin-grid{grid-template-columns:1fr}.admin-grid .wide{grid-column:auto}.brand{font-size:13px}}
+@media(max-width:520px){.wrap{margin:20px auto 45px}.panel{padding:14px}.match-list{grid-template-columns:1fr}.teams{grid-template-columns:1fr}.scoreline{gap:10px;padding:15px 8px}.admin-grid{grid-template-columns:1fr}.admin-grid .wide{grid-column:auto}.brand{font-size:13px}.chat-compose{flex-direction:column}.chat-compose .btn{width:100%}}
 @media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;transition:none!important}}
 </style></head>
 <body>
@@ -143,7 +143,7 @@ function renderDetail(){
  const input=make('input');input.id='chat-message';input.maxLength=500;input.placeholder=currentUser?'Напиши сообщение…':'Войди, чтобы писать в чат';input.disabled=!currentUser;input.autocomplete='off';
  const send=make('button','btn','Отправить');send.type='submit';send.disabled=!currentUser;compose.append(input,send);chatBox.append(compose);
  if(!currentUser){const login=make('a','chat-login','Войти в аккаунт ARQON, чтобы участвовать в чате →');login.href='/players/';chatBox.append(login)}
- compose.addEventListener('submit',submitChat);host.append(chatBox);
+ compose.addEventListener('submit',submitChat);host.append(chatBox);chatList.scrollTop=chatList.scrollHeight;
  $('edit-wrap').hidden=!isEditor;
  if(isEditor){
   $('edit-status').value=m.status;$('edit-map').value=m.map_name||'';$('edit-score1').value=m.score1;$('edit-score2').value=m.score2;$('edit-stream').value=m.stream_url||'';$('edit-platform').value=m.stream_platform||'other';$('edit-mvp').value=m.mvp_name||'';
