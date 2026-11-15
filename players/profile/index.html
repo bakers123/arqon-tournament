@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#090812">
+  <meta name="description" content="Профиль игрока ARQON Esports">
+  <title>Профиль игрока — ARQON Esports</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;800&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <style>
+    :root{color-scheme:dark;--bg:#090812;--panel:#11101b;--panel2:#171426;--line:rgba(173,132,255,.2);--violet:#9b5cff;--pink:#c084fc;--muted:#9b96aa;--white:#f7f3ff}
+    *{box-sizing:border-box}body{margin:0;min-height:100vh;background:radial-gradient(ellipse at 50% -15%,rgba(117,61,207,.28),transparent 48%),radial-gradient(ellipse at 100% 80%,rgba(83,40,140,.13),transparent 35%),var(--bg);color:var(--white);font-family:Rajdhani,system-ui,sans-serif}
+    a{color:inherit;text-decoration:none}.top{height:74px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;padding:0 clamp(16px,5vw,72px);background:rgba(9,8,18,.82);backdrop-filter:blur(18px);position:sticky;top:0;z-index:3}
+    .brand{font:800 18px Orbitron,sans-serif;letter-spacing:4px}.brand span{color:var(--pink)}.back{border:1px solid var(--line);padding:9px 15px;border-radius:10px;color:#ded2f6;font-weight:700}
+    main{width:min(1040px,calc(100% - 28px));margin:34px auto 70px}.cover{height:clamp(150px,27vw,260px);border:1px solid var(--line);border-radius:22px;overflow:hidden;position:relative;background:linear-gradient(115deg,#21133b,#38205f 48%,#151126);box-shadow:0 20px 70px #0008}
+    .cover:before{content:"";position:absolute;inset:0;background:radial-gradient(circle at 75% 20%,#c084fc44,transparent 32%),linear-gradient(120deg,transparent 25%,#a855f722 50%,transparent 72%)}
+    .cover img{width:100%;height:100%;object-fit:cover;position:absolute;inset:0}.profile{position:relative;margin:-62px 24px 0;display:flex;align-items:end;gap:22px}
+    .avatar{width:132px;height:132px;flex:0 0 132px;border-radius:25px;border:4px solid var(--bg);background:linear-gradient(135deg,#6d28d9,#c084fc);display:grid;place-items:center;font:800 42px Orbitron;overflow:hidden;box-shadow:0 10px 36px #0009}
+    .avatar img{width:100%;height:100%;object-fit:cover}.identity{padding-bottom:10px;min-width:0}.eyebrow{font:700 10px Orbitron;letter-spacing:2.5px;color:#bd9aff}.name{font:800 clamp(25px,5vw,42px) Orbitron;margin:8px 0 6px;overflow-wrap:anywhere}.id{color:var(--muted);font-weight:700;letter-spacing:1.4px}
+    .actions{margin-left:auto;padding-bottom:12px}.button{cursor:pointer;border:1px solid #9b5cff88;border-radius:11px;padding:10px 16px;background:linear-gradient(135deg,#7136c9,#9b5cff);color:white;font:700 14px Rajdhani;box-shadow:0 7px 25px #7136c944}
+    .content{display:grid;grid-template-columns:1.35fr .65fr;gap:16px;margin-top:28px}.card{background:linear-gradient(160deg,#171426ee,#100f19f2);border:1px solid var(--line);border-radius:18px;padding:22px;box-shadow:0 14px 40px #0003}.card h2{font:700 12px Orbitron;letter-spacing:2px;color:#d9c4ff;margin:0 0 16px}.bio{font-size:18px;line-height:1.45;color:#ded8eb;white-space:pre-wrap}.muted{color:var(--muted)}.stat{display:flex;justify-content:space-between;gap:12px;padding:12px 0;border-bottom:1px solid #ffffff10;font-weight:700}.stat:last-child{border:0}.stat strong{color:#d9baff}
+    .edit{display:none;margin-top:18px}.edit.open{display:block}.field{margin:12px 0}.field label{display:block;color:#b9aecb;font-size:12px;font-weight:700;letter-spacing:1px;margin-bottom:6px}.field input,.field textarea{width:100%;background:#0b0a12;border:1px solid var(--line);border-radius:10px;padding:12px;color:white;font:600 15px Rajdhani;outline:none}.field textarea{min-height:90px;resize:vertical}.checks{display:flex;gap:18px;flex-wrap:wrap;margin:14px 0;color:#d8cbea;font-weight:600}.checks label{display:flex;align-items:center;gap:7px}.notice{padding:20px;border:1px solid var(--line);background:#171426;border-radius:14px;color:#d6cce5;text-align:center;margin-top:24px}.error{color:#ff9aab}.hidden{display:none!important}
+    @media(max-width:700px){.top{height:64px}.brand{font-size:15px}.content{grid-template-columns:1fr}.profile{margin:-46px 14px 0;gap:13px;flex-wrap:wrap}.avatar{width:96px;height:96px;flex-basis:96px;border-radius:19px}.identity{padding-bottom:3px;flex:1}.actions{width:100%;margin:0;padding:0}.actions .button{width:100%}.card{padding:18px}main{margin-top:20px}}
+  </style>
+</head>
+<body>
+  <header class="top"><a class="brand" href="/"><span>ARQON</span> ESPORTS</a><a class="back" href="/players/">← Игроки</a></header>
+  <main>
+    <div class="cover" id="cover"><img id="cover-image" class="hidden" alt=""></div>
+    <section class="profile">
+      <div class="avatar" id="avatar">A</div>
+      <div class="identity"><div class="eyebrow">PLAYER PROFILE</div><h1 class="name" id="name">Загрузка профиля…</h1><div class="id" id="arqon-id"></div></div>
+      <div class="actions"><button class="button hidden" id="edit-toggle" type="button">Настроить профиль</button></div>
+    </section>
+    <div class="content">
+      <section class="card"><h2>ОБ ИГРОКЕ</h2><p class="bio" id="bio">Загружаем информацию…</p>
+        <form class="edit" id="edit-form">
+          <div class="field"><label for="display-name">ИМЯ ПРОФИЛЯ</label><input id="display-name" maxlength="32" placeholder="Как тебя называть"></div>
+          <div class="field"><label for="bio-input">О СЕБЕ · ДО 280 СИМВОЛОВ</label><textarea id="bio-input" maxlength="280" placeholder="Расскажи немного о себе"></textarea></div>
+          <div class="field"><label for="avatar-input">ССЫЛКА НА АВАТАР (HTTPS)</label><input id="avatar-input" type="url" placeholder="https://…"></div>
+          <div class="field"><label for="cover-input">ССЫЛКА НА ОБЛОЖКУ (HTTPS)</label><input id="cover-input" type="url" placeholder="https://…"></div>
+          <div class="checks"><label><input id="public-input" type="checkbox"> Публичный профиль</label><label><input id="steam-input" type="checkbox"> Показывать Steam ID</label></div>
+          <button class="button" type="submit">Сохранить изменения</button><div id="edit-message" class="muted" role="status" style="margin-top:10px"></div>
+        </form>
+      </section>
+      <aside class="card"><h2>АРКОН АККАУНТ</h2><div class="stat"><span>ARQON ID</span><strong id="stat-id">—</strong></div><div class="stat"><span>Игровой ник</span><strong id="player-name">—</strong></div><div class="stat"><span>Steam</span><strong id="steam-state">Скрыт</strong></div><p class="muted" style="font-size:13px;margin-top:16px">Статистика матчей и рейтинги появятся здесь после подключения игровых профилей.</p></aside>
+    </div>
+    <div class="notice hidden" id="notice"></div>
+  </main>
+  <script>
+    const SUPABASE_URL='https://uscnaqcvuwjrmkjyuklp.supabase.co';
+    const SUPABASE_KEY='sb_publishable_oE2Bc1wPAcDt6HE8bOUj3Q_0-2FfIxB';
+    const db=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+    const params=new URLSearchParams(location.search);
+    const arqonId=Number(params.get('id'));
+    let ownerUser=null, ownProfile=null;
+    const el=id=>document.getElementById(id);
+    function showNotice(message,isError=false){const n=el('notice');n.textContent=message;n.classList.remove('hidden');if(isError)n.classList.add('error')}
+    function setImage(containerId,url,alt){const container=el(containerId);if(!url)return;const img=document.createElement('img');img.src=url;img.alt=alt;img.referrerPolicy='no-referrer';img.onerror=()=>img.remove();container.replaceChildren(img)}
+    async function load(){
+      if(!Number.isSafeInteger(arqonId)||arqonId<1){showNotice('В ссылке не указан корректный ARQON ID.',true);el('name').textContent='Профиль не найден';return}
+      const {data:auth}=await db.auth.getUser();ownerUser=auth?.user||null;
+      const {data,error}=await db.rpc('get_public_arqon_profile',{p_arqon_id:arqonId});
+      if(error)throw error;
+      let profile=data?.[0]||null;
+      if(ownerUser){
+        const {data:mine}=await db.from('profiles').select('arqon_id,display_name,bio,avatar_url,cover_url,is_public,show_steam,steam_id,created_at').eq('user_id',ownerUser.id).maybeSingle();
+        if(mine?.arqon_id===arqonId){ownProfile=mine;profile={...mine,player_name:profile?.player_name||null,steam_id:mine.show_steam?mine.steam_id:null};el('edit-toggle').classList.remove('hidden');}
+      }
+      if(!profile){el('name').textContent='Профиль недоступен';showNotice('Игрок скрыл профиль или такого ARQON ID не существует.');return}
+      el('name').textContent=profile.display_name||profile.player_name||'Игрок ARQON';
+      el('arqon-id').textContent='ARQON ID · #'+profile.arqon_id;
+      el('stat-id').textContent='#'+profile.arqon_id;
+      el('player-name').textContent=profile.player_name||'Не указан';
+      el('bio').textContent=profile.bio||'Игрок пока ничего не рассказал о себе.';
+      el('steam-state').textContent=profile.steam_id||'Скрыт';
+      const initial=(profile.display_name||profile.player_name||'A').trim().charAt(0).toUpperCase();el('avatar').textContent=initial;
+      if(profile.avatar_url)setImage('avatar',profile.avatar_url,'Аватар игрока');
+      if(profile.cover_url){el('cover-image').src=profile.cover_url;el('cover-image').classList.remove('hidden')}
+      if(ownProfile){
+        el('display-name').value=ownProfile.display_name||'';
+        el('bio-input').value=ownProfile.bio||'';
+        el('avatar-input').value=ownProfile.avatar_url||'';
+        el('cover-input').value=ownProfile.cover_url||'';
+        el('public-input').checked=ownProfile.is_public;
+        el('steam-input').checked=ownProfile.show_steam;
+      }
+    }
+    el('edit-toggle').addEventListener('click',()=>el('edit-form').classList.toggle('open'));
+    el('edit-form').addEventListener('submit',async event=>{
+      event.preventDefault();if(!ownerUser||!ownProfile)return;
+      const message=el('edit-message');message.textContent='Сохраняем…';
+      const display_name=el('display-name').value.trim().replace(/\\s+/g,' ');
+      const bio=el('bio-input').value.trim();
+      const avatar_url=el('avatar-input').value.trim()||null;
+      const cover_url=el('cover-input').value.trim()||null;
+      for(const url of [avatar_url,cover_url])if(url&&!/^https:\\/\\//i.test(url)){message.textContent='Ссылки на изображения должны начинаться с https://';return}
+      if(!display_name||display_name.length>32){message.textContent='Имя должно быть от 1 до 32 символов.';return}
+      const {error}=await db.from('profiles').update({display_name,bio,avatar_url,cover_url,is_public:el('public-input').checked,show_steam:el('steam-input').checked}).eq('user_id',ownerUser.id);
+      if(error){message.textContent=error.message;return}
+      message.textContent='Профиль сохранён.';await load();
+    });
+    load().catch(error=>{console.error(error);showNotice('Не удалось загрузить профиль. Попробуй обновить страницу.',true)});
+  </script>
+</body>
+</html>
