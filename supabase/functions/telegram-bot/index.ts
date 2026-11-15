@@ -54,9 +54,12 @@ Deno.serve(async(req)=>{
    const {data:admins,error:adminsError}=await admin.rpc("get_support_admin_telegram_chats");
    if(!adminsError){
     const note="💬 <b>Ответ игрока · обращение #"+ticketId+"</b>\nARQON #"+(ticket.arqon_id??"—")+"\nТема: <b>"+esc(ticket.subject)+"</b>\n\n"+esc(messageText)+"\n\nОтветить: <code>/reply "+ticketId+" текст</code>\nЗакрыть: <code>/close "+ticketId+"</code>";
+    const notifiedChats=new Set<string>();
     for(const recipient of admins||[]){
-     if(!recipient.chat_id)continue;
-     try{await send(bot,recipient.chat_id,note)}catch(e){console.warn("Support player reply notification failed",e)}
+     const recipientChat=String(recipient.chat_id??"");
+     if(!recipientChat||notifiedChats.has(recipientChat))continue;
+     notifiedChats.add(recipientChat);
+     try{await send(bot,recipientChat,note)}catch(e){console.warn("Support player reply notification failed",e)}
     }
    }
    await send(bot,chatId,"✅ Сообщение добавлено в обращение #"+ticketId+". Поддержка получит уведомление.");
