@@ -195,6 +195,21 @@
       return;
     }
 
+    // Steam-linked player accounts stay in onboarding until their email is verified.
+    try {
+      const [{ data: steamProfile }, { data: authUserData }] = await Promise.all([
+        supabaseClient.from('profiles').select('steam_id').eq('user_id', uid).maybeSingle(),
+        supabaseClient.auth.getUser()
+      ]);
+      if (steamProfile?.steam_id && authUserData?.user && !authUserData.user.email_confirmed_at) {
+        if (typeof window.handleNoAuth === 'function') window.handleNoAuth();
+        await window.ensureSteamEmailStep?.();
+        return;
+      }
+    } catch (verificationGateError) {
+      console.warn('Steam email verification gate check failed:', verificationGateError);
+    }
+
     const { data: player, error } = await supabaseClient.from('players').select('*').eq('uid', uid).maybeSingle();
     if (error) console.error('Player lookup failed:', error);
     if (player) {
