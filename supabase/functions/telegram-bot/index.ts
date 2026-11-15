@@ -171,10 +171,74 @@ Deno.serve(async(req)=>{
       const rows=(tickets||[]).map((t:any)=>"• <b>#"+t.id+" · "+esc(t.subject)+"</b> — "+esc(t.status));
       await renderPanel(bot,callbackChatId,callback.message.message_id,"🛟 <b>ТВОИ ОБРАЩЕНИЯ</b>\n\n"+(error?"Не удалось загрузить обращения.":rows.join("\n")||"У тебя пока нет обращений.")+"\n\nЧтобы ответить в обращении, отправь: <code>/ticket НОМЕР текст</code>",{inline_keyboard:[[{text:"↻ Обновить",callback_data:"support"}],[{text:"↩️ Главное меню",callback_data:"menu"}]]});
      }
-    }else if(action==="organizer"){
-     const {data}=await admin.rpc("get_support_admin_telegram_chats");
-     const allowed=(data||[]).some((x:any)=>String(x.chat_id)===callbackChatId);
-     await renderPanel(bot,callbackChatId,callback.message.message_id,allowed?"🛡 <b>ПАНЕЛЬ ОРГАНИЗАТОРА</b>\n\nДоступ подтверждён. Административные действия и управление турниром добавим в защищённые разделы этого меню.":"⛔ Нет доступа к панели организатора.",{inline_keyboard:[[{text:"↩️ Главное меню",callback_data:"menu"}]]});
+    }else if(action==="organizer"||action.startsWith("org:")){
+     const {data:organizerChats,error:organizerError}=await admin.rpc("get_support_admin_telegram_chats");
+     const allowed=!organizerError&&(organizerChats||[]).some((x:any)=>String(x.chat_id)===callbackChatId);
+     if(!allowed){
+      await renderPanel(bot,callbackChatId,callback.message.message_id,"⛔ Нет доступа к панели организатора.",{inline_keyboard:[[{text:"↩️ Главное меню",callback_data:"menu"}]]});
+     }else if(action==="organizer"||action==="org:overview"){
+      const [teams,leagueResponse,ticketResponse]=await Promise.all([
+       loadTournamentTeams(admin),
+       admin.from("league_data").select("payload").limit(1).maybeSingle(),
+       admin.from("support_tickets").select("id").neq("status","closed")
+      ]);
+      const players=teams.reduce((sum:number,team:any)=>sum+(Array.isArray(team.players)?team.players.length:0),0);
+      const matches=Array.isArray(leagueResponse.data?.payload?.matches)?leagueResponse.data.payload.matches:[];
+      const pending=matches.filter((m:any)=>m.result_type==="pending"||(!m.winner&&!m.tech_loss_team)).length;
+      const openTickets=ticketResponse.data?.length??0;
+      const dashboard="🛡 <b>ПАНЕЛЬ ОРГАНИЗАТОРА ARQON</b>\n\nКоманд: <b>"+teams.length+"</b>\nИгроков в составах: <b>"+players+"</b>\nМатчей лиги: <b>"+matches.length+"</b>\nОжидают результата: <b>"+pending+"</b>\nОткрытых обращений: <b>"+openTickets+"</b>\n\nВыбери раздел управления.";
+      await renderPanel(bot,callbackChatId,callback.message.message_id,dashboard,{inline_keyboard:[
+       [{text:"🛟 Обращения ("+openTickets+")",callback_data:"org:tickets"}],
+       [{text:"🏆 Открыть лигу",callback_data:"league"}],
+       [{text:"↻ Обновить сводку",callback_data:"org:overview"}],
+       [{text:"↩️ Главное меню",callback_data:"menu"}]
+      ]});
+     }else if(action==="org:tickets"){
+      const {data:tickets,error}=await admin.from("support_tickets").select("id,arqon_id,subject,status,updated_at").neq("status","closed").order("updated_at",{ascending:false}).limit(8);
+      if(error){
+       await renderPanel(bot,callbackChatId,callback.message.message_id,"Не удалось загрузить обращения. Попробуй обновить позже.",{inline_keyboard:[[{text:"↻ Повторить",callback_data:"org:tickets"}],[{text:"↩️ К панели",callback_data:"org:overview"}]]});
+      }else{
+       const keyboard:any[][]=(tickets||[]).map((t:any)=>[{text:"#"+t.id+" · "+String(t.subject||"Без темы").slice(0,42),callback_data:"org:ticket:"+t.id}]);
+       keyboard.push([{text:"↻ Обновить",callback_data:"org:tickets"},{text:"↩️ К панели",callback_data:"org:overview"}]);
+       const lines=(tickets||[]).map((t:any)=>"• <b>#"+t.id+"</b> · "+esc(t.subject)+" · ARQON #"+(t.arqon_id??"—")+" · "+esc(t.status));
+       await renderPanel(bot,callbackChatId,callback.message.message_id,"🛟 <b>ОТКРЫТЫЕ ОБРАЩЕНИЯ</b>\n\n"+(lines.join("\n")||"Открытых обращений нет."),{inline_keyboard:keyboard});
+      }
+     }else if(action.startsWith("org:ticket:")){
+      const ticketId=Number(action.slice("org:ticket:".length));
+      if(!Number.isSafeInteger(ticketId)||ticketId<1){
+       await renderPanel(bot,callbackChatId,callback.message.message_id,"Некорректный номер обращения.",{inline_keyboard:[[{text:"↩️ К обращениям",callback_data:"org:tickets"}]]});
+      }else{
+       const [{data:ticket,error:ticketError},{data:messages}]=await Promise.all([
+        admin.from("support_tickets").select("id,arqon_id,subject,status,created_at,updated_at").eq("id",ticketId).maybeSingle(),
+        admin.from("support_ticket_messages").select("sender_role,message,created_at").eq("ticket_id",ticketId).order("created_at",{ascending:true}).limit(8)
+       ]);
+       if(ticketError||!ticket){
+        await renderPanel(bot,callbackChatId,callback.message.message_id,"Обращение не найдено.",{inline_keyboard:[[{text:"↩️ К обращениям",callback_data:"org:tickets"}]]});
+       }else{
+        const history=(messages||[]).map((m:any)=>"["+(m.sender_role==="admin"?"Админ":"Игрок")+"] "+esc(String(m.message||"").slice(0,700)));
+        const detail="🛟 <b>ОБРАЩЕНИЕ #"+ticket.id+"</b>\n"+esc(ticket.subject)+"\nARQON #"+(ticket.arqon_id??"—")+" · "+esc(ticket.status)+"\n\n"+(history.join("\n\n")||"Сообщений пока нет.")+"\n\nОтветить: <code>/reply "+ticket.id+" текст</code>";
+        const keyboard:any[][]=[];
+        if(ticket.status!=="closed")keyboard.push([{text:"🔒 Закрыть обращение",callback_data:"org:close:"+ticket.id}]);
+        keyboard.push([{text:"↩️ К обращениям",callback_data:"org:tickets"},{text:"↩️ К панели",callback_data:"org:overview"}]);
+        await renderPanel(bot,callbackChatId,callback.message.message_id,detail,{inline_keyboard:keyboard});
+       }
+      }
+     }else if(action.startsWith("org:close:")){
+      const ticketId=Number(action.slice("org:close:".length));
+      if(!Number.isSafeInteger(ticketId)||ticketId<1){
+       await renderPanel(bot,callbackChatId,callback.message.message_id,"Некорректный номер обращения.",{inline_keyboard:[[{text:"↩️ К обращениям",callback_data:"org:tickets"}]]});
+      }else{
+       const {data:closed,error:closeError}=await admin.rpc("support_ticket_admin_close",{p_chat_id:callbackChatId,p_ticket_id:ticketId});
+       if(closeError||!closed?.[0]){
+        await renderPanel(bot,callbackChatId,callback.message.message_id,"Не удалось закрыть обращение. Проверь права и попробуй ещё раз.",{inline_keyboard:[[{text:"↩️ К обращениям",callback_data:"org:tickets"}]]});
+       }else{
+        if(closed[0].player_chat_id)try{await send(bot,String(closed[0].player_chat_id),"🔒 Обращение #"+ticketId+" закрыто администрацией ARQON. Если вопрос остался, создай новое обращение на сайте.")}catch{}
+        await renderPanel(bot,callbackChatId,callback.message.message_id,"✅ Обращение #"+ticketId+" закрыто. Игрок получил уведомление.",{inline_keyboard:[[{text:"↩️ К обращениям",callback_data:"org:tickets"},{text:"↩️ К панели",callback_data:"org:overview"}]]});
+       }
+      }
+     }else{
+      await renderPanel(bot,callbackChatId,callback.message.message_id,"Раздел не найден.",{inline_keyboard:[[{text:"↩️ К панели",callback_data:"org:overview"}]]});
+     }
     }
    }
    return json({ok:true});
