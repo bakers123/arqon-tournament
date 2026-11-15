@@ -19,8 +19,7 @@ Deno.serve(async (req: Request) => {
   if (!/^[0-9a-f-]{36}$/i.test(state)) return new Response("Invalid state", { status: 400 });
 
   const admin = createClient(url, serviceKey, { auth: { persistSession: false, autoRefreshToken: false } });
-  const { data: pending, error: pendingError } = await admin.schema("private")
-    .from("steam_openid_states")
+  const { data: pending, error: pendingError } = await admin.from("steam_openid_states")
     .select("user_id,return_origin,expires_at,consumed_at")
     .eq("state", state)
     .maybeSingle();
