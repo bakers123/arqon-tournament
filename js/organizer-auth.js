@@ -205,7 +205,7 @@
     if (window.isAdmin()) {
       setLogoutVisible(true);
       const adminButton = byId('admin-tab-btn');
-      if (adminButton) { adminButton.classList.remove('hidden'); adminButton.style.display = 'inline-block'; }
+      if (adminButton) { adminButton.classList.remove('hidden'); adminButton.style.removeProperty('display'); }
       const auth = byId('auth-screen');
       if (auth) auth.style.display = 'none';
       const player = byId('player-screen');
