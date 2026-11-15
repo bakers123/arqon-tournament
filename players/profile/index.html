@@ -73,6 +73,24 @@
       </section>
       <aside class="card"><h2>АРКОН АККАУНТ</h2><div class="stat"><span>ARQON ID</span><strong id="stat-id">—</strong></div><div class="stat"><span>Игровой ник</span><strong id="player-name">—</strong></div><div class="stat"><span>Команда</span><strong id="team-name">—</strong></div><div class="stat"><span>Рейтинг ARQON</span><strong id="arqon-rating">—</strong></div><div class="stat"><span>FACEIT</span><strong id="faceit-level">—</strong></div><div class="stat"><span>Очки турниров</span><strong id="tournament-points">0</strong></div><div class="stat"><span>Победы / топ-3</span><strong id="tournament-wins">0 / 0</strong></div><div class="stat"><span>Steam</span><strong id="steam-state">Скрыт</strong></div><p class="muted" style="font-size:13px;margin-top:16px">Рейтинги и ссылки CS2 / Dota 2 можно указать в настройках профиля.</p><div id="telegram-settings" class="hidden" style="border-top:1px solid #39304d;margin-top:16px;padding-top:14px"><h3 style="margin:0 0 8px">TELEGRAM УВЕДОМЛЕНИЯ</h3><p id="telegram-status" class="muted" style="font-size:13px">Проверяем подключение…</p><button id="telegram-connect" class="button" type="button">Подключить Telegram</button><button id="telegram-unlink" class="button hidden" type="button" style="margin-left:6px">Отключить</button><div id="telegram-code-box" class="hidden" style="margin-top:10px"><p class="muted">Открой нашего бота и отправь ему эту команду в течение 10 минут:</p><code id="telegram-start-code" style="display:block;overflow-wrap:anywhere;padding:10px;background:#171321;border-radius:10px"></code><button id="telegram-copy-code" class="button" type="button" style="margin-top:8px">Скопировать команду</button><a id="telegram-open-bot" class="button" href="https://t.me/arqon_esports_bot" target="_blank" rel="noopener" style="display:inline-block;margin:8px 0 0 6px;text-decoration:none">Открыть @arqon_esports_bot</a></div></div></aside>
     </div>
+    <section class="card hidden" id="support-ticket-card" style="width:min(1040px,calc(100% - 28px));margin:16px auto 0">
+      <h2>ТЕХПОДДЕРЖКА ARQON</h2>
+      <p id="support-ticket-note" class="muted" style="font-size:14px;margin:0 0 14px">Создай обращение — ответ придёт в Telegram и появится здесь.</p>
+      <form id="support-ticket-form">
+        <div class="field"><label for="support-ticket-subject">ТЕМА ОБРАЩЕНИЯ</label><input id="support-ticket-subject" maxlength="100" required placeholder="Например, проблема с аккаунтом"></div>
+        <div class="field"><label for="support-ticket-message">ОПИШИ ПРОБЛЕМУ</label><textarea id="support-ticket-message" maxlength="2000" required placeholder="Подробно опиши, что произошло…" style="min-height:110px"></textarea></div>
+        <button class="button" type="submit">Создать обращение</button>
+      </form>
+      <div style="margin-top:20px"><h3 style="font:700 11px Orbitron;color:#d9c4ff;letter-spacing:1.5px">МОИ ОБРАЩЕНИЯ</h3><div id="support-ticket-list" class="history-list"><p class="muted">Загружаем обращения…</p></div></div>
+      <div id="support-ticket-thread" class="hidden" style="margin-top:18px;padding-top:16px;border-top:1px solid #ffffff18">
+        <h3 id="support-ticket-thread-title" style="font:700 11px Orbitron;color:#d9c4ff;letter-spacing:1.5px"></h3>
+        <div id="support-ticket-messages" class="history-list"></div>
+        <form id="support-ticket-reply-form" class="hidden" style="margin-top:14px">
+          <div class="field"><label for="support-ticket-reply">СООБЩЕНИЕ</label><textarea id="support-ticket-reply" maxlength="2000" required placeholder="Напиши дополнительную информацию…" style="min-height:85px"></textarea></div>
+          <button class="button" type="submit">Отправить сообщение</button>
+        </form>
+      </div>
+    </section>
     <section class="card" style="width:min(1040px,calc(100% - 28px));margin:16px auto 0">
       <h2>ИГРОВЫЕ ПРОФИЛИ</h2>
       <div class="content" style="margin-top:0">
@@ -98,7 +116,7 @@
     const db=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
     const params=new URLSearchParams(location.search);
     const arqonId=Number(params.get('id'));
-    let ownerUser=null, ownProfile=null;
+    let ownerUser=null, ownProfile=null, activeSupportTicketId=null, supportTicketRows=[];
     const PROFILE_DRAFT_KEY='arqon_profile_draft_v1';
     const el=id=>document.getElementById(id);
     const profileFields=['display-name','bio-input','cs2-elo-input','cs2-url-input','dota-mmr-input','dota-url-input','preferred-role-input','avatar-input','cover-input'];
@@ -214,7 +232,7 @@
  const {data,error}=await db.rpc('get_telegram_link_status');
  if(error){el('telegram-status').textContent='Не удалось проверить Telegram.';return}
  const state=data?.[0];
- if(state?.is_linked){el('telegram-status').textContent='Подключён'+(state.telegram_username?' · @'+state.telegram_username:'')+'. Уведомления включены.';el('telegram-connect').classList.add('hidden');el('telegram-unlink').classList.remove('hidden')}
+ if(state?.is_linked){el('telegram-status').textContent='Подключён'+(state.telegram_username?' · @'+state.telegram_username:(state.first_name?' · '+state.first_name+' (без @username)':''))+'. Видно только тебе. Уведомления включены.';el('telegram-connect').classList.add('hidden');el('telegram-unlink').classList.remove('hidden')}
  else{el('telegram-status').textContent='Telegram пока не подключён. После подключения сюда будут приходить уведомления о предложениях.';el('telegram-connect').classList.remove('hidden');el('telegram-unlink').classList.add('hidden')}
 }
 async function connectTelegram(){
@@ -259,6 +277,86 @@ async function loadTeamOffers(){
   row.append(info,actions);host.append(row);
  });
 }
+
+function supportErrorText(error){
+ const raw=String(error?.message||error||'');
+ if(raw.includes('telegram_not_linked'))return 'Сначала подключи Telegram в блоке «Telegram уведомления» — туда придут ответы.';
+ if(raw.includes('too_many_open_tickets'))return 'У тебя уже 5 незакрытых обращений. Дождись ответа по одному из них.';
+ if(raw.includes('ticket_rate_limited'))return 'Новое обращение можно создать раз в минуту.';
+ if(raw.includes('ticket_not_found_or_closed'))return 'Обращение закрыто или не найдено.';
+ return raw||'Не удалось выполнить действие.';
+}
+async function loadSupportTickets(){
+ if(!ownProfile||!ownerUser)return;
+ const card=el('support-ticket-card');card.classList.remove('hidden');
+ const tg=await db.rpc('get_telegram_link_status');
+ const linked=!!tg.data?.[0]?.is_linked;
+ const note=el('support-ticket-note');
+ if(!linked){
+  note.textContent='Чтобы создавать обращения и получать ответы, сначала подключи Telegram в блоке «Telegram уведомления» выше.';
+  el('support-ticket-form').classList.add('hidden');
+ }else{
+  note.textContent='Создай обращение — ответ придёт в Telegram и появится здесь.';
+  el('support-ticket-form').classList.remove('hidden');
+ }
+ const {data,error}=await db.rpc('list_my_support_tickets');
+ const host=el('support-ticket-list');host.replaceChildren();
+ if(error){host.textContent='Не удалось загрузить обращения.';return}
+ supportTicketRows=data||[];
+ if(!supportTicketRows.length){const empty=document.createElement('p');empty.className='history-empty';empty.textContent='Пока нет обращений.';host.append(empty);return}
+ const labels={open:'Открыто',waiting_admin:'Ожидает ответа поддержки',waiting_user:'Есть ответ поддержки',closed:'Закрыто'};
+ supportTicketRows.forEach(ticket=>{
+  const b=document.createElement('button');b.type='button';b.className='history-item';b.style.width='100%';b.style.textAlign='left';b.style.color='inherit';b.style.cursor='pointer';b.style.background=activeSupportTicketId===ticket.ticket_id?'rgba(155,92,255,.13)':'rgba(255,255,255,.025)';
+  const left=document.createElement('span');left.style.minWidth='0';const title=document.createElement('strong');title.textContent='#'+ticket.ticket_id+' · '+ticket.subject;const preview=document.createElement('small');preview.textContent=ticket.last_message||'';left.append(title,preview);
+  const state=document.createElement('span');state.className='history-result';state.textContent=labels[ticket.status]||ticket.status;
+  b.append(left,state);b.addEventListener('click',()=>openSupportTicket(ticket.ticket_id));host.append(b);
+ });
+ if(activeSupportTicketId&&supportTicketRows.some(t=>t.ticket_id===activeSupportTicketId))await openSupportTicket(activeSupportTicketId);
+}
+async function openSupportTicket(ticketId){
+ activeSupportTicketId=Number(ticketId);
+ const ticket=supportTicketRows.find(t=>Number(t.ticket_id)===activeSupportTicketId);
+ if(!ticket)return;
+ el('support-ticket-thread').classList.remove('hidden');
+ el('support-ticket-thread-title').textContent='ОБРАЩЕНИЕ #'+ticket.ticket_id+' · '+ticket.subject;
+ const host=el('support-ticket-messages');host.replaceChildren();
+ const {data,error}=await db.rpc('get_my_support_ticket_messages',{p_ticket_id:activeSupportTicketId});
+ if(error){host.textContent='Не удалось загрузить переписку.';return}
+ (data||[]).forEach(row=>{
+  const item=document.createElement('div');item.className='history-item';item.style.display='block';item.style.borderColor=row.sender_role==='admin'?'rgba(192,132,252,.35)':'rgba(255,255,255,.12)';
+  const header=document.createElement('small');header.style.display='block';header.style.color=row.sender_role==='admin'?'#d8b4fe':'#a99bbd';header.textContent=(row.sender_role==='admin'?'ТЕХПОДДЕРЖКА ARQON':'ТЫ')+' · '+new Date(row.created_at).toLocaleString('ru-RU');
+  const body=document.createElement('p');body.style.margin='7px 0 0';body.style.whiteSpace='pre-wrap';body.style.overflowWrap='anywhere';body.textContent=row.message;item.append(header,body);host.append(item);
+ });
+ const tg=await db.rpc('get_telegram_link_status');
+ el('support-ticket-reply-form').classList.toggle('hidden',ticket.status==='closed'||!tg.data?.[0]?.is_linked);
+}
+async function createSupportTicket(event){
+ event.preventDefault();if(!ownerUser||!ownProfile)return;
+ const form=el('support-ticket-form'),button=form.querySelector('button[type="submit"]');button.disabled=true;button.textContent='Отправляем…';
+ const subject=el('support-ticket-subject').value.trim(),message=el('support-ticket-message').value.trim();
+ const {data,error}=await db.rpc('create_support_ticket',{p_subject:subject,p_message:message});
+ button.disabled=false;button.textContent='Создать обращение';
+ if(error){el('support-ticket-note').textContent=supportErrorText(error);return}
+ const ticketId=Number(data);
+ el('support-ticket-subject').value='';el('support-ticket-message').value='';
+ const notice=await db.functions.invoke('telegram-bot',{body:{event:'support_ticket_created',ticket_id:ticketId}});
+ el('support-ticket-note').textContent=notice.error?'Обращение создано. Не удалось уведомить поддержку через Telegram.':'Обращение #'+ticketId+' создано. Ожидай ответ в Telegram и здесь.';
+ await loadSupportTickets();await openSupportTicket(ticketId);
+}
+async function replySupportTicket(event){
+ event.preventDefault();if(!activeSupportTicketId)return;
+ const input=el('support-ticket-reply'),button=el('support-ticket-reply-form').querySelector('button[type="submit"]'),message=input.value.trim();
+ if(!message)return;
+ button.disabled=true;button.textContent='Отправляем…';
+ const {error}=await db.rpc('send_my_support_ticket_message',{p_ticket_id:activeSupportTicketId,p_message:message});
+ button.disabled=false;button.textContent='Отправить сообщение';
+ if(error){el('support-ticket-note').textContent=supportErrorText(error);return}
+ input.value='';
+ const notice=await db.functions.invoke('telegram-bot',{body:{event:'support_ticket_message',ticket_id:activeSupportTicketId}});
+ if(notice.error)el('support-ticket-note').textContent='Сообщение сохранено, но уведомление поддержки не отправлено.';
+ await loadSupportTickets();
+}
+
 async function uploadProfileMedia(file,kind){
       if(!file)return null;
       const allowed=['image/jpeg','image/png','image/webp'];
@@ -328,12 +426,15 @@ async function uploadProfileMedia(file,kind){
       if(ownProfile){
         await loadTeamOffers();
         await loadTelegramSettings();
+        await loadSupportTickets();
         populateProfileForm(ownProfile);
         restoreProfileDraft();
       }
     }
     el('telegram-connect').addEventListener('click',connectTelegram);
     el('telegram-unlink').addEventListener('click',unlinkTelegram);
+    el('support-ticket-form').addEventListener('submit',createSupportTicket);
+    el('support-ticket-reply-form').addEventListener('submit',replySupportTicket);
     el('telegram-copy-code').addEventListener('click',()=>navigator.clipboard?.writeText(el('telegram-start-code').textContent).then(()=>el('telegram-status').textContent='Команда скопирована.').catch(()=>el('telegram-status').textContent='Не удалось скопировать — выдели команду вручную.'));
     el('edit-toggle').addEventListener('click',()=>{
       const opening=!el('edit-form').classList.contains('open');
