@@ -2908,7 +2908,13 @@ function renderAchievementCatalog(){
   ['💥','ADR 100+','Достигни среднего ADR не ниже 100 по матчам Live Center.','Live Center'],
   ['🔥','Фраггер','Держи в среднем не менее 20 убийств за матч.','Live Center'],
   ['🤝','Командный игрок','Держи в среднем не менее 8 ассистов за матч.','Live Center'],
-  ['🌟','MVP Live','Получи отметку MVP минимум в одном матче Live Center.','Live Center']
+  ['🌟','MVP Live','Получи отметку MVP минимум в одном матче Live Center.','Live Center'],
+  ['🏛','Основатель ARQON','Особая награда от администрации за вклад в создание ARQON.','Особые награды'],
+  ['💜','Амбассадор ARQON','Получается за заметный вклад в развитие сообщества ARQON.','Особые награды'],
+  ['⭐','MVP события','Получается за выдающееся выступление на специальном событии ARQON.','Особые награды'],
+  ['🏆','Чемпион ARQON','Особая награда за победу в специальном турнире или соревновании ARQON.','Особые награды'],
+  ['🤝','Fair Play','За честную игру и уважение к соперникам.','Особые награды'],
+  ['👑','Легенда ARQON','Редкое признание за выдающийся вклад в историю ARQON. Выдаётся администрацией.','Особые награды']
  ];
  host.innerHTML=items.map(([icon,name,desc,group])=>'<article class="portal-card"><span class="portal-pill">'+escapeHtml(group)+'</span><div class="portal-profile-top" style="margin-top:13px;align-items:center"><div class="portal-avatar-fallback" style="display:grid;place-items:center;width:52px;height:52px;flex:0 0 52px;font-size:26px">'+icon+'</div><div><h3>'+escapeHtml(name)+'</h3><p>'+escapeHtml(desc)+'</p></div></div></article>').join('');
 }
