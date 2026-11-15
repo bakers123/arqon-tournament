@@ -77,7 +77,7 @@
   .map-head{grid-template-columns:minmax(0,1fr) 36px 36px}
 }
 </style>
-  <link rel="stylesheet" href="/assets/arqon-redesign.css?v=3">
+  <link rel="stylesheet" href="/assets/arqon-redesign.css?v=13">
 </head>
 <body>
 <div class="shell">
@@ -372,6 +372,6 @@ $('logout-btn').onclick=async()=>{await sb.auth.signOut();location.reload()};
 sb.auth.onAuthStateChange((_event,s)=>{if(s?.user){session=s;setTimeout(()=>boot(),0)}});
 boot().catch(e=>say('editor-status','Ошибка загрузки: '+e.message,'error'));
 </script>
-  <script src="/assets/arqon-navigation.js?v=2"></script>
+  <script src="/assets/arqon-navigation.js?v=3"></script>
 </body>
 </html>
