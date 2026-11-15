@@ -47,7 +47,8 @@ async function showMenu(token:string,chatId:string,admin:any){
  let isSupportAdmin=false;
  try{const {data}=await admin.rpc("get_support_admin_telegram_chats");isSupportAdmin=(data||[]).some((x:any)=>String(x.chat_id)===chatId)}catch{}
  const greeting="<b>ＡＲＱＯＮ  ＥＳＰＯＲＴＳ</b>\n< i >YOUR GAME. YOUR LEGACY.</i>\n\nДобро пожаловать в ARQON! Управляй своим аккаунтом, следи за лигой и общайся с командой прямо здесь.\n\nВыбери раздел 👇".replace("< i >","<i>");
- const profileUrl=await getTelegramProfileUrl(admin,chatId);\n await send(token,chatId,greeting,menuMarkup(isSupportAdmin,profileUrl));
+ const profileUrl=await getTelegramProfileUrl(admin,chatId);
+ await send(token,chatId,greeting,menuMarkup(isSupportAdmin,profileUrl));
 }
 async function setBotCommands(token:string){
  await telegram(token,"setMyCommands",{commands:[
