@@ -120,7 +120,7 @@
   const invokeNotification = async (event, ticketId) => {
     const {data,error}=await client.functions.invoke('telegram-bot',{body:{event,ticket_id:Number(ticketId)}});
     if(error) throw error;
-    if(data?.ok!==true) throw new Error(data?.error||'Не удалось отправить уведомление');
+    if(data?.ok!==true || (typeof data.sent==='number' && data.sent<1)) throw new Error(data?.error||data?.reason||'У администраторов не подключён Telegram');
     return data;
   };
   const loadTelegramStatus = async () => {
