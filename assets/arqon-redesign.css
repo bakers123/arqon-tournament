@@ -261,3 +261,51 @@ header #arqon-session-logout:hover{background:rgba(127,29,29,.32)!important;bord
   header #arqon-account-button{font-size:9px!important;padding:0 7px!important}
   header #arqon-session-logout{min-width:52px!important;font-size:9px!important;padding:0 6px!important}
 }
+
+
+/* Refined player account control and predictable header alignment */
+header{display:flex!important;align-items:center!important;justify-content:flex-start!important;gap:clamp(7px,1vw,14px)!important}
+header>.brand{order:1!important;flex:0 1 auto!important;min-width:0!important}
+header>nav{order:2!important;flex:0 1 auto!important;margin-right:auto!important;min-width:0!important}
+header>#steam-header-entry{order:4!important;flex:0 0 auto!important;margin:0!important}
+header>#arqon-account-button{
+  order:5!important;position:relative!important;inset:auto!important;transform:none!important;
+  display:none;align-items:center!important;justify-content:center!important;gap:9px!important;
+  flex:0 0 auto!important;margin:0!important;padding:0 15px 0 8px!important;
+  min-height:42px!important;border:1px solid rgba(167,139,250,.38)!important;border-radius:13px!important;
+  background:linear-gradient(135deg,rgba(139,92,246,.20),rgba(91,33,182,.10))!important;
+  color:#f4edff!important;font:700 12px 'Rajdhani',sans-serif!important;letter-spacing:1px!important;
+  box-shadow:inset 0 1px rgba(255,255,255,.07),0 5px 18px rgba(76,29,149,.13)!important;
+  white-space:nowrap!important;cursor:pointer!important;transition:background .18s,border-color .18s,box-shadow .18s!important;
+}
+header>#arqon-account-button:hover{background:linear-gradient(135deg,rgba(139,92,246,.30),rgba(91,33,182,.17))!important;border-color:rgba(196,181,253,.7)!important;box-shadow:0 0 20px rgba(139,92,246,.18)!important;transform:none!important}
+header>#arqon-account-button .arqon-account-icon{display:grid;place-items:center;width:28px;height:28px;flex:0 0 28px;border-radius:9px;background:rgba(196,181,253,.14);color:#d8c5ff}
+header>#arqon-account-button .arqon-account-icon svg{width:17px;height:17px}
+header>#arqon-account-button .arqon-account-label{line-height:1}
+header>#arqon-session-logout{
+  order:6!important;position:relative!important;inset:auto!important;transform:none!important;
+  flex:0 0 auto!important;margin:0!important;min-width:70px!important;min-height:42px!important;
+  padding:0 13px!important;border-radius:12px!important;white-space:nowrap!important;
+  box-shadow:none!important;font-size:11px!important;letter-spacing:.8px!important;
+}
+header>.mobile-nav-scrollbar{display:none!important}
+@media(max-width:900px){
+  header{flex-wrap:nowrap!important;gap:7px!important;padding:8px 10px!important;min-height:62px!important}
+  header>.brand{max-width:34vw!important;flex:0 1 auto!important}
+  header>.brand img{width:clamp(96px,27vw,124px)!important}
+  header>nav{flex:0 0 auto!important;margin-right:auto!important;width:auto!important;max-width:42px!important;overflow:visible!important}
+  header>#steam-header-entry{max-width:30vw!important;min-height:38px!important;padding:0 8px!important;font-size:10px!important}
+  header>#arqon-account-button{min-height:38px!important;gap:6px!important;padding:0 9px 0 6px!important;font-size:10px!important;letter-spacing:.4px!important}
+  header>#arqon-account-button .arqon-account-icon{width:25px;height:25px;flex-basis:25px}
+  header>#arqon-account-button .arqon-account-icon svg{width:15px;height:15px}
+  header>#arqon-session-logout{min-width:56px!important;min-height:38px!important;padding:0 8px!important;font-size:10px!important}
+  header:has(#arqon-session-logout) .brand{max-width:30vw!important}
+}
+@media(max-width:390px){
+  header{gap:5px!important;padding-inline:7px!important}
+  header>.brand{max-width:28vw!important}
+  header>.brand img{width:96px!important}
+  header>#arqon-account-button{gap:5px!important;padding-inline:5px!important;font-size:9px!important}
+  header>#arqon-account-button .arqon-account-icon{width:23px;height:23px;flex-basis:23px}
+  header>#arqon-session-logout{min-width:51px!important;padding-inline:6px!important;font-size:9px!important}
+}
