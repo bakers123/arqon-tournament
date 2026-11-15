@@ -115,7 +115,8 @@
     const SUPABASE_KEY='sb_publishable_oE2Bc1wPAcDt6HE8bOUj3Q_0-2FfIxB';
     const db=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
     const params=new URLSearchParams(location.search);
-    const arqonId=Number(params.get('id'));
+    let arqonId=Number(params.get('id'));
+    const isOwnProfileRoute=params.get('me')==='1';
     let ownerUser=null, ownProfile=null, activeSupportTicketId=null, supportTicketRows=[];
     const PROFILE_DRAFT_KEY='arqon_profile_draft_v1';
     const el=id=>document.getElementById(id);
@@ -369,7 +370,6 @@ async function uploadProfileMedia(file,kind){
       return db.storage.from('player-media').getPublicUrl(path).data.publicUrl;
     }
     async function load(){
-      if(!Number.isSafeInteger(arqonId)||arqonId<1){showNotice('В ссылке не указан корректный ARQON ID.',true);el('name').textContent='Профиль не найден';return}
       const {data:auth}=await db.auth.getUser();ownerUser=auth?.user||null;
       let profile=null, publicProfileError=null, mine=null;
       // Load the signed-in owner's row first: private profile settings must not depend
@@ -379,6 +379,15 @@ async function uploadProfileMedia(file,kind){
         if(mineResponse.error)console.warn('Owner profile query failed:',mineResponse.error);
         else mine=mineResponse.data;
       }
+      if(isOwnProfileRoute){
+        arqonId=Number(mine?.arqon_id);
+        if(!Number.isSafeInteger(arqonId)||arqonId<1){
+          el('name').textContent='Профиль ещё не создан';
+          showNotice('У этого аккаунта пока нет профиля игрока ARQON. Войди через Steam или сначала создай профиль игрока.',true);
+          return;
+        }
+      }
+      if(!Number.isSafeInteger(arqonId)||arqonId<1){showNotice('В ссылке не указан корректный ARQON ID.',true);el('name').textContent='Профиль не найден';return}
       if(mine?.arqon_id===arqonId){
         ownProfile=mine;
         profile={...mine,display_name:mine.display_name||mine.steam_persona_name,avatar_url:mine.avatar_url||mine.steam_avatar_url,player_name:null,steam_id:mine.show_steam?mine.steam_id:null};
