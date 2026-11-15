@@ -54,9 +54,12 @@ Deno.serve(async(req:Request)=>{
     .select("user_id").maybeSingle();
   if(consumeError||!consumed) return redirect(origin,"error");
   if(consumed.user_id){
+    const {data:existing,error:existingError}=await admin.from("profiles").select("user_id").eq("steam_id",steamId).maybeSingle();
+    if(existingError) return redirect(origin,"error");
+    if(existing && existing.user_id!==consumed.user_id) return redirect(origin,"already_linked");
     const {data:updated,error:updateError}=await admin.from("profiles").update({steam_id:steamId})
       .eq("user_id",consumed.user_id).is("steam_id",null).select("user_id").maybeSingle();
-    if(updateError||!updated) return redirect(origin,"error");
+    if(updateError||!updated) return redirect(origin,"already_linked");
     return redirect(origin,"linked");
   }
   const {data:profile,error:profileError}=await admin.from("profiles").select("user_id").eq("steam_id",steamId).maybeSingle();
