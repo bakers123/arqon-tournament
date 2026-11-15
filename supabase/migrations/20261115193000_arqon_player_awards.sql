@@ -51,3 +51,18 @@ create policy "Organizers can revoke ARQON awards"
   on public.arqon_player_awards for update to authenticated
   using (revoked_at is null and (select public.current_organizer_role()) in ('owner','admin','editor'))
   with check (revoked_at is not null and revoked_by=(select auth.uid()) and (select public.current_organizer_role()) in ('owner','admin','editor'));
+
+create or replace function public.get_award_recipient(p_arqon_id bigint)
+returns table(arqon_id bigint, display_name text, steam_persona_name text)
+language plpgsql stable security definer set search_path = ''
+as $$
+begin
+  if auth.uid() is null or public.current_organizer_role() not in ('owner','admin','editor') then
+    raise exception 'organizer_required';
+  end if;
+  return query select p.arqon_id,p.display_name,p.steam_persona_name
+    from public.profiles p where p.arqon_id = p_arqon_id limit 1;
+end;
+$$;
+revoke all on function public.get_award_recipient(bigint) from public, anon;
+grant execute on function public.get_award_recipient(bigint) to authenticated;
