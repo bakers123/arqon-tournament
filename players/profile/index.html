@@ -129,9 +129,9 @@
       el('faceit-level').textContent=meta.faceitLevel?'Level '+meta.faceitLevel:'—';
       el('tournament-points').textContent=String(stats.points);
       el('tournament-wins').textContent=stats.wins+' / '+stats.podiums;
-      if(!profile.avatar_url&&meta.avatar)setImage('avatar',meta.avatar,'Аватар игрока');
       const initial=(profile.display_name||profile.player_name||'A').trim().charAt(0).toUpperCase();el('avatar').textContent=initial;
-      if(profile.avatar_url)setImage('avatar',profile.avatar_url,'Аватар игрока');
+      const visibleAvatar=profile.avatar_url||meta.avatar;
+      if(visibleAvatar)setImage('avatar',visibleAvatar,'Аватар игрока');
       if(profile.cover_url){el('cover-image').src=profile.cover_url;el('cover-image').classList.remove('hidden')}
       if(ownProfile){
         el('display-name').value=ownProfile.display_name||'';
