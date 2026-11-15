@@ -230,3 +230,10 @@ begin
   end loop;
 end;
 $$;
+
+-- Trigger-only functions must not be callable as public RPC endpoints.
+revoke all on function public.award_arqon_tournament_coins() from public,anon,authenticated;
+revoke all on function public.award_arqon_live_activity_coins() from public,anon,authenticated;
+revoke all on function public.award_arqon_live_mvp_coins() from public,anon,authenticated;
+revoke all on function public.award_arqon_xp_milestone_coins() from public,anon,authenticated;
+revoke all on function public.award_arqon_manual_award_coins() from public,anon,authenticated;
