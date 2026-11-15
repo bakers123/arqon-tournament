@@ -188,7 +188,7 @@
       }catch(_){}
     }
     function showNotice(message,isError=false){const n=el('notice');n.textContent=message;n.classList.remove('hidden');if(isError)n.classList.add('error')}
-    function setImage(containerId,url,alt){const container=el(containerId);if(!url)return;const img=document.createElement('img');img.src=url;img.alt=alt;img.referrerPolicy='no-referrer';img.onerror=()=>img.remove();container.replaceChildren(img)}
+    function setImage(containerId,urls,alt){const container=el(containerId);if(!container)return;const fallback=container.textContent||'A';const candidates=[...new Set((Array.isArray(urls)?urls:[urls]).map(value=>String(value||'').trim()).filter(value=>/^https?:\/\//i.test(value)))];if(!candidates.length)return;const img=document.createElement('img');img.alt=alt;img.referrerPolicy='no-referrer';let index=0;const tryNext=()=>{if(index<candidates.length){img.src=candidates[index++];return}container.replaceChildren(document.createTextNode(fallback))};img.onerror=tryNext;container.replaceChildren(img);tryNext()}
     function playerKey(value){return String(value||'').trim().toLocaleLowerCase()}
     function getTournamentPlayerMeta(source,name){
       const key=playerKey(name),meta={avatar:null,faceitLevel:0,arqonRating:null,teamName:null,teamId:null};
@@ -665,8 +665,8 @@ async function uploadProfileMedia(file,kind){
       el('tournament-points').textContent=String(stats.points);
       el('tournament-wins').textContent=stats.wins+' / '+stats.podiums;
       const initial=(profile.display_name||profile.player_name||'A').trim().charAt(0).toUpperCase();el('avatar').textContent=initial;
-      const visibleAvatar=profile.avatar_url||profile.steam_avatar_url||meta.avatar;
-      if(visibleAvatar)setImage('avatar',visibleAvatar,'Аватар игрока');
+      const visibleAvatar=[profile.avatar_url,profile.steam_avatar_url,meta.avatar];
+      if(visibleAvatar.some(value=>typeof value==='string'&&/^https?:\/\//i.test(value.trim())))setImage('avatar',visibleAvatar,'Аватар игрока');
       if(profile.cover_url){el('cover-image').src=profile.cover_url;el('cover-image').classList.remove('hidden')}
       if(ownProfile){
         await loadProfileInventory();
