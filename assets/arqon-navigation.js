@@ -83,14 +83,22 @@
     closeControl.addEventListener('click',close);
     
     nav.addEventListener('click',event => {
+      const homeButton = event.target.closest('button[data-tab="home"]');
+      const currentPath = window.location.pathname.replace(/\/+$/, '') || '/';
+      if (homeButton && currentPath !== '/') {
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        window.location.replace('/?arqon_build=202611151930');
+        return;
+      }
       if(event.target.closest('button[data-tab], a[href]')) close();
-    });
+    }, true);
     document.addEventListener('keydown',event => { if(event.key==='Escape') close(); });
     const brand = header.querySelector('.brand');
     const logo = brand?.querySelector('img');
     if(brand && logo && brand.tagName !== 'A'){
       const link = document.createElement('a');
-      link.href = '/';
+      link.href = '/?arqon_build=202611151930';
       link.setAttribute('aria-label','ARQON — на главную');
       link.style.cssText = 'display:flex;align-items:center';
       brand.replaceChild(link,logo);
