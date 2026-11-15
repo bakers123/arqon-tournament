@@ -21,6 +21,9 @@ create index if not exists arqon_player_awards_profile_history
 alter table public.arqon_player_awards enable row level security;
 grant select on public.arqon_player_awards to anon, authenticated;
 grant insert,update on public.arqon_player_awards to authenticated;
+drop policy if exists "Public can read active ARQON awards" on public.arqon_player_awards;
+drop policy if exists "Organizers can grant ARQON awards" on public.arqon_player_awards;
+drop policy if exists "Organizers can revoke ARQON awards" on public.arqon_player_awards;
 create policy "Public can read active ARQON awards"
   on public.arqon_player_awards for select to anon,authenticated
   using (revoked_at is null or (select public.current_organizer_role()) in ('owner','admin','editor'));
@@ -41,6 +44,7 @@ begin
   return new;
 end;
 $$;
+drop trigger if exists arqon_award_immutable_fields on public.arqon_player_awards;
 create trigger arqon_award_immutable_fields before update on public.arqon_player_awards
 for each row execute function public.prevent_arqon_award_rewrite();
 create policy "Organizers can revoke ARQON awards"
