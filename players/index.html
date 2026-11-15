@@ -1092,6 +1092,31 @@
 <main style="flex: 1;">
   <!-- АДМИН ПАНЕЛЬ -->
   <section id="tab-admin" class="hidden">
+    <div class="card" id="arqon-awards-admin">
+      <h2>🏅 Награды игроков ARQON</h2>
+      <p class="hint" style="margin:0 0 14px">Выдавай особые награды игрокам по ARQON ID. Отзыв сохраняет запись в истории и не удаляет её навсегда.</p>
+      <div class="row" style="gap:10px;align-items:center;flex-wrap:wrap">
+        <input id="award-player-id" type="number" min="1" step="1" placeholder="ARQON ID игрока" style="max-width:220px">
+        <button class="btn" id="award-player-find" type="button">Найти игрока</button>
+      </div>
+      <div id="award-player-result" class="hint" role="status" style="margin:10px 0"></div>
+      <div id="award-grant-fields" class="hidden">
+        <div class="row" style="gap:10px;flex-wrap:wrap">
+          <select id="award-type" style="min-width:220px;flex:1">
+            <option value="founder">🏛 Основатель ARQON · легендарная</option>
+            <option value="community">💜 Амбассадор ARQON · эпическая</option>
+            <option value="event_mvp">⭐ MVP события · редкая</option>
+            <option value="champion">🏆 Чемпион ARQON · эпическая</option>
+            <option value="fair_play">🤝 Fair Play · редкая</option>
+            <option value="legend">👑 Легенда ARQON · легендарная</option>
+          </select>
+          <input id="award-reason" maxlength="300" placeholder="Причина выдачи (обязательно)" style="min-width:220px;flex:2">
+        </div>
+        <button class="btn" id="award-grant" type="button" style="margin-top:10px">Выдать награду</button>
+      </div>
+      <div id="award-admin-message" class="hint" role="status" style="margin-top:10px"></div>
+      <div id="award-admin-history" class="history-list" style="margin-top:14px"></div>
+    </div>
     <div class="card">
       <h2>🤝 Добавить партнера</h2>
       <div class="row" style="flex-direction: column; gap: 10px;">
@@ -4761,6 +4786,7 @@ async function startApp() {
     measure();
   })();
   </script>
+  <script src="/assets/arqon-awards-admin.js?v=1"></script>
   <script src="/assets/arqon-navigation.js?v=4"></script>
 <script src="/assets/arqon-notifications.js?v=1" defer></script></body>
 </html>
