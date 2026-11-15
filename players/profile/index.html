@@ -54,6 +54,18 @@
       <div class="identity"><div class="eyebrow">PLAYER PROFILE</div><h1 class="name" id="name">Загрузка профиля…</h1><div class="id" id="arqon-id"></div><div id="cosmetic-title" class="muted" style="font:700 11px Orbitron;letter-spacing:1.2px;margin-top:7px"></div><div id="cosmetic-badge" class="muted hidden" style="font:700 10px Orbitron;letter-spacing:1px;margin-top:5px;color:#f3c969">✦ ARQON CORE</div></div>
       <div class="actions"><button class="button hidden" id="edit-toggle" type="button">Настроить профиль</button></div>
     </section>
+    <section class="card hidden" id="profile-inventory" style="width:min(1040px,calc(100% - 28px));margin:16px auto 0">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
+        <div><h2 style="margin-bottom:6px">МОЙ ИНВЕНТАРЬ</h2><p class="muted" style="margin:0;font-size:14px">Все купленные косметические предметы. Выбирай, что будет отображаться в профиле.</p></div>
+        <a class="button" href="/shop/" style="display:inline-block">Открыть магазин ↗</a>
+      </div>
+      <div id="profile-inventory-list" class="achievement-grid" style="margin-top:16px"></div>
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-top:16px;padding-top:14px;border-top:1px solid #ffffff16">
+        <span class="muted" style="font-size:14px">Можно вернуть стандартный вид в любой момент. Покупки останутся у тебя.</span>
+        <button class="button" id="profile-cosmetics-default" type="button">Стандартное оформление</button>
+      </div>
+      <p class="muted" id="profile-inventory-message" role="status" style="margin:12px 0 0;font-size:13px"></p>
+    </section>
     <div class="content">
       <section class="card"><h2>ОБ ИГРОКЕ</h2><p class="bio" id="bio">Загружаем информацию…</p>
         <form class="edit" id="edit-form">
@@ -526,6 +538,53 @@ async function uploadProfileMedia(file,kind){
       if(error)throw error;
       return db.storage.from('player-media').getPublicUrl(path).data.publicUrl;
     }
+    const cosmeticFields={frame:'equipped_frame_id',theme:'equipped_theme_id',title:'equipped_title_id',badge:'equipped_badge_id'};
+    const cosmeticLabels={frame:'РАМКА',theme:'ОФОРМЛЕНИЕ',title:'ТИТУЛ',badge:'ЗНАЧОК'};
+    async function loadProfileInventory(){
+      const section=el('profile-inventory'),host=el('profile-inventory-list'),status=el('profile-inventory-message');
+      if(!section||!host||!ownProfile)return;
+      section.classList.remove('hidden');host.replaceChildren();status.textContent='Загружаем инвентарь…';
+      const {data:ownedRows,error:ownedError}=await db.from('arqon_shop_inventory').select('item_id').eq('arqon_id',arqonId);
+      if(ownedError){status.textContent='Не удалось загрузить инвентарь. Попробуй обновить страницу.';return}
+      const ids=(ownedRows||[]).map(row=>row.item_id).filter(Boolean);
+      if(!ids.length){const empty=document.createElement('p');empty.className='history-empty';empty.textContent='Пока пусто. Загляни в магазин и выбери первый предмет.';host.append(empty);status.textContent='Покупки будут появляться здесь автоматически.';return}
+      const {data:items,error}=await db.from('arqon_shop_items').select('id,name,category,description,rarity,preview_style').in('id',ids);
+      if(error){status.textContent='Не удалось загрузить предметы инвентаря.';return}
+      const equipped=ownProfile;
+      (items||[]).forEach(item=>{
+        const field=cosmeticFields[item.category];if(!field)return;
+        const active=equipped[field]===item.id;
+        const card=document.createElement('article');card.className='achievement';card.style.alignItems='flex-start';card.style.flexDirection='column';card.style.gap='10px';
+        const top=document.createElement('div');top.style.display='flex';top.style.alignItems='center';top.style.gap='10px';top.style.width='100%';
+        const icon=document.createElement('div');icon.className='achievement-icon';icon.textContent=({frame:'▣',theme:'◈',title:'✦',badge:'★'})[item.category]||'✦';
+        const info=document.createElement('div');info.style.minWidth='0';info.style.flex='1';
+        const name=document.createElement('strong');name.textContent=item.name;
+        const meta=document.createElement('small');meta.textContent=(cosmeticLabels[item.category]||item.category).toUpperCase()+' · '+(item.rarity||'common').toUpperCase();
+        const desc=document.createElement('small');desc.textContent=item.description||'Косметический предмет ARQON';
+        info.append(name,meta,desc);top.append(icon,info);
+        const action=document.createElement('button');action.type='button';action.className='button';action.style.width='100%';action.textContent=active?'Уже применяется':'Применить';action.disabled=active;action.dataset.cosmeticEquip=item.id;
+        if(active){action.style.opacity='.65';action.style.background='#24202e';action.style.boxShadow='none'}
+        card.append(top,action);host.append(card);
+      });
+      status.textContent='Предметов в коллекции: '+ids.length+'.';
+    }
+    async function applyProfileCosmetic(itemId){
+      const status=el('profile-inventory-message'),buttons=el('profile-inventory-list').querySelectorAll('button');
+      buttons.forEach(button=>button.disabled=true);
+      const {error}=await db.rpc('arqon_shop_equip',{p_item_id:itemId});
+      if(error){status.textContent=error.message||'Не удалось применить предмет.';buttons.forEach(button=>button.disabled=false);return}
+      status.textContent='Предмет применён. Обновляем профиль…';
+      await load();
+    }
+    async function resetProfileCosmetics(){
+      const button=el('profile-cosmetics-default'),status=el('profile-inventory-message');
+      button.disabled=true;button.textContent='Возвращаем…';
+      const {error}=await db.rpc('arqon_shop_equip',{p_item_id:null});
+      button.disabled=false;button.textContent='Стандартное оформление';
+      if(error){status.textContent=error.message||'Не удалось вернуть стандартное оформление.';return}
+      status.textContent='Стандартное оформление включено. Все покупки сохранены в инвентаре.';
+      await load();
+    }
     async function load(){
       const {data:auth}=await db.auth.getUser();ownerUser=auth?.user||null;
       let profile=null, publicProfileError=null, mine=null;
@@ -602,6 +661,7 @@ async function uploadProfileMedia(file,kind){
       if(visibleAvatar)setImage('avatar',visibleAvatar,'Аватар игрока');
       if(profile.cover_url){el('cover-image').src=profile.cover_url;el('cover-image').classList.remove('hidden')}
       if(ownProfile){
+        await loadProfileInventory();
         await loadTeamOffers();
         await loadTelegramSettings();
         await loadSupportTickets();
@@ -609,6 +669,8 @@ async function uploadProfileMedia(file,kind){
         restoreProfileDraft();
       }
     }
+    el('profile-inventory-list').addEventListener('click',event=>{const button=event.target.closest('[data-cosmetic-equip]');if(button&&!button.disabled)applyProfileCosmetic(button.dataset.cosmeticEquip)});
+    el('profile-cosmetics-default').addEventListener('click',resetProfileCosmetics);
     el('telegram-connect').addEventListener('click',connectTelegram);
     el('telegram-unlink').addEventListener('click',unlinkTelegram);
     el('support-ticket-form').addEventListener('submit',createSupportTicket);
