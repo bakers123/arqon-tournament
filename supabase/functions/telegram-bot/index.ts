@@ -110,6 +110,24 @@ Deno.serve(async(req)=>{
   }
   return json({ok:true,sent,reason:sent?"notified":"admins_not_linked"});
  }
+ if(["support_admin_reply","support_admin_close"].includes(event)){
+  const ticketId=Number(body?.ticket_id);
+  if(!Number.isSafeInteger(ticketId)||ticketId<1)return json({error:"invalid_ticket_id"},400);
+  const {data:adminCheck,error:adminCheckError}=await auth.rpc("list_support_tickets_admin");
+  if(adminCheckError||!Array.isArray(adminCheck))return json({error:"forbidden"},403);
+  const {data:ticket}=await admin.from("support_tickets").select("id,user_id,arqon_id,subject,status").eq("id",ticketId).maybeSingle();
+  if(!ticket)return json({error:"ticket_not_found"},404);
+  const {data:tg}=await admin.from("telegram_accounts").select("chat_id").eq("user_id",ticket.user_id).maybeSingle();
+  if(!tg?.chat_id)return json({ok:true,sent:false,reason:"player_telegram_not_linked"});
+  if(event==="support_admin_reply"){
+   const message=String(body?.message??"").trim();
+   if(!message||message.length>2000)return json({error:"invalid_message"},400);
+   await send(bot,String(tg.chat_id),`💬 <b>Ответ техподдержки ARQON · обращение #${ticketId}</b>\n\n${esc(message)}\n\nОтветить на сайте: https://arqon-esports.ru/support/ или в Telegram: /ticket ${ticketId} текст`);
+  }else{
+   await send(bot,String(tg.chat_id),`🔒 Обращение #${ticketId} закрыто администрацией ARQON. Если вопрос остался, создай новое обращение на сайте: https://arqon-esports.ru/support/`);
+  }
+  return json({ok:true,sent:true});
+ }
  const offerId=String(body?.offer_id??"");
  if(!offerId||!["offer_created","offer_accepted"].includes(event))return json({error:"invalid_event"},400);
  const {data:offer}=await admin.from("team_player_offers").select("id,team_id,team_name,player_user_id,player_name,player_arqon_id,offered_role,created_by").eq("id",offerId).maybeSingle();
