@@ -16,13 +16,13 @@
       #arqon-admin-drawer-backdrop.is-open{opacity:1;visibility:visible}
       .arqon-admin-drawer-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:4px 3px 17px;border-bottom:1px solid rgba(173,132,255,.18);margin-bottom:14px}
       .arqon-admin-drawer-brand{font:800 13px Orbitron,sans-serif;letter-spacing:1.2px}.arqon-admin-drawer-brand span{color:#a78bfa}
-      #arqon-admin-drawer-close{width:38px;height:38px;border:1px solid rgba(167,139,250,.3);border-radius:10px;background:#211a32;color:white;font-size:23px;cursor:pointer}
+      #arqon-admin-drawer-close{display:inline-flex;align-items:center;justify-content:center;flex:0 0 38px;width:38px;height:38px;min-width:38px;min-height:38px;padding:0;line-height:1;font:400 25px/1 Arial,sans-serif;text-align:center;box-sizing:border-box;border:1px solid rgba(167,139,250,.3);border-radius:10px;background:#211a32;color:white;cursor:pointer}
       .arqon-admin-group{margin:14px 0}.arqon-admin-group-title{font:700 10px Orbitron,sans-serif;letter-spacing:1.5px;color:#9d91b6;padding:0 9px 7px}
       .arqon-admin-link{display:flex;align-items:center;gap:10px;width:100%;min-height:42px;padding:9px 11px;margin:3px 0;border:1px solid transparent;border-radius:9px;background:transparent;color:#e9e0f8;text-decoration:none;text-align:left;font:700 14px Rajdhani,sans-serif;cursor:pointer}
       .arqon-admin-link:hover,.arqon-admin-link:focus-visible{background:rgba(139,92,246,.13);border-color:rgba(167,139,250,.24);outline:none}
       .arqon-admin-link.support{margin-top:14px;background:rgba(139,92,246,.14);border-color:rgba(167,139,250,.3);color:#dfceff}
       body.arqon-admin-drawer-open{overflow:hidden}
-      @media(max-width:600px){#arqon-admin-menu-bar{top:64px;padding:8px 0 10px}#arqon-admin-menu-trigger{min-height:41px}}
+      @media(max-width:600px){#arqon-admin-menu-bar{top:64px;padding:8px 0 10px}#arqon-admin-menu-trigger{min-height:41px}#arqon-admin-drawer{padding-top:max(18px,env(safe-area-inset-top));padding-bottom:max(26px,env(safe-area-inset-bottom))}}
       @media(prefers-reduced-motion:reduce){#arqon-admin-drawer,#arqon-admin-drawer-backdrop{transition:none}}
     `;
     document.head.appendChild(style);
