@@ -55,11 +55,20 @@ Deno.serve(async(req)=>{
      const text="<b>ＡＲＱＯＮ  ＥＳＰＯＲＴＳ</b>\n<i>YOUR GAME. YOUR LEGACY.</i>\n\nВыбери нужный раздел 👇";
      try{await telegram(bot,"editMessageText",{chat_id:callbackChatId,message_id:callback.message.message_id,text,parse_mode:"HTML",disable_web_page_preview:true,reply_markup:menuMarkup(isSupportAdmin)})}catch{}
     }else if(action==="profile"){
-     const {data:account}=await admin.from("telegram_accounts").select("telegram_username,first_name,linked_at").eq("chat_id",callbackChatId).maybeSingle();
-     const profileText=account
-      ? "👤 <b>ТВОЙ ARQON АККАУНТ</b>\n\n< i >Статус:</i> <b>подключён</b>\nTelegram: "+(account.telegram_username?"@"+esc(account.telegram_username):esc(account.first_name||"аккаунт подключён"))+"\nДата подключения: "+new Date(account.linked_at).toLocaleDateString("ru-RU")+"\n\nТвой Telegram привязан к ARQON. Управлять подключением можно в настройках профиля на сайте.".replace("< i >","<i>")
-      : "👤 <b>ТВОЙ ARQON АККАУНТ</b>\n\n< i >Статус:</i> <b>не подключён</b>\n\nОткрой сайт ARQON → «Мой профиль» → «Подключить Telegram», затем отправь боту команду подключения.".replace("< i >","<i>");
-     try{await telegram(bot,"editMessageText",{chat_id:callbackChatId,message_id:callback.message.message_id,text:profileText,parse_mode:"HTML",reply_markup:{inline_keyboard:[[{text:"⚙️ Настройки профиля",url:SITE+"/"}],[{text:"↩️ Главное меню",callback_data:"menu"}]]}})}catch{}
+     const {data:account,error:accountError}=await admin.from("telegram_accounts").select("telegram_username,first_name,linked_at").eq("chat_id",callbackChatId).maybeSingle();
+     let profileText:string;
+     if(accountError){
+      console.warn("Telegram profile lookup failed",accountError);
+      profileText="👤 <b>ТВОЙ ARQON АККАУНТ</b>\\n\\nНе удалось проверить подключение прямо сейчас. Попробуй ещё раз чуть позже.";
+     }else if(account){
+      const linkedDate=account.linked_at?new Date(account.linked_at).toLocaleDateString("ru-RU"):"не указана";
+      profileText="👤 <b>ТВОЙ ARQON АККАУНТ</b>\\n\\nСтатус: <b>подключён</b>\\nTelegram: "+(account.telegram_username?"@"+esc(account.telegram_username):esc(account.first_name||"аккаунт подключён"))+"\\nДата подключения: "+linkedDate+"\\n\\nТвой Telegram привязан к ARQON. Управлять подключением можно в настройках профиля на сайте.";
+     }else{
+      profileText="👤 <b>ТВОЙ ARQON АККАУНТ</b>\\n\\nСтатус: <b>не подключён</b>\\n\\nОткрой сайт ARQON → «Мой профиль» → «Подключить Telegram», затем отправь боту команду подключения.";
+     }
+     try{
+      await send(bot,callbackChatId,profileText,{inline_keyboard:[[{text:"⚙️ Настройки профиля",url:SITE+"/"}],[{text:"↩️ Главное меню",callback_data:"menu"}]]});
+     }catch(e){console.warn("Telegram profile response failed",e)}
     }
    }
    return json({ok:true});
