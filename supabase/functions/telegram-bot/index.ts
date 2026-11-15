@@ -89,7 +89,7 @@ Deno.serve(async(req)=>{
  }
  const jwt=(req.headers.get("authorization")??"").replace(/^Bearer\s+/i,"");
  if(!jwt)return json({error:"missing_auth"},401);
- const auth=createClient(url,anon,{auth:{persistSession:false}});
+ const auth=createClient(url,anon,{auth:{persistSession:false},global:{headers:{Authorization:`Bearer ${jwt}`}}});
  const {data:userData,error:authErr}=await auth.auth.getUser(jwt);
  if(authErr||!userData.user)return json({error:"unauthorized"},401);
  const actor=userData.user.id,body=await req.json().catch(()=>({})),event=String(body?.event??"");
