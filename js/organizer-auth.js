@@ -3,6 +3,14 @@
   let organizerRole = null;
 
   const byId = (id) => document.getElementById(id);
+  // Admin navigation is hidden by default; only a confirmed organizer role may reveal it.
+  const hideAdminNavigation = () => {
+    const button = byId('admin-tab-btn');
+    const section = byId('tab-admin');
+    if (button) { button.classList.add('hidden'); button.style.display = 'none'; }
+    if (section) { section.classList.add('hidden'); section.style.display = 'none'; }
+  };
+  hideAdminNavigation();
   const setVisible = (el, visible) => {
     if (!el) return;
     el.classList.toggle('hidden', !visible);
@@ -161,6 +169,8 @@
     }
 
     if (window.isAdmin()) {
+      const adminButton = byId('admin-tab-btn');
+      if (adminButton) { adminButton.classList.remove('hidden'); adminButton.style.display = 'inline-block'; }
       const auth = byId('auth-screen');
       if (auth) auth.style.display = 'none';
       const player = byId('player-screen');
@@ -178,8 +188,6 @@
       }
       setVisible(byId('tab-admin'), true);
       setVisible(byId('tab-bracket'), false);
-      const adminButton = byId('admin-tab-btn');
-      if (adminButton) { adminButton.classList.remove('hidden'); adminButton.style.display = 'inline-block'; }
       if (typeof initSupabaseSync === 'function') initSupabaseSync();
       if (typeof loadLeague === 'function') loadLeague(true);
       const loginButton = byId('organizer-login-btn');
@@ -194,6 +202,9 @@
       }
       return;
     }
+
+    // A missing/ordinary player role must never leave organizer navigation visible.
+    hideAdminNavigation();
 
     // Steam-linked player accounts stay in onboarding until their email is verified.
     try {
