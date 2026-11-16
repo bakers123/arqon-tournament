@@ -7,11 +7,11 @@
 
     const style = document.createElement('style');
     style.textContent = `
-      #arqon-admin-menu-bar{position:sticky;top:76px;z-index:1600;isolation:isolate;display:flex;justify-content:flex-start;align-items:center;width:calc(100% + 64px);margin:-28px -32px 14px;padding:10px 32px;pointer-events:auto;background:linear-gradient(180deg,rgba(9,8,15,.96),rgba(9,8,15,.72));backdrop-filter:blur(12px)}
+      #arqon-admin-menu-bar{position:sticky;top:76px;z-index:20;isolation:isolate;display:flex;justify-content:flex-start;align-items:center;width:calc(100% + 64px);margin:-28px -32px 14px;padding:10px 32px;pointer-events:auto;background:linear-gradient(180deg,rgba(9,8,15,.96),rgba(9,8,15,.72));backdrop-filter:blur(12px)}
       #arqon-admin-menu-trigger{display:inline-flex;align-items:center;gap:10px;min-height:43px;padding:0 16px;border:1px solid rgba(167,139,250,.48);border-radius:11px;background:linear-gradient(120deg,rgba(37,27,59,.98),rgba(24,18,42,.98));color:#f3eaff;font:700 13px Rajdhani,sans-serif;letter-spacing:1px;cursor:pointer;box-shadow:0 8px 24px rgba(0,0,0,.2)}
       #arqon-admin-menu-trigger svg{width:19px;height:19px;flex:0 0 auto}
-      #arqon-admin-drawer-backdrop{position:fixed;inset:0;z-index:20000;background:rgba(3,2,10,.68);opacity:0;visibility:hidden;transition:opacity .2s ease,visibility .2s ease}
-      #arqon-admin-drawer{position:fixed;z-index:20001;top:0;left:0;right:auto;bottom:0;width:min(400px,calc(100vw - 24px));max-width:calc(100vw - 24px);height:100vh;height:100dvh;max-height:100vh;max-height:100dvh;box-sizing:border-box;padding:18px 16px max(26px,env(safe-area-inset-bottom));padding-top:max(18px,env(safe-area-inset-top));background:linear-gradient(160deg,#171329,#0b0a13);border-right:1px solid rgba(167,139,250,.28);box-shadow:24px 0 70px rgba(0,0,0,.48);transform:translate3d(calc(-100% - 12px),0,0);transition:transform .24s ease;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;color:#f7f3ff;font-family:Rajdhani,sans-serif}
+      #arqon-admin-drawer-backdrop{position:fixed;inset:0;z-index:99990;background:rgba(3,2,10,.68);opacity:0;visibility:hidden;transition:opacity .2s ease,visibility .2s ease}
+      #arqon-admin-drawer{position:fixed;z-index:99991;top:0;left:0;right:auto;bottom:0;width:min(400px,calc(100vw - 24px));max-width:calc(100vw - 24px);height:100vh;height:100dvh;max-height:100vh;max-height:100dvh;box-sizing:border-box;padding:18px 16px max(26px,env(safe-area-inset-bottom));padding-top:max(18px,env(safe-area-inset-top));background:linear-gradient(160deg,#171329,#0b0a13);border-right:1px solid rgba(167,139,250,.28);box-shadow:24px 0 70px rgba(0,0,0,.48);transform:translate3d(calc(-100% - 12px),0,0);transition:transform .24s ease;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;color:#f7f3ff;font-family:Rajdhani,sans-serif}
       #arqon-admin-drawer.is-open{transform:translateX(0)}
       #arqon-admin-drawer-backdrop.is-open{opacity:1;visibility:visible}
       .arqon-admin-drawer-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:4px 3px 17px;border-bottom:1px solid rgba(173,132,255,.18);margin-bottom:14px}
@@ -21,7 +21,7 @@
       .arqon-admin-link{display:flex;align-items:center;gap:10px;width:100%;min-height:42px;padding:9px 11px;margin:3px 0;border:1px solid transparent;border-radius:9px;background:transparent;color:#e9e0f8;text-decoration:none;text-align:left;font:700 14px Rajdhani,sans-serif;cursor:pointer}
       .arqon-admin-link:hover,.arqon-admin-link:focus-visible{background:rgba(139,92,246,.13);border-color:rgba(167,139,250,.24);outline:none}
       .arqon-admin-link.support{margin-top:14px;background:rgba(139,92,246,.14);border-color:rgba(167,139,250,.3);color:#dfceff}
-      body.arqon-admin-drawer-open{overflow:hidden}
+      body.arqon-admin-drawer-open{overflow:hidden}\n      body.arqon-admin-drawer-open #arqon-admin-menu-bar{z-index:0!important;pointer-events:none!important}
       @media(max-width:600px){#arqon-admin-menu-bar{top:64px;width:calc(100% + 20px);margin:-12px -10px 10px;padding:7px 10px 9px}#arqon-admin-menu-trigger{min-height:41px}#arqon-admin-drawer{padding-top:max(18px,env(safe-area-inset-top));padding-bottom:max(26px,env(safe-area-inset-bottom))}}
       @media(prefers-reduced-motion:reduce){#arqon-admin-drawer,#arqon-admin-drawer-backdrop{transition:none}}
     `;
@@ -109,7 +109,7 @@
     menuObserver.observe(root,{childList:true,subtree:true,attributes:true,attributeFilter:['class','hidden','style']});
     const open = () => {
       if (!window.isAdmin?.()) return;
-      drawer.classList.add('is-open');backdrop.classList.add('is-open');document.body.classList.add('arqon-admin-drawer-open');
+      document.body.classList.add('arqon-admin-drawer-open');drawer.classList.add('is-open');backdrop.classList.add('is-open');
       trigger.setAttribute('aria-expanded','true');drawer.querySelector('#arqon-admin-drawer-close').focus();
     };
     function close(){
