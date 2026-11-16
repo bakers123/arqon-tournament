@@ -22,7 +22,7 @@
       .arqon-admin-link:hover,.arqon-admin-link:focus-visible{background:rgba(139,92,246,.13);border-color:rgba(167,139,250,.24);outline:none}
       .arqon-admin-link.support{margin-top:14px;background:rgba(139,92,246,.14);border-color:rgba(167,139,250,.3);color:#dfceff}
       body.arqon-admin-drawer-open{overflow:hidden}
-      #media(max-width:600px){#arqon-admin-menu-bar{top:64px;padding:7px 0 9px;margin-bottom:10px}#arqon-admin-menu-trigger{min-height:41px}#arqon-admin-drawer{padding-top:max(18px,env(safe-area-inset-top));padding-bottom:max(26px,env(safe-area-inset-bottom))}}
+      @media(max-width:600px){#arqon-admin-menu-bar{top:64px;padding:7px 0 9px;margin-bottom:10px}#arqon-admin-menu-trigger{min-height:41px}#arqon-admin-drawer{padding-top:max(18px,env(safe-area-inset-top));padding-bottom:max(26px,env(safe-area-inset-bottom))}}
       @media(prefers-reduced-motion:reduce){#arqon-admin-drawer,#arqon-admin-drawer-backdrop{transition:none}}
     `;
     document.head.appendChild(style);
