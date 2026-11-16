@@ -2817,20 +2817,34 @@ async function copyPlayerProfileLink(){const button=document.getElementById('pla
 // ==========================================
 const TAB_PATHS = {
   home: '/',
-  bracket: '/game_grid/',
-  tournaments: '/tournaments/',
-  players: '/players/',
+  bracket: '/?tab=bracket',
+  tournaments: '/?tab=tournaments',
+  players: '/?tab=players',
   achievements: '/achievements/',
   teams: '/teams/',
-  history: '/history/',
-  news: '/news/',
-  schedule: '/schedule/',
-  results: '/results/',
-  league: '/league/',
-  partners: '/partners/',
+  history: '/?tab=history',
+  news: '/?tab=news',
+  schedule: '/?tab=schedule',
+  results: '/?tab=results',
+  league: '/?tab=league',
+  partners: '/?tab=partners',
   admin: '/admin'
 };
-const PATH_TABS = Object.fromEntries(Object.entries(TAB_PATHS).map(([tab, path]) => [path.replace(/\/+$/, '') || '/', tab]));
+const PATH_TABS = {
+  '/': 'home',
+  '/game_grid': 'bracket',
+  '/tournaments': 'tournaments',
+  '/players': 'players',
+  '/history': 'history',
+  '/news': 'news',
+  '/schedule': 'schedule',
+  '/results': 'results',
+  '/league': 'league',
+  '/partners': 'partners',
+  '/teams': 'teams',
+  '/achievements': 'achievements',
+  '/admin': 'admin'
+};
 
 const TAB_SEO = {
   home: { title: 'ARQON Esports — турниры CS2 в Тюмени, игроки и лига', description: 'ARQON Esports — киберспортивные турниры CS2 и Dota 2 в Тюмени и ближайших городах. Участие команд, матчи, результаты и рейтинг игроков.' },
@@ -2870,7 +2884,8 @@ function updateTabSeo(tab) {
 
 function applyPathRoute() {
   const path = window.location.pathname.replace(/\/+$/, '') || '/';
-  let tab = PATH_TABS[path] || 'home';
+  const requestedTab = new URLSearchParams(window.location.search).get('tab');
+  let tab = requestedTab && Object.prototype.hasOwnProperty.call(TAB_PATHS, requestedTab) ? requestedTab : (PATH_TABS[path] || 'home');
   if (tab === 'admin' && !isAdmin()) tab = 'home';
   switchTab(tab, false);
 }
@@ -2880,7 +2895,7 @@ window.addEventListener('popstate', applyPathRoute);
 function switchTab(tab, updateUrl = true) {
   if (typeof window.hidePlayerMatchPanel === 'function') window.hidePlayerMatchPanel();
   if (tab === 'admin' && !isAdmin()) tab = 'home';
-  if (updateUrl && TAB_PATHS[tab] && window.location.pathname !== TAB_PATHS[tab]) {
+  if (updateUrl && TAB_PATHS[tab] && (window.location.pathname + window.location.search) !== TAB_PATHS[tab]) {
     window.history.pushState({ tab }, '', TAB_PATHS[tab]);
     if (typeof gtag === 'function') {
       gtag('event', 'page_view', {
