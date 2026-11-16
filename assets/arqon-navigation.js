@@ -59,7 +59,28 @@
       supportLink.textContent = '✦  Техподдержка';
       communitySection.appendChild(supportLink);
     }
+    const extraSection = document.createElement('section');
+    extraSection.className = 'arqon-nav-group arqon-nav-extra';
+    const extraLabel = document.createElement('div');
+    extraLabel.className = 'arqon-nav-group-title';
+    extraLabel.textContent = 'Дополнительно';
+    extraSection.appendChild(extraLabel);
+    groupRoot.appendChild(extraSection);
+
+    // Keep utility links/buttons (updates, achievements, shop, etc.) inside
+    // the drawer column instead of leaving them as stray flex children.
+    const moveExtraControls = () => {
+      Array.from(nav.children).forEach(node => {
+        if (!/^(A|BUTTON)$/.test(node.tagName)) return;
+        if (node.matches('button[data-tab], .nav-social-btn')) return;
+        extraSection.appendChild(node);
+      });
+      extraSection.hidden = extraSection.children.length === 1;
+    };
     nav.insertBefore(groupRoot, nav.querySelector('.nav-social-btn'));
+    moveExtraControls();
+    const extraControlsObserver = new MutationObserver(() => moveExtraControls());
+    extraControlsObserver.observe(nav, { childList: true });
 
     const close = () => {
       nav.classList.remove('arqon-nav-open');
