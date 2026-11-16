@@ -447,6 +447,138 @@
     }
   }
 
+  let accountManagementRows = [];
+  async function callAccountManagement(payload) {
+    const { data, error } = await supabaseClient.functions.invoke('manage-arqon-accounts', { body: payload || { action: 'list' } });
+    if (error) {
+      let message = error.message || 'Ошибка запроса.';
+      try { const details = await error.context?.json?.(); if (details?.error) message = details.error; } catch (_) {}
+      throw new Error(message);
+    }
+    if (data?.error) throw new Error(data.error);
+    return data;
+  }
+  function renderAccountManagementList() {
+    const host = byId('arqon-account-management-list');
+    const status = byId('arqon-account-management-status');
+    if (!host || !status) return;
+    const query = String(byId('arqon-account-management-search')?.value || '').trim().toLocaleLowerCase();
+    const filtered = accountManagementRows.filter(row => [
+      row.email, row.display_name, row.arqon_id, row.organizer_role, row.id
+    ].some(value => String(value ?? '').toLocaleLowerCase().includes(query)));
+    host.replaceChildren();
+    if (!filtered.length) {
+      const empty = document.createElement('p');
+      empty.className = 'hint';
+      empty.textContent = accountManagementRows.length ? 'По запросу ничего не найдено.' : 'Аккаунтов нет.';
+      host.append(empty);
+    }
+    filtered.forEach(account => {
+      const card = document.createElement('article');
+      card.style.cssText = 'display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:13px;margin-top:9px;border:1px solid rgba(139,92,246,.25);border-radius:12px;background:rgba(8,8,14,.72)';
+      const info = document.createElement('div');
+      info.style.cssText = 'min-width:220px;flex:1;overflow-wrap:anywhere';
+      const heading = document.createElement('strong');
+      heading.style.cssText = 'display:block;color:#f5efff;font-size:16px';
+      heading.textContent = account.display_name || account.email || ('Аккаунт ' + account.id.slice(0,8));
+      const meta = document.createElement('div');
+      meta.style.cssText = 'font-size:13px;color:#a9a1b8;margin-top:3px';
+      meta.textContent = (account.email || 'Email отсутствует') +
+        (account.arqon_id ? ' · ARQON ID #' + account.arqon_id : '') +
+        ' · регистрация ' + (account.created_at ? new Date(account.created_at).toLocaleDateString('ru-RU') : '—');
+      const state = document.createElement('div');
+      state.style.cssText = 'font-size:13px;margin-top:5px;color:#bda2ff';
+      const isBanned = !!account.banned_until && new Date(account.banned_until).getTime() > Date.now();
+      if (account.organizer_role) {
+        state.textContent = 'Защищённая роль: ' + account.organizer_role + ' · управление через раздел прав организаторов';
+      } else if (isBanned) {
+        state.textContent = 'ЗАБЛОКИРОВАН · до ' + new Date(account.banned_until).toLocaleString('ru-RU');
+        state.style.color = '#fca5a5';
+      } else {
+        state.textContent = account.email_confirmed_at ? 'Аккаунт активен · email подтверждён' : 'Email не подтверждён';
+      }
+      info.append(heading, meta, state);
+      card.append(info);
+      if (!account.organizer_role) {
+        const actions = document.createElement('div');
+        actions.style.cssText = 'display:flex;gap:7px;flex-wrap:wrap';
+        const ban = document.createElement('button');
+        ban.type = 'button'; ban.className = isBanned ? 'btn ghost' : 'btn danger';
+        ban.textContent = isBanned ? 'Разблокировать' : 'Заблокировать';
+        ban.dataset.accountAction = isBanned ? 'unban' : 'ban';
+        ban.dataset.accountId = account.id;
+        actions.append(ban);
+        const del = document.createElement('button');
+        del.type = 'button'; del.className = 'btn danger';
+        del.textContent = 'Удалить';
+        del.dataset.accountAction = 'delete';
+        del.dataset.accountId = account.id;
+        actions.append(del);
+        card.append(actions);
+      }
+      host.append(card);
+    });
+    status.textContent = 'Всего аккаунтов: ' + accountManagementRows.length + ' · найдено: ' + filtered.length;
+  }
+  async function refreshAccountManagementList() {
+    if (organizerRole !== 'owner') return;
+    const status = byId('arqon-account-management-status');
+    if (!status) return;
+    status.textContent = 'Загружаем аккаунты…';
+    const refresh = byId('arqon-account-management-refresh');
+    if (refresh) refresh.disabled = true;
+    try {
+      const data = await callAccountManagement({ action: 'list' });
+      accountManagementRows = Array.isArray(data.users) ? data.users : [];
+      renderAccountManagementList();
+    } catch (error) {
+      status.textContent = 'Не удалось загрузить аккаунты: ' + error.message;
+    } finally {
+      if (refresh) refresh.disabled = false;
+    }
+  }
+  async function installAccountManagementPanel() {
+    if (organizerRole !== 'owner') return;
+    const section = byId('tab-admin');
+    if (!section || byId('arqon-account-management')) return;
+    const card = document.createElement('section');
+    card.className = 'card';
+    card.id = 'arqon-account-management';
+    card.innerHTML = '<h2>🛡️ Управление аккаунтами</h2><p class="hint" style="margin-bottom:12px">Блокировка и удаление обычных аккаунтов ARQON. Аккаунты владельца, администраторов, редакторов и судей защищены от действий здесь.</p><div style="display:flex;gap:8px;flex-wrap:wrap"><input id="arqon-account-management-search" type="search" placeholder="Поиск по email, нику или ARQON ID" style="flex:1;min-width:190px"><button type="button" class="btn ghost" id="arqon-account-management-refresh">Обновить</button></div><p id="arqon-account-management-status" class="hint" role="status" style="margin-top:10px">Загружаем аккаунты…</p><div id="arqon-account-management-list"></div>';
+    section.prepend(card);
+    byId('arqon-account-management-search').addEventListener('input', renderAccountManagementList);
+    byId('arqon-account-management-refresh').addEventListener('click', refreshAccountManagementList);
+    byId('arqon-account-management-list').addEventListener('click', async event => {
+      const button = event.target.closest('[data-account-action][data-account-id]');
+      if (!button || organizerRole !== 'owner') return;
+      const account = accountManagementRows.find(row => row.id === button.dataset.accountId);
+      if (!account || account.organizer_role) return;
+      const action = button.dataset.accountAction;
+      const label = account.display_name || account.email || 'этот аккаунт';
+      const question = action === 'delete'
+        ? 'Навсегда удалить аккаунт ' + label + '? Его профиль и связанные с Auth записи будут удалены. Это действие нельзя отменить.'
+        : action === 'ban'
+          ? 'Заблокировать аккаунт ' + label + '? Он не сможет войти снова, пока блокировка активна.'
+          : 'Снять блокировку с аккаунта ' + label + '?';
+      if (!window.confirm(question)) return;
+      button.disabled = true;
+      try {
+        await callAccountManagement({ action, user_id: account.id });
+        if (action === 'delete') accountManagementRows = accountManagementRows.filter(row => row.id !== account.id);
+        else if (action === 'ban') account.banned_until = new Date(Date.now() + 100 * 365.25 * 24 * 60 * 60 * 1000).toISOString();
+        else account.banned_until = null;
+        renderAccountManagementList();
+        const status = byId('arqon-account-management-status');
+        if (status) status.textContent = action === 'delete' ? 'Аккаунт удалён.' : action === 'ban' ? 'Аккаунт заблокирован.' : 'Блокировка снята.';
+      } catch (error) {
+        const status = byId('arqon-account-management-status');
+        if (status) status.textContent = 'Не удалось выполнить действие: ' + error.message;
+        button.disabled = false;
+      }
+    });
+    await refreshAccountManagementList();
+  }
+
   window.checkUserRole = async function(uid) {
     // A valid auth event means the session exists: keep logout visible even when
     // this Steam account has not yet been mapped to the legacy players table.
@@ -478,6 +610,7 @@
       const adminSection = byId('tab-admin');
       await installAwardAdminPanel();
       if (organizerRole === 'owner') await installOrganizerAccessAdminPanel();
+      if (organizerRole === 'owner') await installAccountManagementPanel();
       if (adminSection && !byId('bracket-builder-admin-link')) {
         const card = document.createElement('div');
         card.className = 'card';
