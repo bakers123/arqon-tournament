@@ -56,58 +56,56 @@
     items.appendChild(builderLink);
 
     const groups = [
-      {name:'ТУРНИР',match:/настройки турнира|сгенерировать сетку|открыть пики|сбросить всё/i},
-      {name:'ИГРОКИ И КОМАНДЫ',match:/добавить игрока|соло игроки|свободные игроки|составы и команды/i},
-      {name:'КОНТЕНТ И ПАРТНЁРЫ',match:/добавить новость|добавить партнера/i},
-      {name:'МАТЧИ И РЕЗУЛЬТАТЫ',match:/чат текущего матча|расписание|результаты турнира/i},
-      {name:'КИБЕРСПОРТИВНАЯ ЛИГА',match:/управление турниром.*лига/i}
+      {name:'УПРАВЛЕНИЕ И ДОСТУПЫ',match:/управление аккаунтами|доступ к служебному входу|права организаторов|роли|безопасност/i},
+      {name:'ТУРНИР И СЕТКИ',match:/настройки турнира|сгенерировать сетку|открыть пики|сбросить всё|турнирная сетка|конструктор турнирных сеток/i},
+      {name:'ИГРОКИ И КОМАНДЫ',match:/добавить игрока|соло игроки|свободные игроки|составы и команды|редактирование steam|игроки|команды/i},
+      {name:'МАТЧИ И РЕЗУЛЬТАТЫ',match:/чат текущего матча|расписание|результаты турнира|добавить матч|добавить результаты|матчи/i},
+      {name:'КИБЕРСПОРТИВНАЯ ЛИГА',match:/управление турниром.*лига|киберспортивная лига|лига/i},
+      {name:'КОНТЕНТ И ПАРТНЁРЫ',match:/добавить новость|добавить партнера|новости|партнер|эксклюзивы профиля|достижени|магазин/i},
+      {name:'ПРОЧИЕ ИНСТРУМЕНТЫ',match:/.*/i}
     ];
-    const cards = Array.from(root.children).filter(el => el.classList?.contains('card'));
-    const used = new Set();
-    groups.forEach(group => {
-      const found = cards.filter(card => {
-        const heading = card.querySelector(':scope > h2, :scope > h3, :scope > .tabs-inner');
-        const label = heading?.textContent?.trim() || (card.querySelector('#solo-list') ? 'Соло игроки и команды' : '');
-        if (!label || !group.match.test(label)) return false;
-        used.add(card);
-        return true;
-      });
-      if (!found.length) return;
-      const section = document.createElement('section');
-      section.className = 'arqon-admin-group';
-      const title = document.createElement('div');
-      title.className = 'arqon-admin-group-title';
-      title.textContent = group.name;
-      section.appendChild(title);
-      found.forEach(card => {
-        if (!card.id) card.id = 'arqon-admin-section-' + cards.indexOf(card);
-        const heading = card.querySelector(':scope > h2, :scope > h3, :scope > .tabs-inner');
-        const label = heading?.textContent?.trim().replace(/\s+/g,' ') || (card.querySelector('#solo-list') ? 'Составы и команды' : 'Раздел');
-        const link = document.createElement('a');
-        link.className = 'arqon-admin-link';
-        link.href = '#' + card.id;
-        link.textContent = label.length > 48 ? label.slice(0,45) + '…' : label;
-        link.addEventListener('click',event => {
-          event.preventDefault();
-          close();
-          card.scrollIntoView({behavior:window.matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth',block:'start'});
+    function rebuildAdminMenu() {
+      const cards = Array.from(root.children).filter(el => el.classList?.contains('card'));
+      items.querySelectorAll('.arqon-admin-group').forEach(el => el.remove());
+      const used = new Set();
+      groups.forEach((group,index) => {
+        const found = cards.filter(card => {
+          if (used.has(card)) return false;
+          const heading = card.querySelector(':scope > h2, :scope > h3, :scope > .tabs-inner');
+          const label = heading?.textContent?.trim() || (card.querySelector('#solo-list') ? 'Соло игроки и команды' : '');
+          if (!label || !group.match.test(label)) return false;
+          if (index === groups.length - 1 && groups.slice(0,-1).some(g=>g.match.test(label))) return false;
+          return true;
         });
-        section.appendChild(link);
+        if (!found.length) return;
+        const section = document.createElement('section');
+        section.className = 'arqon-admin-group';
+        const title = document.createElement('div');
+        title.className = 'arqon-admin-group-title';
+        title.textContent = group.name;
+        section.appendChild(title);
+        found.forEach(card => {
+          used.add(card);
+          if (!card.id) card.id = 'arqon-admin-section-' + cards.indexOf(card);
+          const heading = card.querySelector(':scope > h2, :scope > h3, :scope > .tabs-inner');
+          const label = heading?.textContent?.trim().replace(/\\s+/g,' ') || (card.querySelector('#solo-list') ? 'Составы и команды' : 'Раздел');
+          const link = document.createElement('a');
+          link.className = 'arqon-admin-link';
+          link.href = '#' + card.id;
+          link.textContent = label.length > 48 ? label.slice(0,45) + '…' : label;
+          link.addEventListener('click',event => {
+            event.preventDefault();
+            close();
+            card.scrollIntoView({behavior:window.matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth',block:'start'});
+          });
+          section.appendChild(link);
+        });
+        items.appendChild(section);
       });
-      items.appendChild(section);
-    });
-    cards.filter(card => !used.has(card)).forEach(card => {
-      if (!card.id) card.id = 'arqon-admin-section-' + cards.indexOf(card);
-      const link = document.createElement('a');
-      link.className = 'arqon-admin-link';
-      link.href = '#' + card.id;
-      link.textContent = card.querySelector('h2,h3')?.textContent?.trim() || 'Дополнительный раздел';
-      link.addEventListener('click',event=>{event.preventDefault();close();card.scrollIntoView({behavior:'smooth',block:'start'})});
-      let section=items.querySelector('[data-admin-extra]');
-      if(!section){section=document.createElement('section');section.className='arqon-admin-group';section.dataset.adminExtra='1';const title=document.createElement('div');title.className='arqon-admin-group-title';title.textContent='ДРУГОЕ';section.appendChild(title);items.appendChild(section)}
-      section.appendChild(link);
-    });
-
+    }
+    rebuildAdminMenu();
+    const menuObserver = new MutationObserver(() => rebuildAdminMenu());
+    menuObserver.observe(root,{childList:true});
     const open = () => {
       if (!window.isAdmin?.()) return;
       drawer.classList.add('is-open');backdrop.classList.add('is-open');document.body.classList.add('arqon-admin-drawer-open');
