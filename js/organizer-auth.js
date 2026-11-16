@@ -324,11 +324,12 @@
       const currentRole = account.organizer_role;
       if (currentRole === 'owner') state.textContent = 'Владелец · доступ защищён';
       else if (currentRole === 'judge') state.textContent = 'Судья · отдельный ограниченный доступ';
-      else if (currentRole === 'admin') state.textContent = 'Доступ есть · администратор';
-      else if (currentRole === 'editor') state.textContent = 'Доступ есть · редактор';
-      else state.textContent = 'Нет доступа к редактору';
+      else if (currentRole === 'admin') state.textContent = 'Полный доступ организатора · администратор';
+      else if (currentRole === 'editor') state.textContent = 'Полный доступ организатора · редактор';
+      else if (currentRole === 'bracket_editor') state.textContent = 'Доступ есть · только конструктор сеток';
+      else state.textContent = 'Нет доступа к конструктору сеток';
       info.append(name, meta, state); card.append(info);
-      if (currentRole === 'admin' || currentRole === 'editor') {
+      if (currentRole === 'bracket_editor') {
         const button = document.createElement('button'); button.type = 'button'; button.className = 'btn danger'; button.textContent = 'Отозвать доступ';
         button.dataset.serviceAccessUser = account.user_id; button.dataset.allowed = 'false'; card.append(button);
       } else if (!currentRole) {
@@ -344,7 +345,7 @@
     const section = byId('tab-admin');
     if (!section || byId('organizer-service-access-admin')) return;
     const card = document.createElement('div'); card.className = 'card'; card.id = 'organizer-service-access-admin';
-    card.innerHTML = '<h2>🔐 Доступ к служебному входу</h2><p class="hint" style="margin-bottom:12px">Только владелец может разрешать и отзывать доступ к редактору турнирных сеток. Новым пользователям выдаётся роль редактора. Действующие администраторы также отображаются здесь.</p><div style="display:flex;gap:8px;flex-wrap:wrap"><input id="service-access-admin-search" type="search" placeholder="Поиск по имени или email" style="flex:1;min-width:180px"><button type="button" class="btn ghost" id="service-access-admin-refresh">Обновить</button></div><p id="service-access-admin-status" class="hint" role="status" style="margin-top:10px">Загружаем аккаунты…</p><div id="service-access-admin-list"></div>';
+    card.innerHTML = '<h2>🔐 Доступ к служебному входу</h2><p class="hint" style="margin-bottom:12px">Только владелец может разрешать и отзывать доступ к редактору турнирных сеток. Новым пользователям выдаётся отдельная роль только для конструктора сеток — без доступа к общей админке. Действующие администраторы и редакторы сохраняют свои прежние права.</p><div style="display:flex;gap:8px;flex-wrap:wrap"><input id="service-access-admin-search" type="search" placeholder="Поиск по имени или email" style="flex:1;min-width:180px"><button type="button" class="btn ghost" id="service-access-admin-refresh">Обновить</button></div><p id="service-access-admin-status" class="hint" role="status" style="margin-top:10px">Загружаем аккаунты…</p><div id="service-access-admin-list"></div>';
     section.prepend(card);
     byId('service-access-admin-refresh').addEventListener('click', refreshServiceAccessAdminList);
     byId('service-access-admin-search').addEventListener('input', renderServiceAccessAdminList);
