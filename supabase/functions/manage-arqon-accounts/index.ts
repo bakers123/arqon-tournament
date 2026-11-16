@@ -40,9 +40,6 @@ Deno.serve(async (req: Request) => {
     });
     const { data: authData, error: authError } = await userClient.auth.getUser(token);
     if (authError || !authData.user) return response({ error: "Сессия недействительна." }, 401, headers);
-    const { data: role, error: roleError } = await userClient.rpc("current_organizer_role");
-    if (roleError || role !== "owner") return response({ error: "Управлять аккаунтами может только владелец ARQON." }, 403, headers);
-
     const admin = createClient(url, serviceKey, { auth: { persistSession: false, autoRefreshToken: false } });
     const body = await req.json().catch(() => ({}));
     const action = typeof body.action === "string" ? body.action : "list";
@@ -134,6 +131,8 @@ Deno.serve(async (req: Request) => {
       return response({ ok: true, profile: update }, 200, headers);
     }
 
+    const { data: ownerRole, error: ownerRoleError } = await userClient.rpc("current_organizer_role");
+    if (ownerRoleError || ownerRole !== "owner") return response({ error: "Управлять аккаунтами может только владелец ARQON." }, 403, headers);
     if (action === "list") {
       const users = [];
       for (let page = 1; page <= 100; page++) {
