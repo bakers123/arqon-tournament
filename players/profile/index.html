@@ -89,7 +89,8 @@
     <div class="content">
       <section class="card"><h2>ОБ ИГРОКЕ</h2><p class="bio" id="bio">Загружаем информацию…</p>
         <form class="edit" id="edit-form">
-          <div class="field"><label for="display-name">ИМЯ ПРОФИЛЯ</label><input id="display-name" maxlength="32" placeholder="Как тебя называть"></div>
+          <div class="field"><label for="display-name">ИМЯ ПРОФИЛЯ ARQON</label><input id="display-name" maxlength="32" placeholder="Как тебя называть"></div>
+          <div class="field"><label for="game-nick-input">ИГРОВОЙ НИК · CS2 / DOTA 2</label><input id="game-nick-input" maxlength="32" placeholder="Твой ник в игре (до 32 символов)"><small class="muted">Именно этот ник будет отображаться в составе команды. Его можно изменить в любой момент.</small></div>
           <div class="field"><label for="bio-input">О СЕБЕ · ДО 280 СИМВОЛОВ</label><textarea id="bio-input" maxlength="280" placeholder="Расскажи немного о себе"></textarea></div>
           <div class="field"><label for="cs2-elo-input">CS2 · FACEIT ELO</label><input id="cs2-elo-input" type="number" min="0" max="5000" step="1" placeholder="Например, 1850"></div>
           <div class="field"><label for="cs2-url-input">CS2 · ССЫЛКА НА FACEIT</label><input id="cs2-url-input" type="url" placeholder="https://www.faceit.com/…"></div>
@@ -170,10 +171,11 @@
     let ownerUser=null, ownProfile=null, activeSupportTicketId=null, supportTicketRows=[];
     const PROFILE_DRAFT_KEY='arqon_profile_draft_v1';
     const el=id=>document.getElementById(id);
-    const profileFields=['display-name','bio-input','cs2-elo-input','cs2-url-input','dota-mmr-input','dota-url-input','preferred-role-input','avatar-input','cover-input'];
+    const profileFields=['display-name','game-nick-input','bio-input','cs2-elo-input','cs2-url-input','dota-mmr-input','dota-url-input','preferred-role-input','avatar-input','cover-input'];
     function populateProfileForm(profile){
       if(!profile)return;
       el('display-name').value=profile.display_name||profile.steam_persona_name||profile.player_name||'';
+       el('game-nick-input').value=profile.game_nick||'';
       el('bio-input').value=profile.bio||'';
       el('cs2-elo-input').value=profile.cs2_faceit_elo??'';
       el('cs2-url-input').value=profile.cs2_faceit_url||'';
@@ -644,7 +646,7 @@ async function uploadProfileMedia(file,kind){
       // Load the signed-in owner's row first: private profile settings must not depend
       // on the public-profile RPC being available or the profile being public.
       if(ownerUser){
-        const mineResponse=await db.from('profiles').select('arqon_id,display_name,steam_persona_name,steam_avatar_url,bio,avatar_url,cover_url,is_public,show_steam,steam_id,created_at,cs2_faceit_url,cs2_faceit_elo,dota2_profile_url,dota2_mmr,looking_for_team,preferred_role,equipped_frame_id,equipped_theme_id,equipped_title_id,equipped_badge_id,exclusive_profile_title,exclusive_profile_bg_color,exclusive_avatar_border_color').eq('user_id',ownerUser.id).maybeSingle();
+        const mineResponse=await db.from('profiles').select('arqon_id,display_name,game_nick,steam_persona_name,steam_avatar_url,bio,avatar_url,cover_url,is_public,show_steam,steam_id,created_at,cs2_faceit_url,cs2_faceit_elo,dota2_profile_url,dota2_mmr,looking_for_team,preferred_role,equipped_frame_id,equipped_theme_id,equipped_title_id,equipped_badge_id,exclusive_profile_title,exclusive_profile_bg_color,exclusive_avatar_border_color').eq('user_id',ownerUser.id).maybeSingle();
         if(mineResponse.error)console.warn('Owner profile query failed:',mineResponse.error);
         else mine=mineResponse.data;
         const playerNameResponse=await db.from('players').select('name').eq('uid',ownerUser.id).maybeSingle();
@@ -696,7 +698,7 @@ async function uploadProfileMedia(file,kind){
       el('cosmetic-badge').classList.toggle('hidden',!badgeText);
       el('arqon-id').textContent='ARQON ID · #'+profile.arqon_id;
       el('stat-id').textContent='#'+profile.arqon_id;
-      el('player-name').textContent=profile.player_name||'Не указан';
+      el('player-name').textContent=profile.game_nick||profile.player_name||'Не указан';
       el('bio').textContent=profile.bio||'Игрок пока ничего не рассказал о себе.';
       el('steam-state').textContent=profile.steam_id||'Скрыт';
       el('public-cs2-elo').textContent=profile.cs2_faceit_elo===null||profile.cs2_faceit_elo===undefined?'Не указан':String(profile.cs2_faceit_elo);
@@ -752,6 +754,7 @@ async function uploadProfileMedia(file,kind){
       event.preventDefault();if(!ownerUser||!ownProfile)return;
       const message=el('edit-message');message.textContent='Сохраняем…';
       const display_name=el('display-name').value.trim().split(' ').filter(Boolean).join(' ');
+      const game_nick=el('game-nick-input').value.trim();
       const bio=el('bio-input').value.trim();
       const cs2_faceit_elo=el('cs2-elo-input').value===''?null:Number(el('cs2-elo-input').value);
       const dota2_mmr=el('dota-mmr-input').value===''?null:Number(el('dota-mmr-input').value);
@@ -765,17 +768,18 @@ async function uploadProfileMedia(file,kind){
       let cover_url=el('cover-input').value.trim()||ownProfile.cover_url||null;
       for(const url of [avatar_url,cover_url])if(url&&url.slice(0,8)!=='https://'){message.textContent='Ссылки на изображения должны начинаться с https://';return}
       if(!display_name||display_name.length>32){message.textContent='Имя должно быть от 1 до 32 символов.';return}
+      if(game_nick.length>32){message.textContent='Игровой ник — максимум 32 символа.';return}
       try{
         const uploadedAvatar=await uploadProfileMedia(el('avatar-file').files[0],'avatar');
         const uploadedCover=await uploadProfileMedia(el('cover-file').files[0],'cover');
         if(uploadedAvatar)avatar_url=uploadedAvatar;
         if(uploadedCover)cover_url=uploadedCover;
       }catch(uploadError){message.textContent=uploadError.message||'Не удалось загрузить изображение.';return}
-      const {error}=await db.from('profiles').update({display_name,bio,avatar_url,cover_url,cs2_faceit_url,cs2_faceit_elo,dota2_profile_url,dota2_mmr,is_public:el('public-input').checked,show_steam:el('steam-input').checked,looking_for_team:el('looking-for-team-input').checked,preferred_role:el('preferred-role-input').value.trim()}).eq('user_id',ownerUser.id);
+      const {error}=await db.from('profiles').update({display_name,game_nick:game_nick||null,bio,avatar_url,cover_url,cs2_faceit_url,cs2_faceit_elo,dota2_profile_url,dota2_mmr,is_public:el('public-input').checked,show_steam:el('steam-input').checked,looking_for_team:el('looking-for-team-input').checked,preferred_role:el('preferred-role-input').value.trim()}).eq('user_id',ownerUser.id);
       if(error){message.textContent=error.message;return}
       el('avatar-file').value='';el('cover-file').value='';
       try{localStorage.removeItem(PROFILE_DRAFT_KEY)}catch(_){}
-      ownProfile={...ownProfile,display_name,bio,avatar_url,cover_url,cs2_faceit_url,cs2_faceit_elo,dota2_profile_url,dota2_mmr,is_public:el('public-input').checked,show_steam:el('steam-input').checked,looking_for_team:el('looking-for-team-input').checked,preferred_role:el('preferred-role-input').value.trim()};
+      ownProfile={...ownProfile,display_name,game_nick:game_nick||null,bio,avatar_url,cover_url,cs2_faceit_url,cs2_faceit_elo,dota2_profile_url,dota2_mmr,is_public:el('public-input').checked,show_steam:el('steam-input').checked,looking_for_team:el('looking-for-team-input').checked,preferred_role:el('preferred-role-input').value.trim()};
       message.textContent='Профиль сохранён.';await load();
     });
     load().catch(error=>{console.error(error);showNotice('Не удалось загрузить профиль. Попробуй обновить страницу.',true)});
