@@ -1,6 +1,18 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
+<!-- Capture and immediately remove one-time Steam session tokens before analytics or other page scripts run. -->
+<script>
+(() => {
+  const params = new URLSearchParams(window.location.hash.replace(/^#/, ''));
+  const access = params.get('access_token');
+  const refresh = params.get('refresh_token');
+  if (access && refresh && new URLSearchParams(window.location.search).get('steam') === 'signed_in') {
+    window.__ARQON_STEAM_SESSION = { access_token: access, refresh_token: refresh };
+    window.history.replaceState({}, document.title, window.location.pathname + window.location.search);
+  }
+})();
+</script>
 <!-- Google tag (gtag.js) -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-2YLPZGQZSX"></script>
 <script>
@@ -636,7 +648,8 @@
   .portal-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(245px,1fr));gap:16px;margin:16px 0 28px}
   .portal-card{position:relative;overflow:hidden;border:1px solid var(--border);border-radius:14px;background:linear-gradient(145deg,rgba(30,25,44,.96),rgba(13,13,19,.98));padding:20px;min-height:180px;transition:transform .2s,border-color .2s}
   .portal-card:hover{transform:translateY(-3px);border-color:var(--accent,#8b5cf6)}.portal-card h3{margin:8px 0 10px;font-size:22px}.portal-card p{color:var(--text-dim);line-height:1.5}.portal-pill{display:inline-flex;border:1px solid rgba(167,139,250,.45);color:#c4b5fd;border-radius:999px;padding:4px 9px;font-size:11px;letter-spacing:1px;text-transform:uppercase}.portal-toolbar{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin:18px 0}.portal-toolbar input{max-width:420px;width:100%}.portal-stat{font-family:Orbitron,sans-serif;color:#c4b5fd;font-size:26px}.portal-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:16px}.portal-profile-top{display:flex;gap:16px;align-items:center;flex-wrap:wrap}.portal-avatar{width:68px;height:68px;border-radius:16px;background:linear-gradient(135deg,#6d28d9,#171321);display:grid;place-items:center;font-size:28px;font-weight:900;border:1px solid #8b5cf6}.portal-avatar-has-image{overflow:hidden;padding:0;position:relative}.portal-avatar-has-image img{width:100%;height:100%;object-fit:cover;display:block}.portal-avatar-fallback{position:absolute;inset:0;place-items:center;font-size:28px;font-weight:900}.portal-detail-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-top:16px}.portal-detail-stat{padding:14px;border:1px solid var(--border);border-radius:10px;background:rgba(255,255,255,.025)}.portal-detail-stat small{display:block;color:var(--text-dim);margin-bottom:6px}
-  @media(max-width:700px){.portal-card{padding:16px}.portal-heading{padding-top:12px}}
+  .portal-actions a.profile-link{display:flex;align-items:center;justify-content:space-between;gap:12px;flex:1 1 100%;min-height:48px;padding:12px 16px;border:1px solid rgba(167,139,250,.42);border-radius:12px;background:linear-gradient(110deg,rgba(124,58,237,.2),rgba(167,139,250,.08));color:#e9ddff;text-decoration:none;font-weight:800;letter-spacing:.5px;transition:border-color .2s,background .2s,transform .2s}.portal-actions a.profile-link:hover{border-color:#a78bfa;background:linear-gradient(110deg,rgba(124,58,237,.32),rgba(167,139,250,.14));transform:translateY(-1px)}.portal-actions a.profile-link .profile-link-arrow{font-size:19px;color:#c4b5fd}
+  @media(max-width:700px){.portal-card{padding:16px;min-width:0}.portal-heading{padding-top:12px}.portal-profile-top>*{min-width:0}.portal-card h3{overflow-wrap:anywhere}.portal-actions{display:grid;grid-template-columns:1fr}.portal-actions a.profile-link{min-height:46px}}
 
 
 /* ARQON League table */
@@ -918,18 +931,34 @@
 @media(max-width:820px){.home-layout{display:flex;flex-direction:column}.home-main-column{width:100%;order:1}.home-fonbet-sidebar{position:static;width:100%;max-width:360px;height:auto;margin:16px auto 22px;order:2}.home-fonbet-link{height:auto}.home-fonbet-link img{height:auto;aspect-ratio:300/560;object-fit:cover}.home-fonbet-sidebar .home-fonbet-note{font-size:9px}}
 
 </style>
-  <link rel="stylesheet" href="/assets/arqon-redesign.css?v=16">
+  <link rel="stylesheet" href="/assets/arqon-redesign.css?v=20">
 </head>
 <body>
 
-<!-- ЭКРАН ВХОДА -->
+<!-- ВХОД И РЕГИСТРАЦИЯ ИГРОКА -->
 <div id="auth-screen" class="modal" style="display: none; align-items: center; justify-content: center;">
-  <div class="modal-content" style="text-align: center; max-width: 400px;">
-    <h2 style="margin-bottom: 20px;">Вход для игрока</h2>
-    <div class="hint" style="margin-bottom: 15px;">Введи код доступа, который выдал админ</div>
-    <input id="auth-code" placeholder="Например: A7X9K2" style="text-align: center; font-size: 24px; letter-spacing: 5px; margin-bottom: 15px; text-transform: uppercase;" />
-    <button class="btn" id="login-btn" onclick="loginWithCode()" style="width: 100%;">Войти</button>
-    <div id="auth-error" class="msg error hidden" style="margin-top: 15px;"></div>
+  <div class="modal-content" style="text-align: center; max-width: 430px;">
+    <h2 style="margin-bottom: 12px;">Аккаунт ARQON</h2>
+    <div id="steam-login-actions">
+      <p class="hint" style="margin-bottom: 15px;">Вход и регистрация через Steam. После первой привязки потребуется подтвердить email.</p>
+      <button class="btn" id="steam-login-btn" onclick="startSteamAuth('login')" style="width: 100%; margin-bottom: 10px;">Войти через Steam</button>
+      <button class="btn ghost" id="steam-register-btn" onclick="startSteamAuth('register')" style="width: 100%;">Создать аккаунт через Steam</button>
+      <div id="steam-auth-message" class="msg hidden" role="status" style="margin-top: 14px;"></div>
+    </div>
+    <div id="steam-email-step" class="hidden" style="text-align:left;">
+      <p style="margin:10px 0;color:#ddd;">Steam успешно привязан. Теперь укажи email — на него придёт письмо для подтверждения аккаунта.</p>
+      <label for="steam-email" class="label">Email</label>
+      <input id="steam-email" type="email" autocomplete="email" placeholder="name@example.com" style="margin-bottom:12px;">
+      <button class="btn" id="steam-email-submit" onclick="saveSteamEmail()" style="width:100%;">Отправить письмо подтверждения</button>
+      <div id="steam-email-message" class="msg hidden" role="status" style="margin-top:12px;"></div>
+    </div>
+    <details style="margin-top:18px;text-align:left;border-top:1px solid var(--border);padding-top:12px;">
+      <summary style="cursor:pointer;color:var(--text-dim);font-size:12px;">Старый вход по коду (временно)</summary>
+      <div class="hint" style="margin:12px 0;">Введи код доступа, который выдал администратор.</div>
+      <input id="auth-code" placeholder="Например: A7X9K2" style="text-align:center;font-size:22px;letter-spacing:5px;margin-bottom:12px;text-transform:uppercase;">
+      <button class="btn" id="login-btn" onclick="loginWithCode()" style="width:100%;">Войти по коду</button>
+      <div id="auth-error" class="msg error hidden" style="margin-top:12px;"></div>
+    </details>
   </div>
 </div>
 
@@ -988,6 +1017,8 @@
     <button data-tab="bracket">Сетка</button>
     <button data-tab="tournaments">Турниры</button>
     <button data-tab="players">Игроки</button>
+    <button type="button" onclick="window.location.href='/achievements/'">🏅 Достижения</button>
+    <button type="button" onclick="window.location.href='/shop/'">◈ Магазин</button>
      <button data-tab="teams">Команды</button>
      <button data-tab="history">История</button>
     <button data-tab="news">Новости</button>
@@ -1010,14 +1041,83 @@
       Поддержать
     </a>
   </nav>
+  <button id="steam-header-entry" class="btn" type="button" onclick="openAuthScreen()" style="display:inline-flex;align-items:center;white-space:nowrap;margin:0 12px 0 0;">Войти через Steam</button>
+  <button id="arqon-account-button" type="button" onclick="openArqonAccount()" aria-label="Открыть мой аккаунт" style="display:none;"><span class="arqon-account-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M20 21a8 8 0 0 0-16 0" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><circle cx="12" cy="8" r="4" stroke="currentColor" stroke-width="1.8"/></svg></span><span class="arqon-account-label">МОЙ АККАУНТ</span></button>
   <div class="mobile-nav-scrollbar" id="mobile-nav-scrollbar" aria-label="Полоса прокрутки меню">
     <div class="mobile-nav-scrollbar-thumb" id="mobile-nav-scrollbar-thumb"></div>
   </div>
 </header>
 
+<div id="arqon-account-modal" class="modal" style="display:none;z-index:1200;align-items:center;justify-content:center;">
+  <div class="modal-content" style="max-width:460px;width:calc(100% - 28px);text-align:left;">
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;">
+      <h2 style="margin:0;color:var(--accent);">Аккаунт ARQON</h2>
+      <button type="button" class="btn ghost" onclick="closeArqonAccount()" aria-label="Закрыть">✕</button>
+    </div>
+    <p class="hint" style="margin:8px 0 16px;">Твой постоянный идентификатор ARQON. Имя профиля можно менять независимо от игрового ника.</p>
+    <div style="padding:16px;border:1px solid rgba(139,92,246,.45);border-radius:12px;background:rgba(139,92,246,.08);">
+      <small class="hint">ТВОЙ ARQON ID</small>
+      <div id="arqon-account-id" style="font:700 30px Orbitron,sans-serif;color:#c4b5fd;margin-top:5px;">—</div>
+    </div>
+    <label class="label" for="arqon-account-name" style="margin-top:16px;">Имя профиля</label>
+    <input id="arqon-account-name" maxlength="32" placeholder="Имя твоего профиля">
+    <div id="arqon-account-email" class="hint" style="margin-top:10px;"></div>
+    <div id="arqon-account-steam" class="hint" style="margin-top:5px;"></div>
+    <button id="arqon-link-steam" class="btn ghost" type="button" onclick="linkSteamFromAccount()" style="display:none;width:100%;margin-top:14px;">Привязать Steam</button>
+    <a id="arqon-open-profile" class="btn ghost" href="/players/profile/" style="display:block;text-align:center;width:100%;margin-top:10px;padding:11px 22px;border-radius:6px;text-decoration:none;border:1px solid var(--border);color:var(--text-dim);">Открыть публичный профиль</a>
+    <a id="arqon-open-notifications" class="btn ghost" href="/notifications/" style="display:block;text-align:center;width:100%;margin-top:9px;padding:11px 22px;border-radius:10px;text-decoration:none;border:1px solid rgba(167,139,250,.35);color:#dfceff;">Уведомления и настройки →</a>
+    <button id="arqon-telegram-settings-toggle" class="btn" type="button" onclick="toggleTelegramAccountSettings()" style="display:block;text-align:center;width:100%;margin-top:9px;padding:11px 22px;border-radius:10px;background:linear-gradient(110deg,#6d28d9,#8b5cf6);color:#fff;">Настроить Telegram-уведомления</button>
+    <section id="arqon-telegram-account-panel" style="display:none;margin-top:12px;padding:14px;border:1px solid rgba(139,92,246,.35);border-radius:12px;background:rgba(139,92,246,.06);">
+      <div id="arqon-telegram-account-status" class="hint" role="status">Проверяем подключение…</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;">
+        <button id="arqon-telegram-account-connect" class="btn" type="button" onclick="connectTelegramFromAccount()">Подключить Telegram</button>
+        <button id="arqon-telegram-account-unlink" class="btn ghost" type="button" onclick="unlinkTelegramFromAccount()" style="display:none;">Отключить</button>
+      </div>
+      <div id="arqon-telegram-account-codebox" style="display:none;margin-top:10px;">
+        <p class="hint">Открой бота и отправь ему команду в течение 10 минут:</p>
+        <code id="arqon-telegram-account-code" style="display:block;overflow-wrap:anywhere;padding:10px;background:#171321;border-radius:10px;"></code>
+        <button class="btn ghost" type="button" onclick="copyTelegramAccountCode()" style="margin-top:8px;">Скопировать команду</button>
+        <a id="arqon-telegram-account-bot" class="btn" href="https://t.me/arqon_esports_bot" target="_blank" rel="noopener" style="display:inline-block;margin:8px 0 0 6px;text-decoration:none;">Открыть @arqon_esports_bot</a>
+      </div>
+    </section>
+    <section style="margin-top:16px;padding:14px;border:1px solid rgba(139,92,246,.35);border-radius:12px;background:rgba(139,92,246,.06);"><h3 style="font:700 12px Orbitron,sans-serif;letter-spacing:1.5px;color:#d9c4ff;margin:0 0 10px;">ПРИГЛАШЕНИЯ В КОМАНДЫ</h3><div id="arqon-team-invitations" class="hint" aria-live="polite">Загружаем приглашения…</div></section>
+    <div id="arqon-account-message" class="msg hidden" role="status" style="margin-top:12px;"></div>
+    <button class="btn ghost" type="button" onclick="logoutPlayer()" style="display:block;width:100%;margin-top:16px;border-color:rgba(239,68,68,.35);color:#fca5a5;">Выйти из аккаунта</button>
+    <div style="display:flex;gap:10px;margin-top:12px;">
+      <button class="btn" type="button" onclick="saveArqonAccountName()">Сохранить имя</button>
+      <button class="btn ghost" type="button" onclick="closeArqonAccount()">Закрыть</button>
+    </div>
+  </div>
+</div>
+
 <main style="flex: 1;">
   <!-- АДМИН ПАНЕЛЬ -->
   <section id="tab-admin" class="hidden">
+    <div class="card" id="arqon-awards-admin">
+      <h2>🏅 Награды игроков ARQON</h2>
+      <p class="hint" style="margin:0 0 14px">Выдавай особые награды игрокам по ARQON ID. Отзыв сохраняет запись в истории и не удаляет её навсегда.</p>
+      <div class="row" style="gap:10px;align-items:center;flex-wrap:wrap">
+        <input id="award-player-id" type="number" min="1" step="1" placeholder="ARQON ID игрока" style="max-width:220px">
+        <button class="btn" id="award-player-find" type="button">Найти игрока</button>
+      </div>
+      <div id="award-player-result" class="hint" role="status" style="margin:10px 0"></div>
+      <div id="award-grant-fields" class="hidden">
+        <div class="row" style="gap:10px;flex-wrap:wrap">
+          <select id="award-type" style="min-width:220px;flex:1">
+            <option value="founder">🏛 Основатель ARQON · легендарная</option>
+            <option value="community">💜 Амбассадор ARQON · эпическая</option>
+            <option value="event_mvp">⭐ MVP события · редкая</option>
+            <option value="champion">🏆 Чемпион ARQON · эпическая</option>
+            <option value="fair_play">🤝 Fair Play · редкая</option>
+            <option value="legend">👑 Легенда ARQON · легендарная</option>
+          </select>
+          <input id="award-reason" maxlength="300" placeholder="Причина выдачи (обязательно)" style="min-width:220px;flex:2">
+        </div>
+        <button class="btn" id="award-grant" type="button" style="margin-top:10px">Выдать награду</button>
+      </div>
+      <div id="award-admin-message" class="hint" role="status" style="margin-top:10px"></div>
+      <div id="award-admin-history" class="history-list" style="margin-top:14px"></div>
+    </div>
     <div class="card">
       <h2>🤝 Добавить партнера</h2>
       <div class="row" style="flex-direction: column; gap: 10px;">
@@ -1237,29 +1337,8 @@
         <button class="btn" onclick="loadLeague(true)">↻ Обновить матчи</button>
         <button class="btn ghost" onclick="leagueAddMatch()">＋ Добавить матч</button>
         <button class="btn ghost" onclick="leagueExportBackup()">⇩ Экспорт JSON</button>
-        <button class="btn" id="league-finish-button" onclick="leagueCompleteSeason()">🏁 Завершить лигу и зафиксировать призёров</button>
       </div>
       <div id="league-admin-matches"></div>
-    </div>
-    <div class="card hidden" id="admin-exclusive-profile-card">
-      <h2>✦ Эксклюзивы профиля игрока</h2>
-      <p class="hint" style="margin:0 0 14px">Выдавай персональные титулы и оформление, которых нет в магазине. Игрок не сможет купить или передать эти эксклюзивы.</p>
-      <div class="row" style="flex-direction:column;gap:10px">
-        <input id="exclusive-arqon-id" type="number" min="1" step="1" placeholder="ARQON ID игрока" />
-        <input id="exclusive-title" maxlength="40" placeholder="Эксклюзивный титул (до 40 символов)" />
-        <div class="row" style="gap:10px;flex-wrap:wrap">
-          <label style="flex:1;min-width:190px">Цвет фона профиля
-            <input id="exclusive-bg-color" type="text" maxlength="7" placeholder="#1A1230" />
-          </label>
-          <label style="flex:1;min-width:190px">Цвет обводки аватара
-            <input id="exclusive-border-color" type="text" maxlength="7" placeholder="#A855F7" />
-          </label>
-        </div>
-        <p class="hint" style="margin:0">Пустое поле убирает соответствующий эксклюзив. Цвета указывай в формате #RRGGBB.</p>
-        <button class="btn" type="button" onclick="adminSaveExclusiveProfile()">✦ Выдать / обновить эксклюзивы</button>
-        <button class="btn ghost" type="button" onclick="adminClearExclusiveProfile()">Снять все эксклюзивы с игрока</button>
-      </div>
-      <div id="exclusive-profile-msg" role="status" style="margin-top:12px"></div>
     </div>
   </section>
 
@@ -1275,7 +1354,6 @@
         <div class="home-actions">
           <button class="btn" onclick="switchTab('bracket')">🏆 Открыть турнирную сетку</button>
           <button class="btn ghost" onclick="switchTab('schedule')">📅 Смотреть расписание</button>
-          <a class="btn ghost" href="/live/" style="display:inline-flex;align-items:center;justify-content:center">◉ ARQON Live Center</a>
         </div>
       </div>
 
@@ -1310,7 +1388,7 @@
         <article class="home-tile"><div class="tile-icon">🗓️</div><h3>Матчи и расписание</h3><p>Проверяй запланированные встречи и не пропускай важные игры.</p><button class="btn ghost" style="margin-top:16px" onclick="switchTab('schedule')">Все матчи →</button></article>
         <article class="home-tile"><div class="tile-icon">🏅</div><h3>Результаты</h3><p>Узнавай, кто занял призовые места и кто стал чемпионом.</p><button class="btn ghost" style="margin-top:16px" onclick="switchTab('results')">Смотреть результаты →</button></article>
         <article class="home-tile"><div class="tile-icon">📰</div><h3>Новости сообщества</h3><p>Анонсы, итоги турниров и важные обновления платформы.</p><button class="btn ghost" style="margin-top:16px" onclick="switchTab('news')">Читать новости →</button></article>
-        <article class="home-tile"><div class="tile-icon">🎮</div><h3>Участникам</h3><p>Если организатор выдал тебе код доступа, войди в кабинет игрока и следи за своим драфтом.</p><button class="btn ghost" style="margin-top:16px" onclick="openAuthScreen()">Войти как игрок →</button></article>
+        <article class="home-tile"><div class="tile-icon">🎮</div><h3>Участникам</h3><p>Создай аккаунт или войди через Steam, чтобы пользоваться возможностями ARQON. Код доступа пока оставлен для действующих участников.</p><button class="btn ghost" style="margin-top:16px" onclick="openAuthScreen()">Войти как игрок →</button></article>
         <article class="home-tile"><div class="tile-icon">🤝</div><h3>Партнёры ARQON</h3><p>Компании и сообщества, которые помогают развивать киберспорт вместе с нами.</p><button class="btn ghost" style="margin-top:16px" onclick="switchTab('partners')">Наши партнёры →</button></article>
       </div>
 
@@ -1347,11 +1425,30 @@
   <section id="tab-players" class="hidden">
     <div class="portal-heading"><div class="home-kicker">PLAYER HUB</div><h1 class="home-title">ИГРОКИ <span>ARQON</span></h1><p class="home-lead">Рейтинг игроков ARQON, профили, FACEIT и результаты турниров. Следи за игроками и командами киберспортивного сообщества Тюмени.</p></div>
     <div class="portal-toolbar"><input id="player-search" placeholder="Найти игрока…" aria-label="Найти игрока" /><span id="players-count" class="hint"></span></div>
-    <div id="player-list" class="portal-grid"><div class="home-data-card">Загружаем игроков…</div></div>
+    <section class="arqon-hub-panel" style="margin:0 0 18px"><div class="home-kicker">LIVE PERFORMANCE</div><h2 style="margin:5px 0 12px">ТОП ИГРОКОВ ПО МАТЧАМ</h2><p class="hint" style="margin:0 0 12px">Автоматический индекс по статистике Live Center. В рейтинг попадают игроки минимум с 3 матчами.</p><div id="player-performance-leaders" class="portal-grid"><div class="home-data-card">Загружаем статистику…</div></div></section>
+    <section class="arqon-hub-panel" style="margin:0 0 18px">
+      <div class="home-kicker">STEAM REGISTRATION</div>
+      <h2 style="margin:5px 0 8px">ЗАРЕГИСТРИРОВАЛИСЬ ЧЕРЕЗ STEAM</h2>
+      <p class="hint" style="margin:0 0 12px">Игроки, которые самостоятельно создали аккаунт ARQON через Steam и ещё не привязаны к составу, добавленному организаторами.</p>
+      <div id="steam-registered-count" class="hint" style="margin:0 0 10px"></div>
+      <div id="steam-registered-list" class="portal-grid"><div class="home-data-card">Загружаем Steam-регистрации…</div></div>
+    </section>
+    <section class="arqon-hub-panel" style="margin:0 0 18px">
+      <div class="home-kicker">ORGANIZER DIRECTORY</div>
+      <h2 style="margin:5px 0 8px">ЗАРЕГИСТРИРОВАН АДМИНИСТРАТОРОМ</h2>
+      <p class="hint" style="margin:0 0 12px">Игроки, которых организаторы внесли в составы ARQON.</p>
+      <div id="player-list" class="portal-grid"><div class="home-data-card">Загружаем игроков…</div></div>
+    </section>
     <div id="player-detail" class="home-data-card hidden" style="margin-top:20px"></div>
   </section>
 
-  <section id="tab-teams" class="hidden"><div class="portal-heading"><div class="home-kicker">TEAM HUB</div><h1 class="home-title">КОМАНДЫ <span>ARQON</span></h1><p class="home-lead">Профили команд, положение в лиге, составы и история встреч.</p><a class="btn" href="/teams/" style="display:inline-flex;margin-top:12px">Открыть отдельный каталог команд ↗</a></div><div id="team-list" class="portal-grid"><div class="home-data-card">Загружаем команды…</div></div><div id="team-detail" class="arqon-hub-panel hidden"></div></section>
+  <section id="tab-achievements" class="hidden">
+    <div class="portal-heading"><div class="home-kicker">ARQON REWARDS</div><h1 class="home-title">ДОСТИЖЕНИЯ <span>ARQON</span></h1><p class="home-lead">Собирай награды за результаты турниров и личную статистику в матчах Live Center. Здесь открыты все условия — закрытые достижения не отображаются в профилях игроков.</p></div>
+    <div class="arqon-hub-panel" style="margin-bottom:18px"><div class="home-kicker">КАК ЭТО РАБОТАЕТ</div><p class="hint" style="margin:8px 0 0">Турнирные достижения начисляются по опубликованным результатам. Достижения Live Center рассчитываются автоматически после внесения организатором личной статистики матча. Повторные результаты учитываются по правилам каждой награды.</p></div>
+    <div id="achievement-catalog" class="portal-grid"></div>
+  </section>
+
+  <section id="tab-teams" class="hidden"><div class="portal-heading"><div class="home-kicker">TEAM HUB</div><h1 class="home-title">КОМАНДЫ <span>ARQON</span></h1><p class="home-lead">Профили команд, положение в лиге, составы и история встреч.</p></div><div id="team-list" class="portal-grid"><div class="home-data-card">Загружаем команды…</div></div><div id="team-detail" class="arqon-hub-panel hidden"></div></section>
   <section id="tab-history" class="hidden"><div class="portal-heading"><div class="home-kicker">MATCH ARCHIVE</div><h1 class="home-title">ИСТОРИЯ <span>МАТЧЕЙ</span></h1><p class="home-lead">Архив сыгранных матчей ARQON: результаты, технические поражения и история команд.</p></div><div class="arqon-hub-panel"><div class="arqon-history-toolbar"><input id="history-search" placeholder="Поиск по команде или номеру матча…" aria-label="Поиск матчей" oninput="renderHistory()"><select id="history-filter" aria-label="Фильтр результатов" onchange="renderHistory()"><option value="all">Все результаты</option><option value="normal">Обычные матчи</option><option value="tech">Технические матчи</option></select></div><div id="history-count" class="hint"></div><div id="history-list" class="arqon-match-list"><div class="home-data-card">Загружаем историю…</div></div></div></section>
 
   <!-- ВКЛАДКА СЕТКА -->
@@ -1466,7 +1563,7 @@ const CS2_MAPS = [
   "de_ancient", "de_anubis", "de_cache", "de_dust2", "de_inferno", "de_mirage", "de_nuke"
 ];
 
-// Organizer auth is installed by js/organizer-auth.js after this inline bundle loads.
+// Organizer auth is installed by js/organizer-auth.js?v=cb766ea4 after this inline bundle loads.
 function isAdmin() { return false; }
 
 // Состояние турнира
@@ -1490,12 +1587,12 @@ let state = {
 // ==========================================
 
 supabaseClient.auth.onAuthStateChange((event, session) => {
-  // startApp() restores the initial session. Do not repeat role checks and
-  // tournament loads for Supabase's INITIAL_SESSION/TOKEN_REFRESHED events.
+  // startApp() handles the first restored session; skip duplicate startup work.
   if (event === 'INITIAL_SESSION' || event === 'TOKEN_REFRESHED') return;
   if (window.isAdmin?.()) return;
   if (session?.user) {
     currentUser = session.user;
+    loadArqonAccount();
     Promise.resolve(window.checkUserRole?.(session.user.id))
       .then(() => applyPathRoute())
       .catch(error => console.error('Ошибка проверки роли пользователя:', error));
@@ -1506,6 +1603,8 @@ supabaseClient.auth.onAuthStateChange((event, session) => {
 });
 
 function handleNoAuth() {
+  const steamEntry = document.getElementById('steam-header-entry');
+  if (steamEntry) steamEntry.style.display = 'inline-flex';
   document.getElementById('auth-screen').style.display = 'none';
 
   const playerScreen = document.getElementById('player-screen');
@@ -1582,10 +1681,21 @@ async function checkUserRole(uid) {
 async function loginWithCode() {
   throw new Error('Модуль защищённого входа не загружен. Обнови страницу.');
 }
-function logoutPlayer() {
-  localStorage.removeItem('arqon_current_uid');
-  localStorage.removeItem('arqon_current_name');
-  supabaseClient.auth.signOut().then(() => window.location.reload());
+async function logoutPlayer() {
+  const buttons = document.querySelectorAll('[onclick="logoutPlayer()"]');
+  buttons.forEach(button => { button.disabled = true; button.textContent = 'Выходим…'; });
+  try {
+    localStorage.removeItem('arqon_current_uid');
+    localStorage.removeItem('arqon_current_name');
+    const { error } = await supabaseClient.auth.signOut({ scope: 'local' });
+    if (error) throw error;
+  } catch (error) {
+    console.error('Не удалось завершить выход из аккаунта:', error);
+    buttons.forEach(button => { button.disabled = false; button.textContent = 'Выйти из аккаунта'; });
+    alert('Не удалось выйти. Попробуй ещё раз.');
+    return;
+  }
+  window.location.replace('/players/');
 }
 
 // ==========================================
@@ -1775,12 +1885,17 @@ function playerCardHTML(p, removeFn, allowTeamAssignment = false) {
     : '';
   const freeAgentTeam = isAdmin() && allowTeamAssignment
     ? `<div style="display:flex;align-items:center;gap:7px;margin-top:7px;flex-wrap:wrap;">
-        <span class="hint" style="margin:0;color:#c4a4ff;">Свободный агент</span>
-        <select aria-label="Выбрать команду для ${escapeHtml(p.name)}"
+        <span class="hint" style="margin:0;color:#c4a4ff;">Свободный агент${p.freeAgentTeamName ? ' · ' + escapeHtml(p.freeAgentTeamName) : ''}</span>
+        <button type="button" class="btn ghost" aria-label="Добавить метку команды для ${escapeHtml(p.name)}" title="Добавить отображаемую метку команды" style="padding:3px 8px;margin:0!important;font-size:13px;line-height:1" onclick="event.stopPropagation();editFreeAgentTeam(this)">＋</button>
+        <div class="free-agent-team-editor" style="display:none;align-items:center;gap:6px;flex-wrap:wrap;width:100%">
+          <input type="text" maxlength="60" value="${escapeHtml(p.freeAgentTeamName || '')}" placeholder="Название команды для отображения" aria-label="Метка команды" style="min-width:0;flex:1;padding:6px 8px;font-size:12px" onclick="event.stopPropagation()">
+          <button type="button" class="btn ghost" style="padding:5px 8px;margin:0!important;font-size:11px" onclick="event.stopPropagation();saveFreeAgentTeam(this,'${escapeHtml(p.account_id)}')">Сохранить</button>
+        </div>
+        <select aria-label="Добавить ${escapeHtml(p.name)} в состав команды"
           style="width:auto;max-width:190px;min-width:145px;padding:6px 28px 6px 9px;font-size:12px;"
           onclick="event.stopPropagation()"
           onchange="event.stopPropagation();assignFreeAgentToTeam(this,'${escapeHtml(p.account_id)}')">
-          <option value="">Выбрать команду…</option>
+          <option value="">Перевести в состав…</option>
           ${(state.teams || []).map(t => `<option value="${escapeHtml(t.id)}">${escapeHtml(t.name)}</option>`).join('')}
         </select>
       </div>`
@@ -2496,6 +2611,7 @@ async function loadHomeHighlights() {
 
 // Публичный каталог турниров и профили. Рейтинг — прозрачные очки за опубликованные места.
 let arqonPlayersCache = [];
+let arqonSteamRegisteredCache = [];
 let arqonResultsCache = [];
 let arqonScheduleCache = [];
 function safeText(value, fallback='Не указано') { return value === null || value === undefined || String(value).trim()==='' ? fallback : String(value); }
@@ -2602,34 +2718,99 @@ function collectPlayerArqonRatings(source) {
 
 function playerAvatarHTML(player) {
  const initial = escapeHtml(String(player?.name || '?').trim().slice(0,1).toUpperCase());
- const avatar = String(player?.avatar || '').trim();
- if (!/^https?:\/\//i.test(avatar)) return '<div class="portal-avatar">' + initial + '</div>';
- return `<div class="portal-avatar portal-avatar-has-image"><img src="${escapeHtml(avatar)}" alt="${escapeHtml(player?.name || 'Аватар игрока')}" loading="lazy" referrerpolicy="no-referrer" onerror="this.style.display='none';this.nextElementSibling.style.display='grid'"><span class="portal-avatar-fallback" style="display:none">${initial}</span></div>`;
+ const candidates = [...new Set((player?.avatarCandidates || [player?.avatar]).map(value => String(value || '').trim()).filter(value => /^https?:\/\//i.test(value)))];
+ if (!candidates.length) return '<div class="portal-avatar">' + initial + '</div>';
+ return `<div class="portal-avatar portal-avatar-has-image"><img src="${escapeHtml(candidates[0])}" data-avatar-candidates="${escapeHtml(JSON.stringify(candidates))}" alt="${escapeHtml(player?.name || 'Аватар игрока')}" loading="lazy" referrerpolicy="no-referrer"><span class="portal-avatar-fallback" style="display:none">${initial}</span></div>`;
 }
 async function loadPlayerHub(){
  const box=document.getElementById('player-list');if(!box)return;box.innerHTML='<div class="home-data-card">Загружаем игроков…</div>';
  try{
-  const [pr,rr,tr]=await Promise.all([
+  const [pr,rr,tr,profileRes,performanceRes,steamProfilesRes]=await Promise.all([
    supabaseClient.rpc('list_public_player_names'),
    supabaseClient.from('results').select('*').order('created_at',{ascending:false}).limit(500),
-   supabaseClient.from('tournament').select('data').eq('id',1).maybeSingle()
+   supabaseClient.from('tournament').select('data').eq('id',1).maybeSingle(),
+   supabaseClient.rpc('list_public_player_profile_cards'),
+   supabaseClient.from('live_player_performance').select('*').order('performance_index',{ascending:false}),
+   supabaseClient.rpc('list_public_steam_registered_profiles')
   ]);
   if(pr.error)throw pr.error;if(rr.error)throw rr.error;
   const avatars=tr.error?{}:collectPlayerAvatars(tr.data?.data);
   const faceitLevels=tr.error?{}:collectPlayerFaceitLevels(tr.data?.data);
   const teamNames=tr.error?{}:collectPlayerTeamNames(tr.data?.data);
   const arqonRatings=tr.error?{}:collectPlayerArqonRatings(tr.data?.data);
+  const publicProfiles={},performanceByName={};
+  if(!profileRes.error)(profileRes.data||[]).forEach(profile=>{
+   publicProfiles[String(profile.player_name||'').trim().toLocaleLowerCase()]=profile;
+  });
+  else console.warn('Public ARQON IDs are temporarily unavailable:',profileRes.error);
+  if(!performanceRes.error)(performanceRes.data||[]).forEach(row=>{
+   performanceByName[String(row.player_key||row.player_name||'').trim().toLocaleLowerCase()]=row;
+  });
+  else console.warn('Live player performance is temporarily unavailable:',performanceRes.error);
   if(tr.error)console.warn('Player profile extras could not be loaded:',tr.error);
   arqonPlayersCache=(pr.data||[]).map(p=>{
    const key=String(p.name||'').trim().toLocaleLowerCase();
-   return {...p,avatar:avatars[key]||p.avatar||'',faceitLevel:faceitLevels[key]||0,teamName:teamNames[key]||'',arqonRating:arqonRatings[key] ?? 0};
+   const publicProfile=publicProfiles[key]||{};
+   const avatarCandidates=[publicProfile.avatar_url,publicProfile.steam_avatar_url,avatars[key],p.avatar];
+   return {...p,arqonId:publicProfile.arqon_id||null,profileDisplayName:publicProfile.display_name||'',avatarCandidates,avatar:avatarCandidates.find(value=>typeof value==='string'&&/^https?:\/\//i.test(value.trim()))||'',faceitLevel:faceitLevels[key]||0,teamName:teamNames[key]||'',arqonRating:arqonRatings[key] ?? 0,performance:performanceByName[key]||null};
   });
-  arqonResultsCache=rr.data||[];renderPlayerCards();
+  arqonSteamRegisteredCache=steamProfilesRes.error?[]:(steamProfilesRes.data||[]);
+  if(steamProfilesRes.error)console.warn('Steam-registered directory is temporarily unavailable:',steamProfilesRes.error);
+  arqonResultsCache=rr.data||[];renderPlayerCards();renderSteamRegisteredCards();openPlayerFromUrl();
  }
  catch(e){console.warn('Player hub:',e);box.innerHTML='<div class="home-data-card">Не удалось загрузить игроков. Проверь RLS и разрешение SELECT для таблицы players.</div>';}
 }
-function renderPlayerCards(){const box=document.getElementById('player-list');if(!box)return;const q=(document.getElementById('player-search')?.value||'').trim().toLocaleLowerCase();const players=arqonPlayersCache.map(p=>({...p,stats:pointsForPlayer(p.name,arqonResultsCache)})).filter(p=>String(p.name||'').toLocaleLowerCase().includes(q)).sort((a,b)=>(Number(b.arqonRating)||0)-(Number(a.arqonRating)||0)||b.stats.points-a.stats.points||String(a.name).localeCompare(String(b.name)));const count=document.getElementById('players-count');if(count)count.textContent=`${players.length} игроков`;box.innerHTML=players.length?players.map((p,i)=>`<article class="portal-card"><span class="portal-pill">${i===0&&p.stats.points>0?'Лидер рейтинга':'Игрок ARQON'}</span><div class="portal-profile-top" style="margin-top:14px">${playerAvatarHTML(p)}<div><h3>${escapeHtml(safeText(p.name,'Игрок без имени'))} ${p.faceitLevel>0?`<span class="faceit-badge lvl-${p.faceitLevel}">FACEIT LVL ${p.faceitLevel}</span>`:''}</h3><p>${p.teamName?'Команда: '+escapeHtml(p.teamName):'Свободный игрок'} · ${p.stats.events} турниров с опубликованным результатом</p></div></div><div class="portal-detail-grid"><div class="portal-detail-stat"><small>Рейтинг ARQON</small><strong class="portal-stat">${p.arqonRating}/100</strong></div><div class="portal-detail-stat"><small>Очки турниров</small><strong class="portal-stat">${p.stats.points}</strong></div><div class="portal-detail-stat"><small>Победы</small><strong class="portal-stat">${p.stats.wins}</strong></div><div class="portal-detail-stat"><small>Топ-3</small><strong class="portal-stat">${p.stats.podiums}</strong></div></div><div class="arqon-rating-track" aria-label="Рейтинг ARQON ${p.arqonRating} из 100"><span style="width:${p.arqonRating}%"></span></div><div class="portal-actions"><button class="btn" onclick="openPlayerDetail(${i})">Профиль игрока →</button></div></article>`).join(''):'<div class="home-data-card">Игроков не найдено.</div>';window.arqonRankedPlayers=players;}
-function openPlayerDetail(index){const p=(window.arqonRankedPlayers||[])[index];const box=document.getElementById('player-detail');if(!p||!box)return;const stats=p.stats;const entries=arqonResultsCache.filter(r=>[r.place_1,r.place_2,r.place_3].some(n=>String(n||'').trim().toLocaleLowerCase()===String(p.name||'').trim().toLocaleLowerCase()));box.classList.remove('hidden');box.innerHTML=`<div class="portal-profile-top">${playerAvatarHTML(p)}<div><span class="portal-pill">PLAYER PROFILE</span><h2>${escapeHtml(safeText(p.name,'Игрок'))} ${p.faceitLevel>0?`<span class="faceit-badge lvl-${p.faceitLevel}">FACEIT LVL ${p.faceitLevel}</span>`:''}</h2><p class="hint">${p.teamName?'Команда: '+escapeHtml(p.teamName):'Свободный игрок'} · Профиль построен по публичным данным ARQON.</p></div></div><div class="portal-detail-grid"><div class="portal-detail-stat"><small>Рейтинг ARQON</small><strong class="portal-stat">${p.arqonRating}/100</strong></div><div class="portal-detail-stat"><small>Очки турниров</small><strong class="portal-stat">${stats.points}</strong></div><div class="portal-detail-stat"><small>Победы</small><strong class="portal-stat">${stats.wins}</strong></div><div class="portal-detail-stat"><small>Призовые места</small><strong class="portal-stat">${stats.podiums}</strong></div><div class="portal-detail-stat"><small>Турниры с результатом</small><strong class="portal-stat">${stats.events}</strong></div></div><h3 style="margin-top:22px">История результатов</h3>${entries.length?entries.map(r=>{const place=String(r.place_1||'').trim().toLowerCase()===String(p.name||'').trim().toLowerCase()?1:String(r.place_2||'').trim().toLowerCase()===String(p.name||'').trim().toLowerCase()?2:3;return `<div class="home-data-item"><strong>${place===1?'🥇 1-е место':place===2?'🥈 2-е место':'🥉 3-е место'}</strong><span>${escapeHtml(safeText(r.tournament_name,'Турнир ARQON'))}</span></div>`}).join(''):'<p class="hint">Пока нет опубликованных призовых мест для этого игрока.</p>'}<div class="portal-actions"><button class="btn ghost" onclick="document.getElementById('player-detail').classList.add('hidden')">Свернуть профиль</button></div>`;box.scrollIntoView({behavior:'smooth',block:'start'});}
+function renderSteamRegisteredCards(){
+ const box=document.getElementById('steam-registered-list');if(!box)return;
+ const q=(document.getElementById('player-search')?.value||'').trim().toLocaleLowerCase();
+ const players=(arqonSteamRegisteredCache||[]).filter(p=>[p.display_name,p.steam_persona_name,String(p.arqon_id||'')].some(v=>String(v||'').toLocaleLowerCase().includes(q)));
+ const count=document.getElementById('steam-registered-count');if(count)count.textContent=players.length+' аккаунтов через Steam';
+ box.innerHTML=players.length?players.map(p=>{
+  const name=safeText(p.display_name||p.steam_persona_name,'Игрок ARQON');
+  const avatar=p.avatar_url||p.steam_avatar_url||'';
+  const initial=escapeHtml(name.trim().slice(0,1).toUpperCase()||'?');
+  const avatarHtml=avatar&&/^https:\/\//i.test(avatar)
+   ? '<div class="portal-avatar portal-avatar-has-image"><img src="'+escapeHtml(avatar)+'" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'grid\'"><span class="portal-avatar-fallback" style="display:none">'+initial+'</span></div>'
+   : '<div class="portal-avatar">'+initial+'</div>';
+  const date=p.created_at?new Date(p.created_at).toLocaleDateString('ru-RU'):'';
+  return '<article class="portal-card"><span class="portal-pill">ЗАРЕГИСТРИРОВАН ЧЕРЕЗ STEAM</span><div class="portal-profile-top" style="margin-top:14px">'+avatarHtml+'<div><h3>'+escapeHtml(name)+'</h3><p>'+(p.steam_persona_name&&p.steam_persona_name!==name?'Steam: '+escapeHtml(p.steam_persona_name):'Самостоятельная регистрация через Steam')+'</p><span class="arqon-public-id">ARQON ID <b>#'+escapeHtml(String(p.arqon_id))+'</b></span></div></div><p class="hint" style="margin-top:12px">В ARQON с '+escapeHtml(date||'недавно')+'</p><div class="portal-actions"><a class="profile-link" href="/players/profile/?id='+encodeURIComponent(p.arqon_id)+'"><span>Открыть профиль ARQON</span><span class="profile-link-arrow" aria-hidden="true">↗</span></a></div></article>';
+ }).join(''):'<div class="home-data-card">Пока нет новых публичных аккаунтов, зарегистрированных через Steam.</div>';
+}
+function openPlayerByName(name){const list=window.arqonRankedPlayers||[];const index=list.findIndex(p=>String(p.name||'').trim().toLocaleLowerCase()===String(name||'').trim().toLocaleLowerCase());if(index>=0)openPlayerDetail(index);}
+function renderPlayerCards(){const box=document.getElementById('player-list');if(!box)return;const q=(document.getElementById('player-search')?.value||'').trim().toLocaleLowerCase();const players=arqonPlayersCache.map(p=>({...p,stats:pointsForPlayer(p.name,arqonResultsCache)})).filter(p=>String(p.name||'').toLocaleLowerCase().includes(q)).sort((a,b)=>(Number(b.arqonRating)||0)-(Number(a.arqonRating)||0)||(Number(b.performance?.performance_index)||0)-(Number(a.performance?.performance_index)||0)||b.stats.points-a.stats.points||String(a.name).localeCompare(String(b.name)));const leadersBox=document.getElementById('player-performance-leaders');if(leadersBox){const leaders=arqonPlayersCache.filter(p=>Number(p.performance?.matches_played)>=3).sort((a,b)=>(Number(b.performance?.performance_index)||0)-(Number(a.performance?.performance_index)||0)).slice(0,5);leadersBox.innerHTML=leaders.length?leaders.map((p,i)=>`<button type="button" class="home-data-item" style="display:flex;width:100%;justify-content:space-between;align-items:center;text-align:left;gap:12px;background:transparent;border:0;border-bottom:1px solid rgba(255,255,255,.07);color:inherit;cursor:pointer;padding:11px 4px" onclick="openPlayerByName('${escapeHtml(p.name)}')"><strong>${i+1}. ${escapeHtml(p.name)}</strong><span>${p.performance.performance_index}/100 · ${p.performance.matches_played} матч. · K/D ${p.performance.kd_ratio??'—'}</span></button>`).join(''):'<div class="home-data-card">Пока недостаточно сыгранных матчей. Для попадания в рейтинг нужно минимум 3 матча со статистикой.</div>';}const count=document.getElementById('players-count');if(count)count.textContent=`${players.length} игроков`;box.innerHTML=players.length?players.map((p,i)=>`<article class="portal-card"><span class="portal-pill">${i===0&&p.arqonRating>0?'Лидер рейтинга':p.performance?.matches_played>=3&&p.performance.performance_index>=80?'ТОП ПО МАТЧАМ':'Игрок ARQON'}</span><div class="portal-profile-top" style="margin-top:14px">${playerAvatarHTML(p)}<div><h3>${escapeHtml(safeText(p.name,'Игрок без имени'))} ${p.faceitLevel>0?`<span class="faceit-badge lvl-${p.faceitLevel}">FACEIT LVL ${p.faceitLevel}</span>`:''}</h3><p>${p.teamName?'Команда: '+escapeHtml(p.teamName):'Свободный игрок'} · ${p.stats.events} турниров с опубликованным результатом</p>${p.arqonId?'<span class="arqon-public-id">ARQON ID <b>#'+escapeHtml(String(p.arqonId))+'</b></span>':''}</div></div><div class="portal-detail-grid"><div class="portal-detail-stat"><small>Рейтинг ARQON</small><strong class="portal-stat">${p.arqonRating}/100</strong></div><div class="portal-detail-stat"><small>Очки турниров</small><strong class="portal-stat">${p.stats.points}</strong></div><div class="portal-detail-stat"><small>Победы</small><strong class="portal-stat">${p.stats.wins}</strong></div><div class="portal-detail-stat"><small>Топ-3</small><strong class="portal-stat">${p.stats.podiums}</strong></div>${p.performance?'<div class="portal-detail-stat"><small>Эффективность матчей</small><strong class="portal-stat">'+p.performance.performance_index+'/100</strong></div>':''}</div>${p.performance?'<p class="hint" style="margin-top:9px">Матчей: '+p.performance.matches_played+' · K/D: '+(p.performance.kd_ratio??'—')+' · ADR: '+p.performance.avg_adr+'</p>':''}${renderPlayerPerformanceBadges(p.performance)}<div class="arqon-rating-track" aria-label="Рейтинг ARQON ${p.arqonRating} из 100"><span style="width:${p.arqonRating}%"></span></div><div class="portal-actions"><button class="btn" onclick="openPlayerDetail(${i})">Статистика →</button>${p.arqonId?'<a class="profile-link" href="/players/profile/?id='+encodeURIComponent(p.arqonId)+'"><span>Открыть профиль ARQON</span><span class="profile-link-arrow" aria-hidden="true">↗</span></a>':''}</div></article>`).join(''):'<div class="home-data-card">Игроков не найдено.</div>';box.querySelectorAll('img[data-avatar-candidates]').forEach(img=>{let candidates=[];try{candidates=JSON.parse(img.dataset.avatarCandidates||'[]')}catch(_){}let index=0;img.addEventListener('error',()=>{index++;if(index<candidates.length)img.src=candidates[index];else{img.style.display='none';img.nextElementSibling.style.display='grid'}})});window.arqonRankedPlayers=players;}
+function openPlayerFromUrl(){const requested=new URLSearchParams(window.location.search).get('player');if(!requested)return;const list=window.arqonRankedPlayers||[];const index=list.findIndex(p=>String(p.name||'').trim().toLocaleLowerCase()===requested.trim().toLocaleLowerCase());if(index>=0)openPlayerDetail(index,false);}
+function renderPlayerPerformanceBadges(performance){
+ if(!performance)return '';
+ const badges=[];
+ if(Number(performance.mvp_awards)>0)badges.push('MVP ×'+Number(performance.mvp_awards));
+ if(Number(performance.matches_played)>=5)badges.push('СТАБИЛЬНОСТЬ');
+ if(Number(performance.avg_adr)>=100)badges.push('ADR 100+');
+ if(Number(performance.kills_per_match)>=20)badges.push('ФРАГГЕР');
+ if(Number(performance.assists_per_match)>=8)badges.push('КОМАНДНЫЙ ИГРОК');
+ return badges.length?'<div class="portal-actions" style="margin-top:10px;gap:7px;flex-wrap:wrap">'+badges.map(label=>'<span class="portal-pill">'+escapeHtml(label)+'</span>').join('')+'</div>':'';
+}
+async function loadPlayerLiveMatchHistory(playerName){
+ const target=document.getElementById('player-live-match-history');if(!target)return;
+ target.innerHTML='<p class="hint">Загружаем матчи…</p>';
+ try{
+  const {data,error}=await supabaseClient.from('live_match_player_stats')
+   .select('live_match_id,team_name,kills,deaths,assists,adr,created_at,live_matches(title,game,team1,team2,status,starts_at,map_name,score1,score2)')
+   .ilike('player_name',playerName).order('created_at',{ascending:false}).limit(30);
+  if(error)throw error;
+  if(!data?.length){target.innerHTML='<p class="hint">Матчей со статистикой пока нет. После внесения статистики в Live Center здесь появится история выступлений.</p>';return;}
+  target.innerHTML=data.map(row=>{
+   const m=row.live_matches||{},date=m.starts_at||row.created_at;
+   const dateText=date?new Date(date).toLocaleDateString('ru-RU',{day:'2-digit',month:'short',year:'numeric'}):'Дата не указана';
+   const opponent=[m.team1,m.team2].filter(Boolean).find(t=>String(t).trim().toLocaleLowerCase()!==String(row.team_name||'').trim().toLocaleLowerCase())||'Соперник не указан';
+   const score=m.score1!==null&&m.score2!==null?'<span>'+m.score1+' : '+m.score2+'</span>':'';
+   return '<article class="home-data-item" style="display:flex;flex-direction:column;gap:7px"><div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap"><strong>'+escapeHtml(safeText(m.title||'Матч ARQON','Матч ARQON'))+'</strong><span class="hint">'+escapeHtml(dateText)+'</span></div><p class="hint" style="margin:0">'+escapeHtml(row.team_name||'Команда')+' vs '+escapeHtml(opponent)+(m.map_name?' · '+escapeHtml(m.map_name):'')+'</p><div style="display:flex;gap:14px;flex-wrap:wrap;font-size:13px"><span><b>'+row.kills+'</b> K</span><span><b>'+row.deaths+'</b> D</span><span><b>'+row.assists+'</b> A</span><span><b>'+Number(row.adr||0).toFixed(1)+'</b> ADR</span><span><b>'+ (row.deaths? (row.kills/row.deaths).toFixed(2):'—')+'</b> K/D</span>'+score+'</div></article>';
+  }).join('');
+ }catch(error){console.warn('Player match history:',error);target.innerHTML='<p class="hint">Не удалось загрузить историю матчей. Попробуй позже.</p>';}
+}
+function openPlayerDetail(index,updateUrl=true){const p=(window.arqonRankedPlayers||[])[index];const box=document.getElementById('player-detail');if(!p||!box)return;const stats=p.stats;const entries=arqonResultsCache.filter(r=>[r.place_1,r.place_2,r.place_3].some(n=>String(n||'').trim().toLocaleLowerCase()===String(p.name||'').trim().toLocaleLowerCase()));box.classList.remove('hidden');box.innerHTML=`<div class="portal-profile-top">${playerAvatarHTML(p)}<div><span class="portal-pill">PLAYER PROFILE</span><h2>${escapeHtml(safeText(p.name,'Игрок'))} ${p.faceitLevel>0?`<span class="faceit-badge lvl-${p.faceitLevel}">FACEIT LVL ${p.faceitLevel}</span>`:''}</h2><p class="hint">${p.teamName?'Команда: '+escapeHtml(p.teamName):'Свободный игрок'} · Профиль построен по публичным данным ARQON.</p>${p.arqonId?'<span class="arqon-public-id">ARQON ID <b>#'+escapeHtml(String(p.arqonId))+'</b></span>':''}</div></div><div class="portal-detail-grid"><div class="portal-detail-stat"><small>Рейтинг ARQON</small><strong class="portal-stat">${p.arqonRating}/100</strong></div><div class="portal-detail-stat"><small>Очки турниров</small><strong class="portal-stat">${stats.points}</strong></div><div class="portal-detail-stat"><small>Победы</small><strong class="portal-stat">${stats.wins}</strong></div><div class="portal-detail-stat"><small>Призовые места</small><strong class="portal-stat">${stats.podiums}</strong></div><div class="portal-detail-stat"><small>Турниры с результатом</small><strong class="portal-stat">${stats.events}</strong></div>${p.performance?'<div class="portal-detail-stat"><small>Индекс эффективности</small><strong class="portal-stat">'+p.performance.performance_index+'/100</strong></div><div class="portal-detail-stat"><small>Матчи Live Center</small><strong class="portal-stat">'+p.performance.matches_played+'</strong></div><div class="portal-detail-stat"><small>K/D</small><strong class="portal-stat">'+(p.performance.kd_ratio??'—')+'</strong></div><div class="portal-detail-stat"><small>Средний ADR</small><strong class="portal-stat">'+p.performance.avg_adr+'</strong></div><div class="portal-detail-stat"><small>Фраги / ассисты</small><strong class="portal-stat">'+p.performance.total_kills+' / '+p.performance.total_assists+'</strong></div>':''}</div>${renderPlayerPerformanceBadges(p.performance)}<h3 style="margin-top:22px">Матчи и личная статистика</h3><div id="player-live-match-history" class="arqon-match-list"><p class="hint">Загружаем матчи…</p></div><h3 style="margin-top:22px">История результатов</h3>${entries.length?entries.map(r=>{const place=String(r.place_1||'').trim().toLowerCase()===String(p.name||'').trim().toLowerCase()?1:String(r.place_2||'').trim().toLowerCase()===String(p.name||'').trim().toLowerCase()?2:3;return `<div class="home-data-item"><strong>${place===1?'🥇 1-е место':place===2?'🥈 2-е место':'🥉 3-е место'}</strong><span>${escapeHtml(safeText(r.tournament_name,'Турнир ARQON'))}</span></div>`}).join(''):'<p class="hint">Пока нет опубликованных призовых мест для этого игрока.</p>'}<div class="portal-actions"><button class="btn ghost" onclick="closePlayerDetail()">Свернуть профиль</button>${p.arqonId?'<a class="profile-link" href="/players/profile/?id='+encodeURIComponent(p.arqonId)+'"><span>Открыть профиль ARQON</span><span class="profile-link-arrow" aria-hidden="true">↗</span></a>':''}<button id="player-profile-copy" class="btn ghost" onclick="copyPlayerProfileLink()">Скопировать ссылку</button></div>`;loadPlayerLiveMatchHistory(p.name);box.scrollIntoView({behavior:'smooth',block:'start'});if(updateUrl){const url=new URL(window.location.href);url.searchParams.set('player',p.name);window.history.replaceState({tab:'players',player:p.name},'',url);}}
+function closePlayerDetail(){const box=document.getElementById('player-detail');if(box)box.classList.add('hidden');const url=new URL(window.location.href);url.searchParams.delete('player');window.history.replaceState({tab:'players'},'',url);}
+async function copyPlayerProfileLink(){const button=document.getElementById('player-profile-copy');const value=window.location.href;try{await navigator.clipboard.writeText(value);}catch(error){const field=document.createElement('textarea');field.value=value;field.style.position='fixed';field.style.opacity='0';document.body.appendChild(field);field.select();try{document.execCommand('copy');}finally{field.remove();}}if(button){button.textContent='Ссылка скопирована';window.setTimeout(()=>{button.textContent='Скопировать ссылку';},1800);}}
+
 
 // ==========================================
 // ТАБЫ / НАВИГАЦИЯ
@@ -2639,6 +2820,7 @@ const TAB_PATHS = {
   bracket: '/game_grid/',
   tournaments: '/tournaments/',
   players: '/players/',
+  achievements: '/achievements/',
   teams: '/teams/',
   history: '/history/',
   news: '/news/',
@@ -2655,6 +2837,7 @@ const TAB_SEO = {
   bracket: { title: 'Турнирная сетка ARQON — матчи CS2 и Dota 2 в Тюмени', description: 'Турнирная сетка ARQON Esports: участники, пары матчей и результаты киберспортивных турниров CS2 и Dota 2 в Тюмени.' },
   tournaments: { title: 'Турниры CS2 в Тюмени — ARQON Esports', description: 'Киберспортивные турниры ARQON по CS2 и Dota 2 в Тюмени и ближайших городах. Следи за событиями, расписанием и результатами.' },
   players: { title: 'Рейтинг игроков CS2 — игроки ARQON Esports', description: 'Рейтинг игроков ARQON: профили, рейтинг ARQON от 0 до 100, FACEIT и результаты турниров киберспортивного сообщества Тюмени.' },
+  achievements: { title: 'Достижения игроков — ARQON Esports', description: 'Список достижений ARQON Esports: условия получения наград, турниры, MVP и статистика матчей.' },
   teams: { title: 'Команды ARQON Esports — профили и статистика лиги', description: 'Профили команд ARQON Esports: составы, результаты матчей, статистика и положение в киберспортивной лиге Тюмени.' },
   history: { title: 'История матчей ARQON — результаты и архив', description: 'Архив матчей ARQON Esports: результаты CS2 5×5, победы, поражения и технические результаты.' },
   news: { title: 'Новости киберспорта и турниров — ARQON Esports', description: 'Новости ARQON Esports: анонсы турниров CS2 и Dota 2, итоги матчей и события киберспортивного сообщества Тюмени.' },
@@ -2716,6 +2899,7 @@ function switchTab(tab, updateUrl = true) {
     bracket: document.getElementById('tab-bracket'),
     tournaments: document.getElementById('tab-tournaments'),
     players: document.getElementById('tab-players'),
+    achievements: document.getElementById('tab-achievements'),
     teams: document.getElementById('tab-teams'),
     history: document.getElementById('tab-history'),
     news: document.getElementById('tab-news'),
@@ -2738,6 +2922,7 @@ function switchTab(tab, updateUrl = true) {
   }
   if (tab === 'tournaments') loadTournamentHub();
   if (tab === 'players') loadPlayerHub();
+  if (tab === 'achievements') renderAchievementCatalog();
   if (tab === 'teams') loadTeamsHub();
   if (tab === 'history') loadHistory();
   if (tab === 'news') loadNews();
@@ -2746,6 +2931,31 @@ function switchTab(tab, updateUrl = true) {
   if (tab === 'league') loadLeague(false);
   if (tab === 'admin') { loadSponsorsAdmin(); loadLeague(true); }
   if (tab === 'partners') loadSponsors();
+}
+
+function renderAchievementCatalog(){
+ const host=document.getElementById('achievement-catalog');if(!host)return;
+ const items=[
+  ['🎮','Первый результат','Попади в опубликованные результаты хотя бы одного турнира ARQON.','Турниры'],
+  ['🥉','Первый пьедестал','Займи 1-е, 2-е или 3-е место в любом турнире ARQON.','Турниры'],
+  ['🏆','Чемпион','Займи первое место в турнире.','Турниры'],
+  ['⭐','MVP турнира','Получи награду самого ценного игрока турнира.','Турниры'],
+  ['🔥','Ветеран','Пять раз попади в опубликованные результаты турниров.','Турниры'],
+  ['👑','Легенда ARQON','Пять раз стань чемпионом турниров ARQON.','Турниры'],
+  ['🎯','Первый матч','Получи внесённую организатором статистику хотя бы за один матч Live Center.','Live Center'],
+  ['🧱','Стабильность','Сыграй минимум пять матчей со внесённой личной статистикой.','Live Center'],
+  ['💥','ADR 100+','Достигни среднего ADR не ниже 100 по матчам Live Center.','Live Center'],
+  ['🔥','Фраггер','Держи в среднем не менее 20 убийств за матч.','Live Center'],
+  ['🤝','Командный игрок','Держи в среднем не менее 8 ассистов за матч.','Live Center'],
+  ['🌟','MVP Live','Получи отметку MVP минимум в одном матче Live Center.','Live Center'],
+  ['🏛','Основатель ARQON','Особая награда от администрации за вклад в создание ARQON.','Особые награды'],
+  ['💜','Амбассадор ARQON','Получается за заметный вклад в развитие сообщества ARQON.','Особые награды'],
+  ['⭐','MVP события','Получается за выдающееся выступление на специальном событии ARQON.','Особые награды'],
+  ['🏆','Чемпион ARQON','Особая награда за победу в специальном турнире или соревновании ARQON.','Особые награды'],
+  ['🤝','Fair Play','За честную игру и уважение к соперникам.','Особые награды'],
+  ['👑','Легенда ARQON','Редкое признание за выдающийся вклад в историю ARQON. Выдаётся администрацией.','Особые награды']
+ ];
+ host.innerHTML=items.map(([icon,name,desc,group])=>'<article class="portal-card"><span class="portal-pill">'+escapeHtml(group)+'</span><div class="portal-profile-top" style="margin-top:13px;align-items:center"><div class="portal-avatar-fallback" style="display:grid;place-items:center;width:52px;height:52px;flex:0 0 52px;font-size:26px">'+icon+'</div><div><h3>'+escapeHtml(name)+'</h3><p>'+escapeHtml(desc)+'</p></div></div></article>').join('');
 }
 
 function switchSubTab(sub) {
@@ -3582,7 +3792,7 @@ async function loadNews() {
           <div style="font-size: 12px; color: var(--text-dim); margin-bottom: 5px;">${date}</div>
           <div style="display: flex; justify-content: space-between; align-items: center;">
             <h3 style="font-size: 18px; margin-bottom: 10px; color: var(--accent);">${escapeHtml(item.title)}</h3>
-            ${isAdmin() ? `<div style="display:flex;gap:6px;flex:0 0 auto"><button class="btn ghost" style="padding:2px 8px;font-size:10px" onclick="editNews(${Number(item.id)})">Изменить</button><button class="btn danger" style="padding:2px 8px;font-size:10px" onclick="removeNews(${Number(item.id)})">Удалить</button></div>` : ''}
+            ${isAdmin() ? `<button class="btn danger" style="padding: 2px 8px; font-size: 10px;" onclick="removeNews(${item.id})">Удалить</button>` : ''}
           </div>
           <p style="color: #ccc; line-height: 1.5; margin-bottom: 10px;">${escapeHtml(item.content).replace(/\n/g, '<br>')}</p>
         </div>
@@ -3593,45 +3803,11 @@ async function loadNews() {
   container.innerHTML = html;
 }
 
-async function editNews(id) {
-  if (!isAdmin() || !Number.isSafeInteger(Number(id))) return;
-  const { data, error } = await supabaseClient.from('news').select('id,title,content').eq('id', id).maybeSingle();
-  if (error || !data) { alert('Не удалось загрузить новость для редактирования.'); return; }
-
-  document.getElementById('news-edit-modal')?.remove();
-  const overlay = document.createElement('div');
-  overlay.id = 'news-edit-modal';
-  overlay.style.cssText = 'position:fixed;inset:0;z-index:30000;display:flex;align-items:center;justify-content:center;padding:16px;background:rgba(3,2,10,.84);backdrop-filter:blur(8px)';
-  const dialog = document.createElement('section');
-  dialog.setAttribute('role','dialog'); dialog.setAttribute('aria-modal','true'); dialog.setAttribute('aria-labelledby','news-edit-title');
-  dialog.style.cssText = 'width:min(620px,100%);max-height:90vh;overflow:auto;padding:20px;border:1px solid rgba(167,139,250,.45);border-radius:16px;background:#12101d;color:#f7f3ff;box-shadow:0 24px 90px #000a';
-  const heading = document.createElement('h2'); heading.id='news-edit-title'; heading.textContent='Редактировать новость'; heading.style.cssText='font:700 15px Orbitron,sans-serif;margin:0 0 16px;color:#d9c4ff';
-  const titleLabel=document.createElement('label');titleLabel.textContent='Заголовок';titleLabel.style.cssText='display:block;font-weight:700;margin:10px 0 6px';
-  const title=document.createElement('input');title.type='text';title.maxLength=160;title.value=data.title||'';title.style.cssText='width:100%;padding:11px;border:1px solid #51436f;border-radius:9px;background:#090812;color:#fff;font:600 15px Rajdhani';
-  const bodyLabel=document.createElement('label');bodyLabel.textContent='Текст новости';bodyLabel.style.cssText='display:block;font-weight:700;margin:14px 0 6px';
-  const body=document.createElement('textarea');body.maxLength=12000;body.value=data.content||'';body.rows=9;body.style.cssText='width:100%;min-height:180px;resize:vertical;padding:11px;border:1px solid #51436f;border-radius:9px;background:#090812;color:#fff;font:600 15px Rajdhani';
-  const status=document.createElement('p');status.setAttribute('role','status');status.style.cssText='min-height:20px;color:#c4b5fd;font-size:13px';
-  const actions=document.createElement('div');actions.style.cssText='display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap';
-  const cancel=document.createElement('button');cancel.type='button';cancel.className='btn ghost';cancel.textContent='Отмена';
-  const save=document.createElement('button');save.type='button';save.className='btn';save.textContent='Сохранить';
-  const close=()=>overlay.remove();cancel.addEventListener('click',close);overlay.addEventListener('click',event=>{if(event.target===overlay)close()});
-  save.addEventListener('click',async()=>{
-    if(!isAdmin())return;
-    const nextTitle=title.value.trim(),nextBody=body.value.trim();
-    if(!nextTitle||!nextBody){status.textContent='Заполни заголовок и текст новости.';return}
-    save.disabled=true;save.textContent='Сохраняем…';status.textContent='';
-    const {data:updated,error:updateError}=await supabaseClient.from('news').update({title:nextTitle,content:nextBody}).eq('id',id).select('id').maybeSingle();
-    if(updateError||!updated){status.textContent=updateError?.message||'Новость не обновлена. Проверь права доступа.';save.disabled=false;save.textContent='Сохранить';return}
-    close();await loadNews();
-  });
-  actions.append(cancel,save);dialog.append(heading,titleLabel,title,bodyLabel,body,status,actions);overlay.append(dialog);document.body.append(overlay);title.focus();
-}
 async function removeNews(id) {
-  if (!isAdmin() || !Number.isSafeInteger(Number(id))) return;
+  if (!isAdmin()) return;
   if (!confirm('Удалить эту новость?')) return;
-  const { error } = await supabaseClient.from('news').delete().eq('id', id);
-  if (error) { alert('Не удалось удалить новость: ' + error.message); return; }
-  await loadNews();
+  await supabaseClient.from('news').delete().eq('id', id);
+  loadNews();
 }
 
 
@@ -3692,7 +3868,6 @@ function leagueRenderPublic(){
   const upcoming=(leagueData.matches||[]).filter(m=>m.result_type==='pending');
   const done=(leagueData.matches||[]).filter(m=>m.result_type!=='pending'&&m.team1&&m.team2);
   const mvpName=String(leagueData.mvp||'').trim();
-  const podiumBanner=leagueData.completed_at&&Array.isArray(leagueData.final_standings)?'<div class="league-panel" style="border-color:#a78bfa88;background:linear-gradient(135deg,#26183c,#15121e)"><h2>🏆 СЕЗОН ЗАВЕРШЁН</h2><p class="league-muted">Итоговые места зафиксированы '+new Date(leagueData.completed_at).toLocaleDateString('ru-RU')+'. Награды отображаются в профилях команд.</p><div class="league-match-grid">'+leagueData.final_standings.slice(0,3).map((t,i)=>'<article class="league-match"><div class="league-match-top"><span>'+['🥇 ЧЕМПИОН','🥈 2 МЕСТО','🥉 3 МЕСТО'][i]+'</span></div><div class="league-match-teams">'+leagueEscape(t.team)+'</div><div class="league-result">'+t.points+' очков · '+t.wins+' побед</div></article>').join('')+'</div></div>':'';
   box.innerHTML=`
     <div class="league-stats">
       <div class="league-stat"><small>Команд</small><strong>${standings.length}</strong></div>
@@ -3700,7 +3875,6 @@ function leagueRenderPublic(){
       <div class="league-stat"><small>Всего матчей</small><strong>${total}</strong></div>
       <div class="league-stat"><small>Осталось</small><strong>${Math.max(0,total-played)}</strong></div>
     </div>
-    ${podiumBanner}
     <div class="league-panel"><h2>🏆 Турнирная таблица</h2><div class="league-table-scroll"><table class="league-table"><thead><tr><th>#</th><th>Команда</th><th>И</th><th>В</th><th>П</th><th>ТЛ</th><th>О</th><th>Статус</th></tr></thead><tbody>${standings.map((t,i)=>`<tr class="${i<4?'playoff-zone':''}"><td class="league-rank"><span class="league-rank-badge rank-${i+1}">${i===0?'🥇':i===1?'🥈':i===2?'🥉':i+1}</span></td><td class="league-team-name"><button type="button" class="league-team-link" data-team="${leagueEscape(t.team)}" onclick="openTeamProfile(this.dataset.team)">${leagueEscape(t.team)}</button>${t.dq?'<span class="league-dq">DQ</span>':''}</td><td>${t.played}</td><td>${t.wins}</td><td>${t.losses}</td><td>${t.tech}</td><td><b>${t.points}</b></td><td>${t.dq?'<span class="league-status dq">ДИСКВАЛИФИКАЦИЯ</span>':'<span class="league-status">В турнире</span>'}</td></tr>`).join('')}</tbody></table></div><p class="league-muted" style="margin-top:10px">И — игры, В — победы, П — поражения, ТЛ — технические поражения, О — очки. При 3 технических поражениях команда автоматически получает статус DQ. Топ-4 выделены как зона плей-офф. Нажми на название команды, чтобы открыть профиль.</p></div>
     <div class="league-panel"><h2>Последние результаты</h2>${done.length?`<div class="league-match-grid">${done.slice().reverse().slice(0,12).map(m=>`<article class="league-match"><div class="league-match-top"><span>Матч №${m.match_no||'—'}</span><span>${leagueEscape(m.date)} ${leagueEscape(m.time)}</span></div><div class="league-match-teams">${leagueEscape(m.team1)} <span style="color:var(--text-dim)">vs</span> ${leagueEscape(m.team2)}</div><div class="league-result">${m.result_type==='tech'?'Тех. поражение: '+leagueEscape(m.tech_loss_team):'Победитель: '+leagueEscape(m.winner)}${m.score?' · '+leagueEscape(m.score):''}</div></article>`).join('')}</div>`:'<p class="league-muted">Результаты ещё не внесены. Они появятся здесь после сохранения администратором.</p>'}</div>
     <div class="league-panel"><h2>Расписание матчей</h2><div class="league-match-grid">${upcoming.filter(m=>m.team1&&m.team2).map(m=>`<article class="league-match"><div class="league-match-top"><span>Матч №${m.match_no||'—'}</span><span>${leagueEscape(m.date)} ${leagueEscape(m.time)}</span></div><div class="league-match-teams">${leagueEscape(m.team1)} <span style="color:var(--text-dim)">vs</span> ${leagueEscape(m.team2)}</div><div class="league-match-meta">${leagueEscape(m.venue||'Место не указано')} · <span class="league-status">ОЖИДАЕТСЯ</span></div></article>`).join('')||'<p class="league-muted">Нет матчей с заполненными командами.</p>'}</div></div>`;
@@ -3729,16 +3903,6 @@ function leagueToggleResult(i){const type=document.getElementById('lm-type-'+i)?
 function leagueRenderAdmin(){
   const box=document.getElementById('league-admin-matches'); if(!box||!leagueData)return;
   const mvpInput=document.getElementById('league-mvp-input');
-  const finishButton=document.getElementById('league-finish-button');
-  const addMatchButton=document.querySelector('button[onclick="leagueAddMatch()"]');
-  if(finishButton)finishButton.style.display=leagueData.completed_at?'none':'';
-  if(addMatchButton)addMatchButton.style.display=leagueData.completed_at?'none':'';
-  if(leagueData.completed_at){
-    const podium=(leagueData.final_standings||[]).slice(0,3);
-    box.innerHTML='<div class="league-panel"><h2>🔒 Лига завершена</h2><p class="league-muted">Результаты зафиксированы '+new Date(leagueData.completed_at).toLocaleString('ru-RU')+'. Изменение результатов и расписания заблокировано.</p><div class="league-match-grid">'+podium.map((t,i)=>'<article class="league-match"><div class="league-match-top"><span>'+['🥇 ЧЕМПИОН','🥈 2 МЕСТО','🥉 3 МЕСТО'][i]+'</span></div><div class="league-match-teams">'+leagueEscape(t.team)+'</div><div class="league-result">'+t.points+' очков · '+t.wins+' побед</div></article>').join('')+'</div></div>';
-    const status=document.getElementById('league-admin-status');if(status)status.textContent='Сезон закрыт. Призовые места сохранены.';
-    return;
-  }
   if(mvpInput && document.activeElement!==mvpInput) mvpInput.value=leagueData.mvp||'';
   const filter=document.getElementById('league-admin-filter')?.value||'all';
   const list=(leagueData.matches||[]).map((m,i)=>({m,i})).filter(x=>filter==='all'||(filter==='pending'?x.m.result_type==='pending':x.m.result_type!=='pending'));
@@ -3750,7 +3914,7 @@ async function loadLeague(adminView=false){
   if(status)status.textContent='Загружаем данные Лиги…';
   try{
     await leagueFetch(); leagueRenderPublic(); if(adminView)leagueRenderAdmin();
-    if(status)status.textContent=leagueData.completed_at?'Сезон завершён. Итоговые места зафиксированы.':`Загружено ${leagueData.matches.length} матчей и ${leagueData.teams.length} команд. Изменения сохраняются в Supabase.`;
+    if(status)status.textContent=`Загружено ${leagueData.matches.length} матчей и ${leagueData.teams.length} команд. Изменения сохраняются в Supabase.`;
   }catch(e){
     const msg=`Не удалось загрузить Лигу: ${e.message||e}. Проверь, что создана таблица league_data (SQL-файл league_data_setup.sql).`;
     if(status)status.innerHTML=leagueEscape(msg);
@@ -3776,7 +3940,7 @@ async function leagueSaveMvp(){
   }
 }
 async function leagueSaveMatch(i){
-  if(!isAdmin()||leagueData?.completed_at){if(leagueData?.completed_at)alert('Лига уже завершена.');return;} const m=leagueData?.matches?.[i];if(!m)return;
+  if(!isAdmin())return; const m=leagueData?.matches?.[i];if(!m)return;
   const t1=document.getElementById('lm-t1-'+i).value.trim(),t2=document.getElementById('lm-t2-'+i).value.trim();
   const type=document.getElementById('lm-type-'+i).value,score=document.getElementById('lm-score-'+i).value.trim();
   if(!t1||!t2||t1.toLocaleLowerCase()===t2.toLocaleLowerCase()){alert('Укажи две разные команды.');return;}
@@ -3787,39 +3951,9 @@ async function leagueSaveMatch(i){
   [t1,t2].forEach(t=>{if(!leagueData.teams.includes(t))leagueData.teams.push(t);});
   try{await leaguePersist();leagueRenderPublic();leagueRenderAdmin();const s=document.getElementById('league-admin-status');if(s)s.textContent=`Матч №${m.match_no||'—'} сохранён.`;}catch(e){alert('Не удалось сохранить: '+e.message);}
 }
-async function leagueClearMatch(i){if(!isAdmin()||leagueData?.completed_at){if(leagueData?.completed_at)alert('Лига уже завершена.');return;}const m=leagueData.matches[i];if(!confirm(`Сбросить результат матча №${m.match_no||'—'}?`))return;m.result_type='pending';m.winner='';m.score='';m.tech_loss_team='';try{await leaguePersist();leagueRenderPublic();leagueRenderAdmin();}catch(e){alert('Ошибка сохранения: '+e.message);}}
-async function leagueAddMatch(){if(!isAdmin()||!leagueData||leagueData.completed_at){if(leagueData?.completed_at)alert('Лига уже завершена.');return;}const next=Math.max(0,...leagueData.matches.map(m=>Number(m.match_no)||0))+1;leagueData.matches.push({id:'league-'+next+'-'+Date.now(),match_no:next,date:'',time:'',team1:'',team2:'',venue:'',result_type:'pending',winner:'',score:'',tech_loss_team:''});try{await leaguePersist();leagueRenderAdmin();}catch(e){alert('Ошибка добавления матча: '+e.message);}}
+async function leagueClearMatch(i){if(!isAdmin())return;const m=leagueData.matches[i];if(!confirm(`Сбросить результат матча №${m.match_no||'—'}?`))return;m.result_type='pending';m.winner='';m.score='';m.tech_loss_team='';try{await leaguePersist();leagueRenderPublic();leagueRenderAdmin();}catch(e){alert('Ошибка сохранения: '+e.message);}}
+async function leagueAddMatch(){if(!isAdmin()||!leagueData)return;const next=Math.max(0,...leagueData.matches.map(m=>Number(m.match_no)||0))+1;leagueData.matches.push({id:'league-'+next+'-'+Date.now(),match_no:next,date:'',time:'',team1:'',team2:'',venue:'',result_type:'pending',winner:'',score:'',tech_loss_team:''});try{await leaguePersist();leagueRenderAdmin();}catch(e){alert('Ошибка добавления матча: '+e.message);}}
 function leagueExportBackup(){if(!isAdmin()||!leagueData)return;const blob=new Blob([JSON.stringify(leagueData,null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='ARQON_Liga_backup.json';a.click();URL.revokeObjectURL(a.href);}
-async function leagueCompleteSeason(){
- if(!isAdmin()||!leagueData)return;
- if(leagueData.completed_at){alert('Лига уже завершена.');return;}
- const matches=(leagueData.matches||[]).filter(m=>String(m.team1||'').trim()&&String(m.team2||'').trim());
- const unresolved=matches.filter(m=>{
-  if(m.result_type==='normal')return ![m.team1,m.team2].includes(m.winner);
-  if(m.result_type==='tech')return ![m.team1,m.team2].includes(m.tech_loss_team);
-  return true;
- });
- if(unresolved.length){
-  const status=document.getElementById('league-admin-status');
-  if(status)status.textContent='Нельзя завершить лигу: осталось матчей без корректного результата — '+unresolved.length+'.';
-  alert('Сначала внеси результаты всех матчей. Осталось: '+unresolved.length+'.');
-  return;
- }
- const finalStandings=leagueStandings().filter(t=>!t.dq);
- if(finalStandings.length<3){alert('Для фиксации пьедестала нужно минимум три команды без дисквалификации.');return;}
- if(!confirm('Завершить сезон? Итоговая таблица и призовые места будут зафиксированы, редактирование матчей заблокируется.'))return;
- const previous={completed_at:leagueData.completed_at,final_standings:leagueData.final_standings};
- leagueData.completed_at=new Date().toISOString();
- leagueData.final_standings=finalStandings.map((t,i)=>({place:i+1,team:t.team,played:t.played,wins:t.wins,losses:t.losses,tech:t.tech,points:t.points,dq:false}));
- try{
-  await leaguePersist();
-  leagueRenderPublic();leagueRenderAdmin();
-  const status=document.getElementById('league-admin-status');if(status)status.textContent='Лига завершена. Призёры сохранены в профилях команд.';
- }catch(e){
-  leagueData.completed_at=previous.completed_at;leagueData.final_standings=previous.final_standings;
-  alert('Не удалось завершить лигу: '+(e.message||e));
- }
-}
 
 // ==========================================
 // РАСПИСАНИЕ
@@ -3880,12 +4014,12 @@ let arqonTeamHubData=[],arqonPendingTeamProfile='';
 async function loadTeamsHub(){const box=document.getElementById('team-list');if(!box)return;box.innerHTML='<div class="home-data-card">Загружаем профили команд…</div>';try{
  const [{data:lr,error:le},{data:tr,error:te}]=await Promise.all([supabaseClient.from('league_data').select('payload').eq('id',1).maybeSingle(),supabaseClient.from('tournament').select('data').eq('id',1).maybeSingle()]);if(le)throw le;if(te)throw te;if(!tr?.data||!Array.isArray(tr.data.teams))throw new Error('Регистрационные составы не загрузились из Supabase (tournament.data.teams).');leagueData=leagueNormalizeData(lr?.payload||{});state={...state,...tr.data,teams:tr.data.teams,freeAgents:Array.isArray(tr.data.freeAgents)?tr.data.freeAgents:[]};
  const registrationTeams=state.teams;
- arqonTeamHubData=leagueStandings().map(s=>{const leagueKey=arqonTeamNameKey(s.team),reg=registrationTeams.find(t=>arqonTeamNameKey(t.name)===leagueKey||(leagueKey==='rcteam'&&/^rc\s*[|i]\s*team$/i.test(String(t.name||'')))),roster=Array.isArray(reg?.players)?reg.players:[],tagged=state.freeAgents.filter(p=>arqonTeamNameKey(p.freeAgentTeamName)===leagueKey),matches=(leagueData.matches||[]).filter(m=>m.team1===s.team||m.team2===s.team),recent=matches.filter(m=>m.result_type!=='pending').sort((a,b)=>arqonCompareLeagueMatches(b,a)).slice(0,5);return {...s,roster,tagged,matches,recent,logo:reg?.logo||reg?.avatar||'',registrationTeamId:reg?.id||null};});
+ arqonTeamHubData=leagueStandings().map(s=>{const leagueKey=arqonTeamNameKey(s.team),reg=registrationTeams.find(t=>arqonTeamNameKey(t.name)===leagueKey||(leagueKey==='rcteam'&&/^rc\s*[|i]\s*team$/i.test(String(t.name||'')))),roster=Array.isArray(reg?.players)?reg.players:[],tagged=state.freeAgents.filter(p=>arqonTeamNameKey(p.freeAgentTeamName)===leagueKey),matches=(leagueData.matches||[]).filter(m=>m.team1===s.team||m.team2===s.team),recent=matches.filter(m=>m.result_type!=='pending').sort((a,b)=>arqonCompareLeagueMatches(b,a)).slice(0,5);return {...s,roster,tagged,matches,recent,logo:reg?.logo||reg?.avatar||''};});
  box.innerHTML=arqonTeamHubData.map((t,i)=>{const initials=t.team.split(/\s+/).map(x=>x[0]).join('').slice(0,3).toUpperCase(),form=t.recent.slice().reverse().map(m=>m.result_type==='tech'?(m.tech_loss_team===t.team?'loss':'win'):(m.winner===t.team?'win':'loss')).map(x=>'<span class="arqon-form-dot '+x+'"></span>').join('');return '<article class="portal-card arqon-team-card" role="button" tabindex="0" data-team="'+escapeHtml(t.team)+'" onclick="openTeamProfile(this.dataset.team)" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();openTeamProfile(this.dataset.team)}"><div class="portal-profile-top"><div class="arqon-team-mark">'+(t.logo?'<img src="'+escapeHtml(t.logo)+'" alt="">':initials)+'</div><div><span class="portal-pill">#'+(i+1)+' · '+t.points+' ОЧКОВ</span><h3>'+escapeHtml(t.team)+'</h3><p>'+t.played+' матчей · '+t.wins+' побед · '+t.losses+' поражений</p></div></div><div class="portal-detail-grid"><div class="portal-detail-stat"><small>Победы</small><strong class="portal-stat">'+t.wins+'</strong></div><div class="portal-detail-stat"><small>Очки</small><strong class="portal-stat">'+t.points+'</strong></div><div class="portal-detail-stat"><small>Состав</small><strong class="portal-stat">'+t.roster.length+'</strong></div></div><div class="arqon-form" style="margin-top:14px"><small class="hint">ФОРМА</small>'+form+'</div><div class="portal-actions"><button class="btn" type="button" onclick="event.stopPropagation();openTeamProfile(this.closest(\'.arqon-team-card\').dataset.team)">Открыть профиль →</button></div></article>';}).join('')||'<div class="home-data-card">Команды пока не найдены.</div>';
  window.arqonTeamsReady=true;if(arqonPendingTeamProfile){const n=arqonPendingTeamProfile;arqonPendingTeamProfile='';renderTeamProfile(n);}
  }catch(e){console.warn('Team hub:',e);box.innerHTML='<div class="home-data-card">Не удалось загрузить команды: '+escapeHtml(e.message||e)+'</div>';}}
 function openTeamProfile(name){arqonPendingTeamProfile=String(name||'');if(document.getElementById('tab-teams')?.classList.contains('hidden'))switchTab('teams');else if(window.arqonTeamsReady)renderTeamProfile(arqonPendingTeamProfile);}
-function renderTeamProfile(name){const t=arqonTeamHubData.find(x=>x.team===name),box=document.getElementById('team-detail');if(!t||!box)return;const initials=t.team.split(/\s+/).map(x=>x[0]).join('').slice(0,3).toUpperCase(),roster=t.roster.length?t.roster.map(p=>'<div class="arqon-roster-player">'+playerAvatarHTML(p)+'<div><strong>'+escapeHtml(p.name||'Игрок')+(p.rosterRole==='reserve'?' <span class="roster-role-badge">ЗАПАСНОЙ</span>':'')+'</strong><small>'+(+p.faceitLevel>0?'FACEIT LVL '+(+p.faceitLevel):'FACEIT не указан')+'</small></div></div>').join(''):'<p class="hint">Официальный состав этой команды пока не заполнен в регистрационных данных.</p>',tagged=t.tagged.length?'<h3 style="margin-top:22px">Свободные игроки с отметкой команды</h3><div class="arqon-roster-grid">'+t.tagged.map(p=>'<div class="arqon-roster-player">'+playerAvatarHTML(p)+'<div><strong>'+escapeHtml(p.name||'Игрок')+'</strong><small>Свободный агент · отметка '+escapeHtml(t.team)+'</small></div></div>').join('')+'</div>':'',matches=t.matches.slice().sort((a,b)=>arqonCompareLeagueMatches(b,a));box.classList.remove('hidden');box.innerHTML='<div class="portal-profile-top"><div class="arqon-team-mark">'+(t.logo?'<img src="'+escapeHtml(t.logo)+'" alt="">':initials)+'</div><div><span class="portal-pill">TEAM PROFILE</span><h2>'+escapeHtml(t.team)+'</h2><p class="hint">Позиция в лиге: '+(leagueStandings().findIndex(x=>x.team===t.team)+1)+' · '+(t.dq?'Дисквалификация':'Участник лиги')+'</p></div></div><div class="portal-detail-grid"><div class="portal-detail-stat"><small>Очки</small><strong class="portal-stat">'+t.points+'</strong></div><div class="portal-detail-stat"><small>Матчи</small><strong class="portal-stat">'+t.played+'</strong></div><div class="portal-detail-stat"><small>Победы</small><strong class="portal-stat">'+t.wins+'</strong></div><div class="portal-detail-stat"><small>Поражения</small><strong class="portal-stat">'+t.losses+'</strong></div><div class="portal-detail-stat"><small>Тех. поражения</small><strong class="portal-stat">'+t.tech+'</strong></div></div><h3 style="margin-top:22px">Официальный состав</h3><div class="arqon-roster-grid">'+roster+'</div>'+tagged+'<h3 style="margin-top:24px">Матчи команды</h3>'+(matches.length?'<div class="arqon-match-list">'+matches.map(arqonMatchCard).join('')+'</div>':'<p class="hint">Матчей пока нет.</p>')+(t.registrationTeamId?'<div class="portal-actions"><a class="btn" href="/teams/profile/?id='+encodeURIComponent(t.registrationTeamId)+'">Полный профиль команды ↗</a></div>':'')+'<div class="portal-actions"><button class="btn ghost" onclick="document.getElementById(\'team-detail\').classList.add(\'hidden\')">Свернуть профиль</button><button class="btn" onclick="switchTab(\'history\');document.getElementById(\'history-search\').value='+JSON.stringify(t.team)+';renderHistory()">История матчей →</button></div>';box.scrollIntoView({behavior:'smooth',block:'start'});}
+function renderTeamProfile(name){const t=arqonTeamHubData.find(x=>x.team===name),box=document.getElementById('team-detail');if(!t||!box)return;const initials=t.team.split(/\s+/).map(x=>x[0]).join('').slice(0,3).toUpperCase(),roster=t.roster.length?t.roster.map(p=>'<div class="arqon-roster-player">'+playerAvatarHTML(p)+'<div><strong>'+escapeHtml(p.name||'Игрок')+(p.rosterRole==='reserve'?' <span class="roster-role-badge">ЗАПАСНОЙ</span>':'')+'</strong><small>'+(+p.faceitLevel>0?'FACEIT LVL '+(+p.faceitLevel):'FACEIT не указан')+'</small></div></div>').join(''):'<p class="hint">Официальный состав этой команды пока не заполнен в регистрационных данных.</p>',tagged=t.tagged.length?'<h3 style="margin-top:22px">Свободные игроки с отметкой команды</h3><div class="arqon-roster-grid">'+t.tagged.map(p=>'<div class="arqon-roster-player">'+playerAvatarHTML(p)+'<div><strong>'+escapeHtml(p.name||'Игрок')+'</strong><small>Свободный агент · отметка '+escapeHtml(t.team)+'</small></div></div>').join('')+'</div>':'',matches=t.matches.slice().sort((a,b)=>arqonCompareLeagueMatches(b,a));box.classList.remove('hidden');box.innerHTML='<div class="portal-profile-top"><div class="arqon-team-mark">'+(t.logo?'<img src="'+escapeHtml(t.logo)+'" alt="">':initials)+'</div><div><span class="portal-pill">TEAM PROFILE</span><h2>'+escapeHtml(t.team)+'</h2><p class="hint">Позиция в лиге: '+(leagueStandings().findIndex(x=>x.team===t.team)+1)+' · '+(t.dq?'Дисквалификация':'Участник лиги')+'</p></div></div><div class="portal-detail-grid"><div class="portal-detail-stat"><small>Очки</small><strong class="portal-stat">'+t.points+'</strong></div><div class="portal-detail-stat"><small>Матчи</small><strong class="portal-stat">'+t.played+'</strong></div><div class="portal-detail-stat"><small>Победы</small><strong class="portal-stat">'+t.wins+'</strong></div><div class="portal-detail-stat"><small>Поражения</small><strong class="portal-stat">'+t.losses+'</strong></div><div class="portal-detail-stat"><small>Тех. поражения</small><strong class="portal-stat">'+t.tech+'</strong></div></div><h3 style="margin-top:22px">Официальный состав</h3><div class="arqon-roster-grid">'+roster+'</div>'+tagged+'<h3 style="margin-top:24px">Матчи команды</h3>'+(matches.length?'<div class="arqon-match-list">'+matches.map(arqonMatchCard).join('')+'</div>':'<p class="hint">Матчей пока нет.</p>')+'<div class="portal-actions"><button class="btn ghost" onclick="document.getElementById(\'team-detail\').classList.add(\'hidden\')">Свернуть профиль</button><button class="btn" onclick="switchTab(\'history\');document.getElementById(\'history-search\').value='+JSON.stringify(t.team)+';renderHistory()">История матчей →</button></div>';box.scrollIntoView({behavior:'smooth',block:'start'});}
 
 async function removeSchedule(id) {
   if (!isAdmin()) return;
@@ -3897,32 +4031,6 @@ async function removeSchedule(id) {
 // ==========================================
 // РЕЗУЛЬТАТЫ
 // ==========================================
-async function adminSaveExclusiveProfile(){
-  if(!window.isFullAdmin?.())return;
-  const id=Number(document.getElementById('exclusive-arqon-id').value);
-  const title=document.getElementById('exclusive-title').value.trim();
-  const bg=document.getElementById('exclusive-bg-color').value.trim();
-  const border=document.getElementById('exclusive-border-color').value.trim();
-  const msg=document.getElementById('exclusive-profile-msg');
-  if(!Number.isSafeInteger(id)||id<1){msg.textContent='Укажи корректный ARQON ID игрока.';return;}
-  if(title.length>40){msg.textContent='Титул не должен превышать 40 символов.';return;}
-  for(const [label,value] of [['фон',bg],['обводка',border]])if(value&&!/^#[0-9a-fA-F]{6}$/.test(value)){msg.textContent='Цвет '+label+' должен быть в формате #RRGGBB.';return;}
-  const button=document.querySelector('#admin-exclusive-profile-card button.btn');
-  if(button){button.disabled=true;button.textContent='Сохраняем…';}
-  const {error}=await supabaseClient.rpc('admin_set_profile_exclusives',{p_arqon_id:id,p_title:title||null,p_bg_color:bg||null,p_border_color:border||null});
-  if(button){button.disabled=false;button.textContent='✦ Выдать / обновить эксклюзивы';}
-  msg.innerHTML=error?'<span class="msg error">Ошибка: '+escapeHtml(error.message)+'</span>':'<span class="msg success">✓ Эксклюзивы игрока #'+id+' сохранены. Профиль обновится после перезагрузки.</span>';
-}
-async function adminClearExclusiveProfile(){
-  if(!window.isFullAdmin?.())return;
-  const id=Number(document.getElementById('exclusive-arqon-id').value);
-  const msg=document.getElementById('exclusive-profile-msg');
-  if(!Number.isSafeInteger(id)||id<1){msg.textContent='Сначала укажи ARQON ID игрока.';return;}
-  if(!confirm('Снять титул, цвет фона и цвет обводки у игрока #'+id+'?'))return;
-  const {error}=await supabaseClient.rpc('admin_set_profile_exclusives',{p_arqon_id:id,p_title:null,p_bg_color:null,p_border_color:null});
-  msg.innerHTML=error?'<span class="msg error">Ошибка: '+escapeHtml(error.message)+'</span>':'<span class="msg success">✓ Все эксклюзивы сняты с игрока #'+id+'.</span>';
-}
-
 async function addResult() {
   if (!isAdmin()) return;
   const tournament_name = document.getElementById('res-tournament').value.trim();
@@ -4161,7 +4269,7 @@ function init() {
   setupArqonTwitch();
   loadHomeHighlights();
   document.querySelectorAll('nav button').forEach(b => b.onclick = () => switchTab(b.dataset.tab));
-  const playerSearch = document.getElementById('player-search'); if (playerSearch) playerSearch.addEventListener('input', renderPlayerCards);
+  const playerSearch = document.getElementById('player-search'); if (playerSearch) playerSearch.addEventListener('input', () => { renderPlayerCards(); renderSteamRegisteredCards(); });
   document.querySelectorAll('[data-sub]').forEach(b => b.onclick = () => switchSubTab(b.dataset.sub));
 
   const modeSel = document.getElementById('mode');
@@ -4246,6 +4354,325 @@ function openAuthScreen() {
   document.getElementById('auth-screen').style.display = 'flex';
 }
 
+function setSteamMessage(message, isError = false) {
+  const box = document.getElementById('steam-auth-message');
+  if (!box) return;
+  box.textContent = message;
+  box.classList.remove('hidden', 'error', 'success');
+  box.classList.add('msg', isError ? 'error' : 'success');
+}
+
+async function startSteamAuth(mode) {
+  if (window.isAdmin?.()) {
+    setSteamMessage('Для входа организатора используй отдельную служебную форму. Steam-вход предназначен для аккаунтов игроков.', true);
+    return;
+  }
+  const loginButton = document.getElementById('steam-login-btn');
+  const registerButton = document.getElementById('steam-register-btn');
+  if (loginButton) loginButton.disabled = true;
+  if (registerButton) registerButton.disabled = true;
+  setSteamMessage('Подготавливаем безопасное соединение со Steam…');
+  try {
+    let accessToken = null;
+    if (mode === 'register') {
+      let { data, error } = await supabaseClient.auth.getSession();
+      if (error) throw error;
+      if (!data.session?.access_token) {
+        const created = await supabaseClient.auth.signInAnonymously();
+        if (created.error) throw created.error;
+        ({ data, error } = await supabaseClient.auth.getSession());
+        if (error) throw error;
+      }
+      accessToken = data.session?.access_token;
+      if (!accessToken) throw new Error('Не удалось подготовить аккаунт. Обнови страницу и попробуй снова.');
+    }
+    const headers = { 'Content-Type': 'application/json', 'apikey': SUPABASE_KEY };
+    // Login is deliberately unauthenticated: a stale local session must never turn
+    // a Steam login attempt into linking Steam to the currently open account.
+    if (mode === 'register') headers.Authorization = 'Bearer ' + accessToken;
+    const response = await fetch(SUPABASE_URL + '/functions/v1/steam-openid-start', {
+      method: 'POST', headers, body: JSON.stringify({ mode })
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(data.error || 'Не удалось начать вход через Steam.');
+    if (!data?.url) throw new Error('Steam не вернул ссылку для входа.');
+    window.location.assign(data.url);
+  } catch (error) {
+    setSteamMessage(error.message || 'Не удалось начать вход через Steam.', true);
+    if (loginButton) loginButton.disabled = false;
+    if (registerButton) registerButton.disabled = false;
+  }
+}
+async function loadArqonAccount() {
+  const button = document.getElementById('arqon-account-button');
+  const steamEntry = document.getElementById('steam-header-entry');
+  if (isAdmin()) { if (steamEntry) steamEntry.style.display = 'none'; return; }
+  if (!button) return;
+  try {
+    const { data: authData, error: authError } = await supabaseClient.auth.getUser();
+    const user = authData?.user;
+    if (authError || !user) { button.style.display = 'none'; if (steamEntry) steamEntry.style.display = 'inline-flex'; return; }
+    if (steamEntry) steamEntry.style.display = 'none';
+    const { data: profile, error } = await supabaseClient.from('profiles')
+      .select('arqon_id, display_name, steam_persona_name, steam_id')
+      .eq('user_id', user.id).maybeSingle();
+    if (error || !profile) { button.style.display = 'none'; return; }
+    window.__ARQON_ACCOUNT_PROFILE = profile;
+    button.style.display = 'inline-flex';
+    const id = document.getElementById('arqon-account-id');
+    const name = document.getElementById('arqon-account-name');
+    const email = document.getElementById('arqon-account-email');
+    const steam = document.getElementById('arqon-account-steam');
+    if (id) id.textContent = '#' + profile.arqon_id;
+    const publicProfileLink = document.getElementById('arqon-open-profile');
+    if (publicProfileLink) publicProfileLink.href = '/players/profile/?id=' + encodeURIComponent(profile.arqon_id);
+
+    if (name && document.activeElement !== name) name.value = profile.display_name || profile.steam_persona_name || '';
+    if (email) email.textContent = user.email ? ('Email: ' + user.email + (user.email_confirmed_at ? ' · подтверждён' : ' · не подтверждён')) : 'Email пока не добавлен';
+    if (steam) steam.textContent = profile.steam_id ? 'Steam: привязан' : 'Steam: не привязан';
+    const linkButton = document.getElementById('arqon-link-steam');
+    if (linkButton) linkButton.style.display = profile.steam_id ? 'none' : 'block';
+  } catch (error) {
+    console.warn('Не удалось загрузить профиль ARQON:', error);
+    button.style.display = 'none';
+  }
+}
+let arqonTelegramAccountToken = '';
+async function toggleTelegramAccountSettings() {
+  const panel=document.getElementById('arqon-telegram-account-panel');
+  const button=document.getElementById('arqon-telegram-settings-toggle');
+  if(!panel)return;
+  const opening=panel.style.display==='none';
+  panel.style.display=opening?'block':'none';
+  if(button)button.textContent=opening?'Скрыть настройки Telegram':'Настроить Telegram-уведомления';
+  if(opening)await loadTelegramAccountSettings();
+}
+async function loadTelegramAccountSettings(){
+  const status=document.getElementById('arqon-telegram-account-status');
+  const connect=document.getElementById('arqon-telegram-account-connect');
+  const unlink=document.getElementById('arqon-telegram-account-unlink');
+  if(status)status.textContent='Проверяем подключение…';
+  const {data,error}=await supabaseClient.rpc('get_telegram_link_status');
+  if(error){if(status)status.textContent='Не удалось проверить Telegram: '+(error.message||'ошибка');return}
+  const state=data?.[0];
+  if(state?.is_linked){
+    if(status)status.textContent='Telegram подключён'+(state.telegram_username?' · @'+state.telegram_username:(state.first_name?' · '+state.first_name+' (без @username)':''))+'. Видно только тебе. Уведомления включены.';
+    if(connect)connect.style.display='none';if(unlink)unlink.style.display='inline-flex';
+  }else{
+    if(status)status.textContent='Telegram не подключён. Подключи бота, чтобы получать уведомления ARQON.';
+    if(connect)connect.style.display='inline-flex';if(unlink)unlink.style.display='none';
+  }
+}
+async function connectTelegramFromAccount(){
+  const button=document.getElementById('arqon-telegram-account-connect');
+  const status=document.getElementById('arqon-telegram-account-status');
+  if(button){button.disabled=true;button.textContent='Создаём код…'}
+  const {data,error}=await supabaseClient.rpc('create_telegram_link_token');
+  if(button){button.disabled=false;button.textContent='Подключить Telegram'}
+  if(error){if(status)status.textContent=error.message||'Не удалось создать код.';return}
+  const token=data?.[0]?.link_token;
+  if(!token){if(status)status.textContent='Сервер не вернул код подключения.';return}
+  arqonTelegramAccountToken='/start '+token;
+  const code=document.getElementById('arqon-telegram-account-code');
+  const box=document.getElementById('arqon-telegram-account-codebox');
+  const bot=document.getElementById('arqon-telegram-account-bot');
+  if(code)code.textContent=arqonTelegramAccountToken;
+  if(bot)bot.href='https://t.me/arqon_esports_bot?start='+encodeURIComponent(token);
+  if(box)box.style.display='block';
+  if(status)status.textContent='Код действует 10 минут и используется один раз.';
+}
+async function unlinkTelegramFromAccount(){
+  if(!confirm('Отключить Telegram от ARQON?'))return;
+  const {error}=await supabaseClient.rpc('unlink_telegram_account');
+  const status=document.getElementById('arqon-telegram-account-status');
+  if(error){if(status)status.textContent=error.message||'Не удалось отключить Telegram.';return}
+  const box=document.getElementById('arqon-telegram-account-codebox');if(box)box.style.display='none';
+  await loadTelegramAccountSettings();
+}
+async function copyTelegramAccountCode(){
+  const status=document.getElementById('arqon-telegram-account-status');
+  try{await navigator.clipboard.writeText(arqonTelegramAccountToken);if(status)status.textContent='Команда скопирована.'}
+  catch(_){if(status)status.textContent='Не удалось скопировать — выдели команду вручную.'}
+}
+async function loadArqonTeamInvitations() {
+  const host=document.getElementById('arqon-team-invitations');if(!host)return;
+  host.textContent='Загружаем приглашения…';
+  const {data,error}=await supabaseClient.from('team_invitations').select('id,team_id,team_name,created_at').eq('status','pending').order('created_at',{ascending:false});
+  if(error){host.textContent='Не удалось загрузить приглашения.';return}
+  host.replaceChildren();
+  if(!data?.length){host.textContent='Новых приглашений пока нет.';return}
+  data.forEach(invitation=>{
+    const row=document.createElement('div');row.style.cssText='padding:11px 0;border-top:1px solid rgba(255,255,255,.1);display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:9px';
+    const info=document.createElement('div');info.style.minWidth='0';
+    const name=document.createElement('strong');name.textContent=invitation.team_name;
+    const date=document.createElement('div');date.className='hint';date.textContent='Приглашение от '+new Date(invitation.created_at).toLocaleDateString('ru-RU');
+    info.append(name,date);
+    const actions=document.createElement('div');actions.style.cssText='display:flex;gap:7px;flex-wrap:wrap';
+    [['Принять',true],['Отклонить',false]].forEach(([label,accept])=>{
+      const button=document.createElement('button');button.type='button';button.className='btn'+(accept?'':' ghost');button.textContent=label;button.style.cssText='padding:7px 11px;font-size:12px';
+      button.onclick=async()=>{
+        button.disabled=true;const {data:result,error:responseError}=await supabaseClient.rpc('respond_team_invitation',{p_invitation_id:invitation.id,p_accept:accept});
+        if(responseError){button.disabled=false;const msg=document.getElementById('arqon-account-message');if(msg){msg.textContent=responseError.message==='team_roster_full'?'В команде нет свободных мест. Попроси организатора освободить слот.':(responseError.message||'Не удалось обработать приглашение.');msg.className='msg error'}return}
+        await loadArqonTeamInvitations();
+        const msg=document.getElementById('arqon-account-message');if(msg){msg.textContent=accept?'Ты вступил(а) в команду!':'Приглашение отклонено.';msg.className='msg success'}
+      };
+      actions.append(button);
+    });
+    row.append(info,actions);host.append(row);
+  });
+}
+async function openArqonAccount() {
+  const modal = document.getElementById('arqon-account-modal');
+  if (modal) modal.style.display = 'flex';
+  await loadArqonAccount();
+  await loadArqonTeamInvitations();
+}
+function closeArqonAccount() {
+  const modal = document.getElementById('arqon-account-modal');
+  if (modal) modal.style.display = 'none';
+}
+function linkSteamFromAccount() {
+  closeArqonAccount();
+  startSteamAuth('register');
+}
+window.linkSteamFromAccount = linkSteamFromAccount;
+
+async function saveArqonAccountName() {
+  const input = document.getElementById('arqon-account-name');
+  const message = document.getElementById('arqon-account-message');
+  const value = (input?.value || '').trim().replace(/\s+/g, ' ');
+  if (!value || value.length > 32) {
+    if (message) { message.textContent = 'Имя должно содержать от 1 до 32 символов.'; message.className = 'msg error'; }
+    return;
+  }
+  try {
+    const { data, error: authError } = await supabaseClient.auth.getUser();
+    if (authError || !data?.user) throw new Error('Войди в аккаунт, чтобы изменить имя.');
+    const { error } = await supabaseClient.from('profiles').update({ display_name: value }).eq('user_id', data.user.id);
+    if (error) throw error;
+    if (message) { message.textContent = 'Имя профиля сохранено.'; message.className = 'msg success'; }
+    await loadArqonAccount();
+  } catch (error) {
+    if (message) { message.textContent = error.message || 'Не удалось сохранить имя.'; message.className = 'msg error'; }
+  }
+}
+window.openArqonAccount = openArqonAccount;
+window.closeArqonAccount = closeArqonAccount;
+window.saveArqonAccountName = saveArqonAccountName;
+
+async function saveSteamEmail() {
+  const input = document.getElementById('steam-email');
+  const button = document.getElementById('steam-email-submit');
+  const box = document.getElementById('steam-email-message');
+  const email = (input?.value || '').trim();
+  if (!email || email.indexOf('@') <= 0 || email.lastIndexOf('.') < email.indexOf('@') + 2) {
+    if (box) { box.textContent = 'Укажи корректный email.'; box.className = 'msg error'; }
+    return;
+  }
+  if (button) { button.disabled = true; button.textContent = 'Отправляем…'; }
+  try {
+    const { data: userData, error: userError } = await supabaseClient.auth.getUser();
+    if (userError || !userData?.user) throw new Error('Сессия не найдена. Повтори привязку Steam.');
+    if (userData.user.email_confirmed_at) {
+      if (box) { box.textContent = 'Email уже подтверждён.'; box.className = 'msg success'; }
+      return;
+    }
+    const { error } = await supabaseClient.auth.updateUser(
+      { email },
+      { emailRedirectTo: window.location.origin + '/players/?steam=email-confirmed' }
+    );
+    if (error) throw error;
+    if (box) {
+      box.textContent = 'Письмо отправлено. Открой его и подтверди адрес — после этого аккаунт будет готов к использованию.';
+      box.className = 'msg success';
+    }
+  } catch (error) {
+    if (box) {
+      box.textContent = error.message || 'Не удалось отправить письмо. Проверь настройки подтверждения email.';
+      box.className = 'msg error';
+    }
+  } finally {
+    if (button) { button.disabled = false; button.textContent = 'Отправить письмо подтверждения'; }
+  }
+}
+
+async function ensureSteamEmailStep() {
+  try {
+    const { data: userData, error: userError } = await supabaseClient.auth.getUser();
+    if (userError || !userData?.user) return;
+    const user = userData.user;
+    const { data: profile } = await supabaseClient.from('profiles').select('steam_id').eq('user_id', user.id).maybeSingle();
+    if (profile?.steam_id && !user.email_confirmed_at) {
+      const authScreen = document.getElementById('auth-screen');
+      const actions = document.getElementById('steam-login-actions');
+      const emailStep = document.getElementById('steam-email-step');
+      const input = document.getElementById('steam-email');
+      if (input && user.email) input.value = user.email;
+      if (authScreen) authScreen.style.display = 'flex';
+      actions?.classList.add('hidden');
+      emailStep?.classList.remove('hidden');
+    }
+  } catch (error) {
+    console.warn('Не удалось проверить подтверждение email ARQON:', error);
+  }
+}
+
+async function handleSteamReturn(user) {
+  const params = new URLSearchParams(window.location.search);
+  const status = params.get('steam');
+  if (!status) return;
+  const authScreen = document.getElementById('auth-screen');
+  const actions = document.getElementById('steam-login-actions');
+  const emailStep = document.getElementById('steam-email-step');
+  const clearReturn = () => window.history.replaceState({}, document.title, window.location.pathname);
+
+  if (status === 'linked') {
+    clearReturn();
+    return;
+  }
+  if (status === 'email-confirmed') {
+    const { data } = await supabaseClient.auth.getUser();
+    if (data?.user?.email_confirmed_at) {
+      if (authScreen) authScreen.style.display = 'none';
+      alert('Email подтверждён! Аккаунт ARQON готов.');
+    } else {
+      if (authScreen) authScreen.style.display = 'flex';
+      setSteamMessage('Пока не видим подтверждение email. Открой письмо по ссылке ещё раз или запроси новое.', true);
+    }
+    clearReturn();
+    return;
+  }
+  if (status === 'signed_in') {
+    // Replace any stale/anonymous session with the verified Steam account session.
+    const fragment = window.__ARQON_STEAM_SESSION || new URLSearchParams(window.location.hash.replace(/^#/, ''));
+    const accessToken = fragment.get ? fragment.get('access_token') : fragment.access_token;
+    const refreshToken = fragment.get ? fragment.get('refresh_token') : fragment.refresh_token;
+    if (accessToken && refreshToken) {
+      const { error } = await supabaseClient.auth.setSession({
+        access_token: accessToken,
+        refresh_token: refreshToken
+      });
+      if (!error) {
+        clearReturn();
+        window.location.reload();
+        return;
+      }
+    }
+    if (authScreen) authScreen.style.display = 'flex';
+    setSteamMessage('Steam подтвердил аккаунт, но сессию не удалось восстановить. Повтори вход.', true);
+    clearReturn();
+    return;
+  }
+  if (authScreen) authScreen.style.display = 'flex';
+  actions?.classList.remove('hidden');
+  emailStep?.classList.add('hidden');
+  if (status === 'already_linked') setSteamMessage('Этот Steam уже привязан к аккаунту ARQON. Нажми «Войти через Steam», а не создавай новый аккаунт.', true);
+  else if (status === 'not_found') setSteamMessage('Аккаунт с этим Steam ещё не создан. Если ты новый игрок, выбери «Создать аккаунт через Steam».', true);
+  else if (status === 'email_required') setSteamMessage('Для этого аккаунта не подтверждён email. Войди со старого устройства и заверши подтверждение либо обратись в поддержку.', true);
+  else setSteamMessage('Не удалось завершить вход через Steam. Попробуй ещё раз.', true);
+  clearReturn();
+}
+
 // ==========================================
 // ЭКСПОРТ В WINDOW (всё что вызывается из HTML)
 // ==========================================
@@ -4271,6 +4698,7 @@ window.removeTeamLogo = removeTeamLogo;
 window.openInfoModal = openInfoModal;
 window.closeInfoModal = closeInfoModal;
 window.openAuthScreen = openAuthScreen;
+window.ensureSteamEmailStep = ensureSteamEmailStep;
 window.renderPlayerDraft = renderPlayerDraft;
 
 // Запуск
@@ -4295,6 +4723,9 @@ async function startApp() {
     currentUser = session.user;
     // organizer-auth.js получает роль через current_organizer_role.
     await window.checkUserRole(session.user.id);
+    await handleSteamReturn(session.user);
+    await ensureSteamEmailStep();
+    await loadArqonAccount();
     applyPathRoute();
     return;
   }
@@ -4316,11 +4747,13 @@ async function startApp() {
       if (main) main.style.display = 'block';
       startDraftListener(savedUid);
     }
+    await handleSteamReturn(null);
     applyPathRoute();
     return;
   }
 
   handleNoAuth();
+  await handleSteamReturn(null);
 }
   if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', startApp);
@@ -4398,8 +4831,7 @@ async function startApp() {
     measure();
   })();
   </script>
-  <script src="/assets/arqon-navigation.js?v=6"></script>
-<script>window.addEventListener("pageshow",function(event){if(event.persisted)window.location.reload();});</script>
-<script src="/assets/arqon-admin-navigation.js?v=7"></script>
-</body>
+  <script src="/assets/arqon-awards-admin.js?v=450fa01d"></script>
+  <script src="/assets/arqon-navigation.js?v=9"></script>
+<script src="/assets/arqon-notifications.js?v=3caf09e7" defer></script></body>
 </html>
