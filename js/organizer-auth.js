@@ -311,6 +311,46 @@
     await refreshAwardAdminList();
   }
 
+
+  async function installCoinAdminPanel(){
+    const section=byId('tab-admin');
+    if(!section||byId('arqon-coin-admin'))return;
+    const card=document.createElement('div');card.className='card';card.id='arqon-coin-admin';
+    card.innerHTML='<h2>◈ Выдача ARQON Coins</h2><p class="hint">Ручное начисление Coins игроку. Каждая операция сохраняется в истории баланса.</p><div style="display:grid;grid-template-columns:minmax(0,1fr);gap:10px"><label>Игрок<select id="arqon-coin-player" style="width:100%;margin-top:5px"><option value="">Загрузка игроков…</option></select></label><label>Количество Coins<input id="arqon-coin-amount" type="number" min="1" max="100000" step="1" inputmode="numeric" placeholder="Например, 100" style="width:100%;margin-top:5px"></label><label>Причина начисления<input id="arqon-coin-description" maxlength="180" placeholder="Награда за помощь турниру" style="width:100%;margin-top:5px"></label></div><button type="button" class="btn" id="arqon-coin-grant" style="margin-top:12px;width:100%">Начислить Coins</button><p id="arqon-coin-status" role="status" aria-live="polite" style="margin-top:9px;color:#c4b5fd"></p>';
+    section.prepend(card);
+    const select=byId('arqon-coin-player'),status=byId('arqon-coin-status');
+    const {data:players,error}=await supabaseClient.rpc('list_public_player_profiles');
+    if(error){select.replaceChildren(new Option('Не удалось загрузить игроков',''));status.textContent=error.message;return}
+    select.replaceChildren(new Option('Выбери игрока',''));
+    (players||[]).filter(p=>p.arqon_id).sort((a,b)=>String(a.player_name||a.display_name||'').localeCompare(String(b.player_name||b.display_name||''),'ru')).forEach(p=>select.add(new Option((p.player_name||p.display_name||'Игрок')+' · #'+p.arqon_id,String(p.arqon_id))));
+    byId('arqon-coin-grant').addEventListener('click',async()=>{
+      const button=byId('arqon-coin-grant'),id=Number(select.value),amount=Number(byId('arqon-coin-amount').value),description=byId('arqon-coin-description').value.trim();
+      if(!Number.isSafeInteger(id)||id<1){status.textContent='Сначала выбери игрока.';return}
+      if(!Number.isSafeInteger(amount)||amount<1||amount>100000){status.textContent='Укажи целое количество от 1 до 100000 Coins.';return}
+      if(description.length<3){status.textContent='Укажи причину начисления.';return}
+      button.disabled=true;status.textContent='Начисляем Coins…';
+      const {data,error}=await supabaseClient.rpc('admin_grant_arqon_coins',{p_arqon_id:id,p_amount:amount,p_description:description});
+      button.disabled=false;
+      if(error){status.textContent='Не удалось начислить Coins: '+error.message;return}
+      status.textContent='✓ Начислено '+amount.toLocaleString('ru-RU')+' Coins игроку #'+id+'.';
+      byId('arqon-coin-amount').value='';byId('arqon-coin-description').value='';
+    });
+  }
+  async function installExclusivePlayerSelector(){
+    const card=byId('admin-exclusive-profile-card'),idInput=byId('exclusive-arqon-id');
+    if(!card||!idInput||byId('exclusive-player-select'))return;
+    const label=document.createElement('label');label.style.cssText='display:block;margin-bottom:10px;color:#cfc5df;font-size:13px;font-weight:700';
+    label.textContent='Выбрать игрока';
+    const select=document.createElement('select');select.id='exclusive-player-select';select.style.cssText='display:block;width:100%;margin-top:5px';
+    select.add(new Option('Загрузка игроков…',''));label.appendChild(select);idInput.parentElement.insertBefore(label,idInput);
+    const {data,error}=await supabaseClient.rpc('list_public_player_profiles');
+    if(error){select.replaceChildren(new Option('Не удалось загрузить игроков',''));return}
+    select.replaceChildren(new Option('Выбери игрока',''));
+    (data||[]).filter(p=>p.arqon_id).sort((a,b)=>String(a.player_name||a.display_name||'').localeCompare(String(b.player_name||b.display_name||''),'ru')).forEach(p=>select.add(new Option((p.player_name||p.display_name||'Игрок')+' · #'+p.arqon_id,String(p.arqon_id))));
+    select.addEventListener('change',()=>{idInput.value=select.value;});
+    idInput.addEventListener('input',()=>{select.value=idInput.value;});
+  }
+
   let serviceAccessRows = [];
   async function refreshServiceAccessAdminList() {
     if (organizerRole !== 'owner') return;
@@ -747,6 +787,7 @@
       setVisible(byId('tab-home'), true);
       const adminSection = byId('tab-admin');
       await installAwardAdminPanel();
+      if (window.isFullAdmin?.()) { await installCoinAdminPanel(); await installExclusivePlayerSelector(); }
       if (organizerRole === 'owner') await installOrganizerAccessAdminPanel();
       if (organizerRole === 'owner') await installAccountManagementPanel();
       await installSteamProfileEditor();
