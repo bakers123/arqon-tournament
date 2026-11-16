@@ -363,20 +363,17 @@ async function setupCaptainOffers(){
  await loadCaptainSentOffers();
 }
 async function reloadTeam(){
- const [{data,error},{data:profileCards, error:profileCardsError},{data:gameNickRows,error:gameNickError}]=await Promise.all([
+ const [{data,error},{data:profileCards, error:profileCardsError}]=await Promise.all([
   db.from('tournament').select('data').eq('id',1).maybeSingle(),
-  db.rpc('list_public_player_profile_cards'),
-  db.rpc('list_public_player_game_nicks')
+  db.rpc('list_public_player_profile_cards')
  ]);
  if(error)throw error;
  if(profileCardsError)console.warn('Public player avatars unavailable on team profile:',profileCardsError);
- const cardsById=new Map(),cardsByName=new Map(),gameNicksById=new Map();
-  if(gameNickError)console.warn('Public player game nicknames unavailable:',gameNickError);
-  (gameNickRows||[]).forEach(row=>{if(row.arqon_id&&row.game_nick)gameNicksById.set(String(row.arqon_id),row.game_nick)});
+ const cardsById=new Map(),cardsByName=new Map();
  (profileCards||[]).forEach(card=>{if(card.arqon_id)cardsById.set(String(card.arqon_id),card);if(card.player_name)cardsByName.set(String(card.player_name).trim().toLocaleLowerCase(),card)});
  const teams=Array.isArray(data?.data?.teams)?data.data.teams:[];
  const team=teams.find(t=>String(t.id)===String(id));
- if(team&&Array.isArray(team.players))team.players=team.players.map(player=>{const profile=(player.arqonId&&cardsById.get(String(player.arqonId)))||cardsByName.get(String(player.name||'').trim().toLocaleLowerCase());return {...player,name:gameNicksById.get(String(player.arqonId||''))||player.name,avatarCandidates:[profile?.avatar_url,profile?.steam_avatar_url,player.avatar]};});
+ if(team&&Array.isArray(team.players))team.players=team.players.map(player=>{const profile=(player.arqonId&&cardsById.get(String(player.arqonId)))||cardsByName.get(String(player.name||'').trim().toLocaleLowerCase());return {...player,name:profile?.game_nick||player.name,avatarCandidates:[profile?.avatar_url,profile?.steam_avatar_url,player.avatar]};});
  render(team);
  if(!currentTeam)return;await loadTeamProfile();await loadTeamManagement();await setupTeamProfileEditor();await setupTeamOwnershipControls();await setupCaptainOffers();await loadRecruitmentRequests();await loadSentPlayerOffers();await loadTeamHistory();await loadTeamAchievements();
 }
