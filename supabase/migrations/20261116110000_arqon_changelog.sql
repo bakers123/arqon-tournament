@@ -22,7 +22,7 @@ alter table public.changelog_entries enable row level security;
 drop policy if exists changelog_public_read on public.changelog_entries;
 create policy changelog_public_read
   on public.changelog_entries for select to anon, authenticated
-  using (is_published = true);
+  using (is_published = true and published_at <= now());
 
 drop policy if exists changelog_organizer_read on public.changelog_entries;
 create policy changelog_organizer_read
