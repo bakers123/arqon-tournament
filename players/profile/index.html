@@ -698,7 +698,8 @@ async function uploadProfileMedia(file,kind){
       el('cosmetic-badge').classList.toggle('hidden',!badgeText);
       el('arqon-id').textContent='ARQON ID · #'+profile.arqon_id;
       el('stat-id').textContent='#'+profile.arqon_id;
-      el('player-name').textContent=profile.game_nick||profile.player_name||'Не указан';
+      if(!profile.game_nick){const nickResponse=await db.rpc('list_public_player_game_nicks');if(!nickResponse.error)profile.game_nick=(nickResponse.data||[]).find(row=>Number(row.arqon_id)===Number(profile.arqon_id))?.game_nick||null;}
+       el('player-name').textContent=profile.game_nick||profile.player_name||'Не указан';
       el('bio').textContent=profile.bio||'Игрок пока ничего не рассказал о себе.';
       el('steam-state').textContent=profile.steam_id||'Скрыт';
       el('public-cs2-elo').textContent=profile.cs2_faceit_elo===null||profile.cs2_faceit_elo===undefined?'Не указан':String(profile.cs2_faceit_elo);
