@@ -58,14 +58,14 @@
     const groups = [
       {name:'УПРАВЛЕНИЕ И ДОСТУПЫ',match:/управление аккаунтами|доступ к служебному входу|права организаторов|роли|безопасност/i},
       {name:'ТУРНИР И СЕТКИ',match:/настройки турнира|сгенерировать сетку|открыть пики|сбросить всё|турнирная сетка|конструктор турнирных сеток/i},
-      {name:'ИГРОКИ И КОМАНДЫ',match:/добавить игрока|соло игроки|свободные игроки|составы и команды|редактирование steam|игроки|команды/i},
+      {name:'ИГРОКИ, НАГРАДЫ И COINS',match:/выдача arqon coins|награды игроков|эксклюзивы профиля|добавить игрока|соло игроки|свободные игроки|составы и команды|редактирование steam|игроки|команды/i},
       {name:'МАТЧИ И РЕЗУЛЬТАТЫ',match:/чат текущего матча|расписание|результаты турнира|добавить матч|добавить результаты|матчи/i},
       {name:'КИБЕРСПОРТИВНАЯ ЛИГА',match:/управление турниром.*лига|киберспортивная лига|лига/i},
       {name:'КОНТЕНТ И ПАРТНЁРЫ',match:/добавить новость|добавить партнера|новости|партнер|эксклюзивы профиля|достижени|магазин/i},
       {name:'ПРОЧИЕ ИНСТРУМЕНТЫ',match:/.*/i}
     ];
     function rebuildAdminMenu() {
-      const cards = Array.from(root.children).filter(el => el.classList?.contains('card'));
+      const cards = Array.from(root.children).filter(el => el.classList?.contains('card') && !el.hidden && getComputedStyle(el).display !== 'none');
       items.querySelectorAll('.arqon-admin-group').forEach(el => el.remove());
       const used = new Set();
       groups.forEach((group,index) => {
@@ -105,7 +105,7 @@
     }
     rebuildAdminMenu();
     const menuObserver = new MutationObserver(() => rebuildAdminMenu());
-    menuObserver.observe(root,{childList:true});
+    menuObserver.observe(root,{childList:true,subtree:true,attributes:true,attributeFilter:['class','hidden','style']});
     const open = () => {
       if (!window.isAdmin?.()) return;
       drawer.classList.add('is-open');backdrop.classList.add('is-open');document.body.classList.add('arqon-admin-drawer-open');
