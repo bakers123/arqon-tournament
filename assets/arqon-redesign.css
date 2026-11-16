@@ -496,3 +496,40 @@ header nav .arqon-nav-support:hover{background:rgba(139,92,246,.18);border-color
   header>.brand{max-width:37vw!important}
   header>#steam-header-entry,header>#arqon-account-button{max-width:31vw!important;padding-inline:7px!important}
 }
+
+
+/* Desktop hamburger drawer fix: keep the fixed navigation attached to the viewport.
+   A backdrop-filter on the sticky header creates a containing block and clips the drawer. */
+@media(min-width:901px){
+  header{
+    -webkit-backdrop-filter:none!important;
+    backdrop-filter:none!important;
+    filter:none!important;
+    transform:none!important;
+    perspective:none!important;
+    contain:none!important;
+    overflow:visible!important;
+  }
+  header>nav{
+    position:fixed!important;
+    inset:0 auto 0 0!important;
+    width:min(390px,92vw)!important;
+    min-width:0!important;
+    max-width:390px!important;
+    height:100vh!important;
+    height:100dvh!important;
+    max-height:100dvh!important;
+    box-sizing:border-box!important;
+    overflow-x:hidden!important;
+    overflow-y:auto!important;
+    overscroll-behavior:contain!important;
+    z-index:1001!important;
+  }
+  header>nav.arqon-nav-open{
+    width:min(390px,92vw)!important;
+    max-width:390px!important;
+    transform:translate3d(0,0,0)!important;
+    visibility:visible!important;
+  }
+  .arqon-menu-backdrop{z-index:1000!important}
+}
