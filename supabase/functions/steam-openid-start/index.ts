@@ -24,14 +24,22 @@ Deno.serve(async (req: Request) => {
     const admin=createClient(url,serviceKey,{auth:{persistSession:false,autoRefreshToken:false}});
     const now=new Date();
     await admin.from("steam_openid_states").delete().lt("expires_at",now.toISOString());
-    const forwarded=req.headers.get("cf-connecting-ip")||req.headers.get("x-forwarded-for")?.split(",")[0].trim()||"";
-    const ipHash=forwarded?await hashIp(forwarded):null;
-    if(ipHash){
-      const since=new Date(now.getTime()-15*60*1000).toISOString();
-      const {count,error:rateError}=await admin.from("steam_openid_states").select("state",{count:"exact",head:true}).eq("request_ip_hash",ipHash).gte("created_at",since);
+    const body=await req.json().catch(()=>({}));
+    const mode=typeof body.mode==="string"?body.mode:"";
+    if(mode!=="login"&&mode!=="register"&&mode!=="link") return Response.json({error:"Invalid authentication mode"},{status:400,headers});
+    const forwarded=req.headers.get("cf-connecting-ip")||req.headers.get("x-forwarded-for")?.split(",")[0].trim()||req.headers.get("x-real-ip")||"";
+    if(mode!=="link"){
+      if(!forwarded) return Response.json({error:"Не удалось определить IP-адрес. Попробуй позже."},{status:503,headers});
+      const ipHash=await hashIp(forwarded);
+      const {data:limitRows,error:rateError}=await admin.rpc("consume_auth_ip_attempt",{p_ip_hash:ipHash});
       if(rateError) throw rateError;
-      if((count||0)>=10) return Response.json({error:"Слишком много попыток. Подожди 15 минут и попробуй снова."},{status:429,headers});
+      const limit=Array.isArray(limitRows)?limitRows[0]:limitRows;
+      if(!limit?.allowed){
+        const retryAfter=Math.max(1,Number(limit?.retry_after_seconds)||900);
+        return Response.json({error:"С этого IP уже выполнено 3 попытки входа или регистрации. Подожди 15 минут и попробуй снова.",retry_after_seconds:retryAfter},{status:429,headers:{...headers,"Retry-After":String(retryAfter)}});
+      }
     }
+    const ipHash=forwarded?await hashIp(forwarded):null;
     let userId:string|null=null;
     const authorization=req.headers.get("Authorization");
     if(authorization){
