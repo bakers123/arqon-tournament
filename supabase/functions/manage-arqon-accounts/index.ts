@@ -46,6 +46,70 @@ Deno.serve(async (req: Request) => {
     const admin = createClient(url, serviceKey, { auth: { persistSession: false, autoRefreshToken: false } });
     const body = await req.json().catch(() => ({}));
     const action = typeof body.action === "string" ? body.action : "list";
+    if (action === "list_steam_profiles") {
+      const role = await userClient.rpc("current_organizer_role");
+      if (role.error || !["owner", "admin", "editor"].includes(role.data)) {
+        return response({ error: "Недостаточно прав для редактирования профилей." }, 403, headers);
+      }
+      const { data: profiles, error } = await admin.from("profiles")
+        .select("user_id,arqon_id,display_name,bio,avatar_url,cover_url,cs2_faceit_url,cs2_faceit_elo,dota2_profile_url,dota2_mmr,is_public,show_steam,looking_for_team,preferred_role,steam_persona_name,created_at")
+        .not("steam_id", "is", null)
+        .order("created_at", { ascending: false })
+        .limit(5000);
+      if (error) throw error;
+      const users = [];
+      for (let page = 1; page <= 100; page++) {
+        const { data, error: listError } = await admin.auth.admin.listUsers({ page, perPage: 1000 });
+        if (listError) throw listError;
+        users.push(...(data.users || []));
+        if ((data.users || []).length < 1000) break;
+      }
+      const emailMap = new Map(users.map(user => [user.id, user.email || null]));
+      return response({ profiles: (profiles || []).map(profile => ({
+        ...profile,
+        email: emailMap.get(profile.user_id) || null
+      })) }, 200, headers);
+    }
+    if (action === "update_steam_profile") {
+      const role = await userClient.rpc("current_organizer_role");
+      if (role.error || !["owner", "admin", "editor"].includes(role.data)) {
+        return response({ error: "Недостаточно прав для редактирования профилей." }, 403, headers);
+      }
+      const userId = typeof body.user_id === "string" ? body.user_id : "";
+      if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(userId)) {
+        return response({ error: "Некорректный ID игрока." }, 400, headers);
+      }
+      const { data: current, error: currentError } = await admin.from("profiles")
+        .select("steam_id").eq("user_id", userId).maybeSingle();
+      if (currentError) throw currentError;
+      if (!current?.steam_id) return response({ error: "Этот аккаунт не зарегистрирован через Steam." }, 404, headers);
+      const p = body.profile && typeof body.profile === "object" ? body.profile : {};
+      const display_name = typeof p.display_name === "string" ? p.display_name.trim().replace(/\\s+/g, " ") : "";
+      const bio = typeof p.bio === "string" ? p.bio.trim() : "";
+      const cs2_faceit_elo = p.cs2_faceit_elo === "" || p.cs2_faceit_elo === null ? null : Number(p.cs2_faceit_elo);
+      const dota2_mmr = p.dota2_mmr === "" || p.dota2_mmr === null ? null : Number(p.dota2_mmr);
+      const validUrl = value => value === null || (typeof value === "string" && value.length <= 2048 && value.startsWith("https://"));
+      if (!display_name || display_name.length > 32) return response({ error: "Имя должно быть от 1 до 32 символов." }, 400, headers);
+      if (bio.length > 280) return response({ error: "Описание не должно превышать 280 символов." }, 400, headers);
+      if (cs2_faceit_elo !== null && (!Number.isInteger(cs2_faceit_elo) || cs2_faceit_elo < 0 || cs2_faceit_elo > 5000)) return response({ error: "FACEIT ELO должен быть от 0 до 5000." }, 400, headers);
+      if (dota2_mmr !== null && (!Number.isInteger(dota2_mmr) || dota2_mmr < 0 || dota2_mmr > 20000)) return response({ error: "Dota 2 MMR должен быть от 0 до 20000." }, 400, headers);
+      const cs2_faceit_url = p.cs2_faceit_url || null;
+      const dota2_profile_url = p.dota2_profile_url || null;
+      const avatar_url = p.avatar_url || null;
+      const cover_url = p.cover_url || null;
+      if (![cs2_faceit_url, dota2_profile_url, avatar_url, cover_url].every(validUrl)) return response({ error: "Ссылки должны начинаться с https://." }, 400, headers);
+      const update = {
+        display_name, bio, cs2_faceit_elo, cs2_faceit_url, dota2_mmr, dota2_profile_url,
+        avatar_url, cover_url,
+        is_public: p.is_public === true,
+        show_steam: p.show_steam === true,
+        looking_for_team: p.looking_for_team === true,
+        preferred_role: typeof p.preferred_role === "string" ? p.preferred_role.trim().slice(0, 80) : ""
+      };
+      const { error } = await admin.from("profiles").update(update).eq("user_id", userId);
+      if (error) throw error;
+      return response({ ok: true, profile: update }, 200, headers);
+    }
 
     if (action === "list") {
       const users = [];
