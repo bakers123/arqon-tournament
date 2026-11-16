@@ -67,13 +67,16 @@ async function refreshRequestStatus(){
  const {data:profile,error}=await db.from('profiles').select('arqon_id,display_name,game_nick').eq('user_id',user.id).maybeSingle();
  if(error||!profile){setRequestStatus('Не удалось загрузить ARQON ID аккаунта.');button.disabled=true;return}
  currentProfile=profile;
+ const {data:tournamentData}=await db.from('tournament').select('data').eq('id',1).maybeSingle();
+ const existingTeam=(tournamentData?.data?.teams||[]).find(team=>(team.players||[]).some(player=>String(player.account_id||'')===String(user.id)));
+ if(existingTeam){setRequestStatus(existingTeam.id===currentTeam?.id?'Ты уже состоишь в этой команде.':'Ты уже состоишь в команде «'+(existingTeam.name||'Команда')+'». Сначала выйди из неё.');button.disabled=true;button.textContent='Уже в команде';return}
  const {data:requests,error:requestError}=await db.from('team_membership_requests').select('id,status,created_at').eq('team_id',id).eq('user_id',user.id).order('created_at',{ascending:false}).limit(1);
  if(requestError){setRequestStatus('Не удалось проверить заявку.');return}
  const request=requests?.[0];
  if(request?.status==='pending'){setRequestStatus('Твоя заявка уже отправлена и ожидает рассмотрения.');button.disabled=true;button.textContent='Заявка отправлена'}
  else if(request?.status==='accepted'){setRequestStatus('Заявка одобрена. Проверь приглашение в профиле игрока и подтверди вступление.');button.disabled=true;button.textContent='Заявка одобрена'}
  else if(request?.status==='rejected'){setRequestStatus('Предыдущая заявка отклонена. Можно отправить новую.');button.disabled=false;button.textContent='Подать заявку повторно'}
- else {setRequestStatus('Заявка будет отправлена организаторам.');button.disabled=false;button.textContent='Подать заявку в команду'}
+ else {setRequestStatus('Заявка будет отправлена капитану команды и организаторам.');button.disabled=false;button.textContent='Подать заявку в команду'}
 }
 async function submitTeamRequest(){
  if(!currentUser){location.href='/players/';return}if(!currentProfile||!currentTeam)return;
@@ -81,7 +84,7 @@ async function submitTeamRequest(){
  const playerName=(currentProfile.game_nick||currentProfile.display_name||'Игрок ARQON #'+currentProfile.arqon_id).trim();
  const {error}=await db.from('team_membership_requests').insert({team_id:String(currentTeam.id),team_name:String(currentTeam.name||'Команда'),user_id:currentUser.id,arqon_id:currentProfile.arqon_id,player_name:playerName,message:el('request-message').value.trim(),status:'pending'});
  if(error){setRequestStatus(error.code==='23505'?'У тебя уже есть активная заявка в эту команду.':(error.message||'Не удалось отправить заявку.'));button.disabled=false;button.textContent='Подать заявку в команду';return}
- setRequestStatus('Заявка отправлена! Организаторы рассмотрят её.');button.textContent='Заявка отправлена';
+ setRequestStatus('Заявка отправлена! Капитан команды или организаторы рассмотрят её.');button.textContent='Заявка отправлена';
 }
 async function loadAdminRequests(){
  const panel=el('admin-requests');panel.classList.add('hidden');
