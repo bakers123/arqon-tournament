@@ -241,7 +241,7 @@ async function loadRecruitment(){
  box.classList.remove('hidden');el('recruitment-roles').textContent=currentTeamProfile.roles_needed||'Команда ищет игроков.';
  const {data:{user}}=await db.auth.getUser();const button=el('recruitment-apply');
  if(!user){el('recruitment-status').textContent='Войди через страницу игроков, чтобы откликнуться.';button.textContent='Войти и откликнуться';return}
- const {data:profile}=await db.from('profiles').select('arqon_id,display_name').eq('user_id',user.id).maybeSingle();
+ const {data:profile}=await db.from('profiles').select('arqon_id,display_name,game_nick').eq('user_id',user.id).maybeSingle();
  if(!profile){el('recruitment-status').textContent='Не удалось загрузить ARQON ID.';button.disabled=true;return}
  const {data:request}=await db.from('team_recruitment_requests').select('status').eq('team_id',String(currentTeam.id)).eq('user_id',user.id).maybeSingle();
  if(request?.status==='pending'||request?.status==='accepted'){el('recruitment-status').textContent=request.status==='pending'?'Отклик уже отправлен.':'Отклик принят!';button.disabled=true}
