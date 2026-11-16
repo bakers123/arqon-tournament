@@ -194,7 +194,7 @@ let session=null,role=null,docs=[],current=null,data=null,zoom=1,undoStack=[],re
 const freshData=()=>({sections:[{id:uid(),title:'Этап 1',x:45,y:35}],nodes:[],edges:[],teams:[]});
 function uid(){return crypto.randomUUID?crypto.randomUUID():'n'+Math.random().toString(36).slice(2,12)}
 function esc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
-function admin(){return ['owner','admin','editor'].includes(role)}
+function admin(){return ['owner','admin','editor','bracket_editor'].includes(role)}
 function say(id,msg,cls='hint'){const el=$(id);if(el){el.className=cls;el.textContent=msg}}
 function needed(format){return format==='BO1'?1:format==='BO5'?3:2}
 function nodeBy(id){return data?.nodes.find(n=>n.id===id)}
@@ -472,7 +472,7 @@ async function boot(){
  if(session?.user){const {data:r,error:re}=await sb.rpc('current_organizer_role');if(re)console.warn(re);role=r||null}
  $('logout-btn').classList.toggle('hidden',!session);$('role-label').textContent=role==='judge'?'Судья':admin()?'Организатор':'Публичная сетка';
  $('login-panel').classList.add('hidden');$('public-panel').classList.remove('hidden');$('editor-panel').classList.add('hidden');$('judge-panel').classList.add('hidden');
- if(admin()){$('public-panel').classList.add('hidden');$('editor-panel').classList.remove('hidden');initAdminTabs();$('editor-panel').querySelector('.admin-tabs').classList.remove('hidden');$('create-judge').closest('.panel').classList.toggle('hidden',!['owner','admin'].includes(role));$('admin-tab-judgeAccount').classList.toggle('hidden',!['owner','admin'].includes(role));await loadDocs()}
+ if(admin()){$('public-panel').classList.add('hidden');$('editor-panel').classList.remove('hidden');initAdminTabs();$('editor-panel').querySelector('.admin-tabs').classList.remove('hidden');$('create-judge').closest('.panel').classList.toggle('hidden',!['owner','admin'].includes(role));$('admin-tab-judgeAccount').classList.toggle('hidden',!['owner','admin'].includes(role));$('admin-tab-judges').classList.toggle('hidden',role==='bracket_editor');await loadDocs()}
  else if(role==='judge'){$('public-panel').classList.add('hidden');$('judge-panel').classList.remove('hidden');await loadDocs()}
  else{role=null;await loadDocs()}
 }
