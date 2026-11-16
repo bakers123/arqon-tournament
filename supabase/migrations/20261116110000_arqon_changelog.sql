@@ -48,6 +48,9 @@ create policy changelog_organizer_delete
   on public.changelog_entries for delete to authenticated
   using (has_organizer_role('editor'));
 
-grant select on public.changelog_entries to anon, authenticated;
-grant insert, update, delete on public.changelog_entries to authenticated;
+revoke all privileges on table public.changelog_entries from public, anon, authenticated;
+grant select on table public.changelog_entries to anon, authenticated;
+grant insert, update, delete on table public.changelog_entries to authenticated;
+
+revoke all privileges on sequence public.changelog_entries_id_seq from public, anon, authenticated;
 grant usage, select on sequence public.changelog_entries_id_seq to authenticated;
