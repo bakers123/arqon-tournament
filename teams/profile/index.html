@@ -68,7 +68,7 @@ async function refreshRequestStatus(){
  if(error||!profile){setRequestStatus('Не удалось загрузить ARQON ID аккаунта.');button.disabled=true;return}
  currentProfile=profile;
  const {data:tournamentData}=await db.from('tournament').select('data').eq('id',1).maybeSingle();
- const existingTeam=(tournamentData?.data?.teams||[]).find(team=>(team.players||[]).some(player=>String(player.account_id||'')===String(user.id)));
+ const existingTeam=(tournamentData?.data?.teams||[]).find(team=>(team.players||[]).some(player=>String(player.account_id||'')===String(user.id)||String(player.arqonId||'')===String(profile.arqon_id)));
  if(existingTeam){setRequestStatus(existingTeam.id===currentTeam?.id?'Ты уже состоишь в этой команде.':'Ты уже состоишь в команде «'+(existingTeam.name||'Команда')+'». Сначала выйди из неё.');button.disabled=true;button.textContent='Уже в команде';return}
  const {data:requests,error:requestError}=await db.from('team_membership_requests').select('id,status,created_at').eq('team_id',id).eq('user_id',user.id).order('created_at',{ascending:false}).limit(1);
  if(requestError){setRequestStatus('Не удалось проверить заявку.');return}
