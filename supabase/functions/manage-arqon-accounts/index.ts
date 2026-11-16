@@ -104,7 +104,7 @@ Deno.serve(async (req: Request) => {
       if (currentError) throw currentError;
       if (!current?.steam_id) return response({ error: "Этот аккаунт не зарегистрирован через Steam." }, 404, headers);
       const p = body.profile && typeof body.profile === "object" ? body.profile : {};
-      const display_name = typeof p.display_name === "string" ? p.display_name.trim().replace(/\\s+/g, " ") : "";
+      const display_name = typeof p.display_name === "string" ? p.display_name.trim().replace(/\s+/g, " ") : "";
       const bio = typeof p.bio === "string" ? p.bio.trim() : "";
       const cs2_faceit_elo = p.cs2_faceit_elo === "" || p.cs2_faceit_elo === null ? null : Number(p.cs2_faceit_elo);
       const dota2_mmr = p.dota2_mmr === "" || p.dota2_mmr === null ? null : Number(p.dota2_mmr);
