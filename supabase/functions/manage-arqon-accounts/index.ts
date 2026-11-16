@@ -110,6 +110,7 @@ Deno.serve(async (req: Request) => {
       const dota2_mmr = p.dota2_mmr === "" || p.dota2_mmr === null ? null : Number(p.dota2_mmr);
       const validUrl = value => value === null || (typeof value === "string" && value.length <= 2048 && value.startsWith("https://"));
       if (!display_name || display_name.length > 32) return response({ error: "Имя должно быть от 1 до 32 символов." }, 400, headers);
+      if (typeof p.game_nick === 'string' && p.game_nick.trim().length > 32) return response({ error: "Игровой ник не должен превышать 32 символа." }, 400, headers);
       if (bio.length > 280) return response({ error: "Описание не должно превышать 280 символов." }, 400, headers);
       if (cs2_faceit_elo !== null && (!Number.isInteger(cs2_faceit_elo) || cs2_faceit_elo < 0 || cs2_faceit_elo > 5000)) return response({ error: "FACEIT ELO должен быть от 0 до 5000." }, 400, headers);
       if (dota2_mmr !== null && (!Number.isInteger(dota2_mmr) || dota2_mmr < 0 || dota2_mmr > 20000)) return response({ error: "Dota 2 MMR должен быть от 0 до 20000." }, 400, headers);
@@ -119,7 +120,7 @@ Deno.serve(async (req: Request) => {
       const cover_url = p.cover_url || null;
       if (![cs2_faceit_url, dota2_profile_url, avatar_url, cover_url].every(validUrl)) return response({ error: "Ссылки должны начинаться с https://." }, 400, headers);
       const update = {
-        display_name, bio, cs2_faceit_elo, cs2_faceit_url, dota2_mmr, dota2_profile_url,
+        display_name, game_nick: typeof p.game_nick === 'string' ? p.game_nick.trim().slice(0,32) || null : null, bio, cs2_faceit_elo, cs2_faceit_url, dota2_mmr, dota2_profile_url,
         avatar_url, cover_url,
         is_public: p.is_public === true,
         show_steam: p.show_steam === true,
