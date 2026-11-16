@@ -18,7 +18,7 @@ declare
   v_started timestamptz;
   v_now timestamptz := now();
 begin
-  if current_setting('request.jwt.claim.role', true) <> 'service_role' then
+  if coalesce(current_setting('request.jwt.claim.role', true), '') <> 'service_role' then
     raise exception 'service_role required' using errcode = '42501';
   end if;
   if p_ip_hash is null or length(p_ip_hash) <> 64 or p_ip_hash !~ '^[0-9a-f]{64}$' then
