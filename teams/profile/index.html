@@ -64,7 +64,7 @@ function render(team){
 async function refreshRequestStatus(){
  const button=el('apply-button');const {data:{user}}=await db.auth.getUser();currentUser=user||null;
  if(!user){setRequestStatus('Чтобы подать заявку, войди в ARQON через страницу игроков.');button.textContent='Войти и подать заявку';return}
- const {data:profile,error}=await db.from('profiles').select('arqon_id,display_name').eq('user_id',user.id).maybeSingle();
+ const {data:profile,error}=await db.from('profiles').select('arqon_id,display_name,game_nick').eq('user_id',user.id).maybeSingle();
  if(error||!profile){setRequestStatus('Не удалось загрузить ARQON ID аккаунта.');button.disabled=true;return}
  currentProfile=profile;
  const {data:requests,error:requestError}=await db.from('team_membership_requests').select('id,status,created_at').eq('team_id',id).eq('user_id',user.id).order('created_at',{ascending:false}).limit(1);
@@ -78,7 +78,7 @@ async function refreshRequestStatus(){
 async function submitTeamRequest(){
  if(!currentUser){location.href='/players/';return}if(!currentProfile||!currentTeam)return;
  const button=el('apply-button');button.disabled=true;button.textContent='Отправляем…';
- const playerName=(currentProfile.display_name||'Игрок ARQON #'+currentProfile.arqon_id).trim();
+ const playerName=(currentProfile.game_nick||currentProfile.display_name||'Игрок ARQON #'+currentProfile.arqon_id).trim();
  const {error}=await db.from('team_membership_requests').insert({team_id:String(currentTeam.id),team_name:String(currentTeam.name||'Команда'),user_id:currentUser.id,arqon_id:currentProfile.arqon_id,player_name:playerName,message:el('request-message').value.trim(),status:'pending'});
  if(error){setRequestStatus(error.code==='23505'?'У тебя уже есть активная заявка в эту команду.':(error.message||'Не удалось отправить заявку.'));button.disabled=false;button.textContent='Подать заявку в команду';return}
  setRequestStatus('Заявка отправлена! Организаторы рассмотрят её.');button.textContent='Заявка отправлена';
@@ -251,7 +251,7 @@ async function submitRecruitment(){
  const {data:{user}}=await db.auth.getUser();if(!user){location.href='/players/';return}
  const {data:profile}=await db.from('profiles').select('arqon_id,display_name').eq('user_id',user.id).maybeSingle();if(!profile)return;
  const button=el('recruitment-apply');button.disabled=true;
- const {error}=await db.from('team_recruitment_requests').insert({team_id:String(currentTeam.id),user_id:user.id,arqon_id:profile.arqon_id,player_name:profile.display_name||('Игрок ARQON #'+profile.arqon_id),desired_role:el('recruitment-role').value.trim(),message:el('recruitment-message').value.trim()});
+ const {error}=await db.from('team_recruitment_requests').insert({team_id:String(currentTeam.id),user_id:user.id,arqon_id:profile.arqon_id,player_name:profile.game_nick||profile.display_name||('Игрок ARQON #'+profile.arqon_id),desired_role:el('recruitment-role').value.trim(),message:el('recruitment-message').value.trim()});
  if(error){el('recruitment-status').textContent=error.code==='23505'?'Ты уже откликался в эту команду.':error.message||'Не удалось отправить отклик.';button.disabled=false;return}
  el('recruitment-status').textContent='Отклик отправлен команде.';
 }
@@ -369,11 +369,13 @@ async function reloadTeam(){
  ]);
  if(error)throw error;
  if(profileCardsError)console.warn('Public player avatars unavailable on team profile:',profileCardsError);
- const cardsById=new Map(),cardsByName=new Map();
+ const cardsById=new Map(),cardsByName=new Map(),gameNicksById=new Map();
+  if(gameNickError)console.warn('Public player game nicknames unavailable:',gameNickError);
+  (gameNickRows||[]).forEach(row=>{if(row.arqon_id&&row.game_nick)gameNicksById.set(String(row.arqon_id),row.game_nick)});
  (profileCards||[]).forEach(card=>{if(card.arqon_id)cardsById.set(String(card.arqon_id),card);if(card.player_name)cardsByName.set(String(card.player_name).trim().toLocaleLowerCase(),card)});
  const teams=Array.isArray(data?.data?.teams)?data.data.teams:[];
  const team=teams.find(t=>String(t.id)===String(id));
- if(team&&Array.isArray(team.players))team.players=team.players.map(player=>{const profile=(player.arqonId&&cardsById.get(String(player.arqonId)))||cardsByName.get(String(player.name||'').trim().toLocaleLowerCase());return {...player,avatarCandidates:[profile?.avatar_url,profile?.steam_avatar_url,player.avatar]};});
+ if(team&&Array.isArray(team.players))team.players=team.players.map(player=>{const profile=(player.arqonId&&cardsById.get(String(player.arqonId)))||cardsByName.get(String(player.name||'').trim().toLocaleLowerCase());return {...player,name:gameNicksById.get(String(player.arqonId||''))||player.name,avatarCandidates:[profile?.avatar_url,profile?.steam_avatar_url,player.avatar]};});
  render(team);
  if(!currentTeam)return;await loadTeamProfile();await loadTeamManagement();await setupTeamProfileEditor();await setupTeamOwnershipControls();await setupCaptainOffers();await loadRecruitmentRequests();await loadSentPlayerOffers();await loadTeamHistory();await loadTeamAchievements();
 }
