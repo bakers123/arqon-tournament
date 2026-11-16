@@ -71,6 +71,8 @@ a{color:inherit;text-decoration:none}button,input,select,textarea{font:inherit}
 <div id="edit-wrap" hidden style="margin-top:18px;padding-top:16px;border-top:1px solid #ffffff18">
 <h2>РЕДАКТИРОВАТЬ ВЫБРАННЫЙ МАТЧ</h2>
 <div class="admin-grid">
+<label class="field wide"><span>Название матча / события</span><input id="edit-title" maxlength="120" required></label>
+<label class="field"><span>Дата и время начала</span><input id="edit-start" type="datetime-local"></label>
 <label class="field"><span>Название команды 1</span><input id="edit-team1" maxlength="100" required></label>
 <label class="field"><span>Название команды 2</span><input id="edit-team2" maxlength="100" required></label>
 <label class="field"><span>Статус</span><select id="edit-status"><option value="scheduled">Запланирован</option><option value="live">LIVE</option><option value="paused">Пауза</option><option value="finished">Завершён</option><option value="cancelled">Отменён</option></select></label>
@@ -118,6 +120,7 @@ const notice=(msg,error=false)=>{const n=$('notice');n.textContent=msg;n.classNa
 const clearNotice=()=>{$('notice').className='notice'};
 const safeHttp=v=>{try{const u=new URL(v);return u.protocol==='https:'?u.href:''}catch{return ''}};
 const fmt=v=>v?new Date(v).toLocaleString('ru-RU',{dateStyle:'medium',timeStyle:'short'}):'Время не указано';
+const toLocalDateTimeInput=v=>{if(!v)return '';const d=new Date(v);if(Number.isNaN(d.getTime()))return '';const pad=n=>String(n).padStart(2,'0');return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())+'T'+pad(d.getHours())+':'+pad(d.getMinutes())};
 const make=(tag,cls,txt)=>{const e=document.createElement(tag);if(cls)e.className=cls;if(txt!==undefined)e.textContent=txt;return e};
 async function loadPredictionLeaderboard(){
  const host=$('prediction-leaderboard');if(!host)return;
@@ -182,7 +185,7 @@ function renderDetail(){
  compose.addEventListener('submit',submitChat);host.append(chatBox);chatList.scrollTop=chatList.scrollHeight;
  $('edit-wrap').hidden=!isEditor;
  if(isEditor){
-  $('edit-team1').value=m.team1||'';$('edit-team2').value=m.team2||'';$('edit-status').value=m.status;$('edit-map').value=m.map_name||'';$('edit-score1').value=m.score1;$('edit-score2').value=m.score2;$('edit-stream').value=m.stream_url||'';$('edit-platform').value=m.stream_platform||'other';$('edit-mvp').value=m.mvp_name||'';
+  $('edit-title').value=m.title||'';$('edit-start').value=toLocalDateTimeInput(m.starts_at);$('edit-team1').value=m.team1||'';$('edit-team2').value=m.team2||'';$('edit-status').value=m.status;$('edit-map').value=m.map_name||'';$('edit-score1').value=m.score1;$('edit-score2').value=m.score2;$('edit-stream').value=m.stream_url||'';$('edit-platform').value=m.stream_platform||'other';$('edit-mvp').value=m.mvp_name||'';
   $('edit-lineup1').value=(m.lineup1||[]).join('\n');$('edit-lineup2').value=(m.lineup2||[]).join('\n');
   const team=$('event-team');team.replaceChildren(new Option('Без команды',''),new Option(m.team1,m.team1),new Option(m.team2,m.team2));
   const statTeam=$('stats-team');statTeam.replaceChildren(new Option(m.team1,m.team1),new Option(m.team2,m.team2));
@@ -297,8 +300,10 @@ $('save-match').addEventListener('click',async()=>{
  if(!isEditor||!selected)return;const btn=$('save-match');btn.disabled=true;
  try{
  const stream=$('edit-stream').value.trim();if(stream&&!safeHttp(stream))throw new Error('Ссылка на трансляцию должна начинаться с https://');
+ const title=$('edit-title').value.trim();if(!title)throw new Error('Укажи название матча');
  const team1=$('edit-team1').value.trim(),team2=$('edit-team2').value.trim();if(!team1||!team2)throw new Error('Укажи названия обеих команд');if(team1===team2)throw new Error('Названия команд должны различаться');
- const payload={team1,team2,status:$('edit-status').value,map_name:$('edit-map').value.trim(),score1:Number($('edit-score1').value),score2:Number($('edit-score2').value),stream_url:stream,stream_platform:$('edit-platform').value,mvp_name:$('edit-mvp').value.trim(),lineup1:$('edit-lineup1').value.split('\n').map(x=>x.trim()).filter(Boolean).slice(0,10),lineup2:$('edit-lineup2').value.split('\n').map(x=>x.trim()).filter(Boolean).slice(0,10),updated_by:(await db.auth.getUser()).data.user.id,updated_at:new Date().toISOString()};
+ const startValue=$('edit-start').value;const starts_at=startValue?new Date(startValue).toISOString():null;
+ const payload={title,starts_at,team1,team2,status:$('edit-status').value,map_name:$('edit-map').value.trim(),score1:Number($('edit-score1').value),score2:Number($('edit-score2').value),stream_url:stream,stream_platform:$('edit-platform').value,mvp_name:$('edit-mvp').value.trim(),lineup1:$('edit-lineup1').value.split('\n').map(x=>x.trim()).filter(Boolean).slice(0,10),lineup2:$('edit-lineup2').value.split('\n').map(x=>x.trim()).filter(Boolean).slice(0,10),updated_by:(await db.auth.getUser()).data.user.id,updated_at:new Date().toISOString()};
  const {error}=await db.from('live_matches').update(payload).eq('id',selected);if(error)throw error;
  await loadMatches();notice('Данные матча обновлены.');}
  catch(err){notice('Не удалось сохранить матч: '+err.message,true)}finally{btn.disabled=false}
