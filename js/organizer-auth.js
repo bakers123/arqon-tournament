@@ -329,8 +329,9 @@
       else if (currentRole === 'bracket_editor') state.textContent = 'Доступ есть · только конструктор сеток';
       else state.textContent = 'Нет доступа к конструктору сеток';
       info.append(name, meta, state); card.append(info);
-      if (currentRole === 'bracket_editor') {
-        const button = document.createElement('button'); button.type = 'button'; button.className = 'btn danger'; button.textContent = 'Отозвать доступ';
+      if (currentRole === 'bracket_editor' || currentRole === 'admin' || currentRole === 'editor') {
+        const button = document.createElement('button'); button.type = 'button'; button.className = 'btn danger';
+        button.textContent = currentRole === 'bracket_editor' ? 'Отозвать доступ' : 'Снять все права';
         button.dataset.serviceAccessUser = account.user_id; button.dataset.allowed = 'false'; card.append(button);
       } else if (!currentRole) {
         const button = document.createElement('button'); button.type = 'button'; button.className = 'btn'; button.textContent = 'Разрешить доступ';
@@ -357,7 +358,7 @@
       const account = serviceAccessRows.find(row => row.user_id === userId);
       if (!account) return;
       const label = account.display_name || account.email || 'этого пользователя';
-      if (!allowed && !window.confirm('Отозвать служебный доступ у ' + label + '?')) return;
+      if (!allowed) { const fullRole = account.organizer_role === 'admin' || account.organizer_role === 'editor'; const question = fullRole ? 'Снять ВСЕ права организатора у ' + label + '? Пользователь потеряет доступ ко всей админ-панели и конструктору.' : 'Отозвать доступ к конструктору у ' + label + '?'; if (!window.confirm(question)) return; }
       button.disabled = true;
       const { error } = await supabaseClient.rpc('set_service_access', { p_user_id: userId, p_allowed: allowed });
       button.disabled = false;
