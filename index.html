@@ -1041,7 +1041,7 @@
       Поддержать
     </a>
   </nav>
-  <button id="steam-header-entry" class="btn" type="button" onclick="openAuthScreen()" style="display:inline-flex;align-items:center;white-space:nowrap;margin:0 12px 0 0;">Войти через Steam</button>
+  <button id="steam-header-entry" class="btn" type="button" onclick="openAuthScreen()" style="display:none;align-items:center;white-space:nowrap;margin:0 12px 0 0;">Войти через Steam</button>
   <button id="arqon-account-button" type="button" onclick="openArqonAccount()" aria-label="Открыть мой аккаунт" style="display:none;"><span class="arqon-account-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M20 21a8 8 0 0 0-16 0" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><circle cx="12" cy="8" r="4" stroke="currentColor" stroke-width="1.8"/></svg></span><span class="arqon-account-label">МОЙ АККАУНТ</span></button>
   <div class="mobile-nav-scrollbar" id="mobile-nav-scrollbar" aria-label="Полоса прокрутки меню">
     <div class="mobile-nav-scrollbar-thumb" id="mobile-nav-scrollbar-thumb"></div>
@@ -1604,7 +1604,9 @@ supabaseClient.auth.onAuthStateChange((event, session) => {
 
 function handleNoAuth() {
   const steamEntry = document.getElementById('steam-header-entry');
-  if (steamEntry) steamEntry.style.display = 'inline-flex';
+  // Показываем Steam-вход только после того, как подтверждено отсутствие сессии
+  // и проверена роль организатора. Админский аккаунт не должен мигать кнопкой входа.
+  if (steamEntry) steamEntry.style.display = isAdmin() ? 'none' : 'inline-flex';
   document.getElementById('auth-screen').style.display = 'none';
 
   const playerScreen = document.getElementById('player-screen');
@@ -4421,7 +4423,9 @@ async function startSteamAuth(mode) {
 async function loadArqonAccount() {
   const button = document.getElementById('arqon-account-button');
   const steamEntry = document.getElementById('steam-header-entry');
-  if (isAdmin()) { if (steamEntry) steamEntry.style.display = 'none'; return; }
+  // Сразу скрываем гостевой вход, пока проверяем уже восстановленную сессию.
+  if (steamEntry) steamEntry.style.display = 'none';
+  if (isAdmin()) return;
   if (!button) return;
   try {
     const { data: authData, error: authError } = await supabaseClient.auth.getUser();
@@ -4736,6 +4740,8 @@ async function startApp() {
 
   if (session?.user) {
     currentUser = session.user;
+    const steamEntry = document.getElementById('steam-header-entry');
+    if (steamEntry) steamEntry.style.display = 'none';
     // organizer-auth.js получает роль через current_organizer_role.
     await window.checkUserRole(session.user.id);
     await handleSteamReturn(session.user);
