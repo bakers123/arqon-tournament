@@ -49,7 +49,7 @@ Deno.serve(async (req: Request) => {
         return response({ error: "Недостаточно прав для редактирования профилей." }, 403, headers);
       }
       const { data: profiles, error } = await admin.from("profiles")
-        .select("user_id,arqon_id,display_name,bio,avatar_url,cover_url,cs2_faceit_url,cs2_faceit_elo,dota2_profile_url,dota2_mmr,is_public,show_steam,looking_for_team,preferred_role,steam_persona_name,created_at")
+        .select("user_id,arqon_id,display_name,game_nick,bio,avatar_url,cover_url,cs2_faceit_url,cs2_faceit_elo,dota2_profile_url,dota2_mmr,is_public,show_steam,looking_for_team,preferred_role,steam_persona_name,created_at")
         .not("steam_id", "is", null)
         .order("created_at", { ascending: false })
         .limit(5000);
