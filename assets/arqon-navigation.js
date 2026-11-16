@@ -70,13 +70,19 @@
     // Keep utility links/buttons (updates, achievements, shop, etc.) inside
     // the drawer column instead of leaving them as stray flex children.
     const moveExtraControls = () => {
+      // Dynamic utility controls (achievements, shop, etc.) may be wrapped
+      // in DIVs by their own modules. Move every direct nav child except the
+      // structural groups and social links into the same full-width column.
       Array.from(nav.children).forEach(node => {
-        if (!/^(A|BUTTON)$/.test(node.tagName)) return;
-        if (node.matches('button[data-tab], .nav-social-btn')) return;
+        if (node === head || node === groupRoot || node.matches('.nav-social-btn')) return;
+        if (node.matches('button[data-tab]')) return;
         extraSection.appendChild(node);
       });
       extraSection.hidden = extraSection.children.length === 1;
     };
+    groupRoot.style.cssText = 'display:flex;flex-direction:column;align-items:stretch;width:100%;min-width:0;flex:0 0 auto';
+    extraSection.style.cssText = 'display:flex;flex-direction:column;align-items:stretch;width:100%;min-width:0;flex:0 0 auto';
+
     nav.insertBefore(groupRoot, nav.querySelector('.nav-social-btn'));
     moveExtraControls();
     const extraControlsObserver = new MutationObserver(() => moveExtraControls());
