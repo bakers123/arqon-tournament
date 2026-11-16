@@ -6,7 +6,7 @@
 <title>Уведомления — ARQON Esports</title><link rel="icon" href="/logo.png">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;800&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/assets/arqon-redesign.css?v=13">
+<link rel="stylesheet" href="/assets/arqon-redesign.css?v=20">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-2YLPZGQZSX"></script><script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments)}gtag('js',new Date());gtag('config','G-2YLPZGQZSX');</script>
 <style>
@@ -68,5 +68,5 @@ db.auth.getSession().then(({data,error})=>{if(error)throw error;return start(dat
 db.auth.onAuthStateChange((_,s)=>setTimeout(()=>start(s),0));
 })();
 </script>
-<script src="/assets/arqon-notifications.js?v=2"></script>
+<script src="/assets/arqon-notifications.js?v=3caf09e7"></script>
 </body></html>
