@@ -279,11 +279,11 @@
     card.innerHTML='<h2>🏅 Награды игроков ARQON</h2><p style="color:#aaa">Выдача особых наград и управление активной коллекцией игроков.</p><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:10px"><label>Игрок<select id="arqon-award-player" style="width:100%;margin-top:5px"><option value="">Загрузка игроков…</option></select></label><label>Награда<select id="arqon-award-type" style="width:100%;margin-top:5px"><option value="founder">Основатель ARQON</option><option value="community">Душа сообщества</option><option value="event_mvp">MVP события</option><option value="champion">Чемпион ARQON</option><option value="fair_play">Честная игра</option><option value="legend">Легенда ARQON</option></select></label><label>Редкость<select id="arqon-award-rarity" style="width:100%;margin-top:5px"><option value="common">Обычная</option><option value="rare">Редкая</option><option value="epic">Эпическая</option><option value="legendary">Легендарная</option></select></label></div><label style="display:block;margin-top:12px">Причина выдачи<textarea id="arqon-award-reason" maxlength="300" rows="2" placeholder="За что игрок получает награду?" style="width:100%;margin-top:5px"></textarea></label><button type="button" class="btn" id="arqon-award-grant" style="margin-top:10px">Выдать награду</button><p id="arqon-award-status" role="status" style="color:#c4b5fd"></p><h3 style="margin-top:22px">Активные награды</h3><div id="arqon-awards-admin-list"></div>';
     section.prepend(card);
     const playerSelect=byId('arqon-award-player');
-    const {data:players,error}=await supabaseClient.rpc('list_public_player_profiles');
+    const {data:players,error}=await supabaseClient.rpc('list_admin_player_directory');
     if(error){playerSelect.replaceChildren(new Option('Не удалось загрузить игроков',''));byId('arqon-award-status').textContent=error.message;return}
     playerSelect.replaceChildren(new Option('Выбери игрока',''));
     (players||[]).filter(p=>p.arqon_id).sort((a,b)=>String(a.player_name||'').localeCompare(String(b.player_name||''),'ru')).forEach(p=>{
-      const option=new Option((p.player_name||p.display_name||'Игрок')+' · #'+p.arqon_id,String(p.arqon_id));playerSelect.add(option);
+      const option=new Option((p.game_nick||p.player_name||p.display_name||'Игрок')+(p.has_steam?' · Steam':'')+' · #'+p.arqon_id,String(p.arqon_id));playerSelect.add(option);
     });
     byId('arqon-award-grant').addEventListener('click',async()=>{
       const button=byId('arqon-award-grant'),status=byId('arqon-award-status');
@@ -319,10 +319,10 @@
     card.innerHTML='<h2>◈ Выдача ARQON Coins</h2><p class="hint">Ручное начисление Coins игроку. Каждая операция сохраняется в истории баланса.</p><div style="display:grid;grid-template-columns:minmax(0,1fr);gap:10px"><label>Игрок<select id="arqon-coin-player" style="width:100%;margin-top:5px"><option value="">Загрузка игроков…</option></select></label><label>Количество Coins<input id="arqon-coin-amount" type="number" min="1" max="100000" step="1" inputmode="numeric" placeholder="Например, 100" style="width:100%;margin-top:5px"></label><label>Причина начисления<input id="arqon-coin-description" maxlength="180" placeholder="Награда за помощь турниру" style="width:100%;margin-top:5px"></label></div><button type="button" class="btn" id="arqon-coin-grant" style="margin-top:12px;width:100%">Начислить Coins</button><p id="arqon-coin-status" role="status" aria-live="polite" style="margin-top:9px;color:#c4b5fd"></p>';
     section.prepend(card);
     const select=byId('arqon-coin-player'),status=byId('arqon-coin-status');
-    const {data:players,error}=await supabaseClient.rpc('list_public_player_profiles');
+    const {data:players,error}=await supabaseClient.rpc('list_admin_player_directory');
     if(error){select.replaceChildren(new Option('Не удалось загрузить игроков',''));status.textContent=error.message;return}
     select.replaceChildren(new Option('Выбери игрока',''));
-    (players||[]).filter(p=>p.arqon_id).sort((a,b)=>String(a.player_name||a.display_name||'').localeCompare(String(b.player_name||b.display_name||''),'ru')).forEach(p=>select.add(new Option((p.player_name||p.display_name||'Игрок')+' · #'+p.arqon_id,String(p.arqon_id))));
+    (players||[]).filter(p=>p.arqon_id).sort((a,b)=>String(a.game_nick||a.player_name||a.display_name||'').localeCompare(String(b.game_nick||b.player_name||b.display_name||''),'ru')).forEach(p=>select.add(new Option((p.game_nick||p.player_name||p.display_name||'Игрок')+(p.has_steam?' · Steam':'')+' · #'+p.arqon_id,String(p.arqon_id))));
     byId('arqon-coin-grant').addEventListener('click',async()=>{
       const button=byId('arqon-coin-grant'),id=Number(select.value),amount=Number(byId('arqon-coin-amount').value),description=byId('arqon-coin-description').value.trim();
       if(!Number.isSafeInteger(id)||id<1){status.textContent='Сначала выбери игрока.';return}
@@ -343,10 +343,10 @@
     label.textContent='Выбрать игрока';
     const select=document.createElement('select');select.id='exclusive-player-select';select.style.cssText='display:block;width:100%;margin-top:5px';
     select.add(new Option('Загрузка игроков…',''));label.appendChild(select);idInput.parentElement.insertBefore(label,idInput);
-    const {data,error}=await supabaseClient.rpc('list_public_player_profiles');
+    const {data,error}=await supabaseClient.rpc('list_admin_player_directory');
     if(error){select.replaceChildren(new Option('Не удалось загрузить игроков',''));return}
     select.replaceChildren(new Option('Выбери игрока',''));
-    (data||[]).filter(p=>p.arqon_id).sort((a,b)=>String(a.player_name||a.display_name||'').localeCompare(String(b.player_name||b.display_name||''),'ru')).forEach(p=>select.add(new Option((p.player_name||p.display_name||'Игрок')+' · #'+p.arqon_id,String(p.arqon_id))));
+    (data||[]).filter(p=>p.arqon_id).sort((a,b)=>String(a.game_nick||a.player_name||a.display_name||'').localeCompare(String(b.game_nick||b.player_name||b.display_name||''),'ru')).forEach(p=>select.add(new Option((p.game_nick||p.player_name||p.display_name||'Игрок')+(p.has_steam?' · Steam':'')+' · #'+p.arqon_id,String(p.arqon_id))));
     select.addEventListener('change',()=>{idInput.value=select.value;});
     idInput.addEventListener('input',()=>{select.value=idInput.value;});
   }
