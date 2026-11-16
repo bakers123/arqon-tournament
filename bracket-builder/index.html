@@ -502,7 +502,7 @@ function renderServiceAccessAccounts(){
   else state.textContent='Нет доступа к редактору';
   info.append(name,meta,state);card.append(info);
   if(roleName==='admin'||roleName==='editor'){
-   const revoke=document.createElement('button');revoke.type='button';revoke.textContent='Отозвать доступ';revoke.dataset.serviceAccessUser=account.user_id;revoke.dataset.allowed='false';revoke.className='danger';card.append(revoke);
+   const revoke=document.createElement('button');revoke.type='button';revoke.textContent='Отозвать доступ';revoke.dataset.serviceAccessUser=account.user_id;revoke.dataset.allowed='false';revoke.style.cssText='border-color:#ef4444;color:#fca5a5;background:transparent';card.append(revoke);
   }else if(!roleName){
    const allow=document.createElement('button');allow.type='button';allow.textContent='Разрешить доступ';allow.dataset.serviceAccessUser=account.user_id;allow.dataset.allowed='true';allow.className='primary';card.append(allow);
   }
