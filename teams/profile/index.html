@@ -363,9 +363,10 @@ async function setupCaptainOffers(){
  await loadCaptainSentOffers();
 }
 async function reloadTeam(){
- const [{data,error},{data:profileCards, error:profileCardsError}]=await Promise.all([
+ const [{data,error},{data:profileCards, error:profileCardsError},{data:gameNickRows,error:gameNickError}]=await Promise.all([
   db.from('tournament').select('data').eq('id',1).maybeSingle(),
-  db.rpc('list_public_player_profile_cards')
+  db.rpc('list_public_player_profile_cards'),
+  db.rpc('list_public_player_game_nicks')
  ]);
  if(error)throw error;
  if(profileCardsError)console.warn('Public player avatars unavailable on team profile:',profileCardsError);
