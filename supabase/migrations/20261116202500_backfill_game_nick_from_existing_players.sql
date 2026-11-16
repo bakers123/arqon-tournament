@@ -1,0 +1,1 @@
+update public.profiles p set game_nick = btrim(pl.name) from public.players pl where pl.uid = p.user_id::text and p.game_nick is null and pl.name is not null and btrim(pl.name) <> '';
