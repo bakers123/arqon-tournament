@@ -537,6 +537,125 @@
       if (refresh) refresh.disabled = false;
     }
   }
+  let steamProfileRows = [];
+  let selectedSteamProfile = null;
+  async function callSteamProfileAdmin(payload) {
+    const { data, error } = await supabaseClient.functions.invoke('manage-arqon-accounts', { body: payload });
+    if (error) {
+      let message = error.message || 'Ошибка запроса.';
+      try { const details = await error.context?.json?.(); if (details?.error) message = details.error; } catch (_) {}
+      throw new Error(message);
+    }
+    if (data?.error) throw new Error(data.error);
+    return data;
+  }
+  function renderSteamProfileChoices() {
+    const select = byId('arqon-steam-profile-select');
+    if (!select) return;
+    const query = String(byId('arqon-steam-profile-search')?.value || '').trim().toLocaleLowerCase();
+    const filtered = steamProfileRows.filter(p => [p.display_name,p.email,p.arqon_id,p.steam_persona_name].some(v => String(v ?? '').toLocaleLowerCase().includes(query)));
+    select.replaceChildren();
+    const placeholder = document.createElement('option');
+    placeholder.value = ''; placeholder.textContent = filtered.length ? 'Выбери Steam-игрока…' : 'Ничего не найдено';
+    select.append(placeholder);
+    filtered.forEach(p => {
+      const option = document.createElement('option');
+      option.value = p.user_id;
+      option.textContent = (p.display_name || p.steam_persona_name || 'Без ника') +
+        (p.arqon_id ? ' · ARQON #' + p.arqon_id : '') +
+        (p.email ? ' · ' + p.email : '');
+      select.append(option);
+    });
+    if (selectedSteamProfile && filtered.some(p => p.user_id === selectedSteamProfile.user_id)) select.value = selectedSteamProfile.user_id;
+  }
+  function fillSteamProfileEditor(p) {
+    selectedSteamProfile = p;
+    const set = (id,value) => { const node=byId(id); if(node) node.value=value ?? ''; };
+    set('arqon-steam-edit-name',p.display_name || p.steam_persona_name || '');
+    set('arqon-steam-edit-bio',p.bio);
+    set('arqon-steam-edit-elo',p.cs2_faceit_elo);
+    set('arqon-steam-edit-faceit',p.cs2_faceit_url);
+    set('arqon-steam-edit-mmr',p.dota2_mmr);
+    set('arqon-steam-edit-dota',p.dota2_profile_url);
+    set('arqon-steam-edit-role',p.preferred_role);
+    set('arqon-steam-edit-avatar',p.avatar_url);
+    set('arqon-steam-edit-cover',p.cover_url);
+    ['public','show-steam','looking'].forEach((key,i)=>{const node=byId('arqon-steam-edit-'+key);if(node)node.checked=[p.is_public!==false,!!p.show_steam,!!p.looking_for_team][i];});
+    const form=byId('arqon-steam-profile-form'); if(form)form.hidden=false;
+    const status=byId('arqon-steam-profile-status');
+    if(status)status.textContent='Редактируется: '+(p.display_name || p.email || 'игрок')+(p.arqon_id?' · ARQON #'+p.arqon_id:'');
+    const select=byId('arqon-steam-profile-select');if(select)select.value=p.user_id;
+  }
+  async function refreshSteamProfileRows() {
+    const status=byId('arqon-steam-profile-status');
+    if(status)status.textContent='Загружаем Steam-игроков…';
+    const button=byId('arqon-steam-profile-refresh');if(button)button.disabled=true;
+    try {
+      const data=await callSteamProfileAdmin({action:'list_steam_profiles'});
+      steamProfileRows=Array.isArray(data.profiles)?data.profiles:[];
+      renderSteamProfileChoices();
+      if(status)status.textContent='Найдено Steam-аккаунтов: '+steamProfileRows.length;
+    } catch(error) { if(status)status.textContent='Не удалось загрузить игроков: '+error.message; }
+    finally {if(button)button.disabled=false;}
+  }
+  async function uploadSteamProfileImage(file,kind) {
+    if(!file)return null;
+    if(!['image/jpeg','image/png','image/webp'].includes(file.type))throw new Error('Поддерживаются JPG, PNG и WEBP.');
+    if(file.size>5*1024*1024)throw new Error('Размер изображения не должен превышать 5 МБ.');
+    const bytes=new Uint8Array(await file.arrayBuffer());
+    let binary=''; const chunk=0x8000;
+    for(let i=0;i<bytes.length;i+=chunk)binary+=String.fromCharCode(...bytes.subarray(i,i+chunk));
+    const data=await callSteamProfileAdmin({action:'upload_steam_profile_media',user_id:selectedSteamProfile.user_id,kind,mime:file.type,base64:btoa(binary)});
+    return data.url;
+  }
+  async function installSteamProfileEditor() {
+    if(!['owner','admin','editor'].includes(organizerRole))return;
+    const section=byId('tab-admin');if(!section||byId('arqon-steam-profile-admin'))return;
+    const card=document.createElement('section');card.className='card';card.id='arqon-steam-profile-admin';
+    card.innerHTML='<h2>🎮 Редактирование Steam-игроков</h2><p class="hint">Выбери игрока, зарегистрированного через Steam. Можно менять все поля его публичного профиля, включая ник, описание, игровые ссылки, аватар и обложку.</p><div style="display:grid;grid-template-columns:minmax(0,1fr) auto;gap:9px;margin:12px 0"><input id="arqon-steam-profile-search" type="search" placeholder="Поиск по нику, email или ARQON ID"><button type="button" class="btn ghost" id="arqon-steam-profile-refresh">Обновить</button></div><select id="arqon-steam-profile-select" style="width:100%;padding:12px;border-radius:10px;background:#111;color:#fff;border:1px solid #6840a5"><option value="">Загружаем список…</option></select><div style="display:flex;justify-content:flex-end;margin-top:10px"><button type="button" class="btn" id="arqon-steam-profile-edit" disabled>Редактировать игрока</button></div><p id="arqon-steam-profile-status" class="hint" role="status" style="margin-top:10px"></p><form id="arqon-steam-profile-form" hidden style="margin-top:14px;padding:14px;border:1px solid #6840a5;border-radius:14px;background:#0c0a12"><div class="field"><label>ИМЯ ПРОФИЛЯ</label><input id="arqon-steam-edit-name" maxlength="32" required></div><div class="field"><label>О СЕБЕ · ДО 280 СИМВОЛОВ</label><textarea id="arqon-steam-edit-bio" maxlength="280" rows="3"></textarea></div><div class="field"><label>CS2 · FACEIT ELO</label><input id="arqon-steam-edit-elo" type="number" min="0" max="5000"></div><div class="field"><label>CS2 · ССЫЛКА НА FACEIT</label><input id="arqon-steam-edit-faceit" type="url" placeholder="https://…"></div><div class="field"><label>DOTA 2 · MMR</label><input id="arqon-steam-edit-mmr" type="number" min="0" max="20000"></div><div class="field"><label>DOTA 2 · ССЫЛКА НА ПРОФИЛЬ</label><input id="arqon-steam-edit-dota" type="url" placeholder="https://…"></div><div class="field"><label>ЖЕЛАЕМАЯ РОЛЬ · ДО 80 СИМВОЛОВ</label><input id="arqon-steam-edit-role" maxlength="80"></div><div class="field"><label>АВАТАР · JPG/PNG/WEBP ДО 5 МБ</label><input id="arqon-steam-edit-avatar-file" type="file" accept="image/jpeg,image/png,image/webp"></div><div class="field"><label>ИЛИ ССЫЛКА НА АВАТАР (HTTPS)</label><input id="arqon-steam-edit-avatar" type="url" placeholder="https://…"></div><div class="field"><label>ОБЛОЖКА · JPG/PNG/WEBP ДО 5 МБ</label><input id="arqon-steam-edit-cover-file" type="file" accept="image/jpeg,image/png,image/webp"></div><div class="field"><label>ИЛИ ССЫЛКА НА ОБЛОЖКУ (HTTPS)</label><input id="arqon-steam-edit-cover" type="url" placeholder="https://…"></div><div style="display:flex;gap:14px;flex-wrap:wrap;margin:12px 0"><label><input id="arqon-steam-edit-public" type="checkbox"> Публичный профиль</label><label><input id="arqon-steam-edit-show-steam" type="checkbox"> Показывать Steam ID</label><label><input id="arqon-steam-edit-looking" type="checkbox"> Ищет команду</label></div><div style="display:flex;gap:8px;flex-wrap:wrap"><button type="submit" class="btn">Сохранить изменения</button><button type="button" class="btn ghost" id="arqon-steam-edit-cancel">Отмена</button></div><p id="arqon-steam-edit-message" class="hint" role="status" style="margin-top:10px"></p></form>';
+    section.prepend(card);
+    const select=byId('arqon-steam-profile-select'),edit=byId('arqon-steam-profile-edit'),form=byId('arqon-steam-profile-form');
+    byId('arqon-steam-profile-search').addEventListener('input',renderSteamProfileChoices);
+    byId('arqon-steam-profile-refresh').addEventListener('click',refreshSteamProfileRows);
+    select.addEventListener('change',()=>{const p=steamProfileRows.find(x=>x.user_id===select.value)||null;selectedSteamProfile=p;edit.disabled=!p;form.hidden=true;});
+    edit.addEventListener('click',()=>{if(selectedSteamProfile)fillSteamProfileEditor(selectedSteamProfile);});
+    byId('arqon-steam-edit-cancel').addEventListener('click',()=>{form.hidden=true;});
+    form.addEventListener('submit',async event=>{
+      event.preventDefault();if(!selectedSteamProfile)return;
+      const message=byId('arqon-steam-edit-message'),save=form.querySelector('[type="submit"]');
+      save.disabled=true;message.textContent='Сохраняем профиль…';
+      try {
+        let avatar_url=byId('arqon-steam-edit-avatar').value.trim()||null;
+        let cover_url=byId('arqon-steam-edit-cover').value.trim()||null;
+        const avatar=await uploadSteamProfileImage(byId('arqon-steam-edit-avatar-file').files[0],'avatar');
+        const cover=await uploadSteamProfileImage(byId('arqon-steam-edit-cover-file').files[0],'cover');
+        if(avatar)avatar_url=avatar;if(cover)cover_url=cover;
+        const profile={
+          display_name:byId('arqon-steam-edit-name').value.trim(),
+          bio:byId('arqon-steam-edit-bio').value.trim(),
+          cs2_faceit_elo:byId('arqon-steam-edit-elo').value===''?null:Number(byId('arqon-steam-edit-elo').value),
+          cs2_faceit_url:byId('arqon-steam-edit-faceit').value.trim()||null,
+          dota2_mmr:byId('arqon-steam-edit-mmr').value===''?null:Number(byId('arqon-steam-edit-mmr').value),
+          dota2_profile_url:byId('arqon-steam-edit-dota').value.trim()||null,
+          preferred_role:byId('arqon-steam-edit-role').value.trim(),
+          avatar_url,cover_url,
+          is_public:byId('arqon-steam-edit-public').checked,
+          show_steam:byId('arqon-steam-edit-show-steam').checked,
+          looking_for_team:byId('arqon-steam-edit-looking').checked
+        };
+        await callSteamProfileAdmin({action:'update_steam_profile',user_id:selectedSteamProfile.user_id,profile});
+        Object.assign(selectedSteamProfile,profile);
+        message.textContent='Профиль игрока сохранён.';
+        await refreshSteamProfileRows();
+        const refreshed=steamProfileRows.find(x=>x.user_id===selectedSteamProfile.user_id);
+        if(refreshed)fillSteamProfileEditor(refreshed);
+        byId('arqon-steam-edit-avatar-file').value='';byId('arqon-steam-edit-cover-file').value='';
+      } catch(error) {message.textContent='Не удалось сохранить: '+error.message;}
+      finally {save.disabled=false;}
+    });
+    await refreshSteamProfileRows();
+  }
+
   async function installAccountManagementPanel() {
     if (organizerRole !== 'owner') return;
     const section = byId('tab-admin');
@@ -611,6 +730,7 @@
       await installAwardAdminPanel();
       if (organizerRole === 'owner') await installOrganizerAccessAdminPanel();
       if (organizerRole === 'owner') await installAccountManagementPanel();
+      await installSteamProfileEditor();
       if (adminSection && !byId('bracket-builder-admin-link')) {
         const card = document.createElement('div');
         card.className = 'card';
