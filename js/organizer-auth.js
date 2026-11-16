@@ -126,17 +126,33 @@
     const connect = byId('arqon-my-profile-telegram-connect');
     const unlink = byId('arqon-my-profile-telegram-unlink');
     const codebox = byId('arqon-my-profile-telegram-codebox');
-    if (!status || !window.supabaseClient) return;
+    // supabaseClient is a top-level lexical binding from index.html, not window.supabaseClient.
+    // Checking the window property here caused the admin profile modal to return early forever.
+    if (!status || typeof supabaseClient === 'undefined') {
+      if (status) status.textContent = 'Сервис профиля пока не готов. Обнови страницу и попробуй снова.';
+      return;
+    }
     status.textContent = 'Проверяем подключение…';
-    const { data, error } = await supabaseClient.rpc('get_telegram_link_status');
-    if (error) { status.textContent = 'Не удалось проверить Telegram: ' + (error.message || 'ошибка'); return; }
-    const state = data?.[0];
-    if (state?.is_linked) {
-      status.textContent = 'Telegram подключён' + (state.telegram_username ? ' · @' + state.telegram_username : state.first_name ? ' · ' + state.first_name : '') + '. Уведомления техподдержки включены.';
-      connect.style.display = 'none'; unlink.style.display = 'inline-flex'; codebox.style.display = 'none';
-    } else {
-      status.textContent = 'Telegram не подключён. Подключи его, чтобы получать обращения игроков.';
-      connect.style.display = 'inline-flex'; unlink.style.display = 'none';
+    if (connect) connect.disabled = true;
+    try {
+      const { data, error } = await supabaseClient.rpc('get_telegram_link_status');
+      if (error) throw error;
+      const state = Array.isArray(data) ? data[0] : data;
+      if (state?.is_linked) {
+        status.textContent = 'Telegram подключён' + (state.telegram_username ? ' · @' + state.telegram_username : state.first_name ? ' · ' + state.first_name : '') + '. Уведомления техподдержки включены.';
+        if (connect) connect.style.display = 'none';
+        if (unlink) unlink.style.display = 'inline-flex';
+        if (codebox) codebox.style.display = 'none';
+      } else {
+        status.textContent = 'Telegram не подключён. Подключи его, чтобы получать обращения игроков.';
+        if (connect) connect.style.display = 'inline-flex';
+        if (unlink) unlink.style.display = 'none';
+      }
+    } catch (error) {
+      console.error('Не удалось проверить привязку Telegram:', error);
+      status.textContent = 'Не удалось проверить Telegram: ' + (error?.message || 'ошибка соединения');
+    } finally {
+      if (connect) connect.disabled = false;
     }
   }
   async function connectMyProfileTelegram() {
