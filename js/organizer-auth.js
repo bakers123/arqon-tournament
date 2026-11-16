@@ -294,6 +294,79 @@
     await refreshAwardAdminList();
   }
 
+  let serviceAccessRows = [];
+  async function refreshServiceAccessAdminList() {
+    if (organizerRole !== 'owner') return;
+    const status = byId('service-access-admin-status');
+    const host = byId('service-access-admin-list');
+    if (!status || !host) return;
+    status.textContent = 'Загружаем аккаунты…';
+    const { data, error } = await supabaseClient.rpc('list_service_access_accounts');
+    if (error) { status.textContent = 'Не удалось загрузить аккаунты: ' + error.message; return; }
+    serviceAccessRows = Array.isArray(data) ? data : [];
+    renderServiceAccessAdminList();
+  }
+  function renderServiceAccessAdminList() {
+    const host = byId('service-access-admin-list');
+    const status = byId('service-access-admin-status');
+    if (!host || !status) return;
+    const search = String(byId('service-access-admin-search')?.value || '').trim().toLocaleLowerCase();
+    const rows = serviceAccessRows.filter(row => [row.display_name, row.email, row.organizer_role].some(value => String(value || '').toLocaleLowerCase().includes(search)));
+    host.replaceChildren();
+    if (!rows.length) host.textContent = serviceAccessRows.length ? 'По запросу ничего не найдено.' : 'Аккаунтов пока нет.';
+    rows.forEach(account => {
+      const card = document.createElement('div');
+      card.style.cssText = 'display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:12px;margin-top:8px;border:1px solid rgba(139,92,246,.22);border-radius:9px;background:rgba(10,10,15,.72)';
+      const info = document.createElement('div'); info.style.cssText = 'min-width:0;flex:1';
+      const name = document.createElement('strong'); name.textContent = account.display_name || account.email || ('Аккаунт ' + String(account.user_id || '').slice(0,8));
+      const meta = document.createElement('div'); meta.style.cssText = 'font-size:12px;color:#999;overflow-wrap:anywhere'; meta.textContent = (account.email || 'Email не указан') + ' · регистрация ' + (account.created_at ? new Date(account.created_at).toLocaleDateString('ru-RU') : '—');
+      const state = document.createElement('div'); state.style.cssText = 'font-size:12px;color:#b9a3e8;margin-top:4px';
+      const currentRole = account.organizer_role;
+      if (currentRole === 'owner') state.textContent = 'Владелец · доступ защищён';
+      else if (currentRole === 'judge') state.textContent = 'Судья · отдельный ограниченный доступ';
+      else if (currentRole === 'admin') state.textContent = 'Доступ есть · администратор';
+      else if (currentRole === 'editor') state.textContent = 'Доступ есть · редактор';
+      else state.textContent = 'Нет доступа к редактору';
+      info.append(name, meta, state); card.append(info);
+      if (currentRole === 'admin' || currentRole === 'editor') {
+        const button = document.createElement('button'); button.type = 'button'; button.className = 'btn danger'; button.textContent = 'Отозвать доступ';
+        button.dataset.serviceAccessUser = account.user_id; button.dataset.allowed = 'false'; card.append(button);
+      } else if (!currentRole) {
+        const button = document.createElement('button'); button.type = 'button'; button.className = 'btn'; button.textContent = 'Разрешить доступ';
+        button.dataset.serviceAccessUser = account.user_id; button.dataset.allowed = 'true'; card.append(button);
+      }
+      host.append(card);
+    });
+    status.textContent = 'Аккаунтов: ' + serviceAccessRows.length + ' · показано: ' + rows.length;
+  }
+  async function installOrganizerAccessAdminPanel() {
+    if (organizerRole !== 'owner') return;
+    const section = byId('tab-admin');
+    if (!section || byId('organizer-service-access-admin')) return;
+    const card = document.createElement('div'); card.className = 'card'; card.id = 'organizer-service-access-admin';
+    card.innerHTML = '<h2>🔐 Доступ к служебному входу</h2><p class="hint" style="margin-bottom:12px">Только владелец может разрешать и отзывать доступ к редактору турнирных сеток. Новым пользователям выдаётся роль редактора. Действующие администраторы также отображаются здесь.</p><div style="display:flex;gap:8px;flex-wrap:wrap"><input id="service-access-admin-search" type="search" placeholder="Поиск по имени или email" style="flex:1;min-width:180px"><button type="button" class="btn ghost" id="service-access-admin-refresh">Обновить</button></div><p id="service-access-admin-status" class="hint" role="status" style="margin-top:10px">Загружаем аккаунты…</p><div id="service-access-admin-list"></div>';
+    section.prepend(card);
+    byId('service-access-admin-refresh').addEventListener('click', refreshServiceAccessAdminList);
+    byId('service-access-admin-search').addEventListener('input', renderServiceAccessAdminList);
+    byId('service-access-admin-list').addEventListener('click', async event => {
+      const button = event.target.closest('[data-service-access-user]');
+      if (!button || organizerRole !== 'owner') return;
+      const userId = button.dataset.serviceAccessUser;
+      const allowed = button.dataset.allowed === 'true';
+      const account = serviceAccessRows.find(row => row.user_id === userId);
+      if (!account) return;
+      const label = account.display_name || account.email || 'этого пользователя';
+      if (!allowed && !window.confirm('Отозвать служебный доступ у ' + label + '?')) return;
+      button.disabled = true;
+      const { error } = await supabaseClient.rpc('set_service_access', { p_user_id: userId, p_allowed: allowed });
+      button.disabled = false;
+      if (error) { byId('service-access-admin-status').textContent = 'Не удалось изменить доступ: ' + error.message; return; }
+      byId('service-access-admin-status').textContent = allowed ? 'Доступ разрешён для ' + label + '.' : 'Доступ отозван у ' + label + '.';
+      await refreshServiceAccessAdminList();
+    });
+    await refreshServiceAccessAdminList();
+  }
+
   function installOrganizerUi() {
     installPlayerAccountUi();
     installSessionLogoutButton();
@@ -402,6 +475,7 @@
       setVisible(byId('tab-home'), true);
       const adminSection = byId('tab-admin');
       await installAwardAdminPanel();
+      if (organizerRole === 'owner') await installOrganizerAccessAdminPanel();
       if (adminSection && !byId('bracket-builder-admin-link')) {
         const card = document.createElement('div');
         card.className = 'card';
