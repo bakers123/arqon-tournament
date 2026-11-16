@@ -17,7 +17,7 @@ h1{font-size:clamp(26px,5vw,40px);margin:12px 0 8px}.intro{color:var(--muted);li
 .status-line{display:flex;align-items:center;gap:14px}.dot{width:14px;height:14px;border-radius:50%;background:#f59e0b;box-shadow:0 0 16px currentColor;flex:0 0 auto}
 .dot.ok{background:#34d399;color:#34d399}.dot.bad{background:#f87171;color:#f87171}
 .status-title{font-size:21px;font-weight:800}.status-desc{color:var(--muted);margin:10px 0 0;line-height:1.5}
-.checked{border-top:1px solid var(--border);margin-top:20px;padding-top:14px;color:var(--muted);font-size:13px}
+.checks{display:grid;gap:10px;margin-top:20px}.check-row{display:flex;justify-content:space-between;gap:12px;border-top:1px solid var(--border);padding-top:11px;color:var(--muted);font-size:13px}.check-row strong{color:#fbbf24;font-weight:700}.check-row strong.ok{color:#34d399}.check-row strong.bad{color:#f87171}.checked{border-top:1px solid var(--border);margin-top:14px;padding-top:14px;color:var(--muted);font-size:13px}
 .refresh{margin-top:18px;border:1px solid var(--accent);background:var(--accent);color:white;border-radius:8px;padding:10px 16px;font-weight:700;cursor:pointer}
 .small{color:var(--muted);font-size:12px;line-height:1.5;margin-top:24px}
 .links{margin-top:28px;display:flex;gap:18px;flex-wrap:wrap}.links a{color:#c4b5fd}
@@ -32,6 +32,10 @@ h1{font-size:clamp(26px,5vw,40px);margin:12px 0 8px}.intro{color:var(--muted);li
 <section class="status-card" aria-live="polite">
 <div class="status-line"><span class="dot" id="dot"></span><div class="status-title" id="title">Проверяем доступность…</div></div>
 <p class="status-desc" id="description">Выполняем проверку сайта и соединения с базой данных.</p>
+<div class="checks" aria-label="Результаты проверок">
+<div class="check-row"><span>Основной сайт</span><strong id="site-result">Проверяем…</strong></div>
+<div class="check-row"><span>Публичный API базы данных</span><strong id="api-result">Проверяем…</strong></div>
+</div>
 <div class="checked" id="checked">Последняя проверка: —</div>
 <button class="refresh" id="refresh" type="button">Проверить сейчас</button>
 </section>
@@ -43,18 +47,40 @@ const SUPABASE_URL='https://uscnaqcvuwjrmkjyuklp.supabase.co';
 const SUPABASE_KEY='sb_publishable_oE2Bc1wPAcDt6HE8bOUj3Q_0-2FfIxB';
 const $=id=>document.getElementById(id);
 let running=false;
-async function check(){
- if(running)return;running=true;$('refresh').disabled=true;$('title').textContent='Проверяем доступность…';$('description').textContent='Выполняем проверку сайта и соединения с базой данных.';
- let siteOk=false,apiOk=false;
- try{const r=await fetch('/robots.txt?status_check='+Date.now(),{cache:'no-store'});siteOk=r.ok;}catch{}
- try{const r=await fetch(SUPABASE_URL+'/rest/v1/changelog_entries?select=id&limit=1',{method:'GET',cache:'no-store',headers:{apikey:SUPABASE_KEY,Authorization:'Bearer '+SUPABASE_KEY}});apiOk=r.ok;}catch{}
- const ok=siteOk&&apiOk;
- $('dot').className='dot '+(ok?'ok':'bad');
- $('title').textContent=ok?'Сайт работает':'Есть проблемы с доступностью';
- $('description').textContent=ok?'Платформа отвечает, соединение с публичным API доступно.':'Не все проверки завершились успешно. Попробуй обновить страницу немного позже.';
- $('checked').textContent='Последняя проверка: '+new Date().toLocaleString('ru-RU');
- $('refresh').disabled=false;running=false;
+async function timedFetch(url,options={}){
+ const controller=new AbortController();
+ const timeout=setTimeout(()=>controller.abort(),8000);
+ try{return await fetch(url,{...options,signal:controller.signal,cache:'no-store'});}
+ finally{clearTimeout(timeout);}
 }
-$('refresh').addEventListener('click',check);check();setInterval(check,60000);
+function setResult(id,ok,label){
+ const el=$(id);el.textContent=label;el.className=ok?'ok':'bad';
+}
+async function check(){
+ if(running)return;
+ running=true;
+ $('refresh').disabled=true;
+ $('title').textContent='Проверяем доступность…';
+ $('description').textContent='Проверяем основной сайт и публичное соединение с базой данных.';
+ $('dot').className='dot';
+ $('site-result').textContent='Проверяем…';$('site-result').className='';
+ $('api-result').textContent='Проверяем…';$('api-result').className='';
+ const [site,api]=await Promise.all([
+  timedFetch('/robots.txt?status_check='+Date.now()).then(r=>({ok:r.ok,status:r.status})).catch(e=>({ok:false,error:e.name==='AbortError'?'Тайм-аут':'Нет соединения'})),
+  timedFetch(SUPABASE_URL+'/rest/v1/changelog_entries?select=id&limit=1',{headers:{apikey:SUPABASE_KEY,Authorization:'Bearer '+SUPABASE_KEY}}).then(r=>({ok:r.ok,status:r.status})).catch(e=>({ok:false,error:e.name==='AbortError'?'Тайм-аут':'Нет соединения'}))
+ ]);
+ setResult('site-result',site.ok,site.ok?'Доступен':'Ошибка · '+(site.error||site.status));
+ setResult('api-result',api.ok,api.ok?'Доступен':'Ошибка · '+(api.error||api.status));
+ const ok=site.ok&&api.ok,partial=site.ok||api.ok;
+ $('dot').className='dot '+(ok?'ok':'bad');
+ $('title').textContent=ok?'Все системы работают':partial?'Частичная недоступность':'Системы недоступны';
+ $('description').textContent=ok?'Основной сайт отвечает, публичный API базы данных доступен.':partial?'Одна из проверок не прошла. Подробности указаны выше.':'Обе проверки не прошли. Попробуй повторить проверку позже.';
+ $('checked').textContent='Последняя проверка: '+new Date().toLocaleString('ru-RU');
+ $('refresh').disabled=false;
+ running=false;
+}
+$('refresh').addEventListener('click',check);
+check();
+setInterval(check,60000);
 </script>
 </body></html>
