@@ -96,6 +96,7 @@
               </div>
             </div>
           </div>
+          <a id="arqon-my-profile-public-account" href="/players/profile/?me=1" style="display:flex;align-items:center;justify-content:center;gap:8px;width:100%;box-sizing:border-box;margin-top:14px;padding:12px 14px;border:1px solid rgba(167,139,250,.55);border-radius:11px;background:rgba(139,92,246,.14);color:#e9ddff;text-decoration:none;text-align:center;font:700 13px Rajdhani,sans-serif;letter-spacing:.6px">ОТКРЫТЬ ПУБЛИЧНЫЙ АККАУНТ И НАСТРОЙКИ ПРОФИЛЯ ↗</a>
           <p style="font-size:12px;color:#9188a3;margin:12px 0 0">Подключённый Telegram используется для служебных уведомлений ARQON. Твой @username не показывается другим игрокам.</p>
         </section>`;
       document.body.appendChild(modal);
