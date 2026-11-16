@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#09090d">
+  <meta name="description" content="Журнал обновлений ARQON Esports: новые функции, улучшения, исправления и изменения турниров.">
+  <link rel="canonical" href="https://arqon-esports.ru/changelog/">
+  <title>Журнал обновлений — ARQON Esports</title>
+  <link rel="icon" type="image/png" href="/logo.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <style>
+    :root{--bg:#09090d;--panel:#15151a;--panel2:#101014;--border:#2a2a33;--accent:#8b3bff;--accent2:#a78bfa;--text:#f2f2f2;--muted:#9292a0;--green:#34d399}
+    *{box-sizing:border-box}body{margin:0;min-height:100vh;background:radial-gradient(ellipse at top left,rgba(122,59,255,.09),transparent 48%),var(--bg);color:var(--text);font-family:'Rajdhani',sans-serif}
+    header{position:sticky;top:0;z-index:5;background:rgba(11,11,13,.94);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);padding:14px clamp(14px,4vw,42px);display:flex;align-items:center;justify-content:space-between;gap:14px}
+    .brand{font:900 18px Orbitron,sans-serif;letter-spacing:3px;color:white;text-decoration:none}.brand span{color:var(--accent2)}
+    .back{color:#ddd;text-decoration:none;border:1px solid var(--border);border-radius:8px;padding:8px 14px;font-weight:700}.back:hover{border-color:var(--accent);color:white}
+    main{width:min(1040px,calc(100% - 28px));margin:36px auto 70px}.hero{padding:26px 0 24px;border-bottom:1px solid var(--border);margin-bottom:22px}
+    .eyebrow{color:var(--accent2);font:700 11px Orbitron,sans-serif;letter-spacing:3px}.hero h1{font:900 clamp(25px,5vw,42px) Orbitron,sans-serif;margin:12px 0}.hero p{color:var(--muted);font-size:17px;max-width:680px;line-height:1.45;margin:0}
+    .entry{background:linear-gradient(180deg,var(--panel),var(--panel2));border:1px solid var(--border);border-radius:12px;padding:20px;margin:14px 0;position:relative;overflow:hidden}.entry:before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--accent);opacity:.8}
+    .meta{display:flex;align-items:center;gap:9px;flex-wrap:wrap;color:var(--muted);font-size:13px}.tag{border:1px solid rgba(167,139,250,.35);color:#c4b5fd;background:rgba(139,59,255,.1);padding:3px 9px;border-radius:99px;font-size:11px;font-weight:700}
+    .entry h2{font:700 20px Orbitron,sans-serif;margin:12px 0 8px}.summary{font-weight:700;color:#ddd;font-size:16px;margin:0 0 10px}.body{color:#bcbcc7;font-size:15px;line-height:1.55;white-space:pre-wrap}
+    .empty,.loading{color:var(--muted);text-align:center;padding:34px 14px;border:1px dashed var(--border);border-radius:12px}
+    .admin{margin-top:38px;border:1px solid rgba(139,59,255,.35);border-radius:12px;padding:18px;background:rgba(139,59,255,.045)}.admin h2{font:700 15px Orbitron,sans-serif;letter-spacing:1px;margin:0 0 14px}
+    .formgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.field{display:flex;flex-direction:column;gap:5px}.field.full{grid-column:1/-1}.field label{font-size:12px;color:var(--muted);font-weight:700}
+    input,textarea,select{width:100%;background:#0e0e13;border:1px solid var(--border);border-radius:7px;padding:11px;color:white;font:600 15px 'Rajdhani',sans-serif;min-width:0}textarea{min-height:110px;resize:vertical}
+    .publishrow{display:flex;align-items:center;gap:9px;color:#ddd;font-weight:700;margin:12px 0}.publishrow input{width:17px;height:17px;accent-color:var(--accent)}
+    .actions{display:flex;gap:8px;flex-wrap:wrap}.btn{border:1px solid var(--accent);background:var(--accent);color:white;border-radius:7px;padding:10px 16px;font:700 13px 'Rajdhani',sans-serif;letter-spacing:.7px;cursor:pointer}.btn.secondary{background:transparent;border-color:var(--border);color:#ddd}.btn.danger{background:transparent;border-color:#9f3434;color:#fca5a5}.btn:disabled{opacity:.55;cursor:wait}
+    .admin-tools{display:flex;gap:7px;margin-left:auto}.entry-head{display:flex;align-items:center;gap:10px;flex-wrap:wrap}.status{font-size:11px;border-radius:99px;padding:3px 8px;background:rgba(52,211,153,.1);color:var(--green)}.status.draft{background:rgba(245,158,11,.1);color:#fbbf24}
+    #notice{margin-top:10px;font-weight:700;color:#fca5a5;min-height:20px}
+    @media(max-width:620px){header{padding:12px}.brand{font-size:14px;letter-spacing:2px}.formgrid{grid-template-columns:1fr}.field.full{grid-column:auto}.entry{padding:16px}.entry-head{align-items:flex-start}.admin-tools{width:100%;margin-left:0}.admin-tools .btn{flex:1}}
+  </style>
+</head>
+<body>
+<header><a class="brand" href="/">ARQON <span>ESPORTS</span></a><a class="back" href="/">← На главную</a></header>
+<main>
+  <section class="hero"><div class="eyebrow">ARQON ESPORTS · CHANGELOG</div><h1>Журнал обновлений</h1><p>Что нового на платформе: функции, улучшения интерфейса, исправления и изменения турниров. Здесь публикуются только подтверждённые обновления.</p></section>
+  <div id="entries" class="loading">Загружаем журнал обновлений…</div>
+  <section id="admin" class="admin" hidden>
+    <h2>УПРАВЛЕНИЕ ЖУРНАЛОМ</h2>
+    <form id="entry-form">
+      <input type="hidden" id="entry-id">
+      <div class="formgrid">
+        <div class="field full"><label for="entry-title">Заголовок</label><input id="entry-title" maxlength="140" minlength="4" required placeholder="Например: Обновили личный профиль"></div>
+        <div class="field full"><label for="entry-summary">Краткое описание</label><input id="entry-summary" maxlength="280" minlength="8" required placeholder="Что изменилось в двух словах"></div>
+        <div class="field"><label for="entry-category">Категория</label><select id="entry-category"><option value="feature">Новая функция</option><option value="improvement" selected>Улучшение</option><option value="fix">Исправление</option><option value="tournament">Турниры</option><option value="game">Игры и обновления</option></select></div>
+        <div class="field"><label for="entry-date">Дата публикации</label><input id="entry-date" type="datetime-local" required></div>
+        <div class="field full"><label for="entry-content">Подробности</label><textarea id="entry-content" maxlength="8000" required placeholder="Опиши изменения подробнее…"></textarea></div>
+      </div>
+      <label class="publishrow"><input id="entry-published" type="checkbox"> Опубликовать запись сразу</label>
+      <div class="actions"><button class="btn" id="save-entry" type="submit">Сохранить запись</button><button class="btn secondary" id="cancel-edit" type="button" hidden>Отмена</button></div>
+      <div id="notice" role="status" aria-live="polite"></div>
+    </form>
+  </section>
+</main>
+<script>
+const SUPABASE_URL='https://uscnaqcvuwjrmkjyuklp.supabase.co';
+const SUPABASE_KEY='sb_publishable_oE2Bc1wPAcDt6HE8bOUj3Q_0-2FfIxB';
+const db=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+const labels={feature:'НОВАЯ ФУНКЦИЯ',improvement:'УЛУЧШЕНИЕ',fix:'ИСПРАВЛЕНИЕ',tournament:'ТУРНИРЫ',game:'ИГРЫ И ОБНОВЛЕНИЯ'};
+let organizer=false;
+const $=id=>document.getElementById(id);
+function esc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function localInputValue(date){const d=new Date(date);return new Date(d.getTime()-d.getTimezoneOffset()*60000).toISOString().slice(0,16);}
+function resetForm(){ $('entry-form').reset();$('entry-id').value='';$('entry-category').value='improvement';$('entry-date').value=localInputValue(new Date());$('cancel-edit').hidden=true;$('save-entry').textContent='Сохранить запись';}
+async function checkRole(){const {data:{session}}=await db.auth.getSession();if(!session)return false;const {data,error}=await db.rpc('current_organizer_role');return !error&&['owner','admin','editor'].includes(data);}
+async function loadEntries(){
+  $('entries').className='loading';$('entries').textContent='Загружаем журнал обновлений…';
+  let query=db.from('changelog_entries').select('id,title,summary,content,category,published_at,is_published').order('published_at',{ascending:false}).order('id',{ascending:false});
+  const {data,error}=await query;
+  if(error){$('entries').className='empty';$('entries').textContent='Не удалось загрузить журнал. Попробуй обновить страницу.';return;}
+  if(!data?.length){$('entries').className='empty';$('entries').textContent='Пока обновлений нет. Загляни позже!';return;}
+  $('entries').className='';
+  $('entries').innerHTML=data.map(item=>{
+    const date=new Date(item.published_at).toLocaleDateString('ru-RU',{day:'numeric',month:'long',year:'numeric'});
+    const time=new Date(item.published_at).toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'});
+    return '<article class="entry"><div class="entry-head"><div class="meta"><span>'+esc(date)+' · '+esc(time)+'</span><span class="tag">'+esc(labels[item.category]||'ОБНОВЛЕНИЕ')+'</span></div>'+(organizer?'<span class="status '+(!item.is_published?'draft':'')+'">'+(item.is_published?'Опубликовано':'Черновик')+'</span><div class="admin-tools"><button class="btn secondary" type="button" data-edit="'+item.id+'">Изменить</button><button class="btn danger" type="button" data-delete="'+item.id+'">Удалить</button></div>':'')+'</div><h2>'+esc(item.title)+'</h2><p class="summary">'+esc(item.summary)+'</p><div class="body">'+esc(item.content)+'</div></article>';
+  }).join('');
+}
+function startEdit(item){$('entry-id').value=item.id;$('entry-title').value=item.title;$('entry-summary').value=item.summary;$('entry-content').value=item.content;$('entry-category').value=item.category;$('entry-date').value=localInputValue(item.published_at);$('entry-published').checked=item.is_published;$('cancel-edit').hidden=false;$('save-entry').textContent='Сохранить изменения';$('entry-title').focus();window.scrollTo({top:document.body.scrollHeight,behavior:'smooth'});}
+$('entry-form').addEventListener('submit',async e=>{
+  e.preventDefault();if(!organizer)return;
+  const id=$('entry-id').value;
+  const payload={title:$('entry-title').value.trim(),summary:$('entry-summary').value.trim(),content:$('entry-content').value.trim(),category:$('entry-category').value,published_at:new Date($('entry-date').value).toISOString(),is_published:$('entry-published').checked};
+  const btn=$('save-entry');btn.disabled=true;$('notice').textContent='';
+  let result;
+  if(id){result=await db.from('changelog_entries').update({...payload,updated_at:new Date().toISOString()}).eq('id',Number(id));}
+  else {const {data:{user}}=await db.auth.getUser();result=await db.from('changelog_entries').insert({...payload,created_by:user?.id??null});}
+  btn.disabled=false;
+  if(result.error){$('notice').textContent='Не удалось сохранить: '+result.error.message;return;}
+  resetForm();await loadEntries();$('notice').style.color='#34d399';$('notice').textContent='Запись сохранена.';
+});
+$('cancel-edit').addEventListener('click',resetForm);
+$('entries').addEventListener('click',async e=>{
+  const edit=e.target.closest('[data-edit]');const del=e.target.closest('[data-delete]');
+  if(edit&&organizer){const {data,error}=await db.from('changelog_entries').select('*').eq('id',Number(edit.dataset.edit)).maybeSingle();if(error||!data){$('notice').textContent='Не удалось открыть запись.';return;}startEdit(data);}
+  if(del&&organizer&&confirm('Удалить эту запись из журнала?')){const {error}=await db.from('changelog_entries').delete().eq('id',Number(del.dataset.delete));if(error){$('notice').textContent='Не удалось удалить: '+error.message;return;}await loadEntries();}
+});
+(async()=>{organizer=await checkRole();$('admin').hidden=!organizer;if(organizer){resetForm();}await loadEntries();})();
+</script>
+</body>
+</html>
