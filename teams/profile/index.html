@@ -85,8 +85,12 @@ async function submitTeamRequest(){
 }
 async function loadAdminRequests(){
  const panel=el('admin-requests');panel.classList.add('hidden');
- const {data:role}=await db.rpc('current_organizer_role');if(!['admin','owner'].includes(role))return;
- el('admin-requests').classList.remove('hidden');const host=el('admin-request-list');host.textContent='Загружаем заявки…';
+ const [{data:role},{data:authData}]=await Promise.all([db.rpc('current_organizer_role'),db.auth.getUser()]);
+ const user=authData?.user||null;const {data:profile}=user?await db.from('profiles').select('arqon_id').eq('user_id',user.id).maybeSingle():{data:null};
+ const captainId=currentTeamProfile?.captain_arqon_id||currentTeam?.captainArqonId;
+ const isCaptain=!!profile&&String(profile.arqon_id)===String(captainId||'');
+ if(!['admin','owner'].includes(role)&&!isCaptain)return;
+ el('admin-requests').classList.remove('hidden');const heading=panel.querySelector('h2');if(heading)heading.textContent='ЗАЯВКИ В КОМАНДУ · КАПИТАН / ОРГАНИЗАТОР';const host=el('admin-request-list');host.textContent='Загружаем заявки…';
  const {data,error}=await db.from('team_membership_requests').select('id,player_name,arqon_id,message,status').eq('team_id',id).eq('status','pending').order('created_at',{ascending:true});
  if(error){host.textContent='Не удалось загрузить заявки.';return}host.replaceChildren();
  if(!data?.length){host.textContent='Новых заявок пока нет.';return}
