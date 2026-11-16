@@ -434,7 +434,7 @@ function initAdminTabs(){
  const side=layout.querySelector(':scope > aside');
  const sidePanels=side?[...side.children]:[];
  const makePane=id=>{const el=document.createElement('section');el.className='admin-tab-pane hidden';el.dataset.adminPane=id;return el};
- const panes={builder:makePane('builder'),tournament:makePane('tournament'),publish:makePane('publish'),teams:makePane('teams'),judges:makePane('judges'),judgeAccount:makePane('judgeAccount'),history:makePane('history')};
+ const panes={builder:makePane('builder'),tournament:makePane('tournament'),publish:makePane('publish'),teams:makePane('teams'),judges:makePane('judges'),judgeAccount:makePane('judgeAccount'),serviceAccess:makePane('serviceAccess'),history:makePane('history')};
  const tabs=document.createElement('div');tabs.className='admin-tabs drawer';tabs.setAttribute('role','tablist');tabs.setAttribute('aria-label','Разделы управления сеткой');
  const backdrop=document.createElement('div');backdrop.className='admin-drawer-backdrop';backdrop.addEventListener('click',closeAdminMenu);document.body.appendChild(backdrop);
  const heading=document.createElement('div');heading.className='admin-drawer-heading';heading.innerHTML='<span>Админка ARQON</span>';
@@ -443,7 +443,7 @@ function initAdminTabs(){
  function openAdminMenu(){tabs.classList.add('open');backdrop.classList.add('open');trigger.setAttribute('aria-expanded','true')}
  function closeAdminMenu(){tabs.classList.remove('open');backdrop.classList.remove('open');trigger.setAttribute('aria-expanded','false')}
  document.addEventListener('keydown',e=>{if(e.key==='Escape')closeAdminMenu()});
- const defs=[['builder','Конструктор'],['tournament','Настройки турнира'],['publish','Сохранение и публикация'],['teams','Участники'],['judges','Судьи и назначения'],['judgeAccount','Аккаунт судьи'],['history','История действий']];
+ const defs=[['builder','Конструктор'],['tournament','Настройки турнира'],['publish','Сохранение и публикация'],['teams','Участники'],['judges','Судьи и назначения'],['judgeAccount','Аккаунт судьи'],['serviceAccess','Доступ к служебному входу'],['history','История действий']];
  defs.forEach(([id,label],i)=>{const b=document.createElement('button');b.type='button';b.className='admin-tab';b.dataset.adminTab=id;b.id='admin-tab-'+id;b.setAttribute('role','tab');b.setAttribute('aria-controls','admin-pane-'+id);b.setAttribute('aria-selected',i===0?'true':'false');b.textContent=label;tabs.appendChild(b);panes[id].id='admin-pane-'+id;panes[id].setAttribute('role','tabpanel');panes[id].setAttribute('aria-labelledby',b.id)});
  const panelFor=(node,title,desc)=>{const panel=document.createElement('div');panel.className='panel';if(title){const h=document.createElement('h3');h.textContent=title;panel.appendChild(h)}if(desc){const d=document.createElement('p');d.className='admin-tab-note';d.textContent=desc;panel.appendChild(d)}if(node)panel.appendChild(node);return panel};
  if(rows[0])panes.tournament.appendChild(panelFor(rows[0],'Параметры турнира','Создавай сетки, переключайся между ними и задавай формат соревнования.'));
@@ -457,22 +457,78 @@ function initAdminTabs(){
  const publishControls=document.createElement('div');publishControls.className='toolbar';['save-draft','publish-doc'].forEach(id=>{const el=$(id);if(el)publishControls.appendChild(el)});
  panes.publish.appendChild(panelFor(publishControls,'Публикация сетки','Сохраняй изменения как черновик. Публичная версия обновится только после публикации.'));
  if(status)panes.publish.querySelector('.panel').appendChild(status);
+ const accessPanel=document.createElement('div');accessPanel.className='panel';accessPanel.innerHTML='<h3>Доступ к служебному входу</h3><p class="admin-tab-note">Только владелец ARQON может разрешать и отзывать доступ к редактору турнирных сеток. Выдача доступа назначает роль редактора. Действующие администраторы также отображаются здесь.</p><div class="toolbar" style="margin:12px 0"><input id="service-access-search" type="search" placeholder="Поиск по имени или email" aria-label="Поиск аккаунтов"><button id="service-access-refresh" type="button">Обновить</button></div><div id="service-access-status" class="hint" role="status">Загружаем аккаунты…</div><div id="service-access-list" style="display:grid;gap:8px;margin-top:10px"></div>';
+ panes.serviceAccess.appendChild(accessPanel);
+ const serviceAccessNote=document.createElement('p');serviceAccessNote.className='admin-tab-note';serviceAccessNote.textContent='Изменения вступают в силу при следующей проверке роли или обновлении страницы у пользователя.';panes.serviceAccess.insertBefore(serviceAccessNote,panes.serviceAccess.firstChild);
+ accessPanel.querySelector('#service-access-refresh').addEventListener('click',loadServiceAccessAccounts);
+ accessPanel.querySelector('#service-access-search').addEventListener('input',renderServiceAccessAccounts);
+ accessPanel.querySelector('#service-access-list').addEventListener('click',handleServiceAccessAction);
  const ids=['teams','judges','judgeAccount','history'];
  sidePanels.forEach((panel,i)=>{const id=ids[i];if(id)panes[id].appendChild(panel)});
  const intro={teams:'Управляй списком команд, которые можно назначать в карточки матчей.',judges:'Назначай судей на весь турнир или на отдельные матчи. Здесь же можно снять назначение.',judgeAccount:'Создавай отдельную учётную запись судьи. Пароль передаётся только защищённой функции.',history:'Просматривай публикации, изменения структуры, соединений и результаты матчей.'};
  ids.forEach(id=>{const note=document.createElement('p');note.className='admin-tab-note';note.textContent=intro[id];panes[id].insertBefore(note,panes[id].firstChild)});
  base.remove();layout.remove();if(side)side.remove();editor.insertBefore(tabs,editor.firstChild);defs.forEach(([id])=>editor.appendChild(panes[id]));
  const activate=id=>{Object.entries(panes).forEach(([key,pane])=>pane.classList.toggle('hidden',key!==id));tabs.querySelectorAll('[role="tab"]').forEach(b=>{const on=b.dataset.adminTab===id;b.setAttribute('aria-selected',on?'true':'false');b.tabIndex=on?0:-1})};
- tabs.addEventListener('click',e=>{const b=e.target.closest('[data-admin-tab]');if(b){activate(b.dataset.adminTab);closeAdminMenu()}});
+ tabs.addEventListener('click',e=>{const b=e.target.closest('[data-admin-tab]');if(b){activate(b.dataset.adminTab);closeAdminMenu();if(b.dataset.adminTab==='serviceAccess'&&role==='owner')loadServiceAccessAccounts()}});
  tabs.addEventListener('keydown',e=>{if(!['ArrowLeft','ArrowRight','Home','End'].includes(e.key))return;const all=[...tabs.querySelectorAll('[role="tab"]')];const active=all.findIndex(x=>x.getAttribute('aria-selected')==='true');const next=e.key==='Home'?0:e.key==='End'?all.length-1:(active+(e.key==='ArrowRight'?1:-1)+all.length)%all.length;e.preventDefault();all[next].focus();activate(all[next].dataset.adminTab)});
  editor._activateAdminTab=activate;activate('builder');
+}
+let serviceAccessAccounts=[];
+async function loadServiceAccessAccounts(){
+ if(role!=='owner')return;
+ say('service-access-status','Загружаем аккаунты…');
+ const {data,error}=await sb.rpc('list_service_access_accounts');
+ if(error){say('service-access-status','Не удалось загрузить аккаунты: '+error.message,'error');return}
+ serviceAccessAccounts=Array.isArray(data)?data:[];
+ renderServiceAccessAccounts();
+}
+function renderServiceAccessAccounts(){
+ const host=$('service-access-list');if(!host)return;
+ const search=String($('service-access-search')?.value||'').trim().toLocaleLowerCase();
+ const rows=serviceAccessAccounts.filter(x=>[x.display_name,x.email,x.organizer_role].some(v=>String(v||'').toLocaleLowerCase().includes(search)));
+ host.replaceChildren();
+ if(!rows.length){host.textContent=serviceAccessAccounts.length?'По запросу ничего не найдено.':'Аккаунтов пока нет.';say('service-access-status','Аккаунтов: '+serviceAccessAccounts.length);return}
+ rows.forEach(account=>{
+  const card=document.createElement('div');card.style.cssText='display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:12px;border:1px solid #30303d;border-radius:9px;background:#0d0d13';
+  const info=document.createElement('div');info.style.cssText='min-width:0;flex:1';
+  const name=document.createElement('strong');name.textContent=account.display_name||account.email||('Аккаунт '+String(account.user_id||'').slice(0,8));
+  const meta=document.createElement('div');meta.className='hint';meta.style.cssText='overflow-wrap:anywhere';meta.textContent=(account.email||'Email не указан')+' · регистрация '+(account.created_at?new Date(account.created_at).toLocaleDateString('ru-RU'):'—');
+  const state=document.createElement('div');state.className='hint';state.style.marginTop='4px';
+  const roleName=account.organizer_role;
+  if(roleName==='owner')state.textContent='Владелец · доступ защищён';
+  else if(roleName==='judge')state.textContent='Судья · отдельный ограниченный доступ';
+  else if(roleName==='admin')state.textContent='Доступ есть · администратор';
+  else if(roleName==='editor')state.textContent='Доступ есть · редактор';
+  else state.textContent='Нет доступа к редактору';
+  info.append(name,meta,state);card.append(info);
+  if(roleName==='admin'||roleName==='editor'){
+   const revoke=document.createElement('button');revoke.type='button';revoke.textContent='Отозвать доступ';revoke.dataset.serviceAccessUser=account.user_id;revoke.dataset.allowed='false';revoke.className='danger';card.append(revoke);
+  }else if(!roleName){
+   const allow=document.createElement('button');allow.type='button';allow.textContent='Разрешить доступ';allow.dataset.serviceAccessUser=account.user_id;allow.dataset.allowed='true';allow.className='primary';card.append(allow);
+  }
+  host.append(card);
+ });
+ say('service-access-status','Аккаунтов: '+serviceAccessAccounts.length+' · показано: '+rows.length);
+}
+async function handleServiceAccessAction(event){
+ const button=event.target.closest('[data-service-access-user]');if(!button||role!=='owner')return;
+ const userId=button.dataset.serviceAccessUser,allowed=button.dataset.allowed==='true';
+ const account=serviceAccessAccounts.find(x=>x.user_id===userId);if(!account)return;
+ const label=account.display_name||account.email||'этого пользователя';
+ if(!allowed&&!window.confirm('Отозвать служебный доступ у '+label+'?'))return;
+ button.disabled=true;
+ const {error}=await sb.rpc('set_service_access',{p_user_id:userId,p_allowed:allowed});
+ button.disabled=false;
+ if(error){say('service-access-status','Не удалось изменить доступ: '+error.message,'error');return}
+ say('service-access-status',allowed?'Доступ разрешён для '+label+'.':'Доступ отозван у '+label+'.','success');
+ await loadServiceAccessAccounts();
 }
 async function boot(){
  const {data:s,error}=await sb.auth.getSession();if(error)console.warn(error);session=s?.session||null;
  if(session?.user){const {data:r,error:re}=await sb.rpc('current_organizer_role');if(re)console.warn(re);role=r||null}
  $('logout-btn').classList.toggle('hidden',!session);$('role-label').textContent=role==='judge'?'Судья':admin()?'Организатор':'Публичная сетка';
  $('login-panel').classList.add('hidden');$('public-panel').classList.remove('hidden');$('editor-panel').classList.add('hidden');$('judge-panel').classList.add('hidden');
- if(admin()){$('public-panel').classList.add('hidden');$('editor-panel').classList.remove('hidden');initAdminTabs();$('editor-panel').querySelector('.admin-tabs').classList.remove('hidden');$('create-judge').closest('.panel').classList.toggle('hidden',!['owner','admin'].includes(role));$('admin-tab-judgeAccount').classList.toggle('hidden',!['owner','admin'].includes(role));await loadDocs()}
+ if(admin()){$('public-panel').classList.add('hidden');$('editor-panel').classList.remove('hidden');initAdminTabs();$('editor-panel').querySelector('.admin-tabs').classList.remove('hidden');$('create-judge').closest('.panel').classList.toggle('hidden',!['owner','admin'].includes(role));$('admin-tab-judgeAccount').classList.toggle('hidden',!['owner','admin'].includes(role));$('admin-tab-serviceAccess').classList.toggle('hidden',role!=='owner');await loadDocs()}
  else if(role==='judge'){$('public-panel').classList.add('hidden');$('judge-panel').classList.remove('hidden');await loadDocs()}
  else{role=null;await loadDocs()}
 }
