@@ -7,7 +7,7 @@
 
     const style = document.createElement('style');
     style.textContent = `
-      #arqon-admin-menu-bar{position:sticky;top:78px;z-index:1600;isolation:isolate;display:flex;justify-content:flex-start;padding:10px 0 12px;pointer-events:auto}
+      #arqon-admin-menu-bar{position:sticky;top:76px;z-index:1600;isolation:isolate;display:flex;justify-content:flex-start;align-items:center;width:100%;margin:0 0 14px;padding:8px 0 10px;pointer-events:auto;background:linear-gradient(180deg,rgba(9,8,15,.96),rgba(9,8,15,.72));backdrop-filter:blur(12px)}
       #arqon-admin-menu-trigger{display:inline-flex;align-items:center;gap:10px;min-height:43px;padding:0 16px;border:1px solid rgba(167,139,250,.48);border-radius:11px;background:linear-gradient(120deg,rgba(37,27,59,.98),rgba(24,18,42,.98));color:#f3eaff;font:700 13px Rajdhani,sans-serif;letter-spacing:1px;cursor:pointer;box-shadow:0 8px 24px rgba(0,0,0,.2)}
       #arqon-admin-menu-trigger svg{width:19px;height:19px;flex:0 0 auto}
       #arqon-admin-drawer-backdrop{position:fixed;inset:0;z-index:20000;background:rgba(3,2,10,.68);opacity:0;visibility:hidden;transition:opacity .2s ease,visibility .2s ease}
@@ -22,7 +22,7 @@
       .arqon-admin-link:hover,.arqon-admin-link:focus-visible{background:rgba(139,92,246,.13);border-color:rgba(167,139,250,.24);outline:none}
       .arqon-admin-link.support{margin-top:14px;background:rgba(139,92,246,.14);border-color:rgba(167,139,250,.3);color:#dfceff}
       body.arqon-admin-drawer-open{overflow:hidden}
-      @media(max-width:600px){#arqon-admin-menu-bar{top:64px;padding:8px 0 10px}#arqon-admin-menu-trigger{min-height:41px}#arqon-admin-drawer{padding-top:max(18px,env(safe-area-inset-top));padding-bottom:max(26px,env(safe-area-inset-bottom))}}
+      #media(max-width:600px){#arqon-admin-menu-bar{top:64px;padding:7px 0 9px;margin-bottom:10px}#arqon-admin-menu-trigger{min-height:41px}#arqon-admin-drawer{padding-top:max(18px,env(safe-area-inset-top));padding-bottom:max(26px,env(safe-area-inset-bottom))}}
       @media(prefers-reduced-motion:reduce){#arqon-admin-drawer,#arqon-admin-drawer-backdrop{transition:none}}
     `;
     document.head.appendChild(style);
@@ -36,7 +36,8 @@
     trigger.setAttribute('aria-controls','arqon-admin-drawer');
     trigger.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h16"/></svg><span>МЕНЮ АДМИНКИ</span>';
     bar.appendChild(trigger);
-    root.insertBefore(bar, root.firstElementChild);
+    const adminMain = root.closest('main') || root.parentElement;
+    if (adminMain) adminMain.insertBefore(bar, root); else root.insertBefore(bar, root.firstElementChild);
 
     const backdrop = document.createElement('div');
     backdrop.id = 'arqon-admin-drawer-backdrop';
