@@ -55,7 +55,7 @@ Deno.serve(async (req: Request) => {
     .eq("user_id", claimed.user_id)
     .maybeSingle();
 
-  if (notificationError || !notification || !["follow", "friend_request", "friend_accepted", "direct_message"].includes(notification.notification_type)) {
+  if (notificationError || !notification || !["follow", "friend_request", "friend_accepted", "direct_message", "moderation_notice"].includes(notification.notification_type)) {
     await finish("failed", "Notification row missing or not a social event.");
     return json({ error: "notification_not_found" }, 404);
   }
