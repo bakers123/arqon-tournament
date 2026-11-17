@@ -8,13 +8,13 @@ using (
   and exists (
     select 1 from public.arqon_friend_requests f
     where f.status = 'accepted'
-      and ((f.sender_user_id = sender_user_id and f.receiver_user_id = recipient_user_id)
-        or (f.sender_user_id = recipient_user_id and f.receiver_user_id = sender_user_id))
+      and ((f.sender_user_id = arqon_direct_messages.sender_user_id and f.receiver_user_id = arqon_direct_messages.recipient_user_id)
+        or (f.sender_user_id = arqon_direct_messages.recipient_user_id and f.receiver_user_id = arqon_direct_messages.sender_user_id))
   )
   and not exists (
     select 1 from public.arqon_user_blocks b
-    where (b.blocker_user_id = sender_user_id and b.blocked_user_id = recipient_user_id)
-       or (b.blocker_user_id = recipient_user_id and b.blocked_user_id = sender_user_id)
+    where (b.blocker_user_id = arqon_direct_messages.sender_user_id and b.blocked_user_id = arqon_direct_messages.recipient_user_id)
+       or (b.blocker_user_id = arqon_direct_messages.recipient_user_id and b.blocked_user_id = arqon_direct_messages.sender_user_id)
   )
 );
 drop policy if exists arqon_direct_messages_send_own on public.arqon_direct_messages;
@@ -25,13 +25,13 @@ with check (
   and exists (
     select 1 from public.arqon_friend_requests f
     where f.status = 'accepted'
-      and ((f.sender_user_id = sender_user_id and f.receiver_user_id = recipient_user_id)
-        or (f.sender_user_id = recipient_user_id and f.receiver_user_id = sender_user_id))
+      and ((f.sender_user_id = arqon_direct_messages.sender_user_id and f.receiver_user_id = arqon_direct_messages.recipient_user_id)
+        or (f.sender_user_id = arqon_direct_messages.recipient_user_id and f.receiver_user_id = arqon_direct_messages.sender_user_id))
   )
   and not exists (
     select 1 from public.arqon_user_blocks b
-    where (b.blocker_user_id = sender_user_id and b.blocked_user_id = recipient_user_id)
-       or (b.blocker_user_id = recipient_user_id and b.blocked_user_id = sender_user_id)
+    where (b.blocker_user_id = arqon_direct_messages.sender_user_id and b.blocked_user_id = arqon_direct_messages.recipient_user_id)
+       or (b.blocker_user_id = arqon_direct_messages.recipient_user_id and b.blocked_user_id = arqon_direct_messages.sender_user_id)
   )
 );
 drop policy if exists arqon_direct_messages_read_receipt on public.arqon_direct_messages;
@@ -42,8 +42,8 @@ using (
   and exists (
     select 1 from public.arqon_friend_requests f
     where f.status = 'accepted'
-      and ((f.sender_user_id = sender_user_id and f.receiver_user_id = recipient_user_id)
-        or (f.sender_user_id = recipient_user_id and f.receiver_user_id = sender_user_id))
+      and ((f.sender_user_id = arqon_direct_messages.sender_user_id and f.receiver_user_id = arqon_direct_messages.recipient_user_id)
+        or (f.sender_user_id = arqon_direct_messages.recipient_user_id and f.receiver_user_id = arqon_direct_messages.sender_user_id))
   )
 )
 with check (
@@ -52,8 +52,8 @@ with check (
   and exists (
     select 1 from public.arqon_friend_requests f
     where f.status = 'accepted'
-      and ((f.sender_user_id = sender_user_id and f.receiver_user_id = recipient_user_id)
-        or (f.sender_user_id = recipient_user_id and f.receiver_user_id = sender_user_id))
+      and ((f.sender_user_id = arqon_direct_messages.sender_user_id and f.receiver_user_id = arqon_direct_messages.recipient_user_id)
+        or (f.sender_user_id = arqon_direct_messages.recipient_user_id and f.receiver_user_id = arqon_direct_messages.sender_user_id))
   )
 );
 create index if not exists arqon_direct_messages_unread_idx
