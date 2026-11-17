@@ -85,6 +85,40 @@ as $$
   limit 100;
 $$;
 
+
+-- RLS policies must see blocks in both directions. A SECURITY INVOKER subquery
+-- would hide blocks created by the other participant under arqon_blocks_read_own.
+create or replace function public.arqon_social_is_blocked(p_other_user_id uuid)
+returns boolean
+language sql
+stable
+security definer
+set search_path = ''
+as $
+  select (select auth.uid()) is not null
+    and p_other_user_id is not null
+    and exists (
+      select 1
+      from public.arqon_user_blocks b
+      where (b.blocker_user_id = (select auth.uid()) and b.blocked_user_id = p_other_user_id)
+         or (b.blocker_user_id = p_other_user_id and b.blocked_user_id = (select auth.uid()))
+    );
+$;
+
+revoke all on function public.arqon_social_is_blocked(uuid) from public, anon;
+grant execute on function public.arqon_social_is_blocked(uuid) to authenticated;
+
+drop policy if exists arqon_follows_insert_own on public.arqon_follows;
+create policy arqon_follows_insert_own on public.arqon_follows for insert to authenticated
+  with check (follower_user_id = (select auth.uid())
+    and not public.arqon_social_is_blocked(followed_user_id));
+
+drop policy if exists arqon_friend_requests_insert_sender on public.arqon_friend_requests;
+create policy arqon_friend_requests_insert_sender on public.arqon_friend_requests for insert to authenticated
+  with check (sender_user_id = (select auth.uid())
+    and status = 'pending'
+    and not public.arqon_social_is_blocked(receiver_user_id));
+
 revoke all on function public.get_arqon_social_profile_state(bigint) from public, anon;
 revoke all on function public.get_arqon_incoming_friend_requests() from public, anon;
 grant execute on function public.get_arqon_social_profile_state(bigint) to authenticated;
