@@ -94,7 +94,7 @@ language sql
 stable
 security definer
 set search_path = ''
-as $
+as $blocked$
   select (select auth.uid()) is not null
     and p_other_user_id is not null
     and exists (
@@ -103,7 +103,7 @@ as $
       where (b.blocker_user_id = (select auth.uid()) and b.blocked_user_id = p_other_user_id)
          or (b.blocker_user_id = p_other_user_id and b.blocked_user_id = (select auth.uid()))
     );
-$;
+$blocked$;
 
 revoke all on function public.arqon_social_is_blocked(uuid) from public, anon;
 grant execute on function public.arqon_social_is_blocked(uuid) to authenticated;
