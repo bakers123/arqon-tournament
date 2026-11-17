@@ -869,6 +869,17 @@
     if (data?.session?.user) window.checkUserRole(data.session.user.id);
   }).catch((error) => console.error('Session restore failed:', error));
 
+  // Re-check organizer access whenever Supabase restores or establishes a real session.
+  // This covers delayed session hydration on mobile browsers and magic-link returns.
+  supabaseClient.auth.onAuthStateChange((event, session) => {
+    if (!session?.user || !['INITIAL_SESSION', 'SIGNED_IN', 'TOKEN_REFRESHED', 'USER_UPDATED'].includes(event)) return;
+    setTimeout(() => {
+      if (typeof window.checkUserRole === 'function') {
+        window.checkUserRole(session.user.id).catch((error) => console.error('Organizer role refresh failed:', error));
+      }
+    }, 0);
+  });
+
   window.loginWithCode = async function() {
     const code = (byId('auth-code')?.value || '').trim().toUpperCase();
     if (!code) return;
