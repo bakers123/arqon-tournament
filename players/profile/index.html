@@ -733,6 +733,35 @@ async function uploadProfileMedia(file,kind){
           await refresh();
         }));
       }
+      // Personal block and report controls are separate from administrator sanctions.
+      const {data:blockRow,error:blockError}=await db.from('arqon_user_blocks')
+        .select('blocked_user_id').eq('blocker_user_id',ownerUser.id).eq('blocked_user_id',state.target_user_id).maybeSingle();
+      if(blockError){console.warn('Block state unavailable:',blockError)}
+      else if(blockRow){
+        actions.append(makeSocialButton('Разблокировать игрока',async()=>{
+          const {error}=await db.from('arqon_user_blocks').delete().eq('blocker_user_id',ownerUser.id).eq('blocked_user_id',state.target_user_id);
+          note.textContent=error?'Не удалось разблокировать: '+error.message:'Игрок разблокирован.';
+          if(!error)await refresh();
+        },false,true));
+      }else{
+        actions.append(makeSocialButton('Заблокировать игрока',async()=>{
+          if(!confirm('Заблокировать этого игрока? Вы перестанете видеть взаимодействия с ним.'))return;
+          const {error}=await db.from('arqon_user_blocks').insert({blocker_user_id:ownerUser.id,blocked_user_id:state.target_user_id});
+          note.textContent=error?'Не удалось заблокировать: '+error.message:'Игрок заблокирован.';
+          if(!error)await refresh();
+        },false,true));
+      }
+      actions.append(makeSocialButton('Пожаловаться',async()=>{
+        const details=prompt('Опиши причину жалобы (не менее 10 символов):');
+        if(details===null)return;
+        const clean=details.trim();
+        if(clean.length<10||clean.length>2000){note.textContent='Описание жалобы должно быть от 10 до 2000 символов.';return}
+        const {error}=await db.from('arqon_player_reports').insert({
+          reporter_user_id:ownerUser.id,reported_user_id:state.target_user_id,
+          category:'other',details:clean,status:'open'
+        });
+        note.textContent=error?(error.code==='23505'?'У тебя уже есть открытая жалоба на этого игрока.':'Не удалось отправить жалобу: '+error.message):'Жалоба отправлена модераторам ARQON.';
+      },false,true));
       note.textContent=state.is_following?'Ты подписан на этого игрока.':(state.follows_you?'Этот игрок подписан на тебя.':'');
     }
 
