@@ -208,3 +208,16 @@ create policy arqon_reports_insert_self on public.arqon_player_reports for inser
 with check (reporter_user_id=(select auth.uid()) and status='open' and moderator_user_id is null and moderator_note is null
   and not public.arqon_user_has_active_sanction((select auth.uid()),'account'));
 
+
+-- Also prevent accepting a friend request or creating a new block entry while social access is restricted.
+drop policy if exists arqon_friend_requests_update_receiver on public.arqon_friend_requests;
+create policy arqon_friend_requests_update_receiver on public.arqon_friend_requests for update to authenticated
+using (receiver_user_id=(select auth.uid()) and status='pending'
+  and not public.arqon_user_has_active_sanction((select auth.uid()),'social'))
+with check (receiver_user_id=(select auth.uid()) and sender_user_id<>(select auth.uid())
+  and status in ('accepted','declined')
+  and not public.arqon_user_has_active_sanction((select auth.uid()),'social'));
+drop policy if exists arqon_blocks_insert_own on public.arqon_user_blocks;
+create policy arqon_blocks_insert_own on public.arqon_user_blocks for insert to authenticated
+with check (blocker_user_id=(select auth.uid())
+  and not public.arqon_user_has_active_sanction((select auth.uid()),'social'));
