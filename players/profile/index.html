@@ -684,8 +684,7 @@ async function uploadProfileMedia(file,kind){
         .eq('id',requestId).eq('receiver_user_id',ownerUser.id).eq('status','pending');
       if(error){note.textContent='Не удалось обработать заявку: '+error.message;return}
       note.textContent=status==='accepted'?'Вы теперь друзья.':'Заявка отклонена.';
-      await loadIncomingFriendRequests();
-      if(!ownProfile)await loadSocialFeatures();
+      if(ownProfile)await loadIncomingFriendRequests();else await loadSocialFeatures();
     }
     async function loadSocialFeatures(){
       const card=el('social-profile-card'),actions=el('social-profile-actions'),note=el('social-profile-status');
