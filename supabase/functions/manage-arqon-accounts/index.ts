@@ -50,7 +50,6 @@ Deno.serve(async (req: Request) => {
       }
       const { data: profiles, error } = await admin.from("profiles")
         .select("user_id,arqon_id,display_name,game_nick,bio,avatar_url,cover_url,cs2_faceit_url,cs2_faceit_elo,dota2_profile_url,dota2_mmr,is_public,show_steam,looking_for_team,preferred_role,steam_persona_name,created_at")
-        .not("steam_id", "is", null)
         .order("created_at", { ascending: false })
         .limit(5000);
       if (error) throw error;
@@ -78,9 +77,9 @@ Deno.serve(async (req: Request) => {
       const encoded = typeof body.base64 === "string" ? body.base64 : "";
       if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(userId) || !kind) return response({ error: "Некорректный игрок или тип изображения." }, 400, headers);
       const allowedMimes = kind === "cover" ? ["image/jpeg", "image/png", "image/webp", "image/gif"] : ["image/jpeg", "image/png", "image/webp"];\n      if (!allowedMimes.includes(mime) || !encoded || encoded.length > 7_000_000) return response({ error: kind === "cover" ? "Для обложки допустимы JPG, PNG, WEBP и GIF размером до 5 МБ." : "Для аватара допустимы JPG, PNG и WEBP размером до 5 МБ." }, 400, headers);
-      const { data: current, error: currentError } = await admin.from("profiles").select("steam_id").eq("user_id", userId).maybeSingle();
+      const { data: current, error: currentError } = await admin.from("profiles").select("user_id").eq("user_id", userId).maybeSingle();
       if (currentError) throw currentError;
-      if (!current?.steam_id) return response({ error: "Это не Steam-профиль." }, 404, headers);
+      if (!current?.user_id) return response({ error: "Профиль игрока не найден." }, 404, headers);
       const binary = Uint8Array.from(atob(encoded), c => c.charCodeAt(0));
       if (binary.byteLength > 5 * 1024 * 1024) return response({ error: "Изображение больше 5 МБ." }, 400, headers);
       const ext = mime === "image/jpeg" ? "jpg" : mime === "image/png" ? "png" : mime === "image/gif" ? "gif" : "webp";
@@ -102,7 +101,7 @@ Deno.serve(async (req: Request) => {
       const { data: current, error: currentError } = await admin.from("profiles")
         .select("steam_id").eq("user_id", userId).maybeSingle();
       if (currentError) throw currentError;
-      if (!current?.steam_id) return response({ error: "Этот аккаунт не зарегистрирован через Steam." }, 404, headers);
+      if (!current?.user_id) return response({ error: "Профиль игрока не найден." }, 404, headers);
       const p = body.profile && typeof body.profile === "object" ? body.profile : {};
       const display_name = typeof p.display_name === "string" ? p.display_name.trim().replace(/\s+/g, " ") : "";
       const bio = typeof p.bio === "string" ? p.bio.trim() : "";
