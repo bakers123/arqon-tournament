@@ -106,10 +106,10 @@ Deno.serve(async(req)=>{
        }
       }
       const on=(v:boolean)=>v?"🟢 Включены":"⚫ Выключены";
-      await renderPanel(bot,callbackChatId,callback.message.message_id,"🔔 <b>НАСТРОЙКИ УВЕДОМЛЕНИЙ</b>\n\nПоддержка: "+on(prefs.support_enabled)+"\nКоманды и приглашения: "+on(prefs.teams_enabled)+"\nСистемные: "+on(prefs.system_enabled),{inline_keyboard:[
+      await renderPanel(bot,callbackChatId,callback.message.message_id,"🔔 <b>НАСТРОЙКИ УВЕДОМЛЕНИЙ</b>\n\nПоддержка: "+on(prefs.support_enabled)+"\nКоманды и приглашения: "+on(prefs.teams_enabled)+"\nСоциальные и системные: "+on(prefs.system_enabled),{inline_keyboard:[
        [{text:(prefs.support_enabled?"🟢":"⚫")+" Поддержка",callback_data:"notif:support_enabled"}],
        [{text:(prefs.teams_enabled?"🟢":"⚫")+" Команды и приглашения",callback_data:"notif:teams_enabled"}],
-       [{text:(prefs.system_enabled?"🟢":"⚫")+" Системные",callback_data:"notif:system_enabled"}],
+       [{text:(prefs.system_enabled?"🟢":"⚫")+" Социальные и системные",callback_data:"notif:system_enabled"}],
        [{text:"↩️ Главное меню",callback_data:"menu"}]
       ]});
      }
