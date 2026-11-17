@@ -17,6 +17,14 @@
     if (visible) el.style.removeProperty('display');
     else el.style.setProperty('display', 'none', 'important');
   };
+  // Keep the navigation state tied to the confirmed database role, not to a
+  // stale inline-style value left by the initial fail-closed page render.
+  const syncAdminNavigation = () => {
+    const allowed = ['owner', 'admin', 'editor'].includes(String(organizerRole || '').trim().toLowerCase());
+    setVisible(byId('admin-tab-btn'), allowed);
+    if (!allowed) setVisible(byId('tab-admin'), false);
+    return allowed;
+  };
 
   window.isAdmin = () => ['owner', 'admin', 'editor'].includes(organizerRole);
   window.isFullAdmin = () => ['owner', 'admin'].includes(organizerRole);
@@ -766,11 +774,12 @@
     try {
       const { data: role, error: roleError } = await supabaseClient.rpc('current_organizer_role');
       if (roleError) throw roleError;
-      organizerRole = role || null;
+      organizerRole = String(role || '').trim().toLowerCase() || null;
     } catch (error) {
       console.error('Organizer role lookup failed:', error);
       organizerRole = null;
     }
+    syncAdminNavigation();
     window.dispatchEvent(new CustomEvent('arqon:organizer-role-ready', { detail: { role: organizerRole } }));
     setVisible(byId('admin-exclusive-profile-card'), window.isFullAdmin());
 
