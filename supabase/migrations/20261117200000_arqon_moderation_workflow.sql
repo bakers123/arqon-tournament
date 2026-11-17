@@ -15,6 +15,7 @@ revoke all on public.arqon_moderation_audit from public, anon, authenticated;
 
 -- Force all report status changes through the audited SECURITY DEFINER RPC.
 revoke update on public.arqon_player_reports from authenticated;
+revoke update (status, moderator_user_id, moderator_note, updated_at) on public.arqon_player_reports from authenticated;
 drop policy if exists arqon_reports_admin_update on public.arqon_player_reports;
 
 -- Prevent one reporter from opening multiple simultaneous reports for the same account.
