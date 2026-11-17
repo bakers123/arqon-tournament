@@ -94,7 +94,7 @@ create or replace function public.revoke_arqon_sanction(p_sanction_id bigint,p_r
 returns void
 language plpgsql security definer set search_path=''
 as $$
-declare v_actor uuid := (select auth.uid()); v_exists boolean;
+declare v_actor uuid := (select auth.uid()); v_count integer;
 begin
   if v_actor is null or not (public.has_organizer_role('owner') or public.has_organizer_role('admin')) then
     raise exception 'not_authorized_moderator' using errcode='42501';
@@ -105,8 +105,8 @@ begin
   update public.arqon_user_sanctions
     set revoked_at=now(),revoked_by=v_actor,revoke_reason=nullif(btrim(p_reason),'')
     where id=p_sanction_id and revoked_at is null and (expires_at is null or expires_at>now());
-  get diagnostics v_exists = row_count;
-  if not v_exists then raise exception 'active_sanction_not_found' using errcode='P0002'; end if;
+  get diagnostics v_count = row_count;
+  if v_count=0 then raise exception 'active_sanction_not_found' using errcode='P0002'; end if;
   insert into public.arqon_sanction_audit(sanction_id,actor_user_id,action,details)
   values(p_sanction_id,v_actor,'revoked',nullif(btrim(p_reason),''));
 end;
