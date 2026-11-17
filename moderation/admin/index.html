@@ -63,7 +63,7 @@ $('issue-sanction').addEventListener('click',async()=>{
  }catch(e){notice(e.message||'Не удалось выдать санкцию.',true)}
  finally{btn.disabled=false}
 });
- $('appeals-admin').hidden=false;loadAppeals();\n
+ 
 let appealRows=[],selectedAppeal=null;
 async function loadAppeals(){
  const root=$('appeal-list');root.textContent='Загружаем апелляции…';
