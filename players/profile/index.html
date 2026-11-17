@@ -86,6 +86,15 @@
       <p class="muted" style="margin:0 0 12px;font-size:14px">Предложения капитанов о вступлении в команду.</p>
       <div id="team-offers-list"></div>
     </section>
+    <section class="card hidden" id="social-profile-card" style="width:min(1040px,calc(100% - 28px));margin:16px auto 0">
+      <h2>СОЦИАЛЬНЫЙ ПРОФИЛЬ</h2>
+      <div id="social-profile-actions" style="display:flex;gap:10px;flex-wrap:wrap"></div>
+      <p id="social-profile-status" class="muted" role="status" style="font-size:14px;margin:12px 0 0"></p>
+      <div id="social-incoming-wrap" class="hidden" style="margin-top:18px;padding-top:16px;border-top:1px solid #ffffff18">
+        <h2 style="margin-bottom:12px">ЗАЯВКИ В ДРУЗЬЯ</h2>
+        <div id="social-incoming-list" class="history-list"></div>
+      </div>
+    </section>
     <div class="content">
       <section class="card"><h2>ОБ ИГРОКЕ</h2><p class="bio" id="bio">Загружаем информацию…</p>
         <form class="edit" id="edit-form">
@@ -640,6 +649,94 @@ async function uploadProfileMedia(file,kind){
       status.textContent='Стандартное оформление включено. Все покупки сохранены в инвентаре.';
       await load();
     }
+    function makeSocialButton(label, action, disabled=false, danger=false){
+      const button=document.createElement('button');
+      button.type='button';button.className='button'+(danger?' ghost':'');
+      button.textContent=label;button.disabled=disabled;
+      button.addEventListener('click',action);
+      return button;
+    }
+    async function loadIncomingFriendRequests(){
+      const wrap=el('social-incoming-wrap'),host=el('social-incoming-list');
+      if(!ownerUser||!wrap||!host)return;
+      const {data,error}=await db.rpc('get_arqon_incoming_friend_requests');
+      if(error){console.warn('Incoming friend requests unavailable:',error);wrap.classList.remove('hidden');host.textContent='Не удалось загрузить заявки. Обнови страницу.';return}
+      host.replaceChildren();
+      const rows=Array.isArray(data)?data:[];
+      if(!rows.length){wrap.classList.add('hidden');return}
+      rows.forEach(row=>{
+        const item=document.createElement('div');item.className='history-item';
+        const info=document.createElement('div');info.className='history-event';
+        const name=document.createElement('strong');name.textContent=row.sender_name||('Игрок ARQON #'+row.sender_arqon_id);
+        if(row.sender_arqon_id){const link=document.createElement('a');link.href='/players/profile/?id='+encodeURIComponent(row.sender_arqon_id);link.style.color='inherit';link.append(name);info.append(link)}else info.append(name);
+        const date=document.createElement('small');date.textContent='Заявка · '+new Date(row.created_at).toLocaleDateString('ru-RU');info.append(date);
+        const controls=document.createElement('div');controls.style.display='flex';controls.style.gap='7px';controls.style.flexWrap='wrap';
+        const accept=makeSocialButton('Принять',()=>respondToFriendRequest(row.request_id,'accepted'));
+        const decline=makeSocialButton('Отклонить',()=>respondToFriendRequest(row.request_id,'declined'),false,true);
+        controls.append(accept,decline);item.append(info,controls);host.append(item);
+      });
+      wrap.classList.remove('hidden');
+    }
+    async function respondToFriendRequest(requestId,status){
+      const note=el('social-profile-status');note.textContent=status==='accepted'?'Принимаем заявку…':'Отклоняем заявку…';
+      const {error}=await db.from('arqon_friend_requests')
+        .update({status,updated_at:new Date().toISOString()})
+        .eq('id',requestId).eq('receiver_user_id',ownerUser.id).eq('status','pending');
+      if(error){note.textContent='Не удалось обработать заявку: '+error.message;return}
+      note.textContent=status==='accepted'?'Вы теперь друзья.':'Заявка отклонена.';
+      await loadIncomingFriendRequests();
+      if(!ownProfile)await loadSocialFeatures();
+    }
+    async function loadSocialFeatures(){
+      const card=el('social-profile-card'),actions=el('social-profile-actions'),note=el('social-profile-status');
+      if(!card||!actions||!note)return;
+      card.classList.remove('hidden');actions.replaceChildren();
+      if(!ownerUser){note.textContent='Войди в ARQON, чтобы подписываться на игроков и добавлять их в друзья.';return}
+      if(ownProfile){
+        note.textContent='Здесь отображаются входящие заявки в друзья.';
+        await loadIncomingFriendRequests();return;
+      }
+      const {data,error}=await db.rpc('get_arqon_social_profile_state',{p_arqon_id:arqonId});
+      if(error){note.textContent='Социальные действия временно недоступны. Попробуй обновить страницу.';console.warn('Social profile state unavailable:',error);return}
+      const state=Array.isArray(data)?data[0]:data;
+      if(!state){note.textContent='Социальные действия доступны только для публичных профилей.';return}
+      const refresh=()=>loadSocialFeatures();
+      const follow=makeSocialButton(state.is_following?'Отписаться':'Подписаться',async()=>{
+        follow.disabled=true;note.textContent=state.is_following?'Отписываемся…':'Подписываемся…';
+        const result=state.is_following
+          ?await db.from('arqon_follows').delete().eq('follower_user_id',ownerUser.id).eq('followed_user_id',state.target_user_id)
+          :await db.from('arqon_follows').insert({follower_user_id:ownerUser.id,followed_user_id:state.target_user_id});
+        if(result.error){note.textContent='Не удалось изменить подписку: '+result.error.message;follow.disabled=false;return}
+        note.textContent=state.is_following?'Подписка отменена.':'Ты подписался на игрока.';
+        await refresh();
+      });
+      actions.append(follow);
+      if(state.friend_status==='accepted'){
+        actions.append(makeSocialButton('Вы друзья ✓',()=>{},true));
+      }else if(state.friend_status==='incoming_pending'&&state.incoming_request_id){
+        actions.append(makeSocialButton('Принять заявку',()=>respondToFriendRequest(state.incoming_request_id,'accepted')));
+        actions.append(makeSocialButton('Отклонить',()=>respondToFriendRequest(state.incoming_request_id,'declined'),false,true));
+      }else if(state.friend_status==='outgoing_pending'&&state.outgoing_request_id){
+        actions.append(makeSocialButton('Отменить заявку',async()=>{
+          const {error}=await db.from('arqon_friend_requests').delete().eq('id',state.outgoing_request_id).eq('sender_user_id',ownerUser.id).eq('status','pending');
+          note.textContent=error?'Не удалось отменить заявку: '+error.message:'Заявка отменена.';
+          if(!error)await refresh();
+        },false,true));
+      }else if(state.friend_status==='declined'){
+        actions.append(makeSocialButton('Заявка ранее отклонена',()=>{},true));
+      }else{
+        actions.append(makeSocialButton('Добавить в друзья',async()=>{
+          const button=actions.querySelectorAll('button')[1];if(button)button.disabled=true;
+          note.textContent='Отправляем заявку…';
+          const {error}=await db.from('arqon_friend_requests').insert({sender_user_id:ownerUser.id,receiver_user_id:state.target_user_id,status:'pending'});
+          if(error){note.textContent=error.code==='23505'?'Заявка между этими игроками уже существует.':'Не удалось отправить заявку: '+error.message;await refresh();return}
+          note.textContent='Заявка отправлена.';
+          await refresh();
+        }));
+      }
+      note.textContent=state.is_following?'Ты подписан на этого игрока.':(state.follows_you?'Этот игрок подписан на тебя.':'');
+    }
+
     async function load(){
       const {data:auth}=await db.auth.getUser();ownerUser=auth?.user||null;
       let profile=null, publicProfileError=null, mine=null, ownerPlayerName=null;
@@ -727,6 +824,7 @@ async function uploadProfileMedia(file,kind){
       const visibleAvatar=[profile.avatar_url,profile.steam_avatar_url,meta.avatar];
       if(visibleAvatar.some(value=>typeof value==='string'&&/^https?:\/\//i.test(value.trim())))setImage('avatar',visibleAvatar,'Аватар игрока');
       if(profile.cover_url){el('cover-image').src=profile.cover_url;el('cover-image').classList.remove('hidden')}
+      await loadSocialFeatures();
       if(ownProfile){
         await loadProfileInventory();
         await loadTeamInvitations();
