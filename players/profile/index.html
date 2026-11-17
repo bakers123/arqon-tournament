@@ -88,6 +88,7 @@
     </section>
     <section class="card hidden" id="social-profile-card" style="width:min(1040px,calc(100% - 28px));margin:16px auto 0">
       <h2>СОЦИАЛЬНЫЙ ПРОФИЛЬ</h2>
+      <div id="profile-moderation-status" class="hidden" role="status" style="margin:0 0 14px;padding:13px 15px;border:1px solid #f59e0b66;border-radius:12px;background:#92400e22;color:#fde7b0;line-height:1.4"></div>
       <div id="social-profile-actions" style="display:flex;gap:10px;flex-wrap:wrap"></div>
       <p id="social-profile-status" class="muted" role="status" style="font-size:14px;margin:12px 0 0"></p>
       <div id="social-incoming-wrap" class="hidden" style="margin-top:18px;padding-top:16px;border-top:1px solid #ffffff18">
@@ -691,10 +692,31 @@ async function uploadProfileMedia(file,kind){
       if(!card||!actions||!note)return;
       card.classList.remove('hidden');actions.replaceChildren();
       if(!ownerUser){note.textContent='Войди в ARQON, чтобы подписываться на игроков и добавлять их в друзья.';return}
-      if(ownProfile){
-        note.textContent='Здесь отображаются входящие заявки в друзья.';
-        await loadIncomingFriendRequests();return;
+      const moderationBox=el('profile-moderation-status');
+      if(moderationBox){
+        const {data:moderationRows,error:moderationError}=await db.rpc('get_my_arqon_moderation_status');
+        if(!moderationError){
+          const moderation=Array.isArray(moderationRows)?moderationRows[0]:moderationRows;
+          const reasons=Array.isArray(moderation?.active_reasons)?moderation.active_reasons.filter(Boolean):[];
+          const flags=[];
+          if(moderation?.is_account_blocked)flags.push('Действует блокировка сообщества ARQON. Подписки, заявки в друзья, личные сообщения и отправка жалоб недоступны.');
+          else if(moderation?.is_social_restricted)flags.push('Действует ограничение социальных функций. Подписки, заявки в друзья и личные сообщения недоступны.');
+          if(moderation?.is_content_restricted)flags.push('Также действует ограничение функций публикации.');
+          if(flags.length||reasons.length){
+            moderationBox.classList.remove('hidden');
+            const title=document.createElement('strong');title.textContent='Статус модерации';
+            const body=document.createElement('div');body.style.marginTop='4px';body.textContent=flags.join(' ')||'Тебе вынесено предупреждение модерации ARQON.';
+            moderationBox.replaceChildren(title,body);
+            if(reasons.length){const detail=document.createElement('div');detail.style.marginTop='6px';detail.textContent='Причина: '+reasons.join(' · ');moderationBox.append(detail)}
+          }
+          if(moderation?.is_account_blocked||moderation?.is_social_restricted){
+            note.textContent='Социальные действия временно недоступны по решению модерации ARQON.';
+            if(ownProfile)el('social-incoming-wrap')?.classList.add('hidden');
+            return;
+          }
+        }else console.warn('Moderation status unavailable on profile:',moderationError);
       }
+      if(ownProfile){note.textContent='Здесь отображаются входящие заявки в друзья.';await loadIncomingFriendRequests();return}
       const {data,error}=await db.rpc('get_arqon_social_profile_state',{p_arqon_id:arqonId});
       if(error){note.textContent='Социальные действия временно недоступны. Попробуй обновить страницу.';console.warn('Social profile state unavailable:',error);return}
       const state=Array.isArray(data)?data[0]:data;
@@ -702,64 +724,39 @@ async function uploadProfileMedia(file,kind){
       const refresh=()=>loadSocialFeatures();
       const follow=makeSocialButton(state.is_following?'Отписаться':'Подписаться',async()=>{
         follow.disabled=true;note.textContent=state.is_following?'Отписываемся…':'Подписываемся…';
-        const result=state.is_following
-          ?await db.from('arqon_follows').delete().eq('follower_user_id',ownerUser.id).eq('followed_user_id',state.target_user_id)
-          :await db.from('arqon_follows').insert({follower_user_id:ownerUser.id,followed_user_id:state.target_user_id});
+        const result=state.is_following?await db.from('arqon_follows').delete().eq('follower_user_id',ownerUser.id).eq('followed_user_id',state.target_user_id):await db.from('arqon_follows').insert({follower_user_id:ownerUser.id,followed_user_id:state.target_user_id});
         if(result.error){note.textContent='Не удалось изменить подписку: '+result.error.message;follow.disabled=false;return}
-        note.textContent=state.is_following?'Подписка отменена.':'Ты подписался на игрока.';
-        await refresh();
+        note.textContent=state.is_following?'Подписка отменена.':'Ты подписался на игрока.';await refresh();
       });
       actions.append(follow);
-      if(state.friend_status==='accepted'){
-        actions.append(makeSocialButton('Вы друзья ✓',()=>{},true));
-      }else if(state.friend_status==='incoming_pending'&&state.incoming_request_id){
-        actions.append(makeSocialButton('Принять заявку',()=>respondToFriendRequest(state.incoming_request_id,'accepted')));
-        actions.append(makeSocialButton('Отклонить',()=>respondToFriendRequest(state.incoming_request_id,'declined'),false,true));
-      }else if(state.friend_status==='outgoing_pending'&&state.outgoing_request_id){
-        actions.append(makeSocialButton('Отменить заявку',async()=>{
-          const {error}=await db.from('arqon_friend_requests').delete().eq('id',state.outgoing_request_id).eq('sender_user_id',ownerUser.id).eq('status','pending');
-          note.textContent=error?'Не удалось отменить заявку: '+error.message:'Заявка отменена.';
-          if(!error)await refresh();
-        },false,true));
-      }else if(state.friend_status==='declined'){
-        actions.append(makeSocialButton('Заявка ранее отклонена',()=>{},true));
-      }else{
-        actions.append(makeSocialButton('Добавить в друзья',async()=>{
-          const button=actions.querySelectorAll('button')[1];if(button)button.disabled=true;
-          note.textContent='Отправляем заявку…';
-          const {error}=await db.from('arqon_friend_requests').insert({sender_user_id:ownerUser.id,receiver_user_id:state.target_user_id,status:'pending'});
-          if(error){note.textContent=error.code==='23505'?'Заявка между этими игроками уже существует.':'Не удалось отправить заявку: '+error.message;await refresh();return}
-          note.textContent='Заявка отправлена.';
-          await refresh();
-        }));
-      }
-      // Personal block and report controls are separate from administrator sanctions.
-      const {data:blockRow,error:blockError}=await db.from('arqon_user_blocks')
-        .select('blocked_user_id').eq('blocker_user_id',ownerUser.id).eq('blocked_user_id',state.target_user_id).maybeSingle();
-      if(blockError){console.warn('Block state unavailable:',blockError)}
-      else if(blockRow){
-        actions.append(makeSocialButton('Разблокировать игрока',async()=>{
-          const {error}=await db.from('arqon_user_blocks').delete().eq('blocker_user_id',ownerUser.id).eq('blocked_user_id',state.target_user_id);
-          note.textContent=error?'Не удалось разблокировать: '+error.message:'Игрок разблокирован.';
-          if(!error)await refresh();
-        },false,true));
-      }else{
-        actions.append(makeSocialButton('Заблокировать игрока',async()=>{
-          if(!confirm('Заблокировать этого игрока? Вы перестанете видеть взаимодействия с ним.'))return;
-          const {error}=await db.from('arqon_user_blocks').insert({blocker_user_id:ownerUser.id,blocked_user_id:state.target_user_id});
-          note.textContent=error?'Не удалось заблокировать: '+error.message:'Игрок заблокирован.';
-          if(!error)await refresh();
-        },false,true));
-      }
+      if(state.friend_status==='accepted')actions.append(makeSocialButton('Вы друзья ✓',()=>{},true));
+      else if(state.friend_status==='incoming_pending'&&state.incoming_request_id){actions.append(makeSocialButton('Принять заявку',()=>respondToFriendRequest(state.incoming_request_id,'accepted')));actions.append(makeSocialButton('Отклонить',()=>respondToFriendRequest(state.incoming_request_id,'declined'),false,true))}
+      else if(state.friend_status==='outgoing_pending'&&state.outgoing_request_id)actions.append(makeSocialButton('Отменить заявку',async()=>{
+        const {error}=await db.from('arqon_friend_requests').delete().eq('id',state.outgoing_request_id).eq('sender_user_id',ownerUser.id).eq('status','pending');
+        note.textContent=error?'Не удалось отменить заявку: '+error.message:'Заявка отменена.';if(!error)await refresh();
+      },false,true));
+      else if(state.friend_status==='declined')actions.append(makeSocialButton('Заявка ранее отклонена',()=>{},true));
+      else actions.append(makeSocialButton('Добавить в друзья',async()=>{
+        note.textContent='Отправляем заявку…';
+        const {error}=await db.from('arqon_friend_requests').insert({sender_user_id:ownerUser.id,receiver_user_id:state.target_user_id,status:'pending'});
+        if(error){note.textContent=error.code==='23505'?'Заявка между этими игроками уже существует.':'Не удалось отправить заявку: '+error.message;await refresh();return}
+        note.textContent='Заявка отправлена.';await refresh();
+      }));
+      const {data:blockRow,error:blockError}=await db.from('arqon_user_blocks').select('blocked_user_id').eq('blocker_user_id',ownerUser.id).eq('blocked_user_id',state.target_user_id).maybeSingle();
+      if(blockError)console.warn('Block state unavailable:',blockError);
+      else if(blockRow)actions.append(makeSocialButton('Разблокировать игрока',async()=>{
+        const {error}=await db.from('arqon_user_blocks').delete().eq('blocker_user_id',ownerUser.id).eq('blocked_user_id',state.target_user_id);
+        note.textContent=error?'Не удалось разблокировать: '+error.message:'Игрок разблокирован.';if(!error)await refresh();
+      },false,true));
+      else actions.append(makeSocialButton('Заблокировать игрока',async()=>{
+        if(!confirm('Заблокировать этого игрока? Вы перестанете видеть взаимодействия с ним.'))return;
+        const {error}=await db.from('arqon_user_blocks').insert({blocker_user_id:ownerUser.id,blocked_user_id:state.target_user_id});
+        note.textContent=error?'Не удалось заблокировать: '+error.message:'Игрок заблокирован.';if(!error)await refresh();
+      },false,true));
       actions.append(makeSocialButton('Пожаловаться',async()=>{
-        const details=prompt('Опиши причину жалобы (не менее 10 символов):');
-        if(details===null)return;
-        const clean=details.trim();
-        if(clean.length<10||clean.length>2000){note.textContent='Описание жалобы должно быть от 10 до 2000 символов.';return}
-        const {error}=await db.from('arqon_player_reports').insert({
-          reporter_user_id:ownerUser.id,reported_user_id:state.target_user_id,
-          category:'other',details:clean,status:'open'
-        });
+        const details=prompt('Опиши причину жалобы (не менее 10 символов):');if(details===null)return;
+        const clean=details.trim();if(clean.length<10||clean.length>2000){note.textContent='Описание жалобы должно быть от 10 до 2000 символов.';return}
+        const {error}=await db.from('arqon_player_reports').insert({reporter_user_id:ownerUser.id,reported_user_id:state.target_user_id,category:'other',details:clean,status:'open'});
         note.textContent=error?(error.code==='23505'?'У тебя уже есть открытая жалоба на этого игрока.':'Не удалось отправить жалобу: '+error.message):'Жалоба отправлена модераторам ARQON.';
       },false,true));
       note.textContent=state.is_following?'Ты подписан на этого игрока.':(state.follows_you?'Этот игрок подписан на тебя.':'');
