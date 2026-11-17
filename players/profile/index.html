@@ -28,7 +28,7 @@
     .cover:before{content:"";position:absolute;inset:0;background:radial-gradient(circle at 75% 20%,#c084fc44,transparent 32%),linear-gradient(120deg,transparent 25%,#a855f722 50%,transparent 72%)}
     .cover img{width:100%;height:100%;object-fit:cover;position:absolute;inset:0}.profile{position:relative;margin:-62px 24px 0;display:flex;align-items:end;gap:22px}
     .avatar{width:132px;height:132px;flex:0 0 132px;border-radius:25px;border:4px solid var(--bg);background:linear-gradient(135deg,#6d28d9,#c084fc);display:grid;place-items:center;font:800 42px Orbitron;overflow:hidden;box-shadow:0 10px 36px #0009}
-    .avatar img{width:100%;height:100%;object-fit:cover}.avatar.shop-frame-neon{border:4px solid #9b5cff;box-shadow:0 0 22px #9b5cff99}.avatar.shop-frame-cyber{border:4px solid #45d8ff;box-shadow:0 0 22px #45d8ff99}.avatar.shop-frame-champion{border:4px solid #f3c969;box-shadow:0 0 24px #f3c96999}.shop-theme-void .card{border-color:#8b5cf666}.shop-theme-crimson .card{border-color:#e45c8a66}.identity{padding-bottom:10px;min-width:0}.eyebrow{font:700 10px Orbitron;letter-spacing:2.5px;color:#bd9aff}.name{font:800 clamp(25px,5vw,42px) Orbitron;margin:8px 0 6px;overflow-wrap:anywhere}.id{color:var(--muted);font-weight:700;letter-spacing:1.4px}
+    .avatar img{width:100%;height:100%;object-fit:cover}.avatar.exclusive-image-frame{border-color:transparent!important;box-shadow:none!important;position:relative;isolation:isolate}.avatar.exclusive-image-frame::after{content:'';position:absolute;inset:0;padding:4px;border-radius:inherit;background:var(--exclusive-frame-image) center/cover no-repeat;-webkit-mask:linear-gradient(#fff 0 0) content-box,linear-gradient(#fff 0 0);-webkit-mask-composite:xor;mask-composite:exclude;pointer-events:none}.avatar.shop-frame-neon{border:4px solid #9b5cff;box-shadow:0 0 22px #9b5cff99}.avatar.shop-frame-cyber{border:4px solid #45d8ff;box-shadow:0 0 22px #45d8ff99}.avatar.shop-frame-champion{border:4px solid #f3c969;box-shadow:0 0 24px #f3c96999}.shop-theme-void .card{border-color:#8b5cf666}.shop-theme-crimson .card{border-color:#e45c8a66}.identity{padding-bottom:10px;min-width:0}.eyebrow{font:700 10px Orbitron;letter-spacing:2.5px;color:#bd9aff}.name{font:800 clamp(25px,5vw,42px) Orbitron;margin:8px 0 6px;overflow-wrap:anywhere}.id{color:var(--muted);font-weight:700;letter-spacing:1.4px}
     .actions{margin-left:auto;padding-bottom:12px}.button{cursor:pointer;border:1px solid #9b5cff88;border-radius:11px;padding:10px 16px;background:linear-gradient(135deg,#7136c9,#9b5cff);color:white;font:700 14px Rajdhani;box-shadow:0 7px 25px #7136c944}
     .content{display:grid;grid-template-columns:1.35fr .65fr;gap:16px;margin-top:28px}.card{background:linear-gradient(160deg,#171426ee,#100f19f2);border:1px solid var(--line);border-radius:18px;padding:22px;box-shadow:0 14px 40px #0003}.card h2{font:700 12px Orbitron;letter-spacing:2px;color:#d9c4ff;margin:0 0 16px}.bio{font-size:18px;line-height:1.45;color:#ded8eb;white-space:pre-wrap}.muted{color:var(--muted)}.stat{display:flex;justify-content:space-between;gap:12px;padding:12px 0;border-bottom:1px solid #ffffff10;font-weight:700}.stat:last-child{border:0}.stat strong{color:#d9baff}
     .edit{display:none;margin-top:18px}.edit.open{display:block}.field{margin:12px 0}.field label{display:block;color:#b9aecb;font-size:12px;font-weight:700;letter-spacing:1px;margin-bottom:6px}.field input,.field textarea{width:100%;background:#0b0a12;border:1px solid var(--line);border-radius:10px;padding:12px;color:white;font:600 15px Rajdhani;outline:none}.field textarea{min-height:90px;resize:vertical}.checks{display:flex;gap:18px;flex-wrap:wrap;margin:14px 0;color:#d8cbea;font-weight:600}.checks label{display:flex;align-items:center;gap:7px}.notice{padding:20px;border:1px solid var(--line);background:#171426;border-radius:14px;color:#d6cce5;text-align:center;margin-top:24px}.error{color:#ff9aab}.hidden{display:none!important}
@@ -646,7 +646,7 @@ async function uploadProfileMedia(file,kind){
       // Load the signed-in owner's row first: private profile settings must not depend
       // on the public-profile RPC being available or the profile being public.
       if(ownerUser){
-        const mineResponse=await db.from('profiles').select('arqon_id,display_name,game_nick,steam_persona_name,steam_avatar_url,bio,avatar_url,cover_url,is_public,show_steam,steam_id,created_at,cs2_faceit_url,cs2_faceit_elo,dota2_profile_url,dota2_mmr,looking_for_team,preferred_role,equipped_frame_id,equipped_theme_id,equipped_title_id,equipped_badge_id,exclusive_profile_title,exclusive_profile_bg_color,exclusive_avatar_border_color').eq('user_id',ownerUser.id).maybeSingle();
+        const mineResponse=await db.from('profiles').select('arqon_id,display_name,game_nick,steam_persona_name,steam_avatar_url,bio,avatar_url,cover_url,is_public,show_steam,steam_id,created_at,cs2_faceit_url,cs2_faceit_elo,dota2_profile_url,dota2_mmr,looking_for_team,preferred_role,equipped_frame_id,equipped_theme_id,equipped_title_id,equipped_badge_id,exclusive_profile_title,exclusive_profile_bg_color,exclusive_avatar_border_color,exclusive_profile_bg_image_url,exclusive_avatar_border_image_url').eq('user_id',ownerUser.id).maybeSingle();
         if(mineResponse.error)console.warn('Owner profile query failed:',mineResponse.error);
         else mine=mineResponse.data;
         const playerNameResponse=await db.from('players').select('name').eq('uid',ownerUser.id).maybeSingle();
@@ -682,11 +682,23 @@ async function uploadProfileMedia(file,kind){
       if(frameClass)el('avatar').classList.add(frameClass);
       const themeClass={theme_void:'shop-theme-void',theme_crimson:'shop-theme-crimson'}[profile.equipped_theme_id]||'';
       if(themeClass)document.body.classList.add(themeClass);
-      if(/^#[0-9a-f]{6}$/i.test(profile.exclusive_profile_bg_color||'')){
+      const profileBgImage=typeof profile.exclusive_profile_bg_image_url==='string'&&/^https:\/\//i.test(profile.exclusive_profile_bg_image_url)?profile.exclusive_profile_bg_image_url:null;
+      if(profileBgImage){
+        document.body.style.backgroundColor='#09090d';
+        document.body.style.backgroundImage='linear-gradient(rgba(9,9,13,.28),rgba(9,9,13,.42)),url("'+profileBgImage.replace(/["\\]/g,'')+'")';
+        document.body.style.backgroundSize='cover';
+        document.body.style.backgroundPosition='center top';
+        document.body.style.backgroundRepeat='no-repeat';
+        document.body.style.backgroundAttachment='fixed';
+      }else if(/^#[0-9a-f]{6}$/i.test(profile.exclusive_profile_bg_color||'')){
         document.body.style.backgroundColor=profile.exclusive_profile_bg_color;
         document.body.style.backgroundImage='radial-gradient(ellipse at 50% -15%,'+profile.exclusive_profile_bg_color+'66,transparent 48%),radial-gradient(ellipse at 100% 80%,'+profile.exclusive_profile_bg_color+'44,transparent 35%)';
       }
-      if(/^#[0-9a-f]{6}$/i.test(profile.exclusive_avatar_border_color||'')){
+      const avatarBorderImage=typeof profile.exclusive_avatar_border_image_url==='string'&&/^https:\/\//i.test(profile.exclusive_avatar_border_image_url)?profile.exclusive_avatar_border_image_url:null;
+      if(avatarBorderImage){
+        el('avatar').classList.add('exclusive-image-frame');
+        el('avatar').style.setProperty('--exclusive-frame-image','url("'+avatarBorderImage.replace(/["\\]/g,'')+'")');
+      }else if(/^#[0-9a-f]{6}$/i.test(profile.exclusive_avatar_border_color||'')){
         el('avatar').style.borderColor=profile.exclusive_avatar_border_color;
         el('avatar').style.boxShadow='0 0 24px '+profile.exclusive_avatar_border_color+'88';
       }
