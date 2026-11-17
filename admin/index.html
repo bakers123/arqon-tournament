@@ -1476,7 +1476,7 @@ const CS2_MAPS = [
 ];
 
 // Organizer auth is installed by js/organizer-auth.js after this inline bundle loads.
-function isAdmin() { return false; }
+function isAdmin() { return window.organizerRoleIsAdmin?.() === true; }
 
 // Состояние турнира
 let state = {
