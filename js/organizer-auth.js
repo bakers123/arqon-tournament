@@ -18,6 +18,15 @@
     else el.style.setProperty('display', 'none', 'important');
   };
 
+  // Optional admin widgets must never prevent the core admin panel from appearing.
+  async function safelyInstallAdminFeature(name, installer) {
+    try {
+      await installer();
+    } catch (error) {
+      console.error('Не удалось загрузить раздел админки "' + name + '":', error);
+    }
+  }
+
   window.organizerRoleIsAdmin = () => ['owner', 'admin', 'editor'].includes(organizerRole);
   window.isFullAdmin = () => ['owner', 'admin'].includes(organizerRole);
   setVisible(byId('admin-exclusive-profile-card'), false);
@@ -786,11 +795,19 @@
       if (main) main.style.display = 'block';
       setVisible(byId('tab-home'), true);
       const adminSection = byId('tab-admin');
-      await installAwardAdminPanel();
-      if (window.isFullAdmin?.()) { await installCoinAdminPanel(); await installExclusivePlayerSelector(); }
-      if (organizerRole === 'owner') await installOrganizerAccessAdminPanel();
-      if (organizerRole === 'owner') await installAccountManagementPanel();
-      await installSteamProfileEditor();
+      // Reveal the secured admin area as soon as the server confirms the role.
+      // A slow/failing optional widget must not make the whole admin tab disappear.
+      setVisible(adminSection, true);
+      await safelyInstallAdminFeature('Награды игроков', installAwardAdminPanel);
+      if (window.isFullAdmin?.()) {
+        await safelyInstallAdminFeature('Выдача Coins', installCoinAdminPanel);
+        await safelyInstallAdminFeature('Выбор игрока', installExclusivePlayerSelector);
+      }
+      if (organizerRole === 'owner') {
+        await safelyInstallAdminFeature('Доступ к служебному входу', installOrganizerAccessAdminPanel);
+        await safelyInstallAdminFeature('Управление аккаунтами', installAccountManagementPanel);
+      }
+      await safelyInstallAdminFeature('Управление профилями игроков', installSteamProfileEditor);
       if (adminSection && !byId('bracket-builder-admin-link')) {
         const card = document.createElement('div');
         card.className = 'card';
