@@ -1118,6 +1118,25 @@
       <div id="award-admin-message" class="hint" role="status" style="margin-top:10px"></div>
       <div id="award-admin-history" class="history-list" style="margin-top:14px"></div>
     </div>
+    <div class="card" id="admin-player-cover-card">
+      <h2>🎞 Обложка профиля игрока</h2>
+      <p class="hint" style="margin:0 0 12px">Загружай GIF, JPG, PNG или WEBP на профиль выбранного игрока. GIF сохраняется исходным файлом, без превращения в первый кадр.</p>
+      <div class="row" style="gap:10px;flex-wrap:wrap">
+        <select id="admin-cover-player" style="min-width:220px;flex:1">
+          <option value="">Загрузка списка игроков…</option>
+        </select>
+        <button class="btn ghost" type="button" id="admin-cover-refresh">↻ Обновить список</button>
+      </div>
+      <div style="margin-top:12px">
+        <label class="label" for="admin-cover-file">Файл обложки · до 5 МБ</label>
+        <input id="admin-cover-file" type="file" accept="image/gif,image/jpeg,image/png,image/webp">
+      </div>
+      <div id="admin-cover-preview-wrap" class="hidden" style="margin-top:12px;border:1px solid var(--border);border-radius:12px;overflow:hidden;max-height:220px;background:#0b0a12">
+        <img id="admin-cover-preview" alt="Предпросмотр обложки" style="display:block;width:100%;max-height:220px;object-fit:cover">
+      </div>
+      <button class="btn" type="button" id="admin-cover-upload" style="margin-top:12px">Загрузить обложку игроку</button>
+      <div id="admin-cover-status" class="hint" role="status" style="margin-top:10px"></div>
+    </div>
     <div class="card">
       <h2>🤝 Добавить партнера</h2>
       <div class="row" style="flex-direction: column; gap: 10px;">
@@ -4852,7 +4871,7 @@ async function startApp() {
     measure();
   })();
   </script>
-  <script src="/assets/arqon-awards-admin.js?v=450fa01d"></script>
+  <script src="/assets/arqon-awards-admin.js?v=gif-player-cover-admin-1"></script>
   <script src="/assets/arqon-navigation.js?v=9"></script>
 <script src="/assets/arqon-notifications.js?v=3caf09e7" defer></script></body>
 </html>

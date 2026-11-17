@@ -95,9 +95,103 @@
     await loadHistory();
   }
 
+  let coverProfiles = [];
+  let coverPreviewUrl = null;
+  function coverSay(message,error=false){
+    const node=$('admin-cover-status');
+    if(node){node.textContent=message;node.style.color=error?'#fca5a5':'#c4b5fd'}
+  }
+  function selectedCoverProfile(){
+    const id=$('admin-cover-player')?.value;
+    return coverProfiles.find(profile=>profile.user_id===id)||null;
+  }
+  async function loadCoverProfiles(){
+    if(!admin()){coverSay('Недостаточно прав.',true);return}
+    const select=$('admin-cover-player'),button=$('admin-cover-refresh');
+    if(!select)return;
+    if(button)button.disabled=true;
+    select.disabled=true;
+    coverSay('Загружаем игроков…');
+    const {data,error}=await client().functions.invoke('manage-arqon-accounts',{body:{action:'list_steam_profiles'}});
+    if(button)button.disabled=false;
+    select.disabled=false;
+    if(error||!Array.isArray(data?.profiles)){
+      coverProfiles=[];
+      select.replaceChildren(new Option('Не удалось загрузить игроков',''));
+      coverSay(error?.message||data?.error||'Не удалось получить список профилей.',true);
+      return;
+    }
+    coverProfiles=data.profiles;
+    const previous=select.value;
+    select.replaceChildren(new Option('Выбери игрока',''));
+    coverProfiles.forEach(profile=>{
+      const label=(profile.display_name||profile.steam_persona_name||profile.game_nick||'Игрок')+
+        ' · ARQON #'+(profile.arqon_id??'—')+(profile.game_nick&&profile.game_nick!==profile.display_name?' · '+profile.game_nick:'');
+      select.add(new Option(label,profile.user_id));
+    });
+    if(coverProfiles.some(profile=>profile.user_id===previous))select.value=previous;
+    coverSay('Игроков в списке: '+coverProfiles.length+'.');
+  }
+  async function fileToBase64(file){
+    const bytes=new Uint8Array(await file.arrayBuffer());
+    let binary='';
+    const chunkSize=0x8000;
+    for(let offset=0;offset<bytes.length;offset+=chunkSize){
+      binary+=String.fromCharCode(...bytes.subarray(offset,Math.min(offset+chunkSize,bytes.length)));
+    }
+    return btoa(binary);
+  }
+  async function uploadAdminPlayerCover(){
+    if(!admin()){coverSay('Недостаточно прав.',true);return}
+    const profile=selectedCoverProfile(),file=$('admin-cover-file')?.files?.[0],button=$('admin-cover-upload');
+    if(!profile){coverSay('Сначала выбери игрока.',true);return}
+    if(!file){coverSay('Выбери файл обложки.',true);return}
+    const allowed=['image/gif','image/jpeg','image/png','image/webp'];
+    if(!allowed.includes(file.type)){coverSay('Поддерживаются GIF, JPG, PNG и WEBP.',true);return}
+    if(file.size>5*1024*1024){coverSay('Файл больше 5 МБ. Максимум — 5 МБ.',true);return}
+    button.disabled=true;coverSay('Подготавливаем исходный файл…');
+    try{
+      const base64=await fileToBase64(file);
+      const uploaded=await client().functions.invoke('manage-arqon-accounts',{body:{
+        action:'upload_steam_profile_media',user_id:profile.user_id,kind:'cover',mime:file.type,base64
+      }});
+      if(uploaded.error||!uploaded.data?.url)throw new Error(uploaded.data?.error||uploaded.error?.message||'Не удалось загрузить файл в хранилище.');
+      const p={
+        display_name:profile.display_name||profile.steam_persona_name||profile.game_nick||'Игрок',
+        game_nick:profile.game_nick||null,bio:profile.bio||'',
+        cs2_faceit_elo:profile.cs2_faceit_elo??null,cs2_faceit_url:profile.cs2_faceit_url||null,
+        dota2_mmr:profile.dota2_mmr??null,dota2_profile_url:profile.dota2_profile_url||null,
+        avatar_url:profile.avatar_url||null,cover_url:uploaded.data.url,
+        is_public:profile.is_public===true,show_steam:profile.show_steam===true,
+        looking_for_team:profile.looking_for_team===true,preferred_role:profile.preferred_role||''
+      };
+      const saved=await client().functions.invoke('manage-arqon-accounts',{body:{
+        action:'update_steam_profile',user_id:profile.user_id,profile:p
+      }});
+      if(saved.error||!saved.data?.ok)throw new Error(saved.data?.error||saved.error?.message||'Файл загружен, но не удалось сохранить обложку профиля.');
+      profile.cover_url=uploaded.data.url;
+      $('admin-cover-file').value='';
+      coverSay(file.type==='image/gif'?'GIF-обложка установлена. Анимация сохранена.':'Обложка игрока успешно обновлена.');
+    }catch(error){
+      coverSay(error?.message||'Не удалось сохранить обложку.',true);
+    }finally{button.disabled=false}
+  }
+  function previewAdminCover(){
+    const file=$('admin-cover-file')?.files?.[0],wrap=$('admin-cover-preview-wrap'),img=$('admin-cover-preview');
+    if(coverPreviewUrl){URL.revokeObjectURL(coverPreviewUrl);coverPreviewUrl=null}
+    if(!file){wrap?.classList.add('hidden');if(img)img.removeAttribute('src');return}
+    coverPreviewUrl=URL.createObjectURL(file);
+    img.src=coverPreviewUrl;wrap.classList.remove('hidden');
+  }
+
   function boot(){
     if(!$('arqon-awards-admin'))return;
     $('award-player-find')?.addEventListener('click',findPlayer);
+    $('admin-cover-refresh')?.addEventListener('click',loadCoverProfiles);
+    $('admin-cover-upload')?.addEventListener('click',uploadAdminPlayerCover);
+    $('admin-cover-file')?.addEventListener('change',previewAdminCover);
+    $('admin-cover-player')?.addEventListener('focus',()=>{if(!coverProfiles.length)loadCoverProfiles()});
+    loadCoverProfiles();
     $('award-grant')?.addEventListener('click',grantAward);
     $('award-player-id')?.addEventListener('keydown',event=>{if(event.key==='Enter'){event.preventDefault();findPlayer()}});
     const section=$('tab-admin');
