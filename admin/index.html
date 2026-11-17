@@ -1257,11 +1257,11 @@
           </label>
         </div>
         <div class="row" style="gap:10px;flex-wrap:wrap">
-          <label style="flex:1;min-width:220px">Изображение фона профиля · JPG, PNG, WEBP · до 5 МБ
-            <input id="exclusive-bg-image" type="file" accept="image/jpeg,image/png,image/webp" />
+          <label style="flex:1;min-width:220px">Изображение / GIF фона профиля · JPG, PNG, WEBP, GIF · до 5 МБ
+            <input id="exclusive-bg-image" type="file" accept="image/jpeg,image/png,image/webp,image/gif" />
           </label>
-          <label style="flex:1;min-width:220px">Изображение обводки аватара · JPG, PNG, WEBP · до 5 МБ
-            <input id="exclusive-border-image" type="file" accept="image/jpeg,image/png,image/webp" />
+          <label style="flex:1;min-width:220px">Изображение / GIF обводки аватара · JPG, PNG, WEBP, GIF · до 5 МБ
+            <input id="exclusive-border-image" type="file" accept="image/jpeg,image/png,image/webp,image/gif" />
           </label>
         </div>
         <p class="hint" style="margin:0">Изображение заменяет цвет. Если новый файл не выбран, прежнее изображение сохраняется. Фон растягивается по всей странице, обводка занимает только край аватара.</p>
@@ -3919,8 +3919,8 @@ async function adminSaveExclusiveProfile(){
   if(title.length>40){msg.textContent='Титул не должен превышать 40 символов.';return;}
   for(const [label,value] of [['фон',bg],['обводка',border]])if(value&&!/^#[0-9a-fA-F]{6}$/.test(value)){msg.textContent='Цвет '+label+' должен быть в формате #RRGGBB.';return;}
   for(const [label,file] of [['фона',bgFile],['обводки',borderFile]]){
-    if(file&&(!['image/jpeg','image/png','image/webp'].includes(file.type)||file.size>5*1024*1024)){
-      msg.innerHTML='<span class="msg error">Файл '+label+': разрешены JPG, PNG или WEBP до 5 МБ.</span>';return;
+    if(file&&(!['image/jpeg','image/png','image/webp','image/gif'].includes(file.type)||file.size>5*1024*1024)){
+      msg.innerHTML='<span class="msg error">Файл '+label+': разрешены JPG, PNG, WEBP или GIF до 5 МБ.</span>';return;
     }
   }
   const button=document.querySelector('#admin-exclusive-profile-card button.btn');
@@ -3929,7 +3929,7 @@ async function adminSaveExclusiveProfile(){
   try{
     const uploadExclusiveImage=async(file,kind)=>{
       if(!file)return null;
-      const ext={'image/jpeg':'jpg','image/png':'png','image/webp':'webp'}[file.type];
+      const ext={'image/jpeg':'jpg','image/png':'png','image/webp':'webp','image/gif':'gif'}[file.type];
       const path='profiles/'+id+'/'+kind+'-'+Date.now()+'-'+Math.random().toString(36).slice(2,8)+'.'+ext;
       const {error:uploadError}=await supabaseClient.storage.from('admin-profile-cosmetics').upload(path,file,{contentType:file.type,upsert:false,cacheControl:'3600'});
       if(uploadError)throw uploadError;
