@@ -13,6 +13,10 @@ create index if not exists arqon_moderation_audit_report_idx
 alter table public.arqon_moderation_audit enable row level security;
 revoke all on public.arqon_moderation_audit from public, anon, authenticated;
 
+-- Force all report status changes through the audited SECURITY DEFINER RPC.
+revoke update on public.arqon_player_reports from authenticated;
+drop policy if exists arqon_reports_admin_update on public.arqon_player_reports;
+
 -- Prevent one reporter from opening multiple simultaneous reports for the same account.
 create unique index if not exists arqon_player_reports_one_open_per_pair
   on public.arqon_player_reports(reporter_user_id, reported_user_id)
