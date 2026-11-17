@@ -1,7 +1,7 @@
 -- ARQON sanction appeals: player submissions and audited moderator decisions.
 create table if not exists public.arqon_sanction_appeals (
   id bigint generated always as identity primary key,
-  sanction_id bigint not null references public.arqon_user_sanctions(id) on delete restrict,
+  sanction_id bigint not null references public.arqon_user_sanctions(id) on delete cascade,
   appellant_user_id uuid not null references auth.users(id) on delete cascade,
   message text not null check (char_length(btrim(message)) between 10 and 2000),
   status text not null default 'pending' check (status in ('pending','accepted','rejected')),
