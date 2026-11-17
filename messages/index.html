@@ -21,17 +21,19 @@ main{width:min(1120px,calc(100% - 26px));margin:28px auto 60px}.eyebrow{font:700
 .bubble{max-width:min(78%,560px);padding:10px 13px;border-radius:13px;background:#ffffff0c;border:1px solid #ffffff12;align-self:flex-start;overflow-wrap:anywhere;white-space:pre-wrap;font-size:16px}
 .bubble.mine{align-self:flex-end;background:#7136c933;border-color:#9b5cff55}.time{display:block;font-size:11px;color:#aaa1bb;margin-top:4px;text-align:right}
 .composer{display:flex;gap:8px;padding:12px;border-top:1px solid #ffffff12}.composer textarea{resize:vertical;min-height:44px;max-height:120px;flex:1;background:#0b0a13;border:1px solid #ffffff20;border-radius:10px;color:white;padding:10px;font:16px Rajdhani;outline:none}.composer textarea:focus{border-color:#9b5cff}.btn{border:1px solid #9b5cff88;border-radius:10px;padding:9px 15px;background:linear-gradient(135deg,#7136c9,#9b5cff);color:white;font:700 14px Rajdhani;cursor:pointer}.btn:disabled{opacity:.5;cursor:wait}.state{color:var(--muted);padding:22px 12px;text-align:center;font-size:16px}.error{color:#ff9baf}.hint{font-size:12px;color:var(--muted);padding:0 14px 12px}
+.moderation-status{margin:0 0 16px;padding:13px 15px;border:1px solid #f59e0b66;border-radius:12px;background:#92400e22;color:#fde7b0;line-height:1.4}.moderation-status[hidden]{display:none}
 @media(max-width:700px){main{margin-top:20px}.layout{grid-template-columns:1fr;min-height:0}.friends{display:flex;max-height:none;overflow-x:auto}.friend{flex:0 0 190px}.chat{min-height:480px}.messages{min-height:280px;max-height:55vh}.bubble{max-width:88%}.panel-title{padding:12px 14px}}
 </style></head><body>
 <header class="top"><a class="brand" href="/"><span>ARQON</span> ESPORTS</a><a class="back" href="/social/">← Сообщество</a></header>
 <main><div class="eyebrow">ARQON COMMUNITY</div><h1 class="heading">СООБЩЕНИЯ <span class="total-unread" id="total-unread" hidden>0</span></h1><p class="lead">Личные переписки доступны только между друзьями.</p>
+<div id="moderation-status" class="moderation-status" hidden role="status"></div>
 <div class="layout"><section class="panel"><div class="panel-title">ДРУЗЬЯ</div><div class="friends" id="friends"><div class="state">Проверяем вход…</div></div></section>
 <section class="panel chat"><div class="chat-head" id="chat-title">Выбери друга</div><div class="messages" id="messages"><div class="state">Выбери друга слева, чтобы открыть переписку.</div></div><div class="hint" id="chat-hint">Сообщения видны только участникам переписки.</div><form class="composer" id="composer"><textarea id="message-input" maxlength="2000" placeholder="Напиши сообщение…" disabled required></textarea><button class="btn" id="send" type="submit" disabled>Отправить</button></form></section></div></main>
 <script>
 const SUPABASE_URL='https://uscnaqcvuwjrmkjyuklp.supabase.co';
 const SUPABASE_KEY='sb_publishable_oE2Bc1wPAcDt6HE8bOUj3Q_0-2FfIxB';
 const db=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
-const $=id=>document.getElementById(id);let me=null,selected=null,friends=[],poll=null,unreadBySender={};
+const $=id=>document.getElementById(id);let me=null,selected=null,friends=[],poll=null,unreadBySender={},socialRestricted=false,accountBlocked=false;
 function node(tag,cls,txt){const n=document.createElement(tag);if(cls)n.className=cls;if(txt!==undefined)n.textContent=txt;return n}
 function profileHref(id){return '/players/profile/?id='+encodeURIComponent(id)}
 function fmt(ts){return new Date(ts).toLocaleString('ru-RU',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})}
@@ -50,12 +52,28 @@ async function loadMessages(){if(!selected)return;const {data,error}=await messa
  if(unread.length){const {error:readError}=await db.from('arqon_direct_messages').update({read_at:new Date().toISOString()}).in('id',unread);if(readError)console.warn('Read receipt failed',readError);else await loadUnreadCounts()}
 }
 async function openChat(friend){selected=friend;renderFriends();$('chat-title').textContent=friend.display_name||('Игрок #'+friend.arqon_id);$('message-input').disabled=false;$('send').disabled=false;$('messages').replaceChildren(node('div','state','Загружаем переписку…'));await loadMessages();if(poll)clearInterval(poll);poll=setInterval(async()=>{await loadMessages();await loadUnreadCounts()},12000)}
-$('composer').addEventListener('submit',async e=>{e.preventDefault();if(!me||!selected)return;const input=$('message-input'),message=input.value.trim();if(!message)return;if(message.length>2000){$('chat-hint').textContent='Максимум 2000 символов.';return}
+$('composer').addEventListener('submit',async e=>{e.preventDefault();if(!me||!selected)return;if(socialRestricted||accountBlocked){$('chat-hint').textContent='Отправка сообщений недоступна по решению модерации ARQON.';return}const input=$('message-input'),message=input.value.trim();if(!message)return;if(message.length>2000){$('chat-hint').textContent='Максимум 2000 символов.';return}
  const send=$('send');send.disabled=true;const {error}=await db.from('arqon_direct_messages').insert({sender_user_id:me,recipient_user_id:selected.user_id,message});
  send.disabled=false;if(error){$('chat-hint').textContent=error.message==='new row violates row-level security policy'?'Писать можно только друзьям, если между вами нет блокировки.':'Не удалось отправить сообщение. Попробуй ещё раз.';console.warn(error);return}
  input.value='';$('chat-hint').textContent='Сообщение отправлено.';await loadMessages();input.focus()
 });
 (async()=>{try{const {data,error}=await db.auth.getUser();if(error||!data?.user){$('friends').replaceChildren(node('div','state error','Войди в аккаунт ARQON, чтобы пользоваться сообщениями.'));$('messages').replaceChildren(node('div','state','Сначала авторизуйся на сайте.'));return}
- me=data.user.id;await loadFriends()}catch(e){$('friends').replaceChildren(node('div','state error','Не удалось загрузить друзей. Обнови страницу.'));console.error(e)}})();
+ me=data.user.id;
+ const {data:moderationRows,error:moderationError}=await db.rpc('get_my_arqon_moderation_status');
+ if(!moderationError){
+  const moderation=Array.isArray(moderationRows)?moderationRows[0]:moderationRows;
+  socialRestricted=!!moderation?.is_social_restricted;accountBlocked=!!moderation?.is_account_blocked;
+  const reasons=Array.isArray(moderation?.active_reasons)?moderation.active_reasons.filter(Boolean):[];
+  if(socialRestricted||accountBlocked){
+   const box=$('moderation-status');box.hidden=false;
+   const title=node('strong','', 'Статус модерации ARQON');
+   const body=node('div','',accountBlocked?'Действует блокировка сообщества. Просматривать переписки можно, отправлять сообщения — нет.':'Действует ограничение социальных функций. Просматривать переписки можно, отправлять сообщения — нет.');
+   box.append(title,body);
+   if(reasons.length)box.append(node('div','', 'Причина: '+reasons.join(' · ')));
+   $('message-input').disabled=true;$('send').disabled=true;
+   $('chat-hint').textContent='Отправка сообщений временно недоступна по решению модерации.';
+  }
+ }else console.warn('Moderation status unavailable in messages:',moderationError);
+ await loadFriends()}catch(e){$('friends').replaceChildren(node('div','state error','Не удалось загрузить друзей. Обнови страницу.'));console.error(e)}})();
 window.addEventListener('beforeunload',()=>{if(poll)clearInterval(poll)});
 </script></body></html>
