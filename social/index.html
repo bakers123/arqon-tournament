@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#090812">
+<meta name="description" content="Друзья, подписки и заявки игроков ARQON Esports">
+<title>Сообщество — ARQON Esports</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;800&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<style>
+:root{color-scheme:dark;--bg:#090812;--panel:#11101b;--line:rgba(173,132,255,.2);--violet:#9b5cff;--pink:#c084fc;--muted:#9b96aa;--white:#f7f3ff}
+*{box-sizing:border-box}body{margin:0;min-height:100vh;background:radial-gradient(ellipse at 50% -15%,rgba(117,61,207,.28),transparent 48%),var(--bg);color:var(--white);font-family:Rajdhani,system-ui,sans-serif}
+a{color:inherit;text-decoration:none}.top{min-height:70px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px clamp(16px,5vw,72px);background:rgba(9,8,18,.88);position:sticky;top:0;z-index:3;backdrop-filter:blur(16px)}
+.brand{font:800 18px Orbitron;letter-spacing:3px}.brand span{color:var(--pink)}.back{border:1px solid var(--line);padding:9px 14px;border-radius:10px;color:#ded2f6;font-weight:700}
+main{width:min(1040px,calc(100% - 28px));margin:34px auto 70px}.eyebrow{font:700 10px Orbitron;letter-spacing:2px;color:#bd9aff}.heading{font:800 clamp(26px,5vw,42px) Orbitron;margin:9px 0}.lead{color:var(--muted);font-size:17px;margin:0 0 22px}
+.card{background:linear-gradient(160deg,#171426ee,#100f19f2);border:1px solid var(--line);border-radius:18px;padding:20px;box-shadow:0 14px 40px #0003}
+.tabs{display:flex;gap:8px;overflow:auto;padding:0 0 12px;margin-bottom:12px;scrollbar-width:thin}
+.tab{flex:0 0 auto;border:1px solid var(--line);background:#171426;color:#cfc4e5;border-radius:10px;padding:10px 14px;font:700 14px Rajdhani;cursor:pointer}
+.tab.active{background:linear-gradient(135deg,#7136c9,#9b5cff);border-color:#b78aff;color:white}
+.count{display:inline-grid;place-items:center;min-width:20px;height:20px;margin-left:5px;padding:0 5px;border-radius:20px;background:#ffffff18;font-size:12px}
+.list{display:grid;gap:9px}.person{display:flex;align-items:center;gap:12px;padding:12px;border:1px solid #ffffff12;border-radius:13px;background:#ffffff05;min-width:0}
+.avatar{width:48px;height:48px;flex:0 0 48px;border-radius:13px;object-fit:cover;background:linear-gradient(135deg,#6d28d9,#c084fc);display:grid;place-items:center;font:700 18px Orbitron}
+.info{min-width:0;flex:1}.name{font-size:18px;font-weight:700;overflow-wrap:anywhere}.meta{font-size:13px;color:var(--muted)}
+.actions{display:flex;gap:7px;flex-wrap:wrap}.btn{border:1px solid #9b5cff88;border-radius:9px;padding:8px 12px;background:linear-gradient(135deg,#7136c9,#9b5cff);color:white;font:700 13px Rajdhani;cursor:pointer}.btn.ghost{background:#ffffff08;border-color:#ffffff24;color:#ded2f6}.btn:disabled{opacity:.55;cursor:wait}
+.state{color:var(--muted);padding:22px 10px;text-align:center;font-size:16px}.error{color:#ff9baf}.toolbar{display:flex;justify-content:space-between;align-items:center;gap:10px;margin:0 0 12px}.small-link{color:#c9a9ff;text-decoration:underline;font-weight:700}
+@media(max-width:620px){main{margin-top:24px}.card{padding:14px}.person{align-items:flex-start;flex-wrap:wrap}.actions{width:100%;padding-left:60px}.actions .btn{flex:1}.top{padding:12px 14px}.brand{font-size:15px}}
+</style>
+</head>
+<body>
+<header class="top"><a class="brand" href="/"><span>ARQON</span> ESPORTS</a><a class="back" href="/players/">← Игроки</a></header>
+<main>
+<div class="eyebrow">ARQON COMMUNITY</div>
+<h1 class="heading">СООБЩЕСТВО</h1>
+<p class="lead">Твои друзья, подписки и запросы на общение — в одном месте.</p>
+<section class="card">
+<div class="tabs" role="tablist" aria-label="Разделы сообщества">
+<button class="tab active" data-section="incoming">Входящие <span class="count" id="count-incoming">0</span></button>
+<button class="tab" data-section="outgoing">Исходящие <span class="count" id="count-outgoing">0</span></button>
+<button class="tab" data-section="friends">Друзья <span class="count" id="count-friends">0</span></button>
+<button class="tab" data-section="following">Подписки <span class="count" id="count-following">0</span></button>
+<button class="tab" data-section="followers">Подписчики <span class="count" id="count-followers">0</span></button>
+</div>
+<div class="toolbar"><strong id="section-title">ВХОДЯЩИЕ ЗАЯВКИ</strong><a class="small-link" href="/players/">Найти игроков</a></div>
+<div class="list" id="connection-list"><div class="state">Проверяем авторизацию…</div></div>
+<div class="state" id="page-status" role="status"></div>
+</section>
+</main>
+<script>
+const SUPABASE_URL='https://uscnaqcvuwjrmkjyuklp.supabase.co';
+const SUPABASE_KEY='sb_publishable_oE2Bc1wPAcDt6HE8bOUj3Q_0-2FfIxB';
+const db=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+const sections={incoming:'ВХОДЯЩИЕ ЗАЯВКИ',outgoing:'ИСХОДЯЩИЕ ЗАЯВКИ',friends:'МОИ ДРУЗЬЯ',following:'МОИ ПОДПИСКИ',followers:'МОИ ПОДПИСЧИКИ'};
+let currentUser=null,currentSection='incoming',cache={};
+const el=id=>document.getElementById(id);
+function safeText(value){return String(value??'')}
+function profileUrl(id){return '/players/profile/?id='+encodeURIComponent(id)}
+function makeButton(label,handler,ghost=false){const b=document.createElement('button');b.className='btn'+(ghost?' ghost':'');b.type='button';b.textContent=label;b.addEventListener('click',handler);return b}
+function renderRows(section,rows){
+ const host=el('connection-list');host.replaceChildren();
+ if(!rows.length){const empty=document.createElement('div');empty.className='state';empty.textContent=section==='incoming'?'Новых заявок пока нет.':section==='outgoing'?'Ты пока никому не отправлял заявку.':section==='friends'?'Здесь появятся игроки, с которыми вы подружились.':section==='following'?'Ты пока ни на кого не подписан.':'У тебя пока нет подписчиков.';host.append(empty);return}
+ rows.forEach(row=>{
+  const item=document.createElement('article');item.className='person';
+  const avatar=row.avatar_url&&/^https:\/\//i.test(row.avatar_url)?document.createElement('img'):document.createElement('div');
+  avatar.className='avatar';
+  if(avatar.tagName==='IMG'){avatar.src=row.avatar_url;avatar.alt='';avatar.loading='lazy';avatar.referrerPolicy='no-referrer';avatar.onerror=()=>{const fallback=document.createElement('div');fallback.className='avatar';fallback.textContent=(row.display_name||'A').trim().charAt(0).toUpperCase();avatar.replaceWith(fallback)}}
+  else avatar.textContent=(row.display_name||'A').trim().charAt(0).toUpperCase();
+  const info=document.createElement('div');info.className='info';
+  const link=document.createElement('a');link.className='name';link.href=profileUrl(row.arqon_id);link.textContent=row.display_name||('Игрок ARQON #'+row.arqon_id);
+  const meta=document.createElement('div');meta.className='meta';meta.textContent='ARQON ID · #'+row.arqon_id;
+  info.append(link,meta);item.append(avatar,info);
+  const actions=document.createElement('div');actions.className='actions';
+  actions.append(makeButton('Открыть профиль',()=>location.href=profileUrl(row.arqon_id),true));
+  if(section==='incoming'){
+   actions.append(makeButton('Принять',()=>respond(row.request_id,'accepted')));
+   actions.append(makeButton('Отклонить',()=>respond(row.request_id,'declined'),true));
+  }else if(section==='outgoing'){
+   actions.append(makeButton('Отменить заявку',()=>cancelRequest(row.request_id),true));
+  }else if(section==='following'){
+   actions.append(makeButton('Отписаться',()=>unfollow(row.user_id),true));
+  }
+  item.append(actions);host.append(item);
+ });
+}
+async function loadSection(section,force=false){
+ currentSection=section;el('section-title').textContent=sections[section];el('page-status').textContent='';
+ document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('active',b.dataset.section===section));
+ el('connection-list').innerHTML='<div class="state">Загружаем список…</div>';
+ if(!force&&cache[section]){renderRows(section,cache[section]);return}
+ const {data,error}=await db.rpc('get_arqon_social_connections',{p_section:section});
+ if(error){el('connection-list').innerHTML='<div class="state error">Не удалось загрузить список. Обнови страницу чуть позже.</div>';console.warn('Social connections load failed:',error);return}
+ cache[section]=Array.isArray(data)?data:[];
+ el('count-'+section).textContent=cache[section].length;
+ renderRows(section,cache[section]);
+}
+async function reloadAll(){cache={};await Promise.all(Object.keys(sections).map(async section=>{const {data,error}=await db.rpc('get_arqon_social_connections',{p_section:section});if(!error){cache[section]=Array.isArray(data)?data:[];el('count-'+section).textContent=cache[section].length}}));renderRows(currentSection,cache[currentSection]||[])}
+async function respond(id,status){
+ el('page-status').textContent=status==='accepted'?'Принимаем заявку…':'Отклоняем заявку…';
+ const {error}=await db.from('arqon_friend_requests').update({status,updated_at:new Date().toISOString()}).eq('id',id).eq('receiver_user_id',currentUser.id).eq('status','pending');
+ if(error){el('page-status').textContent='Не удалось обработать заявку: '+error.message;return}
+ el('page-status').textContent=status==='accepted'?'Заявка принята.':'Заявка отклонена.';
+ await reloadAll();
+}
+async function cancelRequest(id){
+ const {error}=await db.from('arqon_friend_requests').delete().eq('id',id).eq('sender_user_id',currentUser.id).eq('status','pending');
+ if(error){el('page-status').textContent='Не удалось отменить заявку: '+error.message;return}
+ el('page-status').textContent='Заявка отменена.';await reloadAll();
+}
+async function unfollow(userId){
+ const {error}=await db.from('arqon_follows').delete().eq('follower_user_id',currentUser.id).eq('followed_user_id',userId);
+ if(error){el('page-status').textContent='Не удалось отменить подписку: '+error.message;return}
+ el('page-status').textContent='Подписка отменена.';await reloadAll();
+}
+document.querySelectorAll('.tab').forEach(button=>button.addEventListener('click',()=>loadSection(button.dataset.section)));
+(async()=>{
+ const {data,error}=await db.auth.getUser();currentUser=data?.user||null;
+ if(error||!currentUser){el('connection-list').innerHTML='<div class="state">Чтобы открыть сообщество, сначала <a class="small-link" href="/">войди в аккаунт ARQON</a>.</div>';document.querySelectorAll('.tab').forEach(b=>b.disabled=true);return}
+ await reloadAll();
+})();
+</script>
+</body>
+</html>
