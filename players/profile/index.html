@@ -55,7 +55,7 @@
   </style>
 </head>
 <body>
-  <header class="top"><a class="brand" href="/"><span>ARQON</span> ESPORTS</a><a class="back" href="/players/">← Игроки</a></header>
+  <header class="top"><a class="brand" href="/"><span>ARQON</span> ESPORTS</a><div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end"><a class="back" href="/social/">Сообщество</a><a class="back" href="/appeals/">Апелляции</a><a class="back" href="/players/">← Игроки</a></div></header>
   <main>
     <div class="cover" id="cover"><img id="cover-image" class="hidden" alt=""></div>
     <section class="profile">
@@ -86,6 +86,16 @@
       <p class="muted" style="margin:0 0 12px;font-size:14px">Предложения капитанов о вступлении в команду.</p>
       <div id="team-offers-list"></div>
     </section>
+    <section class="card hidden" id="social-profile-card" style="width:min(1040px,calc(100% - 28px));margin:16px auto 0">
+      <h2>СОЦИАЛЬНЫЙ ПРОФИЛЬ</h2>
+      <div id="profile-moderation-status" class="hidden" role="status" style="margin:0 0 14px;padding:13px 15px;border:1px solid #f59e0b66;border-radius:12px;background:#92400e22;color:#fde7b0;line-height:1.4"></div>
+      <div id="social-profile-actions" style="display:flex;gap:10px;flex-wrap:wrap"></div>
+      <p id="social-profile-status" class="muted" role="status" style="font-size:14px;margin:12px 0 0"></p>
+      <div id="social-incoming-wrap" class="hidden" style="margin-top:18px;padding-top:16px;border-top:1px solid #ffffff18">
+        <h2 style="margin-bottom:12px">ЗАЯВКИ В ДРУЗЬЯ</h2>
+        <div id="social-incoming-list" class="history-list"></div>
+      </div>
+    </section>
     <div class="content">
       <section class="card"><h2>ОБ ИГРОКЕ</h2><p class="bio" id="bio">Загружаем информацию…</p>
         <form class="edit" id="edit-form">
@@ -97,7 +107,7 @@
           <div class="field"><label for="dota-mmr-input">DOTA 2 · MMR</label><input id="dota-mmr-input" type="number" min="0" max="20000" step="1" placeholder="Например, 4500"></div>
           <div class="field"><label for="dota-url-input">DOTA 2 · ССЫЛКА НА ПРОФИЛЬ</label><input id="dota-url-input" type="url" placeholder="https://www.dotabuff.com/players/…"></div><div class="field"><label for="preferred-role-input">ЖЕЛАЕМАЯ РОЛЬ · ДО 80 СИМВОЛОВ</label><input id="preferred-role-input" maxlength="80" placeholder="AWP, капитан, support"></div><div class="checks"><label><input id="looking-for-team-input" type="checkbox"> Ищу команду · показывать в трансферном рынке</label></div>
           <div class="field"><label for="avatar-file">ЗАГРУЗИТЬ АВАТАР · JPG, PNG, WEBP · ДО 5 МБ</label><input id="avatar-file" type="file" accept="image/jpeg,image/png,image/webp"></div>
-          <div class="field"><label for="cover-file">ЗАГРУЗИТЬ ОБЛОЖКУ · JPG, PNG, WEBP · ДО 5 МБ</label><input id="cover-file" type="file" accept="image/jpeg,image/png,image/webp"></div>
+          <div class="field"><label for="cover-file">ЗАГРУЗИТЬ ОБЛОЖКУ · JPG, PNG, WEBP, GIF · ДО 5 МБ</label><input id="cover-file" type="file" accept="image/jpeg,image/png,image/webp,image/gif"></div>
           <div class="field"><label for="avatar-input">ИЛИ ССЫЛКА НА АВАТАР (HTTPS)</label><input id="avatar-input" type="url" placeholder="https://…"></div>
           <div class="field"><label for="cover-input">ИЛИ ССЫЛКА НА ОБЛОЖКУ (HTTPS)</label><input id="cover-input" type="url" placeholder="https://…"></div>
           <div class="checks"><label><input id="public-input" type="checkbox"> Публичный профиль</label><label><input id="steam-input" type="checkbox"> Показывать Steam ID</label></div>
@@ -584,10 +594,10 @@ async function replySupportTicket(event){
 
 async function uploadProfileMedia(file,kind){
       if(!file)return null;
-      const allowed=['image/jpeg','image/png','image/webp'];
-      if(!allowed.includes(file.type))throw new Error('Поддерживаются только JPG, PNG и WEBP.');
+      const allowed=kind==='cover'?['image/jpeg','image/png','image/webp','image/gif']:['image/jpeg','image/png','image/webp'];
+      if(!allowed.includes(file.type))throw new Error(kind==='cover'?'Для обложки поддерживаются JPG, PNG, WEBP и GIF. Для аватара — JPG, PNG и WEBP.':'Для аватара поддерживаются только JPG, PNG и WEBP.');
       if(file.size>5*1024*1024)throw new Error('Размер изображения не должен превышать 5 МБ.');
-      const ext=file.type==='image/jpeg'?'jpg':file.type==='image/png'?'png':'webp';
+      const ext={'image/jpeg':'jpg','image/png':'png','image/webp':'webp','image/gif':'gif'}[file.type];
       const path=ownerUser.id+'/'+kind+'-'+Date.now()+'-'+Math.random().toString(36).slice(2,8)+'.'+ext;
       const {error}=await db.storage.from('player-media').upload(path,file,{contentType:file.type,upsert:false,cacheControl:'3600'});
       if(error)throw error;
@@ -640,6 +650,118 @@ async function uploadProfileMedia(file,kind){
       status.textContent='Стандартное оформление включено. Все покупки сохранены в инвентаре.';
       await load();
     }
+    function makeSocialButton(label, action, disabled=false, danger=false){
+      const button=document.createElement('button');
+      button.type='button';button.className='button'+(danger?' ghost':'');
+      button.textContent=label;button.disabled=disabled;
+      button.addEventListener('click',action);
+      return button;
+    }
+    async function loadIncomingFriendRequests(){
+      const wrap=el('social-incoming-wrap'),host=el('social-incoming-list');
+      if(!ownerUser||!wrap||!host)return;
+      const {data,error}=await db.rpc('get_arqon_incoming_friend_requests');
+      if(error){console.warn('Incoming friend requests unavailable:',error);wrap.classList.remove('hidden');host.textContent='Не удалось загрузить заявки. Обнови страницу.';return}
+      host.replaceChildren();
+      const rows=Array.isArray(data)?data:[];
+      if(!rows.length){wrap.classList.add('hidden');return}
+      rows.forEach(row=>{
+        const item=document.createElement('div');item.className='history-item';
+        const info=document.createElement('div');info.className='history-event';
+        const name=document.createElement('strong');name.textContent=row.sender_name||('Игрок ARQON #'+row.sender_arqon_id);
+        if(row.sender_arqon_id){const link=document.createElement('a');link.href='/players/profile/?id='+encodeURIComponent(row.sender_arqon_id);link.style.color='inherit';link.append(name);info.append(link)}else info.append(name);
+        const date=document.createElement('small');date.textContent='Заявка · '+new Date(row.created_at).toLocaleDateString('ru-RU');info.append(date);
+        const controls=document.createElement('div');controls.style.display='flex';controls.style.gap='7px';controls.style.flexWrap='wrap';
+        const accept=makeSocialButton('Принять',()=>respondToFriendRequest(row.request_id,'accepted'));
+        const decline=makeSocialButton('Отклонить',()=>respondToFriendRequest(row.request_id,'declined'),false,true);
+        controls.append(accept,decline);item.append(info,controls);host.append(item);
+      });
+      wrap.classList.remove('hidden');
+    }
+    async function respondToFriendRequest(requestId,status){
+      const note=el('social-profile-status');note.textContent=status==='accepted'?'Принимаем заявку…':'Отклоняем заявку…';
+      const {error}=await db.from('arqon_friend_requests')
+        .update({status,updated_at:new Date().toISOString()})
+        .eq('id',requestId).eq('receiver_user_id',ownerUser.id).eq('status','pending');
+      if(error){note.textContent='Не удалось обработать заявку: '+error.message;return}
+      note.textContent=status==='accepted'?'Вы теперь друзья.':'Заявка отклонена.';
+      if(ownProfile)await loadIncomingFriendRequests();else await loadSocialFeatures();
+    }
+    async function loadSocialFeatures(){
+      const card=el('social-profile-card'),actions=el('social-profile-actions'),note=el('social-profile-status');
+      if(!card||!actions||!note)return;
+      card.classList.remove('hidden');actions.replaceChildren();
+      if(!ownerUser){note.textContent='Войди в ARQON, чтобы подписываться на игроков и добавлять их в друзья.';return}
+      const moderationBox=el('profile-moderation-status');
+      if(moderationBox){
+        const {data:moderationRows,error:moderationError}=await db.rpc('get_my_arqon_moderation_status');
+        if(!moderationError){
+          const moderation=Array.isArray(moderationRows)?moderationRows[0]:moderationRows;
+          const reasons=Array.isArray(moderation?.active_reasons)?moderation.active_reasons.filter(Boolean):[];
+          const flags=[];
+          if(moderation?.is_account_blocked)flags.push('Действует блокировка сообщества ARQON. Подписки, заявки в друзья, личные сообщения и отправка жалоб недоступны.');
+          else if(moderation?.is_social_restricted)flags.push('Действует ограничение социальных функций. Подписки, заявки в друзья и личные сообщения недоступны.');
+          if(moderation?.is_content_restricted)flags.push('Также действует ограничение функций публикации.');
+          if(flags.length||reasons.length){
+            moderationBox.classList.remove('hidden');
+            const title=document.createElement('strong');title.textContent='Статус модерации';
+            const body=document.createElement('div');body.style.marginTop='4px';body.textContent=flags.join(' ')||'Тебе вынесено предупреждение модерации ARQON.';
+            moderationBox.replaceChildren(title,body);
+            if(reasons.length){const detail=document.createElement('div');detail.style.marginTop='6px';detail.textContent='Причина: '+reasons.join(' · ');moderationBox.append(detail)}
+          }
+          if(moderation?.is_account_blocked||moderation?.is_social_restricted){
+            note.textContent='Социальные действия временно недоступны по решению модерации ARQON.';
+            if(ownProfile)el('social-incoming-wrap')?.classList.add('hidden');
+            return;
+          }
+        }else console.warn('Moderation status unavailable on profile:',moderationError);
+      }
+      if(ownProfile){note.textContent='Здесь отображаются входящие заявки в друзья.';await loadIncomingFriendRequests();return}
+      const {data,error}=await db.rpc('get_arqon_social_profile_state',{p_arqon_id:arqonId});
+      if(error){note.textContent='Социальные действия временно недоступны. Попробуй обновить страницу.';console.warn('Social profile state unavailable:',error);return}
+      const state=Array.isArray(data)?data[0]:data;
+      if(!state){note.textContent='Социальные действия доступны только для публичных профилей.';return}
+      const refresh=()=>loadSocialFeatures();
+      const follow=makeSocialButton(state.is_following?'Отписаться':'Подписаться',async()=>{
+        follow.disabled=true;note.textContent=state.is_following?'Отписываемся…':'Подписываемся…';
+        const result=state.is_following?await db.from('arqon_follows').delete().eq('follower_user_id',ownerUser.id).eq('followed_user_id',state.target_user_id):await db.from('arqon_follows').insert({follower_user_id:ownerUser.id,followed_user_id:state.target_user_id});
+        if(result.error){note.textContent='Не удалось изменить подписку: '+result.error.message;follow.disabled=false;return}
+        note.textContent=state.is_following?'Подписка отменена.':'Ты подписался на игрока.';await refresh();
+      });
+      actions.append(follow);
+      if(state.friend_status==='accepted')actions.append(makeSocialButton('Вы друзья ✓',()=>{},true));
+      else if(state.friend_status==='incoming_pending'&&state.incoming_request_id){actions.append(makeSocialButton('Принять заявку',()=>respondToFriendRequest(state.incoming_request_id,'accepted')));actions.append(makeSocialButton('Отклонить',()=>respondToFriendRequest(state.incoming_request_id,'declined'),false,true))}
+      else if(state.friend_status==='outgoing_pending'&&state.outgoing_request_id)actions.append(makeSocialButton('Отменить заявку',async()=>{
+        const {error}=await db.from('arqon_friend_requests').delete().eq('id',state.outgoing_request_id).eq('sender_user_id',ownerUser.id).eq('status','pending');
+        note.textContent=error?'Не удалось отменить заявку: '+error.message:'Заявка отменена.';if(!error)await refresh();
+      },false,true));
+      else if(state.friend_status==='declined')actions.append(makeSocialButton('Заявка ранее отклонена',()=>{},true));
+      else actions.append(makeSocialButton('Добавить в друзья',async()=>{
+        note.textContent='Отправляем заявку…';
+        const {error}=await db.from('arqon_friend_requests').insert({sender_user_id:ownerUser.id,receiver_user_id:state.target_user_id,status:'pending'});
+        if(error){note.textContent=error.code==='23505'?'Заявка между этими игроками уже существует.':'Не удалось отправить заявку: '+error.message;await refresh();return}
+        note.textContent='Заявка отправлена.';await refresh();
+      }));
+      const {data:blockRow,error:blockError}=await db.from('arqon_user_blocks').select('blocked_user_id').eq('blocker_user_id',ownerUser.id).eq('blocked_user_id',state.target_user_id).maybeSingle();
+      if(blockError)console.warn('Block state unavailable:',blockError);
+      else if(blockRow)actions.append(makeSocialButton('Разблокировать игрока',async()=>{
+        const {error}=await db.from('arqon_user_blocks').delete().eq('blocker_user_id',ownerUser.id).eq('blocked_user_id',state.target_user_id);
+        note.textContent=error?'Не удалось разблокировать: '+error.message:'Игрок разблокирован.';if(!error)await refresh();
+      },false,true));
+      else actions.append(makeSocialButton('Заблокировать игрока',async()=>{
+        if(!confirm('Заблокировать этого игрока? Вы перестанете видеть взаимодействия с ним.'))return;
+        const {error}=await db.from('arqon_user_blocks').insert({blocker_user_id:ownerUser.id,blocked_user_id:state.target_user_id});
+        note.textContent=error?'Не удалось заблокировать: '+error.message:'Игрок заблокирован.';if(!error)await refresh();
+      },false,true));
+      actions.append(makeSocialButton('Пожаловаться',async()=>{
+        const details=prompt('Опиши причину жалобы (не менее 10 символов):');if(details===null)return;
+        const clean=details.trim();if(clean.length<10||clean.length>2000){note.textContent='Описание жалобы должно быть от 10 до 2000 символов.';return}
+        const {error}=await db.from('arqon_player_reports').insert({reporter_user_id:ownerUser.id,reported_user_id:state.target_user_id,category:'other',details:clean,status:'open'});
+        note.textContent=error?(error.code==='23505'?'У тебя уже есть открытая жалоба на этого игрока.':'Не удалось отправить жалобу: '+error.message):'Жалоба отправлена модераторам ARQON.';
+      },false,true));
+      note.textContent=state.is_following?'Ты подписан на этого игрока.':(state.follows_you?'Этот игрок подписан на тебя.':'');
+    }
+
     async function load(){
       const {data:auth}=await db.auth.getUser();ownerUser=auth?.user||null;
       let profile=null, publicProfileError=null, mine=null, ownerPlayerName=null;
@@ -727,6 +849,7 @@ async function uploadProfileMedia(file,kind){
       const visibleAvatar=[profile.avatar_url,profile.steam_avatar_url,meta.avatar];
       if(visibleAvatar.some(value=>typeof value==='string'&&/^https?:\/\//i.test(value.trim())))setImage('avatar',visibleAvatar,'Аватар игрока');
       if(profile.cover_url){el('cover-image').src=profile.cover_url;el('cover-image').classList.remove('hidden')}
+      await loadSocialFeatures();
       if(ownProfile){
         await loadProfileInventory();
         await loadTeamInvitations();
