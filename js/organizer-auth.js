@@ -822,10 +822,12 @@
       setVisible(byId('tab-home'), true);
       const adminSection = byId('tab-admin');
       await installAwardAdminPanel();
-      if (window.isFullAdmin?.()) { await installCoinAdminPanel(); await installExclusivePlayerSelector(); }
-      if (organizerRole === 'owner') await installOrganizerAccessAdminPanel();
-      if (organizerRole === 'owner') await installAccountManagementPanel();
+      if (roleCheckId !== roleCheckSequence) return;
+      if (window.isFullAdmin?.()) { await installCoinAdminPanel(); if (roleCheckId !== roleCheckSequence) return; await installExclusivePlayerSelector(); if (roleCheckId !== roleCheckSequence) return; }
+      if (organizerRole === 'owner') { await installOrganizerAccessAdminPanel(); if (roleCheckId !== roleCheckSequence) return; }
+      if (organizerRole === 'owner') { await installAccountManagementPanel(); if (roleCheckId !== roleCheckSequence) return; }
       await installSteamProfileEditor();
+      if (roleCheckId !== roleCheckSequence) return;
       if (adminSection && !byId('bracket-builder-admin-link')) {
         const card = document.createElement('div');
         card.className = 'card';
@@ -854,7 +856,9 @@
 
     // A missing/ordinary player role must never leave organizer navigation visible.
     hideAdminNavigation();
-    setLogoutVisible(!!(await supabaseClient.auth.getSession()).data?.session?.user);
+    const { data: sessionState } = await supabaseClient.auth.getSession();
+    if (roleCheckId !== roleCheckSequence) return;
+    setLogoutVisible(!!sessionState?.session?.user);
 
     // Steam-linked player accounts stay in onboarding until their email is verified.
     try {
@@ -862,6 +866,7 @@
         supabaseClient.from('profiles').select('steam_id').eq('user_id', uid).maybeSingle(),
         supabaseClient.auth.getUser()
       ]);
+      if (roleCheckId !== roleCheckSequence) return;
       if (steamProfile?.steam_id && authUserData?.user && !authUserData.user.email_confirmed_at) {
         if (typeof window.handleNoAuth === 'function') window.handleNoAuth();
         await window.ensureSteamEmailStep?.();
@@ -872,6 +877,7 @@
     }
 
     const { data: player, error } = await supabaseClient.from('players').select('*').eq('uid', uid).maybeSingle();
+    if (roleCheckId !== roleCheckSequence) return;
     if (error) console.error('Player lookup failed:', error);
     if (player) {
       if (byId('auth-screen')) byId('auth-screen').style.display = 'none';
