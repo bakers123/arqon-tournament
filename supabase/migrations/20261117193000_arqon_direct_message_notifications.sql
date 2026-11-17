@@ -42,3 +42,36 @@ drop trigger if exists trg_notify_arqon_direct_message on public.arqon_direct_me
 create trigger trg_notify_arqon_direct_message
 after insert on public.arqon_direct_messages
 for each row execute function public.notify_arqon_direct_message();
+
+
+-- Extend the existing Telegram queue hook to include direct messages.
+create or replace function public.enqueue_arqon_telegram_notification()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $function$
+declare
+  v_queue_id bigint;
+begin
+  if new.notification_type not in ('follow','friend_request','friend_accepted','direct_message') then
+    return new;
+  end if;
+
+  insert into public.arqon_telegram_notification_queue(notification_id, user_id)
+  values (new.id, new.user_id)
+  on conflict (notification_id) do nothing
+  returning id into v_queue_id;
+
+  if v_queue_id is not null then
+    perform net.http_post(
+      url := 'https://uscnaqcvuwjrmkjyuklp.supabase.co/functions/v1/dispatch-social-notification',
+      body := jsonb_build_object('queue_id', v_queue_id),
+      headers := jsonb_build_object('Content-Type', 'application/json'),
+      timeout_milliseconds := 5000
+    );
+  end if;
+  return new;
+end;
+$function$;
+revoke all on function public.enqueue_arqon_telegram_notification() from public, anon, authenticated;
