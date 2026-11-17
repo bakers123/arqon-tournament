@@ -97,7 +97,7 @@
           <div class="field"><label for="dota-mmr-input">DOTA 2 · MMR</label><input id="dota-mmr-input" type="number" min="0" max="20000" step="1" placeholder="Например, 4500"></div>
           <div class="field"><label for="dota-url-input">DOTA 2 · ССЫЛКА НА ПРОФИЛЬ</label><input id="dota-url-input" type="url" placeholder="https://www.dotabuff.com/players/…"></div><div class="field"><label for="preferred-role-input">ЖЕЛАЕМАЯ РОЛЬ · ДО 80 СИМВОЛОВ</label><input id="preferred-role-input" maxlength="80" placeholder="AWP, капитан, support"></div><div class="checks"><label><input id="looking-for-team-input" type="checkbox"> Ищу команду · показывать в трансферном рынке</label></div>
           <div class="field"><label for="avatar-file">ЗАГРУЗИТЬ АВАТАР · JPG, PNG, WEBP · ДО 5 МБ</label><input id="avatar-file" type="file" accept="image/jpeg,image/png,image/webp"></div>
-          <div class="field"><label for="cover-file">ЗАГРУЗИТЬ ОБЛОЖКУ · JPG, PNG, WEBP · ДО 5 МБ</label><input id="cover-file" type="file" accept="image/jpeg,image/png,image/webp"></div>
+          <div class="field"><label for="cover-file">ЗАГРУЗИТЬ ОБЛОЖКУ · JPG, PNG, WEBP, GIF · ДО 5 МБ</label><input id="cover-file" type="file" accept="image/jpeg,image/png,image/webp,image/gif"></div>
           <div class="field"><label for="avatar-input">ИЛИ ССЫЛКА НА АВАТАР (HTTPS)</label><input id="avatar-input" type="url" placeholder="https://…"></div>
           <div class="field"><label for="cover-input">ИЛИ ССЫЛКА НА ОБЛОЖКУ (HTTPS)</label><input id="cover-input" type="url" placeholder="https://…"></div>
           <div class="checks"><label><input id="public-input" type="checkbox"> Публичный профиль</label><label><input id="steam-input" type="checkbox"> Показывать Steam ID</label></div>
@@ -584,10 +584,10 @@ async function replySupportTicket(event){
 
 async function uploadProfileMedia(file,kind){
       if(!file)return null;
-      const allowed=['image/jpeg','image/png','image/webp'];
-      if(!allowed.includes(file.type))throw new Error('Поддерживаются только JPG, PNG и WEBP.');
+      const allowed=kind==='cover'?['image/jpeg','image/png','image/webp','image/gif']:['image/jpeg','image/png','image/webp'];
+      if(!allowed.includes(file.type))throw new Error(kind==='cover'?'Для обложки поддерживаются JPG, PNG, WEBP и GIF. Для аватара — JPG, PNG и WEBP.':'Для аватара поддерживаются только JPG, PNG и WEBP.');
       if(file.size>5*1024*1024)throw new Error('Размер изображения не должен превышать 5 МБ.');
-      const ext=file.type==='image/jpeg'?'jpg':file.type==='image/png'?'png':'webp';
+      const ext={'image/jpeg':'jpg','image/png':'png','image/webp':'webp','image/gif':'gif'}[file.type];
       const path=ownerUser.id+'/'+kind+'-'+Date.now()+'-'+Math.random().toString(36).slice(2,8)+'.'+ext;
       const {error}=await db.storage.from('player-media').upload(path,file,{contentType:file.type,upsert:false,cacheControl:'3600'});
       if(error)throw error;
