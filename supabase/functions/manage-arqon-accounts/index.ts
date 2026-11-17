@@ -100,7 +100,7 @@ Deno.serve(async (req: Request) => {
         return response({ error: "Некорректный ID игрока." }, 400, headers);
       }
       const { data: current, error: currentError } = await admin.from("profiles")
-        .select("steam_id").eq("user_id", userId).maybeSingle();
+        .select("user_id,steam_id").eq("user_id", userId).maybeSingle();
       if (currentError) throw currentError;
       if (!current?.user_id) return response({ error: "Профиль игрока не найден." }, 404, headers);
       const p = body.profile && typeof body.profile === "object" ? body.profile : {};
