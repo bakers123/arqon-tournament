@@ -86,7 +86,7 @@ $$;
 create or replace function public.get_arqon_moderation_audit(p_report_id bigint)
 returns table(moderator_name text, old_status text, new_status text, moderator_note text, created_at timestamptz)
 language plpgsql stable security definer set search_path=''
-as $
+as $audit$
 begin
   if not (public.has_organizer_role('owner') or public.has_organizer_role('admin')) then
     raise exception 'not_authorized_moderator' using errcode='42501';
@@ -100,7 +100,7 @@ begin
   order by a.created_at desc
   limit 50;
 end;
-$;
+$audit$;
 
 revoke all on function public.list_arqon_moderation_reports(text) from public, anon;
 revoke all on function public.review_arqon_player_report(bigint,text,text) from public, anon;
