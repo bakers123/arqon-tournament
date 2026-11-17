@@ -23,7 +23,7 @@ as $$
     limit 1
   ),
   relation_rows as (
-    select fr.id, fr.sender_user_id, fr.receiver_user_id, fr.status
+    select fr.id, fr.sender_user_id, fr.receiver_user_id, fr.status, fr.created_at
     from public.arqon_friend_requests fr
     join target t on (
       (fr.sender_user_id = (select auth.uid()) and fr.receiver_user_id = t.user_id)
