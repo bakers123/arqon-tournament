@@ -1563,8 +1563,8 @@ const CS2_MAPS = [
   "de_ancient", "de_anubis", "de_cache", "de_dust2", "de_inferno", "de_mirage", "de_nuke"
 ];
 
-// Organizer auth is installed by js/organizer-auth.js?v=cb766ea4 after this inline bundle loads.
-function isAdmin() { return false; }
+// Organizer auth is installed by js/organizer-auth.js?v=20261117-livefix1 after this inline bundle loads.
+function isAdmin() { return window.organizerRoleIsAdmin?.() === true; }
 
 // Состояние турнира
 let state = {

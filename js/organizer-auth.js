@@ -18,7 +18,7 @@
     else el.style.setProperty('display', 'none', 'important');
   };
 
-  window.isAdmin = () => ['owner', 'admin', 'editor'].includes(organizerRole);
+  window.organizerRoleIsAdmin = () => ['owner', 'admin', 'editor'].includes(organizerRole);
   window.isFullAdmin = () => ['owner', 'admin'].includes(organizerRole);
   setVisible(byId('admin-exclusive-profile-card'), false);
 
@@ -766,7 +766,7 @@
     try {
       const { data: role, error: roleError } = await supabaseClient.rpc('current_organizer_role');
       if (roleError) throw roleError;
-      organizerRole = role || null;
+      organizerRole = String(role || '').trim().toLowerCase() || null;
     } catch (error) {
       console.error('Organizer role lookup failed:', error);
       organizerRole = null;
