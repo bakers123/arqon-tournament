@@ -3956,7 +3956,7 @@ async function adminClearExclusiveProfile(){
   const id=Number(document.getElementById('exclusive-arqon-id').value);
   const msg=document.getElementById('exclusive-profile-msg');
   if(!Number.isSafeInteger(id)||id<1){msg.textContent='Сначала укажи ARQON ID игрока.';return;}
-  if(!confirm('Снять титул, цвет фона и цвет обводки у игрока #'+id+'?'))return;
+  if(!confirm('Снять титул, цвета и изображения фона/обводки у игрока #'+id+'?'))return;
   const {error}=await supabaseClient.rpc('admin_set_profile_exclusives',{p_arqon_id:id,p_title:null,p_bg_color:null,p_border_color:null,p_bg_image_url:null,p_border_image_url:null,p_clear_images:true});
   msg.innerHTML=error?'<span class="msg error">Ошибка: '+escapeHtml(error.message)+'</span>':'<span class="msg success">✓ Все эксклюзивы сняты с игрока #'+id+'.</span>';
 }
