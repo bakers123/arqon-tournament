@@ -340,7 +340,11 @@
   }
   async function installExclusivePlayerSelector(){
     const card=byId('admin-exclusive-profile-card'),idInput=byId('exclusive-arqon-id');
-    if(!card||!idInput||byId('exclusive-player-select'))return;
+    if(!card||!idInput)return;
+    // The card is hidden during initial page setup; reveal it only after
+    // the full-admin role has been verified by the caller.
+    setVisible(card,true);
+    if(byId('exclusive-player-select'))return;
     const label=document.createElement('label');label.style.cssText='display:block;margin-bottom:10px;color:#cfc5df;font-size:13px;font-weight:700';
     label.textContent='Выбрать игрока';
     const select=document.createElement('select');select.id='exclusive-player-select';select.style.cssText='display:block;width:100%;margin-top:5px';
