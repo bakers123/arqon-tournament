@@ -17,6 +17,7 @@ a{color:inherit;text-decoration:none}.top{min-height:70px;border-bottom:1px soli
 .brand{font:800 18px Orbitron;letter-spacing:3px}.brand span{color:var(--pink)}.back{border:1px solid var(--line);padding:9px 14px;border-radius:10px;color:#ded2f6;font-weight:700}
 main{width:min(1040px,calc(100% - 28px));margin:34px auto 70px}.eyebrow{font:700 10px Orbitron;letter-spacing:2px;color:#bd9aff}.heading{font:800 clamp(26px,5vw,42px) Orbitron;margin:9px 0}.lead{color:var(--muted);font-size:17px;margin:0 0 22px}
 .card{background:linear-gradient(160deg,#171426ee,#100f19f2);border:1px solid var(--line);border-radius:18px;padding:20px;box-shadow:0 14px 40px #0003}
+.sanction-banner{margin:0 0 16px;padding:14px 16px;border:1px solid #f59e0b66;border-radius:13px;background:#92400e22;color:#fde7b0;line-height:1.45}.sanction-banner strong{display:block;margin-bottom:4px;color:#fff0c2}
 .tabs{display:flex;gap:8px;overflow:auto;padding:0 0 12px;margin-bottom:12px;scrollbar-width:thin}
 .tab{flex:0 0 auto;border:1px solid var(--line);background:#171426;color:#cfc4e5;border-radius:10px;padding:10px 14px;font:700 14px Rajdhani;cursor:pointer}
 .tab.active{background:linear-gradient(135deg,#7136c9,#9b5cff);border-color:#b78aff;color:white}
@@ -35,6 +36,7 @@ main{width:min(1040px,calc(100% - 28px));margin:34px auto 70px}.eyebrow{font:700
 <div class="eyebrow">ARQON COMMUNITY</div>
 <h1 class="heading">СООБЩЕСТВО</h1>
 <p class="lead">Твои друзья, подписки и запросы на общение — в одном месте.</p>
+<div class="sanction-banner" id="sanction-status" hidden role="status"></div>
 <section class="card">
 <div class="tabs" role="tablist" aria-label="Разделы сообщества">
 <button class="tab active" data-section="incoming">Входящие <span class="count" id="count-incoming">0</span></button>
@@ -124,6 +126,25 @@ async function unblock(userId){
 document.querySelectorAll('.tab').forEach(button=>button.addEventListener('click',()=>loadSection(button.dataset.section)));
 (async()=>{
  const {data,error}=await db.auth.getUser();currentUser=data?.user||null;
+ if(currentUser){
+  const {data:moderationRows,error:moderationError}=await db.rpc('get_my_arqon_moderation_status');
+  if(!moderationError){
+   const status=Array.isArray(moderationRows)?moderationRows[0]:moderationRows;
+   const reasons=Array.isArray(status?.active_reasons)?status.active_reasons.filter(Boolean):[];
+   const flags=[];
+   if(status?.is_account_blocked)flags.push('Действует блокировка сообщества ARQON: социальные действия и отправка жалоб недоступны.');
+   else if(status?.is_social_restricted)flags.push('Действует ограничение социальных функций: подписки, заявки в друзья и отправка личных сообщений недоступны.');
+   if(status?.is_content_restricted)flags.push('Действует ограничение функций публикации.');
+   if(!flags.length&&reasons.length)flags.push('Тебе вынесено предупреждение модерации ARQON.');
+   if(flags.length||reasons.length){
+    const banner=el('sanction-status');banner.hidden=false;
+    const heading=document.createElement('strong');heading.textContent='Статус модерации';
+    const message=document.createElement('div');message.textContent=flags.join(' ')||'Есть активное решение модерации.';
+    banner.append(heading,message);
+    if(reasons.length){const details=document.createElement('div');details.style.marginTop='6px';details.textContent='Причина: '+reasons.join(' · ');banner.append(details)}
+   }
+  }else console.warn('Moderation status could not be loaded:',moderationError);
+ }
  if(error||!currentUser){el('connection-list').innerHTML='<div class="state">Чтобы открыть сообщество, сначала <a class="small-link" href="/">войди в аккаунт ARQON</a>.</div>';document.querySelectorAll('.tab').forEach(b=>b.disabled=true);return}
  await reloadAll();
 })();
