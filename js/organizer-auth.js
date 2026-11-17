@@ -1,6 +1,8 @@
 /* ARQON organizer auth + secure player-code redemption */
 (() => {
   let organizerRole = null;
+  let organizerRoleUserId = null;
+  let roleCheckSequence = 0;
 
   const byId = (id) => document.getElementById(id);
   // Admin navigation is hidden by default; only a confirmed organizer role may reveal it.
@@ -758,18 +760,51 @@
   }
 
   window.checkUserRole = async function(uid) {
+    const roleCheckId = ++roleCheckSequence;
     // A valid auth event means the session exists: keep logout visible even when
     // this Steam account has not yet been mapped to the legacy players table.
     installSessionLogoutButton();
     installMyProfileButton(!!uid);
     setLogoutVisible(!!uid);
-    try {
-      const { data: role, error: roleError } = await supabaseClient.rpc('current_organizer_role');
-      if (roleError) throw roleError;
-      organizerRole = String(role || '').trim().toLowerCase() || null;
-    } catch (error) {
-      console.error('Organizer role lookup failed:', error);
-      organizerRole = null;
+    let roleLookupSucceeded = false;
+    let resolvedRole = null;
+    let roleLookupError = null;
+    // On mobile, INITIAL_SESSION and getSession can fire almost together. Give
+    // Supabase time to hydrate the JWT before treating a null RPC result as no role.
+    for (let attempt = 0; attempt < 3; attempt++) {
+      try {
+        const { data: authData, error: authError } = await supabaseClient.auth.getUser();
+        if (authError) throw authError;
+        if (!authData?.user || authData.user.id !== uid) {
+          if (roleCheckId !== roleCheckSequence) return;
+          organizerRole = null;
+          organizerRoleUserId = null;
+          break;
+        }
+        const { data: role, error: roleError } = await supabaseClient.rpc('current_organizer_role');
+        if (roleError) throw roleError;
+        resolvedRole = String(role || '').trim().toLowerCase() || null;
+        roleLookupSucceeded = true;
+        if (resolvedRole || attempt === 2) break;
+      } catch (error) {
+        roleLookupError = error;
+        if (attempt === 2) break;
+      }
+      await new Promise(resolve => setTimeout(resolve, 350));
+      if (roleCheckId !== roleCheckSequence) return;
+    }
+    if (roleCheckId !== roleCheckSequence) return;
+    if (roleLookupSucceeded) {
+      organizerRole = resolvedRole;
+      organizerRoleUserId = uid;
+    } else {
+      console.error('Organizer role lookup failed:', roleLookupError);
+      // A temporary network/JWT failure must not erase a role already verified
+      // for this same signed-in user during the current page session.
+      if (organizerRoleUserId !== uid) {
+        organizerRole = null;
+        organizerRoleUserId = null;
+      }
     }
     window.dispatchEvent(new CustomEvent('arqon:organizer-role-ready', { detail: { role: organizerRole } }));
     setVisible(byId('admin-exclusive-profile-card'), window.isFullAdmin());
@@ -872,7 +907,14 @@
   // Re-check organizer access whenever Supabase restores or establishes a real session.
   // This covers delayed session hydration on mobile browsers and magic-link returns.
   supabaseClient.auth.onAuthStateChange((event, session) => {
-    if (!session?.user || !['INITIAL_SESSION', 'SIGNED_IN', 'TOKEN_REFRESHED', 'USER_UPDATED'].includes(event)) return;
+    if (event === 'SIGNED_OUT' || !session?.user) {
+      roleCheckSequence++;
+      organizerRole = null;
+      organizerRoleUserId = null;
+      hideAdminNavigation();
+      return;
+    }
+    if (!['INITIAL_SESSION', 'SIGNED_IN', 'TOKEN_REFRESHED', 'USER_UPDATED'].includes(event)) return;
     setTimeout(() => {
       if (typeof window.checkUserRole === 'function') {
         window.checkUserRole(session.user.id).catch((error) => console.error('Organizer role refresh failed:', error));
