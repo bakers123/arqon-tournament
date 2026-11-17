@@ -54,9 +54,16 @@ language sql stable security definer set search_path=''
 as $$
   select a.id,s.id,s.sanction_type,s.scope,s.reason,s.expires_at,
     (s.revoked_at is null and (s.expires_at is null or s.expires_at>now())),
-    a.message,a.status,a.moderator_response,a.created_at,a.reviewed_at
-  from public.arqon_sanction_appeals a join public.arqon_user_sanctions s on s.id=a.sanction_id
-  where a.appellant_user_id=(select auth.uid()) order by a.created_at desc limit 100;
+    a.message,a.status,a.moderator_response,coalesce(a.created_at,s.created_at),a.reviewed_at
+  from public.arqon_user_sanctions s
+  left join lateral (
+    select ap.id,ap.message,ap.status,ap.moderator_response,ap.created_at,ap.reviewed_at
+    from public.arqon_sanction_appeals ap
+    where ap.sanction_id=s.id and ap.appellant_user_id=(select auth.uid())
+    order by ap.created_at desc limit 1
+  ) a on true
+  where s.target_user_id=(select auth.uid())
+  order by s.created_at desc limit 100;
 $$;
 
 create or replace function public.list_arqon_sanction_appeals(p_status text default 'pending')
@@ -101,7 +108,10 @@ begin
   from public.arqon_sanction_appeals a where a.id=p_appeal_id for update;
   if v_sanction_id is null then raise exception 'appeal_not_found' using errcode='P0002'; end if;
   if v_status<>'pending' then raise exception 'appeal_already_reviewed' using errcode='22023'; end if;
-  if p_decision='accepted' then
+  if p_decision='accepted' and exists(
+    select 1 from public.arqon_user_sanctions s where s.id=v_sanction_id
+      and s.revoked_at is null and (s.expires_at is null or s.expires_at>now())
+  ) then
     perform public.revoke_arqon_sanction(v_sanction_id,
       coalesce(nullif(btrim(p_response),''),'Апелляция удовлетворена'));
   end if;
