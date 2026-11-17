@@ -1,0 +1,2 @@
+[functions.dispatch-social-notification]
+verify_jwt = false
