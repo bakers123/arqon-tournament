@@ -42,6 +42,7 @@ main{width:min(1040px,calc(100% - 28px));margin:34px auto 70px}.eyebrow{font:700
 <button class="tab" data-section="friends">Друзья <span class="count" id="count-friends">0</span></button>
 <button class="tab" data-section="following">Подписки <span class="count" id="count-following">0</span></button>
 <button class="tab" data-section="followers">Подписчики <span class="count" id="count-followers">0</span></button>
+<button class="tab" data-section="blocked">Заблокированные <span class="count" id="count-blocked">0</span></button>
 </div>
 <div class="toolbar"><strong id="section-title">ВХОДЯЩИЕ ЗАЯВКИ</strong><span style="display:flex;gap:14px;flex-wrap:wrap"><a class="small-link" href="/messages/">Сообщения</a><a class="small-link" href="/players/">Найти игроков</a></span></div>
 <div class="list" id="connection-list"><div class="state">Проверяем авторизацию…</div></div>
@@ -52,7 +53,7 @@ main{width:min(1040px,calc(100% - 28px));margin:34px auto 70px}.eyebrow{font:700
 const SUPABASE_URL='https://uscnaqcvuwjrmkjyuklp.supabase.co';
 const SUPABASE_KEY='sb_publishable_oE2Bc1wPAcDt6HE8bOUj3Q_0-2FfIxB';
 const db=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
-const sections={incoming:'ВХОДЯЩИЕ ЗАЯВКИ',outgoing:'ИСХОДЯЩИЕ ЗАЯВКИ',friends:'МОИ ДРУЗЬЯ',following:'МОИ ПОДПИСКИ',followers:'МОИ ПОДПИСЧИКИ'};
+const sections={incoming:'ВХОДЯЩИЕ ЗАЯВКИ',outgoing:'ИСХОДЯЩИЕ ЗАЯВКИ',friends:'МОИ ДРУЗЬЯ',following:'МОИ ПОДПИСКИ',followers:'МОИ ПОДПИСЧИКИ',blocked:'ЗАБЛОКИРОВАННЫЕ ИГРОКИ'};
 let currentUser=null,currentSection='incoming',cache={};
 const el=id=>document.getElementById(id);
 function safeText(value){return String(value??'')}
@@ -60,7 +61,7 @@ function profileUrl(id){return '/players/profile/?id='+encodeURIComponent(id)}
 function makeButton(label,handler,ghost=false){const b=document.createElement('button');b.className='btn'+(ghost?' ghost':'');b.type='button';b.textContent=label;b.addEventListener('click',handler);return b}
 function renderRows(section,rows){
  const host=el('connection-list');host.replaceChildren();
- if(!rows.length){const empty=document.createElement('div');empty.className='state';empty.textContent=section==='incoming'?'Новых заявок пока нет.':section==='outgoing'?'Ты пока никому не отправлял заявку.':section==='friends'?'Здесь появятся игроки, с которыми вы подружились.':section==='following'?'Ты пока ни на кого не подписан.':'У тебя пока нет подписчиков.';host.append(empty);return}
+ if(!rows.length){const empty=document.createElement('div');empty.className='state';empty.textContent=section==='incoming'?'Новых заявок пока нет.':section==='outgoing'?'Ты пока никому не отправлял заявку.':section==='friends'?'Здесь появятся игроки, с которыми вы подружились.':section==='following'?'Ты пока ни на кого не подписан.':section==='followers'?'У тебя пока нет подписчиков.':'Ты пока никого не заблокировал.';host.append(empty);return}
  rows.forEach(row=>{
   const item=document.createElement('article');item.className='person';
   const avatar=row.avatar_url&&/^https:\/\//i.test(row.avatar_url)?document.createElement('img'):document.createElement('div');
@@ -68,11 +69,12 @@ function renderRows(section,rows){
   if(avatar.tagName==='IMG'){avatar.src=row.avatar_url;avatar.alt='';avatar.loading='lazy';avatar.referrerPolicy='no-referrer';avatar.onerror=()=>{const fallback=document.createElement('div');fallback.className='avatar';fallback.textContent=(row.display_name||'A').trim().charAt(0).toUpperCase();avatar.replaceWith(fallback)}}
   else avatar.textContent=(row.display_name||'A').trim().charAt(0).toUpperCase();
   const info=document.createElement('div');info.className='info';
-  const link=document.createElement('a');link.className='name';link.href=profileUrl(row.arqon_id);link.textContent=row.display_name||('Игрок ARQON #'+row.arqon_id);
-  const meta=document.createElement('div');meta.className='meta';meta.textContent='ARQON ID · #'+row.arqon_id;
+  const link=document.createElement('a');link.className='name';link.href=row.arqon_id?profileUrl(row.arqon_id):'#';link.textContent=row.display_name||(row.arqon_id?'Игрок ARQON #'+row.arqon_id:'Закрытый профиль');if(!row.arqon_id){link.removeAttribute('href');link.style.cursor='default'}
+  const meta=document.createElement('div');meta.className='meta';meta.textContent=row.arqon_id?'ARQON ID · #'+row.arqon_id:(section==='blocked'?'Профиль скрыт настройками приватности':'');
   info.append(link,meta);item.append(avatar,info);
   const actions=document.createElement('div');actions.className='actions';
-  actions.append(makeButton('Открыть профиль',()=>location.href=profileUrl(row.arqon_id),true));
+  if(row.arqon_id)actions.append(makeButton('Открыть профиль',()=>location.href=profileUrl(row.arqon_id),true));
+  if(section==='blocked')actions.append(makeButton('Разблокировать',()=>unblock(row.user_id),true));
   if(section==='incoming'){
    actions.append(makeButton('Принять',()=>respond(row.request_id,'accepted')));
    actions.append(makeButton('Отклонить',()=>respond(row.request_id,'declined'),true));
@@ -112,6 +114,12 @@ async function unfollow(userId){
  const {error}=await db.from('arqon_follows').delete().eq('follower_user_id',currentUser.id).eq('followed_user_id',userId);
  if(error){el('page-status').textContent='Не удалось отменить подписку: '+error.message;return}
  el('page-status').textContent='Подписка отменена.';await reloadAll();
+}
+async function unblock(userId){
+ if(!confirm('Разблокировать этого игрока?'))return;
+ const {error}=await db.from('arqon_user_blocks').delete().eq('blocker_user_id',currentUser.id).eq('blocked_user_id',userId);
+ if(error){el('page-status').textContent='Не удалось разблокировать игрока: '+error.message;return}
+ el('page-status').textContent='Игрок разблокирован.';await reloadAll();
 }
 document.querySelectorAll('.tab').forEach(button=>button.addEventListener('click',()=>loadSection(button.dataset.section)));
 (async()=>{
