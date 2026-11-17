@@ -67,10 +67,13 @@ alter table public.arqon_player_reports enable row level security;
 revoke all on public.arqon_follows, public.arqon_friend_requests, public.arqon_user_blocks,
   public.arqon_direct_messages, public.arqon_player_reports from public, anon;
 grant select, insert, delete on public.arqon_follows to authenticated;
-grant select, insert, update, delete on public.arqon_friend_requests to authenticated;
+grant select, insert, delete on public.arqon_friend_requests to authenticated;
+grant update (status, updated_at) on public.arqon_friend_requests to authenticated;
 grant select, insert, delete on public.arqon_user_blocks to authenticated;
-grant select, insert, update on public.arqon_direct_messages to authenticated;
-grant select, insert, update on public.arqon_player_reports to authenticated;
+grant select, insert on public.arqon_direct_messages to authenticated;
+grant update (read_at) on public.arqon_direct_messages to authenticated;
+grant select, insert on public.arqon_player_reports to authenticated;
+grant update (status, moderator_user_id, moderator_note, updated_at) on public.arqon_player_reports to authenticated;
 grant usage, select on sequence public.arqon_friend_requests_id_seq,
   public.arqon_direct_messages_id_seq, public.arqon_player_reports_id_seq to authenticated;
 
@@ -98,7 +101,7 @@ create policy arqon_friend_requests_insert_sender on public.arqon_friend_request
 drop policy if exists arqon_friend_requests_update_receiver on public.arqon_friend_requests;
 create policy arqon_friend_requests_update_receiver on public.arqon_friend_requests for update to authenticated
   using (receiver_user_id = (select auth.uid()) and status = 'pending')
-  with check (receiver_user_id = (select auth.uid()) and status in ('accepted','declined'));
+  with check (receiver_user_id = (select auth.uid()) and sender_user_id <> (select auth.uid()) and status in ('accepted','declined'));
 drop policy if exists arqon_friend_requests_cancel_sender on public.arqon_friend_requests;
 create policy arqon_friend_requests_cancel_sender on public.arqon_friend_requests for delete to authenticated
   using (sender_user_id = (select auth.uid()) and status = 'pending');
