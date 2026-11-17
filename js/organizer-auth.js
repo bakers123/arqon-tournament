@@ -907,11 +907,36 @@
   // Re-check organizer access whenever Supabase restores or establishes a real session.
   // This covers delayed session hydration on mobile browsers and magic-link returns.
   supabaseClient.auth.onAuthStateChange((event, session) => {
-    if (event === 'SIGNED_OUT' || !session?.user) {
+    // Only an explicit SIGNED_OUT event revokes the currently verified organizer UI.
+    // INITIAL_SESSION may briefly carry a null session while mobile Safari restores storage;
+    // verify it once more instead of hiding the admin panel on that transient event.
+    if (event === 'SIGNED_OUT') {
       roleCheckSequence++;
       organizerRole = null;
       organizerRoleUserId = null;
       hideAdminNavigation();
+      return;
+    }
+    if (!session?.user) {
+      if (event === 'INITIAL_SESSION') {
+        setTimeout(async () => {
+          try {
+            const { data, error } = await supabaseClient.auth.getSession();
+            if (error) throw error;
+            if (data?.session?.user) {
+              window.checkUserRole(data.session.user.id).catch((roleError) => console.error('Organizer role refresh failed:', roleError));
+            } else {
+              roleCheckSequence++;
+              organizerRole = null;
+              organizerRoleUserId = null;
+              hideAdminNavigation();
+            }
+          } catch (error) {
+            // A failed session read is not proof of sign-out; preserve verified UI state.
+            console.warn('Initial organizer session verification failed:', error);
+          }
+        }, 500);
+      }
       return;
     }
     if (!['INITIAL_SESSION', 'SIGNED_IN', 'TOKEN_REFRESHED', 'USER_UPDATED'].includes(event)) return;
