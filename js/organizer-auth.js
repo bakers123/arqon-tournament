@@ -775,12 +775,11 @@
       try {
         const { data: authData, error: authError } = await supabaseClient.auth.getUser();
         if (authError) throw authError;
-        if (!authData?.user || authData.user.id !== uid) {
-          if (roleCheckId !== roleCheckSequence) return;
-          organizerRole = null;
-          organizerRoleUserId = null;
-          break;
-        }
+        if (roleCheckId !== roleCheckSequence) return;
+        // A delayed auth event for an older user must not revoke the role
+        // belonging to the currently active Supabase session.
+        if (authData?.user && authData.user.id !== uid) return;
+        if (!authData?.user) throw new Error('Supabase session is not ready yet.');
         const { data: role, error: roleError } = await supabaseClient.rpc('current_organizer_role');
         if (roleError) throw roleError;
         resolvedRole = String(role || '').trim().toLowerCase() || null;
