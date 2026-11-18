@@ -126,6 +126,7 @@ a{color:inherit;text-decoration:none}button,input,select,textarea{font:inherit}
 (()=>{
 const URL='https://uscnaqcvuwjrmkjyuklp.supabase.co',KEY='sb_publishable_oE2Bc1wPAcDt6HE8bOUj3Q_0-2FfIxB';
 const db=window.supabase.createClient(URL,KEY,{auth:{storageKey:'sb-uscnaqcvuwjrmkjyuklp-auth-token',persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
+window.arqonLiveDb=db;
 const $=id=>document.getElementById(id);let matches=[],selected=null,events=[],chatMessages=[],playerStats=[],isEditor=false,channel=null,eventChannel=null,chatChannel=null,statsChannel=null,currentUser=null,myPrediction=null,predictionRewards={winner_reward:10,score_reward:25,mvp_reward:15};
 const statusText={scheduled:'Запланирован',live:'LIVE',paused:'Пауза',finished:'Завершён',cancelled:'Отменён'};
 const notice=(msg,error=false)=>{const n=$('notice');n.textContent=msg;n.className='notice show'+(error?' error':'')};
