@@ -8,6 +8,7 @@ const menuMarkup=(isAdmin=false,profileUrl=SITE+"/players/")=>({inline_keyboard:
  [{text:"🔔 Уведомления",callback_data:"notifications"}],
  [{text:"🏆 Киберспортивная лига",callback_data:"league"}],
  [{text:"👥 Команды",callback_data:"teams"},{text:"🎯 Игроки",callback_data:"players"}],
+ [{text:"🎯 SHOOT / SHIELD",callback_data:"shoot_help"}],
  [{text:"🛟 Поддержка",callback_data:"support"}],
  ...(isAdmin?[[{text:"🛡 Панель организатора",callback_data:"organizer"}]]:[])
 ]});
@@ -55,7 +56,8 @@ async function setBotCommands(token:string){
   {command:"start",description:"Открыть главное меню ARQON"},
   {command:"menu",description:"Показать меню"},
   {command:"profile",description:"Открыть мой профиль ARQON"},
-  {command:"help",description:"Команды и помощь"}
+  {command:"help",description:"Команды и помощь"},
+  {command:"duel",description:"Вызвать игрока на SHOOT / SHIELD"}
  ]});
  await telegram(token,"setChatMenuButton",{menu_button:{type:"commands"}});
 }
@@ -74,7 +76,26 @@ Deno.serve(async(req)=>{
    if(callbackId)try{await telegram(bot,"answerCallbackQuery",{callback_query_id:callbackId})}catch{}
    if(callbackChat){
     const callbackChatId=String(callbackChat);
-    if(action==="menu"){
+    if(action==="shoot_help"){
+     await renderPanel(bot,callbackChatId,callback.message.message_id,"🎯 <b>SHOOT / SHIELD В TELEGRAM</b>\\n\\nОтправь команду:\\n<code>/duel @username 50</code>\\n\\nМинимальная ставка — 10 ARQON Coins. Лобби Telegram отдельные от сайта. Соперник должен подключить Telegram к профилю ARQON и открыть бота хотя бы один раз.",{inline_keyboard:[[{text:"↩️ Главное меню",callback_data:"menu"}]]});
+    }else if(action.startsWith("tgshoot:")){
+     const parts=action.split(":");
+     try{
+      if(parts[1]==="cancel"){const {data:d,error}=await admin.rpc("telegram_shoot_cancel",{p_chat_id:callbackChatId,p_duel_id:parts[2]});if(error)throw error;await send(bot,callbackChatId,"Дуэль отменена, ставка возвращена.");await send(bot,String(d.opponent_chat_id),"Вызов отменён создателем.");}
+      else if(parts[1]==="accept"||parts[1]==="decline"){
+       const {data:d,error}=await admin.rpc("telegram_shoot_action",{p_chat_id:callbackChatId,p_action:parts[1],p_duel_id:parts[2]});if(error)throw error;
+       if(parts[1]==="decline"){await send(bot,callbackChatId,"Вызов отклонён. Ставка создателя возвращена.");await send(bot,String(d.creator_chat_id),"Игрок отклонил дуэль. Ставка возвращена.");}
+       else{const text="🎯 <b>SHOOT / SHIELD — МАТЧ НАЧАЛСЯ</b>\\nСтавка каждого: <b>"+d.stake+" 🪙</b> · Банк: <b>"+(2*d.stake)+" 🪙</b>\\nПервый до 3 очков. Выбирай зону:";const kb={inline_keyboard:[[{text:"🎯 Голова",callback_data:"tgshoot:zone:"+d.id+":1"},{text:"🦺 Верх",callback_data:"tgshoot:zone:"+d.id+":2"}],[{text:"✚ Центр",callback_data:"tgshoot:zone:"+d.id+":3"},{text:"🛡️ Низ",callback_data:"tgshoot:zone:"+d.id+":4"},{text:"👢 Ноги",callback_data:"tgshoot:zone:"+d.id+":5"}]]};await send(bot,String(d.creator_chat_id),text,kb);await send(bot,String(d.opponent_chat_id),text,kb);}
+      }else if(parts[1]==="zone"){
+       const duelId=parts[2],zone=Number(parts[3]);const {data:d,error}=await admin.rpc("telegram_shoot_action",{p_chat_id:callbackChatId,p_action:"move",p_duel_id:duelId,p_zone:zone});if(error)throw error;
+       if(d.status==="waiting")await send(bot,callbackChatId,"✅ Выбор принят и скрыт. Ждём ход соперника.");
+       else{const names=["","Голова","Верх","Центр","Низ","Ноги"];const result="🎯 <b>РАУНД "+d.round+" ЗАВЕРШЁН</b>\\nВыстрел: "+names[d.shot_zone]+" · Щит: "+names[d.shield_zone]+"\\nСчёт: <b>"+d.creator_score+" : "+d.opponent_score+"</b>";
+        if(d.status==="finished"){const finalText=result+"\\n🏆 Победитель: <b>ARQON #"+d.winner_arqon_id+"</b>\\nВыплата: <b>"+(2*d.stake)+" 🪙</b>";await send(bot,String(d.creator_chat_id),finalText,backMenu);await send(bot,String(d.opponent_chat_id),finalText,backMenu);}
+        else{const nextText=result+"\\nСледующий раунд — выбирай зону:";const kb={inline_keyboard:[[{text:"🎯 Голова",callback_data:"tgshoot:zone:"+duelId+":1"},{text:"🦺 Верх",callback_data:"tgshoot:zone:"+duelId+":2"}],[{text:"✚ Центр",callback_data:"tgshoot:zone:"+duelId+":3"},{text:"🛡️ Низ",callback_data:"tgshoot:zone:"+duelId+":4"},{text:"👢 Ноги",callback_data:"tgshoot:zone:"+duelId+":5"}]]};await send(bot,String(d.creator_chat_id),nextText,kb);await send(bot,String(d.opponent_chat_id),nextText,kb);}
+       }
+      }
+     }catch(e){await send(bot,callbackChatId,"⚠️ "+esc((e as Error)?.message||"Не удалось выполнить действие."));}
+    }else if(action==="menu"){
      let isSupportAdmin=false;try{const {data}=await admin.rpc("get_support_admin_telegram_chats");isSupportAdmin=(data||[]).some((x:any)=>String(x.chat_id)===callbackChatId)}catch{}
      const text="<b>ＡＲＱＯＮ  ＥＳＰＯＲＴＳ</b>\n<i>YOUR GAME. YOUR LEGACY.</i>\n\nВыбери нужный раздел 👇";
      try{await telegram(bot,"editMessageText",{chat_id:callbackChatId,message_id:callback.message.message_id,text,parse_mode:"HTML",disable_web_page_preview:true,reply_markup:menuMarkup(isSupportAdmin,await getTelegramProfileUrl(admin,callbackChatId))})}catch{}
@@ -122,7 +143,7 @@ Deno.serve(async(req)=>{
      const lines=[...recent.map((m:any)=>"• #"+(m.match_no??"?")+" "+esc(m.team1)+" — "+esc(m.team2)+" · "+(m.result_type==="tech"?"ТТ "+esc(m.tech_loss_team):"победа "+esc(m.winner))),...upcoming.map((m:any)=>"• #"+(m.match_no??"?")+" "+esc(m.date||"Дата уточняется")+" "+esc(m.time||"")+" · "+esc(m.team1)+" — "+esc(m.team2))];
      await renderPanel(bot,callbackChatId,callback.message.message_id,"🏆 <b>КИБЕРСПОРТИВНАЯ ЛИГА ARQON</b>\nМатчей в расписании: "+matches.length+"\nС результатом: "+done+"\n\n<b>Результаты и ближайшие матчи</b>\n"+(lines.join("\n")||"Пока нет данных."),{inline_keyboard:[[{text:"↻ Обновить",callback_data:"league"}],[{text:"↩️ Главное меню",callback_data:"menu"}]]});
     }else if(action==="teams"||action.startsWith("teams:page:")){
-     const pageMatch=action.match(/^teams:page:(\\d+)$/),page=Math.max(0,Number(pageMatch?.[1]??0));
+     const pageMatch=action.match(/^teams:page:(\d+)$/),page=Math.max(0,Number(pageMatch?.[1]??0));
      const teams=await loadTournamentTeams(admin),pageSize=5,totalPages=Math.max(1,Math.ceil(teams.length/pageSize)),currentPage=Math.min(page,totalPages-1),visible=teams.slice(currentPage*pageSize,(currentPage+1)*pageSize);
      const keyboard:any[][]=visible.map((t:any)=>[{text:"👥 "+String(t.name||"Команда").slice(0,45),callback_data:"team:"+String(t.id||"").slice(0,40)+":"+currentPage}]);
      const nav:any[]=[];
@@ -143,7 +164,7 @@ Deno.serve(async(req)=>{
       await renderPanel(bot,callbackChatId,callback.message.message_id,"👥 <b>"+esc(team.name)+"</b>\nИгроков: "+roster.length+"\n\n"+(rows.join("\n")||"Состав пока не заполнен."),{inline_keyboard:buttons});
      }
     }else if(action==="players"||action.startsWith("players:page:")){
-     const pageMatch=action.match(/^players:page:(\\d+)$/),page=Math.max(0,Number(pageMatch?.[1]??0));
+     const pageMatch=action.match(/^players:page:(\d+)$/),page=Math.max(0,Number(pageMatch?.[1]??0));
      const teams=await loadTournamentTeams(admin),roster=teams.flatMap((t:any)=>(Array.isArray(t.players)?t.players:[]).map((p:any)=>({...p,teamName:t.name,teamId:t.id})));
      const unique=Array.from(new Map(roster.map((p:any)=>[String(p.account_id||p.name),p])).values()) as any[];
      const pageSize=5,totalPages=Math.max(1,Math.ceil(unique.length/pageSize)),currentPage=Math.min(page,totalPages-1),visible=unique.slice(currentPage*pageSize,(currentPage+1)*pageSize);
@@ -246,6 +267,8 @@ Deno.serve(async(req)=>{
   const msg=update?.message,chat=msg?.chat?.id,txt=String(msg?.text??"").trim();
   if(!chat)return json({ok:true});
   const chatId=String(chat);
+  if(msg?.chat?.type!=="private"){await send(bot,chatId,"Играть можно только в личном чате с @arqon_esports_bot.");return json({ok:true});}
+  if(msg?.from?.username)await admin.from("telegram_accounts").update({telegram_username:msg.from.username,first_name:msg.from.first_name??null}).eq("chat_id",chatId);
   const start=txt.match(/^\/start\s+([a-f0-9]{40,80})$/i);
   if(start){
    const {data:link}=await admin.from("telegram_link_tokens").select("token,user_id,expires_at").eq("token",start[1]).gt("expires_at",new Date().toISOString()).maybeSingle();
@@ -271,6 +294,15 @@ Deno.serve(async(req)=>{
     else await send(bot,chatId,"Игровой профиль ARQON ещё не создан.",backMenu);
    }
    return json({ok:true});
+  }
+  if(txt.toLowerCase().startsWith("/duel")){
+   const duelParts=txt.split(" ").slice(1),rawName=duelParts[0]||"",username=rawName.startsWith("@")?rawName.slice(1):rawName,stake=Number(duelParts[1]);
+   if(!username||!Number.isSafeInteger(stake)||stake<10||stake>1000000){await send(bot,chatId,"Формат: <code>/duel @username 50</code>. Минимальная ставка — 10 койнов.");return json({ok:true});}
+   const {data:d,error}=await admin.rpc("telegram_shoot_action",{p_chat_id:chatId,p_action:"create",p_stake:stake,p_target_username:username});
+   if(error){await send(bot,chatId,"⚠️ "+esc(error.message));return json({ok:true});}
+   const challenge="⚔️ <b>ТЕБЯ ВЫЗВАЛИ НА SHOOT / SHIELD!</b>\\nСоперник: ARQON #"+d.creator_arqon_id+"\\nСтавка: <b>"+stake+" 🪙</b>\\nБанк: <b>"+(stake*2)+" 🪙</b>\\n\\nПринять вызов?";
+   const kb={inline_keyboard:[[{text:"✅ Принять дуэль",callback_data:"tgshoot:accept:"+d.id},{text:"❌ Отклонить",callback_data:"tgshoot:decline:"+d.id}]]};
+   await send(bot,String(d.target_chat_id),challenge,kb);await send(bot,chatId,"✅ Вызов отправлен игроку @"+esc(username)+". Твоя ставка "+stake+" 🪙 зарезервирована. Ждём подтверждения.",{inline_keyboard:[[{text:"Отменить вызов и вернуть ставку",callback_data:"tgshoot:cancel:"+d.id}]]});return json({ok:true});
   }
   const ticketReply=txt.match(/^\/ticket(?:@\w+)?\s+(\d+)\s+([\s\S]+)$/i);
   if(ticketReply){
