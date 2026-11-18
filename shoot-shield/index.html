@@ -120,7 +120,15 @@ function renderMatches(rows){
   const other=ownCreator?row.opponent_arqon_id:row.creator_arqon_id;
   const score=ownCreator?row.creator_score+' : '+row.opponent_score:row.opponent_score+' : '+row.creator_score;
   const card=document.createElement('div');card.className='lobby';
-  card.innerHTML='<div class="lobbytop"><strong>Матч #'+esc(row.id.slice(0,8))+'</strong><span class="stake">'+(row.status==='pending'?'ОЖИДАЕТ':row.status==='active'?'ИДЁТ':'ЗАВЕРШЁН')+'</span></div><div class="meta">Соперник: '+(other?'ARQON #'+esc(other):'ещё не вошёл')+' · ставка '+Number(row.stake)+' · счёт '+esc(score)+'</div>'+(row.status==='active'?'':'');
+  card.innerHTML='<div class="lobbytop"><strong>Матч #'+esc(row.id.slice(0,8))+'</strong><span class="stake">'+(row.status==='pending'?'ОЖИДАЕТ':row.status==='active'?'ИДЁТ':'ЗАВЕРШЁН')+'</span></div><div class="meta">Соперник: '+(other?'ARQON #'+esc(other):'ещё не вошёл')+' · ставка '+Number(row.stake)+' · счёт '+esc(score)+'</div>';
+  if(row.status==='pending'&&ownCreator&&!row.opponent_arqon_id){
+   const cancel=document.createElement('button');cancel.className='secondary';cancel.textContent='Отменить лобби и вернуть ставку';
+   cancel.onclick=async()=>{if(!confirm('Отменить лобби? Ставка вернётся на баланс.'))return;cancel.disabled=true;const {error}=await db.rpc('arqon_shoot_cancel_lobby',{p_duel_id:row.id});if(error){message(error.message||'Не удалось отменить лобби.');cancel.disabled=false;return;}message('Лобби отменено, ставка возвращена.','success');await refreshAll();};
+   card.append(cancel);
+  }
+  if(row.status==='active'){
+   const note=document.createElement('div');note.className='small';note.textContent='Соперник присоединился. Игровой раунд будет доступен в следующем обновлении интерфейса.';card.append(note);
+  }
   host.append(card);
  });
 }
