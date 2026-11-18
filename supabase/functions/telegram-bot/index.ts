@@ -23,6 +23,13 @@ async function linkedUser(admin:any,chatId:string){
  const {data:link}=await admin.from("telegram_accounts").select("user_id,telegram_username,first_name").eq("chat_id",chatId).maybeSingle();
  return link||null;
 }
+async function isBroadcastOwner(admin:any,chatId:string,telegramUsername?:string){
+ if(String(telegramUsername||"").toLowerCase()!=="kostkoteam")return false;
+ const {data:link}=await admin.from("telegram_accounts").select("telegram_username").eq("chat_id",chatId).maybeSingle();
+ if(String(link?.telegram_username||"").toLowerCase()!=="kostkoteam")return false;
+ const {data:admins,error}=await admin.rpc("get_support_admin_telegram_chats");
+ return !error&&(admins||[]).some((x:any)=>String(x.chat_id)===chatId);
+}
 async function renderPanel(bot:string,chatId:string,messageId:number,text:string,keyboard:any){
  try{await telegram(bot,"editMessageText",{chat_id:chatId,message_id:messageId,text,parse_mode:"HTML",disable_web_page_preview:true,reply_markup:keyboard})}
  catch{await send(bot,chatId,text,keyboard)}
@@ -250,6 +257,7 @@ Deno.serve(async(req)=>{
       const dashboard="🛡 <b>ПАНЕЛЬ ОРГАНИЗАТОРА ARQON</b>\n\nКоманд: <b>"+teams.length+"</b>\nИгроков в составах: <b>"+players+"</b>\nМатчей лиги: <b>"+matches.length+"</b>\nОжидают результата: <b>"+pending+"</b>\nОткрытых обращений: <b>"+openTickets+"</b>\n\nВыбери раздел управления.";
       await renderPanel(bot,callbackChatId,callback.message.message_id,dashboard,{inline_keyboard:[
        [{text:"🪙 Выдать ARQON Coins",callback_data:"org:coins"}],
+       ...((await isBroadcastOwner(admin,callbackChatId,(await linkedUser(admin,callbackChatId))?.telegram_username))?[[{text:"📣 Рассылка всем пользователям",callback_data:"org:broadcast"}]]:[]),
        [{text:"🛟 Обращения ("+openTickets+")",callback_data:"org:tickets"}],
        [{text:"🏆 Открыть лигу",callback_data:"league"}],
        [{text:"↻ Обновить сводку",callback_data:"org:overview"}],
@@ -257,6 +265,13 @@ Deno.serve(async(req)=>{
       ]});
      }else if(action==="org:coins"){
       await renderPanel(bot,callbackChatId,callback.message.message_id,"🪙 <b>ВЫДАЧА ARQON COINS</b>\n\nОтправь команду:\n<code>/givecoins @username 100</code>\n\nУкажи Telegram username игрока и количество монет. Игрок должен привязать Telegram к профилю ARQON.\n\nМожно выдать от 1 до 1 000 000 🪙. Каждая выдача записывается в историю транзакций.",{inline_keyboard:[[{text:"↩️ К панели",callback_data:"org:overview"}]]});
+     }else if(action==="org:broadcast"){
+      const owner=await isBroadcastOwner(admin,callbackChatId,(await linkedUser(admin,callbackChatId))?.telegram_username);
+      if(!owner){
+       await renderPanel(bot,callbackChatId,callback.message.message_id,"⛔ Рассылка доступна только владельцу бота.",{inline_keyboard:[[{text:"↩️ К панели",callback_data:"org:overview"}]]});
+      }else{
+       await renderPanel(bot,callbackChatId,callback.message.message_id,"📣 <b>РАССЫЛКА ПОЛЬЗОВАТЕЛЯМ ARQON</b>\n\nОтправь сообщение командой:\n<code>/broadcast Текст сообщения</code>\n\nСообщение получат все пользователи, привязавшие Telegram к профилю ARQON.",{inline_keyboard:[[{text:"↩️ К панели",callback_data:"org:overview"}]]});
+      }
      }else if(action==="org:tickets"){
       const {data:tickets,error}=await admin.from("support_tickets").select("id,arqon_id,subject,status,updated_at").neq("status","closed").order("updated_at",{ascending:false}).limit(8);
       if(error){
@@ -337,6 +352,26 @@ Deno.serve(async(req)=>{
     else await send(bot,chatId,"Игровой профиль ARQON ещё не создан.",backMenu);
    }
    return json({ok:true});
+  }
+  if(/^\/broadcast(?:@\w+)?(?:\s|$)/i.test(txt)){
+   const owner=await isBroadcastOwner(admin,chatId,msg?.from?.username);
+   if(!owner){await send(bot,chatId,"⛔ Эта команда доступна только владельцу бота.");return json({ok:true});}
+   const messageText=txt.replace(/^\/broadcast(?:@\w+)?/i,"").trim();
+   if(!messageText||messageText.length>3500){
+    await send(bot,chatId,"Формат: <code>/broadcast Текст сообщения</code>\nСообщение должно содержать от 1 до 3500 символов.");
+    return json({ok:true});
+   }
+   const {data:recipients,error}=await admin.from("telegram_accounts").select("chat_id").not("chat_id","is",null);
+   if(error){await send(bot,chatId,"⛔ Не удалось получить список пользователей для рассылки.");return json({ok:true});}
+   const unique=[...new Set((recipients||[]).map((x:any)=>String(x.chat_id||"")).filter((x:string)=>/^\d+$/.test(x)))];
+   let sent=0,failed=0;
+   const payload="📣 <b>ОБЪЯВЛЕНИЕ ARQON</b>\n\n"+esc(messageText);
+   for(const recipient of unique){
+    try{await send(bot,recipient,payload);sent++;}
+    catch(e){failed++;console.warn("Broadcast delivery failed",recipient,e);}
+   }
+   await send(bot,chatId,"✅ <b>РАССЫЛКА ЗАВЕРШЕНА</b>\nПолучателей: "+unique.length+"\nДоставлено: "+sent+"\nНе доставлено: "+failed);
+   return json({ok:true,sent,failed,total:unique.length});
   }
   if(/^\/givecoins(?:@\w+)?(?:\s|$)/i.test(txt)){
    const parts=txt.replace(/^\/givecoins(?:@\w+)?/i,"").trim().split(/\s+/);
