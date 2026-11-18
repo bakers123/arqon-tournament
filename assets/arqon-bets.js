@@ -29,7 +29,7 @@ async function loadMatches(){
 }
 async function loadAll(){
  const [eventResult,betResult]=await Promise.all([
-  db.from('arqon_bet_events').select('id,title,description,starts_at,status,live_match_id,arqon_bet_markets(id,title,market_type,min_stake,max_stake,status,winning_selection_id,arqon_bet_selections(id,label,selection_key,odds,pool_amount,is_active))').order('starts_at',{ascending:true}),
+  db.from('arqon_bet_events').select('id,title,description,starts_at,status,live_match_id,arqon_bet_markets(id,title,market_type,min_stake,max_stake,status,winning_selection_id,arqon_bet_selections!arqon_bet_selections_market_id_fkey(id,label,selection_key,odds,pool_amount,is_active))').order('starts_at',{ascending:true}),
   user?db.from('arqon_bets').select('id,event_id,market_id,selection_id,stake,odds_locked,potential_payout,status,created_at').eq('user_id',user.id).order('created_at',{ascending:false}).limit(60):Promise.resolve({data:[],error:null})
  ]);
  if(eventResult.error)throw eventResult.error;if(betResult.error)throw betResult.error;
