@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#09090d">
+<meta name="robots" content="noindex,follow">
+<title>ARQON SHOOT / SHIELD</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<style>
+:root{color-scheme:dark;--bg:#09090d;--panel:#15151d;--line:#30283f;--purple:#914cff;--muted:#a6a0b4;--green:#41d69a}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at top,#211139 0,transparent 42%),var(--bg);color:#f5f1ff;font:16px Rajdhani,Arial,sans-serif;min-height:100vh}
+main{width:min(1050px,100%);margin:auto;padding:22px 16px 60px}
+header{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:26px}
+a{color:#c5a8ff;text-decoration:none}a:hover{text-decoration:underline}
+.brand{font:900 20px Orbitron,Arial,sans-serif;letter-spacing:2px}.back{border:1px solid var(--line);padding:9px 13px;border-radius:9px}
+h1{font:900 clamp(24px,5vw,40px) Orbitron,Arial,sans-serif;margin:12px 0;color:#fff}
+.sub{color:var(--muted);margin-bottom:22px}
+.layout{display:grid;grid-template-columns:minmax(0,1fr) minmax(270px,.8fr);gap:16px}
+.panel{background:linear-gradient(160deg,#191622,#101016);border:1px solid var(--line);border-radius:15px;padding:18px;margin-bottom:16px;box-shadow:0 15px 45px #0005}
+h2{font:700 15px Orbitron,Arial,sans-serif;letter-spacing:1px;margin:0 0 15px}
+label{display:block;color:var(--muted);font-size:13px;margin-bottom:6px}
+input{width:100%;background:#0b0b11;border:1px solid #40364f;border-radius:9px;padding:13px;color:white;font:700 17px Rajdhani,Arial}
+button{border:0;border-radius:9px;padding:11px 15px;background:var(--purple);color:white;font:700 15px Rajdhani,Arial;cursor:pointer}
+button:disabled{opacity:.45;cursor:not-allowed}.secondary{background:#272230;border:1px solid #494052}.danger{background:#48202c}
+.formrow{display:flex;gap:10px;align-items:end}.formrow>div{flex:1}
+.balance{font-size:14px;color:var(--muted)}.balance strong{color:var(--green);font-size:20px}
+.lobby{border:1px solid #393044;background:#0e0d14;border-radius:12px;padding:14px;margin:10px 0}
+.lobbytop{display:flex;justify-content:space-between;gap:10px;align-items:center}.stake{font:900 22px Orbitron,Arial;color:#d9c1ff}
+.meta{color:var(--muted);font-size:13px;margin:7px 0 12px}.actions{display:flex;gap:8px;flex-wrap:wrap}
+.msg{padding:11px;border-radius:9px;margin:12px 0;display:none}.error{display:block;background:#421d29;color:#ffb8c4}.success{display:block;background:#12352a;color:#a7f5d0}
+.empty{color:var(--muted);padding:24px 5px;text-align:center}
+.overlay{display:none;position:fixed;inset:0;background:#000b;z-index:5;align-items:center;justify-content:center;padding:16px}
+.dialog{width:min(430px,100%);background:#171420;border:1px solid var(--purple);border-radius:15px;padding:20px;box-shadow:0 20px 80px #000}
+.dialog p{color:var(--muted);line-height:1.5}.dialog strong{color:white}.dialog .actions{margin-top:18px}
+.small{font-size:12px;color:var(--muted);line-height:1.5}
+@media(max-width:720px){.layout{grid-template-columns:1fr}.formrow{align-items:stretch;flex-direction:column}.formrow button{width:100%}header{align-items:flex-start}.brand{font-size:16px}}
+</style>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+<main>
+<header><div class="brand">ARQON <span style="color:#a978ff">SHOOT / SHIELD</span></div><a class="back" href="/">← На главную</a></header>
+<h1>Открытые лобби</h1>
+<div class="sub">Создай матч или займи свободное лобби. Первый до 3 очков забирает весь банк.</div>
+<div id="message" class="msg"></div>
+<div class="layout">
+<section>
+<div class="panel">
+<h2>СОЗДАТЬ ЛОББИ</h2>
+<div class="formrow"><div><label for="stake">Твоя ставка (минимум 10 ARQON Coins)</label><input id="stake" type="number" min="10" step="1" value="10"></div><button id="create">Создать лобби</button></div>
+<p class="small">Ставка резервируется сразу после создания. Второй игрок внесёт такую же сумму только после отдельного подтверждения входа.</p>
+</div>
+<div class="panel">
+<h2>МОИ МАТЧИ</h2><div id="myMatches" class="empty">Загрузка…</div>
+</div>
+</section>
+<aside class="panel">
+<h2>ДОСТУПНЫЕ ЛОББИ</h2>
+<div class="balance">Твой баланс: <strong id="balance">—</strong> ARQON Coins</div>
+<div id="lobbies" class="empty">Загрузка лобби…</div>
+<button id="refresh" class="secondary" style="width:100%">Обновить список</button>
+</aside>
+</div>
+</main>
+<div id="confirm" class="overlay" role="dialog" aria-modal="true">
+<div class="dialog">
+<h2>ПОДТВЕРЖДЕНИЕ ВХОДА</h2>
+<p id="confirmText"></p>
+<p>После подтверждения <strong id="confirmStake"></strong> ARQON Coins будут зарезервированы. В банке матча будет <strong id="confirmPot"></strong> ARQON Coins.</p>
+<div class="actions"><button id="confirmJoin">Подтвердить вход</button><button id="cancelJoin" class="secondary">Назад</button></div>
+</div>
+</div>
+<script>
+const SUPABASE_URL='https://uscnaqcvuwjrmkjyuklp.supabase.co';
+const SUPABASE_KEY='sb_publishable_oE2Bc1wPAcDt6HE8bOUj3Q_0-2FfIxB';
+const db=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+let me=null,profile=null,pendingLobby=null,busy=false;
+const $=id=>document.getElementById(id);
+function message(text,type){const el=$('message');el.textContent=text;el.className='msg '+(type||'error');}
+function clearMessage(){$('message').className='msg';}
+function esc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+async function init(){
+ const {data,error}=await db.auth.getSession();
+ if(error||!data.session){message('Войди в ARQON через Steam на главной странице, затем открой мини-игру снова.');$('lobbies').textContent='Нужен вход в аккаунт.';return;}
+ me=data.session.user;
+ const p=await db.from('profiles').select('arqon_id,display_name').eq('user_id',me.id).maybeSingle();
+ if(p.error||!p.data){message('Профиль ARQON не найден.');return;}
+ profile=p.data;
+ await refreshAll();
+}
+async function refreshAll(){
+ if(!profile)return;
+ clearMessage();
+ const [wallet,lobbies,matches]=await Promise.all([
+  db.from('arqon_coin_wallets').select('balance').eq('arqon_id',profile.arqon_id).maybeSingle(),
+  db.from('arqon_shoot_duels').select('id,creator_arqon_id,opponent_arqon_id,stake,status,round_no,creator_score,opponent_score,winner_arqon_id,created_at').eq('status','pending').is('opponent_arqon_id',null).order('created_at',{ascending:false}).limit(30),
+  db.from('arqon_shoot_duels').select('id,creator_arqon_id,opponent_arqon_id,stake,status,round_no,creator_score,opponent_score,winner_arqon_id,created_at').or('creator_arqon_id.eq.'+profile.arqon_id+',opponent_arqon_id.eq.'+profile.arqon_id).in('status',['pending','active','finished']).order('updated_at',{ascending:false}).limit(10)
+ ]);
+ if(wallet.error) $('balance').textContent='—'; else $('balance').textContent=Number(wallet.data?.balance||0).toLocaleString('ru-RU');
+ if(lobbies.error){$('lobbies').innerHTML='<div class="empty">Не удалось загрузить лобби. '+esc(lobbies.error.message)+'</div>';}else renderLobbies(lobbies.data||[]);
+ if(matches.error){$('myMatches').textContent='Не удалось загрузить матчи.';}else renderMatches(matches.data||[]);
+}
+function renderLobbies(rows){
+ const host=$('lobbies');host.replaceChildren();
+ const available=rows.filter(x=>x.creator_arqon_id!==profile.arqon_id);
+ if(!available.length){host.innerHTML='<div class="empty">Пока нет свободных лобби.<br>Создай первое!</div>';return;}
+ available.forEach(row=>{
+  const card=document.createElement('div');card.className='lobby';
+  card.innerHTML='<div class="lobbytop"><strong>Игрок ARQON #'+esc(row.creator_arqon_id)+'</strong><span class="stake">'+Number(row.stake).toLocaleString('ru-RU')+' 🪙</span></div><div class="meta">Общий банк: '+(Number(row.stake)*2).toLocaleString('ru-RU')+' Coins · создано '+new Date(row.created_at).toLocaleString('ru-RU')+'</div><div class="actions"><button type="button">Войти в лобби</button></div>';
+  card.querySelector('button').addEventListener('click',()=>openConfirm(row));
+  host.append(card);
+ });
+}
+function renderMatches(rows){
+ const host=$('myMatches');host.replaceChildren();
+ if(!rows.length){host.innerHTML='<div class="empty">У тебя пока нет матчей.</div>';return;}
+ rows.forEach(row=>{
+  const ownCreator=row.creator_arqon_id===profile.arqon_id;
+  const other=ownCreator?row.opponent_arqon_id:row.creator_arqon_id;
+  const score=ownCreator?row.creator_score+' : '+row.opponent_score:row.opponent_score+' : '+row.creator_score;
+  const card=document.createElement('div');card.className='lobby';
+  card.innerHTML='<div class="lobbytop"><strong>Матч #'+esc(row.id.slice(0,8))+'</strong><span class="stake">'+(row.status==='pending'?'ОЖИДАЕТ':row.status==='active'?'ИДЁТ':'ЗАВЕРШЁН')+'</span></div><div class="meta">Соперник: '+(other?'ARQON #'+esc(other):'ещё не вошёл')+' · ставка '+Number(row.stake)+' · счёт '+esc(score)+'</div>'+(row.status==='active'?'<a href="/shoot-shield/match/?id='+encodeURIComponent(row.id)+'">Открыть матч →</a>':'');
+  host.append(card);
+ });
+}
+function openConfirm(row){
+ pendingLobby=row;
+ $('confirmText').textContent='Ты собираешься войти в лобби игрока ARQON #'+row.creator_arqon_id+'.';
+ $('confirmStake').textContent=Number(row.stake).toLocaleString('ru-RU');
+ $('confirmPot').textContent=(Number(row.stake)*2).toLocaleString('ru-RU');
+ $('confirm').style.display='flex';
+}
+function closeConfirm(){$('confirm').style.display='none';pendingLobby=null;}
+$('cancelJoin').onclick=closeConfirm;
+$('confirm').addEventListener('click',e=>{if(e.target===$('confirm'))closeConfirm();});
+$('confirmJoin').onclick=async()=>{
+ if(!pendingLobby||busy)return;
+ busy=true;$('confirmJoin').disabled=true;
+ try{
+  const {error}=await db.rpc('arqon_shoot_accept',{p_duel_id:pendingLobby.id});
+  if(error)throw error;
+  closeConfirm();message('Ты вошёл в лобби! Матч создан.','success');await refreshAll();
+ }catch(e){message(e.message||'Не удалось войти. Возможно, лобби уже занято.');}
+ finally{busy=false;$('confirmJoin').disabled=false;}
+};
+$('create').onclick=async()=>{
+ if(busy)return;
+ const stake=Number($('stake').value);
+ if(!Number.isSafeInteger(stake)||stake<10){message('Минимальная ставка — 10 койнов. Укажи целое число.');return;}
+ busy=true;$('create').disabled=true;
+ try{
+  const {data,error}=await db.rpc('arqon_shoot_create',{p_opponent_arqon_id:null,p_stake:stake});
+  if(error)throw error;
+  message('Лобби создано! Оно появилось в общем списке.','success');await refreshAll();
+ }catch(e){message(e.message||'Не удалось создать лобби.');}
+ finally{busy=false;$('create').disabled=false;}
+};
+$('refresh').onclick=refreshAll;
+init();
+setInterval(()=>{if(profile&&!busy&&$('confirm').style.display!=='flex')refreshAll();},7000);
+</script>
+</body>
+</html>
