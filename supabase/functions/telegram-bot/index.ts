@@ -249,11 +249,14 @@ Deno.serve(async(req)=>{
       const openTickets=ticketResponse.data?.length??0;
       const dashboard="🛡 <b>ПАНЕЛЬ ОРГАНИЗАТОРА ARQON</b>\n\nКоманд: <b>"+teams.length+"</b>\nИгроков в составах: <b>"+players+"</b>\nМатчей лиги: <b>"+matches.length+"</b>\nОжидают результата: <b>"+pending+"</b>\nОткрытых обращений: <b>"+openTickets+"</b>\n\nВыбери раздел управления.";
       await renderPanel(bot,callbackChatId,callback.message.message_id,dashboard,{inline_keyboard:[
+       [{text:"🪙 Выдать ARQON Coins",callback_data:"org:coins"}],
        [{text:"🛟 Обращения ("+openTickets+")",callback_data:"org:tickets"}],
        [{text:"🏆 Открыть лигу",callback_data:"league"}],
        [{text:"↻ Обновить сводку",callback_data:"org:overview"}],
        [{text:"↩️ Главное меню",callback_data:"menu"}]
       ]});
+     }else if(action==="org:coins"){
+      await renderPanel(bot,callbackChatId,callback.message.message_id,"🪙 <b>ВЫДАЧА ARQON COINS</b>\n\nОтправь команду:\n<code>/givecoins @username 100</code>\n\nУкажи Telegram username игрока и количество монет. Игрок должен привязать Telegram к профилю ARQON.\n\nМожно выдать от 1 до 1 000 000 🪙. Каждая выдача записывается в историю транзакций.",{inline_keyboard:[[{text:"↩️ К панели",callback_data:"org:overview"}]]});
      }else if(action==="org:tickets"){
       const {data:tickets,error}=await admin.from("support_tickets").select("id,arqon_id,subject,status,updated_at").neq("status","closed").order("updated_at",{ascending:false}).limit(8);
       if(error){
@@ -333,6 +336,19 @@ Deno.serve(async(req)=>{
     if(profile?.arqon_id)await send(bot,chatId,"👤 <b>"+esc(profile.display_name||profile.steam_persona_name||"Мой профиль")+"</b> · ARQON #"+profile.arqon_id,{inline_keyboard:[[{text:"↗️ Открыть мой профиль на сайте",url:await getTelegramProfileUrl(admin,chatId)}],[{text:"↩️ Главное меню",callback_data:"menu"}]]});
     else await send(bot,chatId,"Игровой профиль ARQON ещё не создан.",backMenu);
    }
+   return json({ok:true});
+  }
+  if(/^\/givecoins(?:@\w+)?(?:\s|$)/i.test(txt)){
+   const parts=txt.replace(/^\/givecoins(?:@\w+)?/i,"").trim().split(/\s+/);
+   const username=(parts[0]||"").replace(/^@/,""),amount=Number(parts[1]);
+   if(!username||!Number.isSafeInteger(amount)||amount<1||amount>1000000||parts.length!==2){
+    await send(bot,chatId,"Формат: <code>/givecoins @username 100</code>\nКоличество — от 1 до 1 000 000 ARQON Coins. Команда доступна только организаторам.");
+    return json({ok:true});
+   }
+   const {data:d,error}=await admin.rpc("telegram_admin_grant_coins",{p_chat_id:chatId,p_username:username,p_amount:amount});
+   if(error){await send(bot,chatId,"⛔ "+esc(error.message||"Не удалось выдать койны."));return json({ok:true});}
+   await send(bot,chatId,"✅ <b>КОЙНЫ ВЫДАНЫ</b>\nИгрок: <b>"+esc(d.player_name)+"</b> · ARQON #"+d.arqon_id+"\nНачислено: <b>+"+d.amount+" 🪙</b>\nНовый баланс: <b>"+d.balance+" 🪙</b>");
+   try{await send(bot,String(d.target_chat_id),"🎁 <b>ТЕБЕ НАЧИСЛИЛИ ARQON COINS!</b>\nПолучено: <b>+"+d.amount+" 🪙</b>\nТекущий баланс: <b>"+d.balance+" 🪙</b>");}catch(e){console.warn("Coin grant notification failed",e);}
    return json({ok:true});
   }
   if(/^\/duel(?:@\w+)?(?:\s|$)/i.test(txt)){
