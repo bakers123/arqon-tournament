@@ -257,7 +257,7 @@ Deno.serve(async(req)=>{
       const dashboard="🛡 <b>ПАНЕЛЬ ОРГАНИЗАТОРА ARQON</b>\n\nКоманд: <b>"+teams.length+"</b>\nИгроков в составах: <b>"+players+"</b>\nМатчей лиги: <b>"+matches.length+"</b>\nОжидают результата: <b>"+pending+"</b>\nОткрытых обращений: <b>"+openTickets+"</b>\n\nВыбери раздел управления.";
       await renderPanel(bot,callbackChatId,callback.message.message_id,dashboard,{inline_keyboard:[
        [{text:"🪙 Выдать ARQON Coins",callback_data:"org:coins"}],
-       ...((await isBroadcastOwner(admin,callbackChatId,(await linkedUser(admin,callbackChatId))?.telegram_username))?[[{text:"📣 Рассылка всем пользователям",callback_data:"org:broadcast"}]]:[]),
+       ...((await isBroadcastOwner(admin,callbackChatId,(await linkedUser(admin,callbackChatId))?.telegram_username))?[[{text:"📣 Рассылка всем пользователям",callback_data:"org:broadcast"}],[{text:"👥 Список Telegram-пользователей",callback_data:"org:telegram_users"}]]:[]),
        [{text:"🛟 Обращения ("+openTickets+")",callback_data:"org:tickets"}],
        [{text:"🏆 Открыть лигу",callback_data:"league"}],
        [{text:"↻ Обновить сводку",callback_data:"org:overview"}],
@@ -271,6 +271,46 @@ Deno.serve(async(req)=>{
        await renderPanel(bot,callbackChatId,callback.message.message_id,"⛔ Рассылка доступна только владельцу бота.",{inline_keyboard:[[{text:"↩️ К панели",callback_data:"org:overview"}]]});
       }else{
        await renderPanel(bot,callbackChatId,callback.message.message_id,"📣 <b>РАССЫЛКА ПОЛЬЗОВАТЕЛЯМ ARQON</b>\n\nОтправь сообщение командой:\n<code>/broadcast Текст сообщения</code>\n\nСообщение получат все пользователи, привязавшие Telegram к профилю ARQON.",{inline_keyboard:[[{text:"↩️ К панели",callback_data:"org:overview"}]]});
+      }
+     }else if(action==="org:telegram_users"){
+      const owner=await isBroadcastOwner(admin,callbackChatId,(await linkedUser(admin,callbackChatId))?.telegram_username);
+      if(!owner){
+       await renderPanel(bot,callbackChatId,callback.message.message_id,"⛔ Список доступен только владельцу бота.",{inline_keyboard:[[{text:"↩️ К панели",callback_data:"org:overview"}]]});
+      }else{
+       await renderPanel(bot,callbackChatId,callback.message.message_id,"⏳ Собираю список подключённых пользователей…",{inline_keyboard:[[{text:"↩️ К панели",callback_data:"org:overview"}]]});
+       const accounts:any[]=[];
+       for(let offset=0;;offset+=1000){
+        const {data:batch,error}=await admin.from("telegram_accounts").select("user_id,chat_id,telegram_username,first_name").not("chat_id","is",null).order("linked_at",{ascending:true}).range(offset,offset+999);
+        if(error)throw error;
+        accounts.push(...(batch||[]));
+        if(!batch||batch.length<1000)break;
+       }
+       const userIds=[...new Set(accounts.map((x:any)=>String(x.user_id)).filter(Boolean))];
+       const profiles:any[]=[];
+       for(let offset=0;offset<userIds.length;offset+=500){
+        const {data:batch,error}=await admin.from("profiles").select("user_id,arqon_id,display_name,steam_persona_name").in("user_id",userIds.slice(offset,offset+500));
+        if(error)throw error;
+        profiles.push(...(batch||[]));
+       }
+       const byUser=new Map(profiles.map((p:any)=>[String(p.user_id),p]));
+       const rows=accounts.map((a:any)=>{
+        const p:any=byUser.get(String(a.user_id));
+        const who=a.telegram_username?"@"+String(a.telegram_username).replace(/^@/,""):"Без username ("+String(a.first_name||"пользователь").replace(/[<>]/g,"")+")";
+        const id=Number(p?.arqon_id);
+        const url=Number.isSafeInteger(id)&&id>0?SITE+"/players/profile/?id="+id:SITE+"/players/";
+        return "• "+esc(who)+" — <a href=\\""+url+"\\">"+(Number.isSafeInteger(id)&&id>0?"ARQON #"+id:"Профиль ARQON")+"</a>";
+       });
+       const header="👥 <b>ПОДКЛЮЧЁННЫЕ TELEGRAM-ПОЛЬЗОВАТЕЛИ</b>\\nВсего: <b>"+rows.length+"</b>\\n\\n";
+       if(!rows.length)await send(bot,callbackChatId,header+"Пока никто не подключил Telegram к ARQON.");
+       else{
+        let chunk=header;
+        for(const row of rows){
+         if((chunk+"\\n"+row).length>3700){await send(bot,callbackChatId,chunk);chunk="👥 <b>ПРОДОЛЖЕНИЕ СПИСКА</b>\\n\\n";}
+         chunk+=(chunk.endsWith("\\n\\n")?"":"\\n")+row;
+        }
+        if(chunk.trim())await send(bot,callbackChatId,chunk);
+       }
+       await send(bot,callbackChatId,"✅ Список сформирован. Ссылки ведут на профили ARQON.",{inline_keyboard:[[{text:"↩️ К панели",callback_data:"org:overview"}]]});
       }
      }else if(action==="org:tickets"){
       const {data:tickets,error}=await admin.from("support_tickets").select("id,arqon_id,subject,status,updated_at").neq("status","closed").order("updated_at",{ascending:false}).limit(8);
