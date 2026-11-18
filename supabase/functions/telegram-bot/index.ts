@@ -464,8 +464,8 @@ Deno.serve(async(req)=>{
   }
 
 
-   if(/^\/(nick|gamenick)(?:@\\w+)?(?:\\s|$)/i.test(txt)){
-    const match=txt.match(/^\/(nick|gamenick)(?:@\\w+)?(?:\\s+([\\s\\S]*))?$/i);
+   if(/^\/(nick|gamenick)(?:@\w+)?(?:\s|$)/i.test(txt)){
+    const match=txt.match(/^\/(nick|gamenick)(?:@\w+)?(?:\s+([\s\S]*))?$/i);
     const kind=(match?.[1]||"nick").toLowerCase(),value=(match?.[2]||"").trim();
     const field=kind==="nick"?"display_name":"game_nick";
     const fieldLabel=kind==="nick"?"имя профиля ARQON":"игровой ник";
@@ -476,7 +476,7 @@ Deno.serve(async(req)=>{
      await send(bot,chatId,"✏️ <b>ИЗМЕНЕНИЕ "+(field==="display_name"?"ИМЕНИ ПРОФИЛЯ":"ИГРОВОГО НИКА")+"</b>\n\nСейчас: <b>"+esc((field==="display_name"?profile?.display_name:profile?.game_nick)||"не указано")+"</b>\nОтправь:\n<code>"+(kind==="nick"?"/nick Новое имя":"/gamenick Новый игровой ник")+"</code>\n\nОт 2 до 32 символов.",{inline_keyboard:[[{text:"↗️ Открыть профиль",url:await getTelegramProfileUrl(admin,chatId)}],[{text:"↩️ Меню",callback_data:"menu"}]]});
      return json({ok:true});
     }
-    const normalized=value.replace(/\\s+/g," ").trim();
+    const normalized=value.replace(/\s+/g," ").trim();
     if(normalized.length<2||normalized.length>32||/[<>]/.test(normalized)){
      await send(bot,chatId,"⚠️ Ник должен содержать от 2 до 32 символов. Символы < и > использовать нельзя.");return json({ok:true});
     }
