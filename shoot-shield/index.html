@@ -18,7 +18,7 @@
 <script>
 const db=supabase.createClient('https://uscnaqcvuwjrmkjyuklp.supabase.co','sb_publishable_oE2Bc1wPAcDt6HE8bOUj3Q_0-2FfIxB');
 const $=id=>document.getElementById(id);let me=null,current=null,pendingLobby=null,selectedZone=0,pollHandle=null;
-const zones=[['Голова','🎯'],['Верх','🦺'],['Центр','✚'],['Низ','🛡️'],['Ноги','👢']];
+const zones=[['Голова','🎯'],['Тело','🛡️'],['Ноги','👢']];
 const safeCols='id,creator_arqon_id,opponent_arqon_id,stake,status,round_no,creator_score,opponent_score,winner_arqon_id,created_at,updated_at';
 function msg(t,bad=false){$('notice').textContent=t;$('notice').classList.remove('hidden');$('notice').style.borderColor=bad?'#80354a':'#49365e'}
 function err(e){msg(e&&e.message?e.message:String(e),true)}
