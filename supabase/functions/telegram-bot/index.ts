@@ -449,6 +449,35 @@ Deno.serve(async(req)=>{
    await showMenu(bot,chatId,admin);
    return json({ok:true});
   }
+
+   if(/^\/team(?:@\\w+)?$/i.test(txt)){await showMyTeam(bot,chatId,admin);return json({ok:true});}
+   if(/^\/team_create(?:@\\w+)?(?:\\s|$)/i.test(txt)){
+    const name=txt.replace(/^\/team_create(?:@\\w+)?/i,"").trim();
+    if(!name){await send(bot,chatId,"Формат: <code>/team_create Название команды</code>");return json({ok:true});}
+    try{const created=await telegramTeamAction(admin,chatId,"create",undefined,name);await send(bot,chatId,"✅ Команда <b>"+esc(created.name)+"</b> создана! Ты капитан.",{inline_keyboard:[[{text:"🧩 Управлять командой",callback_data:"myteam"}],[{text:"🌐 Страница команды",url:SITE+"/teams/profile/?id="+encodeURIComponent(created.id)}]]});}
+    catch(e){await send(bot,chatId,"⚠️ "+esc((e as Error)?.message||"Не удалось создать команду."));}
+    return json({ok:true});
+   }
+   if(/^\/team_invite(?:@\\w+)?(?:\\s|$)/i.test(txt)){
+    const targetId=Number(txt.replace(/^\/team_invite(?:@\\w+)?/i,"").trim());
+    if(!Number.isSafeInteger(targetId)||targetId<1){await send(bot,chatId,"Формат: <code>/team_invite ARQON_ID</code>");return json({ok:true});}
+    try{
+     const state=await getMyTeam(admin,chatId);if(!state.team)throw new Error("Сначала создай команду.");
+     const {data:target}=await admin.from("profiles").select("user_id").eq("arqon_id",targetId).eq("is_public",true).maybeSingle();
+     if(!target?.user_id)throw new Error("Игрок не найден или его профиль скрыт.");
+     const {data:tg}=await admin.from("telegram_accounts").select("chat_id").eq("user_id",target.user_id).order("linked_at",{ascending:false}).limit(1).maybeSingle();
+     if(!tg?.chat_id)throw new Error("Игрок должен подключить Telegram к ARQON.");
+     const result=await telegramTeamAction(admin,chatId,"invite",String(state.team.id),undefined,targetId);
+     await send(bot,String(tg.chat_id),"🎮 <b>ПРИГЛАШЕНИЕ В КОМАНДУ</b>\n\nКоманда: <b>"+esc(state.team.name)+"</b>\nКапитан: ARQON #"+state.profile.arqon_id+"\n\nПринять приглашение?",{inline_keyboard:[[{text:"✅ Принять",callback_data:"tm:accept:"+result.invitation_id},{text:"❌ Отклонить",callback_data:"tm:decline:"+result.invitation_id}]]});
+     await send(bot,chatId,"✅ Приглашение отправлено игроку ARQON #"+targetId+".");
+    }catch(e){await send(bot,chatId,"⚠️ "+esc((e as Error)?.message||"Не удалось отправить приглашение."));}
+    return json({ok:true});
+   }
+   if(/^\/team_leave(?:@\\w+)?$/i.test(txt)){
+    try{const state=await getMyTeam(admin,chatId);if(!state.team)throw new Error("Ты не состоишь в команде.");await telegramTeamAction(admin,chatId,"leave",String(state.team.id));await send(bot,chatId,"Ты покинул команду. Состав на сайте обновлён.");}
+    catch(e){await send(bot,chatId,"⚠️ "+esc((e as Error)?.message||"Не удалось выйти из команды."));}
+    return json({ok:true});
+   }
   if(/^\/profile(?:@\w+)?$/i.test(txt)){
    const link=await linkedUser(admin,chatId);
    if(!link){await send(bot,chatId,"👤 <b>МОЙ ПРОФИЛЬ ARQON</b>\n\nСначала подключи Telegram к аккаунту на сайте.",{inline_keyboard:[[{text:"🔗 Подключить аккаунт",url:SITE+"/"}],[{text:"↩️ Главное меню",callback_data:"menu"}]]})}
