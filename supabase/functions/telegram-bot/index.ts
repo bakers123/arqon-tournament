@@ -300,13 +300,13 @@ Deno.serve(async(req)=>{
         const url=Number.isSafeInteger(id)&&id>0?SITE+"/players/profile/?id="+id:SITE+"/players/";
         return "• "+esc(who)+" — <a href=\\""+url+"\\">"+(Number.isSafeInteger(id)&&id>0?"ARQON #"+id:"Профиль ARQON")+"</a>";
        });
-       const header="👥 <b>ПОДКЛЮЧЁННЫЕ TELEGRAM-ПОЛЬЗОВАТЕЛИ</b>\\nВсего: <b>"+rows.length+"</b>\\n\\n";
+       const header="👥 <b>ПОДКЛЮЧЁННЫЕ TELEGRAM-ПОЛЬЗОВАТЕЛИ</b>\nВсего: <b>"+rows.length+"</b>\n\n";
        if(!rows.length)await send(bot,callbackChatId,header+"Пока никто не подключил Telegram к ARQON.");
        else{
         let chunk=header;
         for(const row of rows){
-         if((chunk+"\\n"+row).length>3700){await send(bot,callbackChatId,chunk);chunk="👥 <b>ПРОДОЛЖЕНИЕ СПИСКА</b>\\n\\n";}
-         chunk+=(chunk.endsWith("\\n\\n")?"":"\\n")+row;
+         if((chunk+"\n"+row).length>3700){await send(bot,callbackChatId,chunk);chunk="👥 <b>ПРОДОЛЖЕНИЕ СПИСКА</b>\n\n";}
+         chunk+=(chunk.endsWith("\n\n")?"":"\n")+row;
         }
         if(chunk.trim())await send(bot,callbackChatId,chunk);
        }
