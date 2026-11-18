@@ -113,6 +113,7 @@ async function setBotCommands(token:string){
   {command:"profile",description:"Открыть мой профиль ARQON"},
   {command:"nick",description:"Изменить имя профиля ARQON"},
   {command:"gamenick",description:"Изменить игровой ник CS2 / Dota 2"},
+  {command:"pay",description:"Перевести ARQON Coins игроку"},
   {command:"team",description:"Управление моей командой"},
   {command:"team_create",description:"Создать команду"},
   {command:"team_invite",description:"Пригласить игрока по ARQON ID"},
@@ -464,7 +465,27 @@ Deno.serve(async(req)=>{
   }
 
 
-   if(/^\/(nick|gamenick)(?:@\w+)?(?:\s|$)/i.test(txt)){
+      if(/^\/pay(?:@\\w+)?(?:\\s|$)/i.test(txt)){
+    const match=txt.match(/^\/pay(?:@\\w+)?(?:\\s+@?([a-z0-9_]{5,32})\\s+(\\d+))?$/i);
+    if(!match?.[1]||!match?.[2]){
+     await send(bot,chatId,"💸 <b>ПЕРЕВОД ARQON COINS</b>\n\nФормат команды:\n<code>/pay @username 100</code>\n\nУкажи Telegram username получателя и количество койнов. Перевести можно от 1 до 1 000 000 🪙.");
+     return json({ok:true});
+    }
+    const amount=Number(match[2]),username=match[1].replace(/^@/,"");
+    if(!Number.isSafeInteger(amount)||amount<1||amount>1000000){
+     await send(bot,chatId,"⚠️ Сумма должна быть целым числом от 1 до 1 000 000 ARQON Coins.");return json({ok:true});
+    }
+    const {data:result,error}=await admin.rpc("telegram_transfer_arqon_coins",{p_chat_id:chatId,p_recipient_username:username,p_amount:amount});
+    if(error){
+     const messages:any={telegram_not_linked:"Сначала подключи Telegram к своему аккаунту ARQON.",profile_required:"Профиль ARQON не найден. Сначала создай его на сайте.",pay_amount_invalid:"Сумма должна быть от 1 до 1 000 000 койнов.",pay_username_invalid:"Укажи корректный Telegram username.",pay_recipient_not_found:"Получатель не найден. Он должен привязать Telegram к профилю ARQON.",pay_recipient_ambiguous:"Найдено несколько профилей с таким Telegram username. Перевод отменён.",pay_self_transfer:"Нельзя переводить койны самому себе.",pay_insufficient_funds:"Недостаточно ARQON Coins на балансе."};
+     await send(bot,chatId,"⚠️ "+esc(messages[error.message]||error.message||"Не удалось выполнить перевод."));return json({ok:true});
+    }
+    await send(bot,chatId,"✅ <b>ПЕРЕВОД ВЫПОЛНЕН</b>\n\nТы отправил: <b>"+Number(result.amount)+" 🪙</b>\nПолучатель: <b>"+esc(result.recipient_name)+"</b> (@"+esc(result.recipient_username)+") · ARQON #"+result.recipient_arqon_id+"\nТвой новый баланс: <b>"+Number(result.sender_balance)+" 🪙</b>",{inline_keyboard:[[{text:"↗️ Мой профиль",url:SITE+"/players/profile/?id="+result.sender_arqon_id}]]});
+    try{await send(bot,String(result.recipient_chat_id),"💰 <b>ТЕБЕ ПЕРЕВЕЛИ ARQON COINS</b>\n\nОтправитель: <b>"+esc(result.sender_name)+"</b> · ARQON #"+result.sender_arqon_id+"\nПолучено: <b>"+Number(result.amount)+" 🪙</b>\nТвой новый баланс: <b>"+Number(result.recipient_balance)+" 🪙</b>",{inline_keyboard:[[{text:"↗️ Мой профиль",url:SITE+"/players/profile/?id="+result.recipient_arqon_id}]]});}
+    catch(e){console.warn("ARQON coin transfer recipient notification failed",e);}
+    return json({ok:true});
+   }
+if(/^\/(nick|gamenick)(?:@\w+)?(?:\s|$)/i.test(txt)){
     const match=txt.match(/^\/(nick|gamenick)(?:@\w+)?(?:\s+([\s\S]*))?$/i);
     const kind=(match?.[1]||"nick").toLowerCase(),value=(match?.[2]||"").trim();
     const field=kind==="nick"?"display_name":"game_nick";
