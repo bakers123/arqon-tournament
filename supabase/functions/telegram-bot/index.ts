@@ -13,6 +13,13 @@ const menuMarkup=(isAdmin=false,profileUrl=SITE+"/players/")=>({inline_keyboard:
  ...(isAdmin?[[{text:"🛡 Панель организатора",callback_data:"organizer"}]]:[])
 ]});
 const backMenu={inline_keyboard:[[{text:"↩️ Главное меню",callback_data:"menu"}]]};
+function shootRolePrompt(round:number,playerId:number,creatorId:number){
+ const attackerId=round%2===1?creatorId:undefined;
+ const isAttacking=round%2===1?Number(playerId)===Number(creatorId):Number(playerId)!==Number(creatorId);
+ return isAttacking
+  ?"⚔️ <b>ТЫ АТАКУЕШЬ</b>\nВыбери зону, куда будешь стрелять."
+  :"🛡️ <b>ТЫ ЗАЩИЩАЕШЬСЯ</b>\nВыбери зону, куда поставишь щит.";
+}
 async function linkedUser(admin:any,chatId:string){
  const {data:link}=await admin.from("telegram_accounts").select("user_id,telegram_username,first_name").eq("chat_id",chatId).maybeSingle();
  return link||null;
@@ -105,7 +112,7 @@ Deno.serve(async(req)=>{
       }else if(parts[1]==="accept"||parts[1]==="decline"){
        const {data:d,error}=await admin.rpc("telegram_shoot_action",{p_chat_id:callbackChatId,p_action:parts[1],p_duel_id:parts[2]});if(error)throw error;
        if(parts[1]==="decline"){await send(bot,callbackChatId,"Вызов отклонён. Ставка создателя возвращена.");await send(bot,String(d.creator_chat_id),"Игрок отклонил дуэль. Ставка возвращена.");}
-       else{const text="🎯 <b>SHOOT / SHIELD — МАТЧ НАЧАЛСЯ</b>\nСтавка каждого: <b>"+d.stake+" 🪙</b> · Банк: <b>"+(2*d.stake)+" 🪙</b>\nПервый до 3 очков. Выбирай зону:";const kb={inline_keyboard:[[{text:"🎯 Голова",callback_data:"tgshoot:zone:"+d.id+":1"},{text:"🛡️ Тело",callback_data:"tgshoot:zone:"+d.id+":2"},{text:"👢 Ноги",callback_data:"tgshoot:zone:"+d.id+":3"}],[{text:"💰 Баланс",callback_data:"tgshoot:balance"}]]};await send(bot,String(d.creator_chat_id),text,kb);await send(bot,String(d.opponent_chat_id),text,kb);}
+       else{const base="🎯 <b>SHOOT / SHIELD — МАТЧ НАЧАЛСЯ</b>\nСтавка каждого: <b>"+d.stake+" 🪙</b> · Банк: <b>"+(2*d.stake)+" 🪙</b>\nПервый до 3 очков.\n\n";const kb={inline_keyboard:[[{text:"🎯 Голова",callback_data:"tgshoot:zone:"+d.id+":1"},{text:"🛡️ Тело",callback_data:"tgshoot:zone:"+d.id+":2"},{text:"👢 Ноги",callback_data:"tgshoot:zone:"+d.id+":3"}],[{text:"💰 Баланс",callback_data:"tgshoot:balance"}]]};await send(bot,String(d.creator_chat_id),base+shootRolePrompt(1,d.creator_arqon_id,d.creator_arqon_id),kb);await send(bot,String(d.opponent_chat_id),base+shootRolePrompt(1,d.opponent_arqon_id,d.creator_arqon_id),kb);}
       }else if(parts[1]==="zone"){
        const duelId=parts[2],zone=Number(parts[3]);const {data:d,error}=await admin.rpc("telegram_shoot_action",{p_chat_id:callbackChatId,p_action:"move",p_duel_id:duelId,p_zone:zone});if(error)throw error;
        if(d.status==="waiting")await send(bot,callbackChatId,"✅ Выбор принят и скрыт. Ждём ход соперника.");
@@ -122,9 +129,9 @@ Deno.serve(async(req)=>{
          const rematchKb=(opponentId:number)=>({inline_keyboard:[[{text:"🔁 Реванш ("+d.stake+" 🪙)",callback_data:"tgshoot:rematch:"+opponentId+":"+d.stake}],[{text:"💰 Баланс",callback_data:"tgshoot:balance"},{text:"↩️ Главное меню",callback_data:"menu"}]]});
          await send(bot,String(d.creator_chat_id),finalText,rematchKb(d.opponent_arqon_id));await send(bot,String(d.opponent_chat_id),finalText,rematchKb(d.creator_arqon_id));
         }else{
-         const nextText=result+"\n\nСледующий раунд — выбирай зону:";
+         const nextRound=Number(d.round)+1;const nextBase=result+"\n\n";const creatorNext=nextBase+shootRolePrompt(nextRound,d.creator_arqon_id,d.creator_arqon_id);const opponentNext=nextBase+shootRolePrompt(nextRound,d.opponent_arqon_id,d.creator_arqon_id);
          const kb={inline_keyboard:[[{text:"🎯 Голова",callback_data:"tgshoot:zone:"+duelId+":1"},{text:"🛡️ Тело",callback_data:"tgshoot:zone:"+duelId+":2"},{text:"👢 Ноги",callback_data:"tgshoot:zone:"+duelId+":3"}],[{text:"💰 Баланс",callback_data:"tgshoot:balance"}]]};
-         await send(bot,String(d.creator_chat_id),nextText,kb);await send(bot,String(d.opponent_chat_id),nextText,kb);
+         await send(bot,String(d.creator_chat_id),creatorNext,kb);await send(bot,String(d.opponent_chat_id),opponentNext,kb);
         }
        }
       }
