@@ -511,7 +511,7 @@ async function boot(){
  $('login-panel').classList.add('hidden');$('public-panel').classList.remove('hidden');$('editor-panel').classList.add('hidden');$('judge-panel').classList.add('hidden');
  if(admin()){$('public-panel').classList.add('hidden');$('editor-panel').classList.remove('hidden');initAdminTabs();$('editor-panel').querySelector('.admin-tabs').classList.remove('hidden');$('create-judge').closest('.panel').classList.toggle('hidden',!['owner','admin'].includes(role));$('admin-tab-judgeAccount').classList.toggle('hidden',!['owner','admin'].includes(role));$('admin-tab-judges').classList.toggle('hidden',role==='bracket_editor');await loadDocs()}
  else if(role==='judge'){$('public-panel').classList.add('hidden');$('judge-panel').classList.remove('hidden');await loadDocs()}
- else{role=null;await loadDocs()}
+ else{role=null;try{await loadDocs()}catch(e){console.error('Public bracket load failed',e);$('public-empty').textContent='Не удалось загрузить опубликованную сетку: '+(e?.message||'ошибка загрузки');$('public-empty').classList.remove('hidden')}}
 }
 $('service-entry').onclick=e=>{e.preventDefault();$('login-panel').classList.toggle('hidden');$('login-name').focus()};
 $('password-login').onclick=async()=>{const name=$('login-name').value.trim(),password=$('login-password').value;if(!name){say('login-message','Укажи email или логин судьи.','error');return}const email=name.includes('@')?name.toLowerCase():name.toLowerCase()+'@arqon-esports.ru';const {error}=await sb.auth.signInWithPassword({email,password});if(error){say('login-message','Не удалось войти: '+error.message,'error');return}await boot()};
