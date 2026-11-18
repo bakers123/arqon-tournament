@@ -1470,19 +1470,10 @@
   <section id="tab-teams" class="hidden"><div class="portal-heading"><div class="home-kicker">TEAM HUB</div><h1 class="home-title">КОМАНДЫ <span>ARQON</span></h1><p class="home-lead">Профили команд, положение в лиге, составы и история встреч.</p></div><div id="team-list" class="portal-grid"><div class="home-data-card">Загружаем команды…</div></div><div id="team-detail" class="arqon-hub-panel hidden"></div></section>
   <section id="tab-history" class="hidden"><div class="portal-heading"><div class="home-kicker">MATCH ARCHIVE</div><h1 class="home-title">ИСТОРИЯ <span>МАТЧЕЙ</span></h1><p class="home-lead">Архив сыгранных матчей ARQON: результаты, технические поражения и история команд.</p></div><div class="arqon-hub-panel"><div class="arqon-history-toolbar"><input id="history-search" placeholder="Поиск по команде или номеру матча…" aria-label="Поиск матчей" oninput="renderHistory()"><select id="history-filter" aria-label="Фильтр результатов" onchange="renderHistory()"><option value="all">Все результаты</option><option value="normal">Обычные матчи</option><option value="tech">Технические матчи</option></select></div><div id="history-count" class="hint"></div><div id="history-list" class="arqon-match-list"><div class="home-data-card">Загружаем историю…</div></div></div></section>
 
-  <!-- ВКЛАДКА СЕТКА -->
+  <!-- ВКЛАДКА СЕТКА: показывает опубликованные документы конструктора -->
   <section id="tab-bracket" class="hidden">
-    <div class="portal-heading"><div class="home-kicker">ARQON COMPETITIVE</div><h2 class="home-title">ТУРНИРНАЯ СЕТКА ARQON</h2><p class="home-lead">Сетка киберспортивных турниров ARQON по CS2 и Dota 2: участники, пары матчей и путь команд к финалу.</p></div>
-    <div class="card" style="display: flex; justify-content: space-between; align-items: center;">
-      <div id="bracket-info" class="hint" style="margin: 0;"></div>
-      <button class="btn" id="show-auth-btn" onclick="openAuthScreen()">🎮 Я игрок (Вход)</button>
-    </div>
-    <div class="bracket-wrap">
-      <div id="bracket" class="bracket"></div>
-    </div>
-    <div id="bracket-empty" class="empty">
-      Сетка пуста. Турнир ещё не сгенерирован.
-    </div>
+    <div class="portal-heading"><div class="home-kicker">ARQON COMPETITIVE</div><h2 class="home-title">ТУРНИРНАЯ СЕТКА ARQON</h2><p class="home-lead">Опубликованные сетки турниров ARQON. Обновления из конструктора появляются здесь после публикации.</p></div>
+    <iframe id="published-bracket-frame" title="Опубликованная турнирная сетка ARQON" src="/bracket-builder/?view=public&amp;embed=1" loading="lazy" style="display:block;width:100%;height: min(1100px, 85vh);min-height:760px;border:0;border-radius:14px;background:#09090d" referrerpolicy="strict-origin-when-cross-origin"></iframe>
   </section>
 
   <!-- ВКЛАДКА НОВОСТИ -->
@@ -2950,11 +2941,8 @@ function switchTab(tab, updateUrl = true) {
   }
 
   if (tab === 'bracket') {
-    if (state.bracket && state.bracket.type === 'double') {
-      renderDoubleBracket();
-    } else {
-      renderBracket();
-    }
+    const frame = document.getElementById('published-bracket-frame');
+    if (frame) frame.src = '/bracket-builder/?view=public&embed=1&refresh=' + Date.now();
   }
   if (tab === 'tournaments') loadTournamentHub();
   if (tab === 'players') loadPlayerHub();
