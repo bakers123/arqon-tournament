@@ -1,0 +1,1 @@
+alter publication supabase_realtime add table public.arqon_bet_events, public.arqon_bet_markets, public.arqon_bet_selections, public.arqon_bets;
