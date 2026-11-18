@@ -97,6 +97,13 @@
 .placement-row{display:grid;grid-template-columns:26px 75px minmax(0,1fr);gap:9px;align-items:center;padding:8px 0;border-bottom:1px solid #ffffff12;font-size:13px}
 .placement-row strong{overflow-wrap:anywhere;text-align:right;color:#e8ddff}
 @media(max-width:600px){.bracket-team-list{grid-template-columns:1fr}.placement-row{grid-template-columns:24px 64px minmax(0,1fr)}}
+body.embed .shell{max-width:none;padding:0}
+body.embed header.top{display:none}
+body.embed #public-panel{display:none}
+body.embed .canvas-shell{height:calc(100vh - 40px);min-height:700px;border-radius:0}
+body.embed .layout{grid-template-columns:1fr}
+body.embed .side-panel{display:none!important}
+@media(max-width:620px){body.embed .canvas-shell{height:78vh;min-height:560px}}
 </style></head>
 <body>
 <div class="shell">
@@ -495,7 +502,10 @@ function initAdminTabs(){
  editor._activateAdminTab=activate;activate('builder');
 }
 async function boot(){
- const {data:s,error}=await sb.auth.getSession();if(error)console.warn(error);session=s?.session||null;
+ const params=new URLSearchParams(location.search);
+ const forcePublicView=params.get('view')==='public';
+ document.body.classList.toggle('embed',params.get('embed')==='1');
+ const {data:s,error}=forcePublicView?{data:{session:null},error:null}:await sb.auth.getSession();if(error)console.warn(error);session=s?.session||null;
  if(session?.user){const {data:r,error:re}=await sb.rpc('current_organizer_role');if(re)console.warn(re);role=r||null}
  $('logout-btn').classList.toggle('hidden',!session);$('role-label').textContent=role==='judge'?'Судья':admin()?'Организатор':'Публичная сетка';
  $('login-panel').classList.add('hidden');$('public-panel').classList.remove('hidden');$('editor-panel').classList.add('hidden');$('judge-panel').classList.add('hidden');
