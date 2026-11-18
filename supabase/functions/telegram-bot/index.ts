@@ -14,7 +14,6 @@ const menuMarkup=(isAdmin=false,profileUrl=SITE+"/players/")=>({inline_keyboard:
 ]});
 const backMenu={inline_keyboard:[[{text:"↩️ Главное меню",callback_data:"menu"}]]};
 function shootRolePrompt(round:number,playerId:number,creatorId:number){
- const attackerId=round%2===1?creatorId:undefined;
  const isAttacking=round%2===1?Number(playerId)===Number(creatorId):Number(playerId)!==Number(creatorId);
  return isAttacking
   ?"⚔️ <b>ТЫ АТАКУЕШЬ</b>\nВыбери зону, куда будешь стрелять."
