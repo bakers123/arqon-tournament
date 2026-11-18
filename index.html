@@ -1014,7 +1014,7 @@
   </div>
   <nav>
     <button data-tab="home" class="active">Главная</button>
-    <button data-tab="bracket">Сетка</button>
+    <button type="button" onclick="window.location.href='/bracket/'">Сетка</button>
     <button data-tab="tournaments">Турниры</button>
     <button data-tab="players">Игроки</button>
     <button type="button" onclick="window.location.href='/achievements/'">🏅 Достижения</button>
@@ -4293,7 +4293,7 @@ function closeInfoModal() {
 function init() {
   setupArqonTwitch();
   loadHomeHighlights();
-  document.querySelectorAll('nav button').forEach(b => b.onclick = () => switchTab(b.dataset.tab));
+  document.querySelectorAll('nav button[data-tab]').forEach(b => b.onclick = () => switchTab(b.dataset.tab));
   const playerSearch = document.getElementById('player-search'); if (playerSearch) playerSearch.addEventListener('input', () => { renderPlayerCards(); renderSteamRegisteredCards(); });
   document.querySelectorAll('[data-sub]').forEach(b => b.onclick = () => switchSubTab(b.dataset.sub));
 
