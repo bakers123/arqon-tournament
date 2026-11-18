@@ -2936,11 +2936,12 @@ function switchTab(tab, updateUrl = true) {
     partners: document.getElementById('tab-partners')
   };
 
+  const wasBracketVisible = !!sections.bracket && !sections.bracket.classList.contains('hidden');
   for (const key in sections) {
     if (sections[key]) sections[key].classList.toggle('hidden', tab !== key);
   }
 
-  if (tab === 'bracket') {
+  if (tab === 'bracket' && !wasBracketVisible) {
     const frame = document.getElementById('published-bracket-frame');
     if (frame) frame.src = '/bracket-builder/?view=public&embed=1&refresh=' + Date.now();
   }
