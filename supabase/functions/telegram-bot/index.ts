@@ -21,7 +21,7 @@ function shootRolePrompt(round:number,playerId:number,creatorId:number){
   :"🛡️ <b>ТЫ ЗАЩИЩАЕШЬСЯ</b>\nВыбери зону, куда поставишь щит.";
 }
 async function linkedUser(admin:any,chatId:string){
- const {data:link}=await admin.from("telegram_accounts").select("user_id,telegram_username,first_name").eq("chat_id",chatId).maybeSingle();
+ const {data:link}=await admin.from("telegram_accounts").select("user_id,telegram_username,first_name").eq("chat_id",chatId).order("linked_at",{ascending:false}).limit(1).maybeSingle();
  return link||null;
 }
 async function isBroadcastOwner(admin:any,chatId:string,telegramUsername?:string){
