@@ -108,14 +108,22 @@ function renderAdmin(){
     save.type='button';save.addEventListener('click',async()=>{save.disabled=true;try{await rpc('update_arqon_bet_odds',{p_selection_id:s.id,p_odds:Number(input.value)});say('Коэффициент обновлён.');await loadAll()}catch(e){say('Не удалось обновить кэф: '+e.message,true);save.disabled=false}});
     row.append(label,input,save);section.append(row);
    });
-   if(['open','closed'].includes(market.status)){
+   if(['open','closed','settled'].includes(market.status)){
     const actions=el('div','bet-admin-actions'),winner=document.createElement('select');winner.add(new Option('Выбери выигравший исход',''));(market.arqon_bet_selections||[]).forEach(s=>winner.add(new Option(s.label,s.id)));
-    const settle=el('button','btn','Рассчитать рынок'),voidBtn=el('button','btn secondary','Отменить и вернуть ставки'),auto=el('button','btn secondary','Автопересчитать кэфы');
-    settle.type=voidBtn.type=auto.type='button';
-    settle.addEventListener('click',async()=>{if(!winner.value){say('Выбери выигравший исход.',true);return}if(!confirm('Рассчитать рынок и начислить выигрыши?'))return;try{await rpc('settle_arqon_bet_market',{p_market_id:market.id,p_winning_selection_id:winner.value});say('Рынок рассчитан, выигрыши начислены.');await loadAll()}catch(e){say('Ошибка расчёта: '+e.message,true)}});
-    voidBtn.addEventListener('click',async()=>{if(!confirm('Отменить рынок и вернуть ставки игрокам?'))return;try{await rpc('void_arqon_bet_market',{p_market_id:market.id});say('Рынок отменён, ставки возвращены.');await loadAll()}catch(e){say('Ошибка возврата: '+e.message,true)}});
-    auto.addEventListener('click',async()=>{try{await rpc('recalculate_arqon_bet_odds',{p_market_id:market.id});say('Коэффициенты пересчитаны по распределению ставок.');await loadAll()}catch(e){say('Автопересчёт не выполнен: '+e.message,true)}});
-    actions.append(winner,settle,voidBtn,auto);section.append(actions);
+    if(market.status==='settled'&&market.winning_selection_id)winner.value=market.winning_selection_id;
+    if(market.status==='settled'){
+     const correct=el('button','btn secondary','Исправить результат');correct.type='button';
+     correct.addEventListener('click',async()=>{if(!winner.value){say('Выбери правильный исход.',true);return}if(!confirm('Исправить результат? Система пересчитает выплаты. Если игрок уже потратил выигрыш, операция будет безопасно отклонена.'))return;try{await rpc('correct_arqon_bet_market_result',{p_market_id:market.id,p_winning_selection_id:winner.value});say('Результат исправлен, балансы и ставки пересчитаны.');await loadAll()}catch(e){say('Не удалось исправить результат: '+e.message,true)}});
+     actions.append(winner,correct);
+    }else{
+     const settle=el('button','btn','Рассчитать рынок'),voidBtn=el('button','btn secondary','Отменить и вернуть ставки'),auto=el('button','btn secondary','Автопересчитать кэфы');
+     settle.type=voidBtn.type=auto.type='button';
+     settle.addEventListener('click',async()=>{if(!winner.value){say('Выбери выигравший исход.',true);return}if(!confirm('Рассчитать рынок и начислить выигрыши?'))return;try{await rpc('settle_arqon_bet_market',{p_market_id:market.id,p_winning_selection_id:winner.value});say('Рынок рассчитан, выигрыши начислены.');await loadAll()}catch(e){say('Ошибка расчёта: '+e.message,true)}});
+     voidBtn.addEventListener('click',async()=>{if(!confirm('Отменить рынок и вернуть ставки игрокам?'))return;try{await rpc('void_arqon_bet_market',{p_market_id:market.id});say('Рынок отменён, ставки возвращены.');await loadAll()}catch(e){say('Ошибка возврата: '+e.message,true)}});
+     auto.addEventListener('click',async()=>{try{await rpc('recalculate_arqon_bet_odds',{p_market_id:market.id});say('Коэффициенты пересчитаны по распределению ставок.');await loadAll()}catch(e){say('Автопересчёт не выполнен: '+e.message,true)}});
+     actions.append(winner,settle,voidBtn,auto);
+    }
+    section.append(actions);
    }
    item.append(section);
   });
