@@ -466,7 +466,7 @@ Deno.serve(async(req)=>{
 
 
       if(/^\/pay(?:@\w+)?(?:\s|$)/i.test(txt)){
-    const match=txt.match(/^\/pay(?:@\w+)?(?:\s+@?([a-z0-9_]{5,32})\s+(\\d+))?$/i);
+    const match=txt.match(/^\/pay(?:@\w+)?(?:\s+@?([a-z0-9_]{5,32})\s+(\d+))?$/i);
     if(!match?.[1]||!match?.[2]){
      await send(bot,chatId,"💸 <b>ПЕРЕВОД ARQON COINS</b>\n\nФормат команды:\n<code>/pay @username 100</code>\n\nУкажи Telegram username получателя и количество койнов. Перевести можно от 1 до 1 000 000 🪙.");
      return json({ok:true});
