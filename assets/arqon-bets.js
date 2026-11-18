@@ -25,15 +25,24 @@ async function init(){
  }catch(e){say('Не удалось загрузить ARQON Bets: '+e.message,true);$('bets-events').replaceChildren(el('div','empty','Не удалось загрузить ставки. Обнови страницу или сообщи администрации.'))}
 }
 async function loadMatches(){
- const {data,error}=await db.from('live_matches').select('id,title,team1,team2,starts_at,status').order('starts_at',{ascending:true});if(error)throw error;matches=data||[];
+ const {data,error}=await db.from('live_matches').select('id,title,team1,team2,starts_at,status').not('starts_at','is',null).order('starts_at',{ascending:true});
+ if(error)throw error;
+ matches=(data||[]).filter(m=>m.status==='scheduled'&&new Date(m.starts_at).getTime()>Date.now());
 }
 async function loadAll(){
- const [eventResult,betResult]=await Promise.all([
-  db.from('arqon_bet_events').select('id,title,description,starts_at,status,live_match_id,arqon_bet_markets(id,title,market_type,min_stake,max_stake,status,winning_selection_id,arqon_bet_selections!arqon_bet_selections_market_id_fkey(id,label,selection_key,odds,pool_amount,is_active))').order('starts_at',{ascending:true}),
+ // Load each table independently: PostgREST has two FK paths between markets and selections.
+ const [eventResult,marketResult,selectionResult,betResult]=await Promise.all([
+  db.from('arqon_bet_events').select('id,title,description,starts_at,status,live_match_id').order('starts_at',{ascending:true}),
+  db.from('arqon_bet_markets').select('id,event_id,title,market_type,min_stake,max_stake,status,winning_selection_id'),
+  db.from('arqon_bet_selections').select('id,market_id,label,selection_key,odds,pool_amount,is_active'),
   user?db.from('arqon_bets').select('id,event_id,market_id,selection_id,stake,odds_locked,potential_payout,status,created_at').eq('user_id',user.id).order('created_at',{ascending:false}).limit(60):Promise.resolve({data:[],error:null})
  ]);
- if(eventResult.error)throw eventResult.error;if(betResult.error)throw betResult.error;
- events=eventResult.data||[];bets=betResult.data||[];
+ for(const result of [eventResult,marketResult,selectionResult,betResult])if(result.error)throw result.error;
+ const marketsByEvent=new Map(),selectionsByMarket=new Map();
+ (selectionResult.data||[]).forEach(selection=>{if(!selectionsByMarket.has(selection.market_id))selectionsByMarket.set(selection.market_id,[]);selectionsByMarket.get(selection.market_id).push(selection)});
+ (marketResult.data||[]).forEach(market=>{market.arqon_bet_selections=selectionsByMarket.get(market.id)||[];if(!marketsByEvent.has(market.event_id))marketsByEvent.set(market.event_id,[]);marketsByEvent.get(market.event_id).push(market)});
+ events=(eventResult.data||[]).map(event=>({...event,arqon_bet_markets:marketsByEvent.get(event.id)||[]}));
+ bets=betResult.data||[];
  if(user&&arqonId!==null){const w=await db.from('arqon_coin_wallets').select('balance').eq('arqon_id',arqonId).maybeSingle();if(w.error)throw w.error;balance=w.data?.balance??0;}
  render();
 }
