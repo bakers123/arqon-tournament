@@ -99,7 +99,7 @@
 @media(max-width:600px){.bracket-team-list{grid-template-columns:1fr}.placement-row{grid-template-columns:24px 64px minmax(0,1fr)}}
 body.embed .shell{max-width:none;padding:0}
 body.embed header.top{display:none}
-body.embed #public-panel{display:none}
+body.embed #public-panel{display:block;background:transparent;border:0;padding:0;margin:0}body.embed #public-panel>.toolbar{display:none}body.embed #public-panel .canvas-shell{height:calc(100vh - 40px);min-height:700px;border-radius:0}
 body.embed .canvas-shell{height:calc(100vh - 40px);min-height:700px;border-radius:0}
 body.embed .layout{grid-template-columns:1fr}
 body.embed .side-panel{display:none!important}
@@ -125,6 +125,7 @@ body.embed .side-panel{display:none!important}
   <section id="public-panel" class="panel">
     <div class="toolbar"><strong>Опубликованные сетки</strong><span class="spacer"></span><select id="public-doc-select" aria-label="Выбрать сетку"></select></div>
     <div id="public-empty" class="empty hidden">Пока нет опубликованных сеток.</div><div id="public-bracket-placements" class="panel hidden"><h3>Итоговые места</h3><div id="public-bracket-placements-content"></div></div>
+    <div id="public-canvas-shell" class="canvas-shell hidden"><div class="world" id="public-world"><svg class="edge-layer" id="public-edge-layer"></svg><div id="public-world-content"></div></div></div>
   </section>
 
   <section id="editor-panel" class="hidden">
@@ -279,8 +280,7 @@ function renderWorld(worldId,contentId,svgId,mode){
 }
 function renderEditor(){if(!data)return;const t=$('doc-title');if(t&&document.activeElement!==t)t.value=current?.title||'';$('doc-format').value=current?.format||'custom';$('publish-doc').textContent=current?.status==='published'?'Сохранить изменения и обновить публикацию':'Опубликовать';$('editor-status').textContent=current?.status==='published'?'Опубликованную сетку можно редактировать полностью. Черновик не меняет публичную версию; нажми «Сохранить изменения и обновить публикацию», чтобы показать изменения всем.':'Черновик не опубликован. Изменения станут публичными после публикации.';$('teams-input').value=(data.teams||[]).join('\n');$('team-options').innerHTML=(data.teams||[]).map(x=>'<option value="'+esc(x)+'">').join('');renderWorld('world','world-content','edge-layer','admin');$('zoom-label').textContent=Math.round(zoom*100)+'%';refreshUndo();renderBracketPlacements();scheduleLocalDraftSave()}
 function renderPublic(doc){
- const d=doc?.published_data||{};data={sections:d.sections||[],nodes:d.nodes||[],edges:d.edges||[],teams:d.teams||[],bracketMeta:d.bracketMeta||null};$('public-empty').classList.toggle('hidden',!!doc);if($('public-bracket-placements'))$('public-bracket-placements').classList.toggle('hidden',!doc||d.bracketMeta?.type!=='double4');renderBracketPlacements();$('canvas-shell').classList.toggle('hidden',!doc);$('editor-panel').querySelector('.admin-tabs')?.classList.add('hidden');
- if(doc){$('editor-panel').classList.remove('hidden');$('editor-panel').querySelector('.panel').classList.add('hidden');$('editor-panel').querySelector('.layout aside')?.classList.add('hidden');$('editor-panel').querySelector('.layout').style.gridTemplateColumns='1fr';renderWorld('world','world-content','edge-layer','public')}
+ const d=doc?.published_data||{};data={sections:d.sections||[],nodes:d.nodes||[],edges:d.edges||[],teams:d.teams||[],bracketMeta:d.bracketMeta||null};$('public-empty').classList.toggle('hidden',!!doc);if($('public-bracket-placements'))$('public-bracket-placements').classList.toggle('hidden',!doc||d.bracketMeta?.type!=='double4');$('public-canvas-shell').classList.toggle('hidden',!doc);if(doc)renderWorld('public-world','public-world-content','public-edge-layer','public');
 }
 async function loadDocs(){
  let rows,error;
