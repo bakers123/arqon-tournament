@@ -120,7 +120,7 @@ function renderMatches(rows){
   const other=ownCreator?row.opponent_arqon_id:row.creator_arqon_id;
   const score=ownCreator?row.creator_score+' : '+row.opponent_score:row.opponent_score+' : '+row.creator_score;
   const card=document.createElement('div');card.className='lobby';
-  card.innerHTML='<div class="lobbytop"><strong>Матч #'+esc(row.id.slice(0,8))+'</strong><span class="stake">'+(row.status==='pending'?'ОЖИДАЕТ':row.status==='active'?'ИДЁТ':'ЗАВЕРШЁН')+'</span></div><div class="meta">Соперник: '+(other?'ARQON #'+esc(other):'ещё не вошёл')+' · ставка '+Number(row.stake)+' · счёт '+esc(score)+'</div>'+(row.status==='active'?'<a href="/shoot-shield/match/?id='+encodeURIComponent(row.id)+'">Открыть матч →</a>':'');
+  card.innerHTML='<div class="lobbytop"><strong>Матч #'+esc(row.id.slice(0,8))+'</strong><span class="stake">'+(row.status==='pending'?'ОЖИДАЕТ':row.status==='active'?'ИДЁТ':'ЗАВЕРШЁН')+'</span></div><div class="meta">Соперник: '+(other?'ARQON #'+esc(other):'ещё не вошёл')+' · ставка '+Number(row.stake)+' · счёт '+esc(score)+'</div>'+(row.status==='active'?'':'');
   host.append(card);
  });
 }
