@@ -298,7 +298,7 @@ Deno.serve(async(req)=>{
         const who=a.telegram_username?"@"+String(a.telegram_username).replace(/^@/,""):"Без username ("+String(a.first_name||"пользователь").replace(/[<>]/g,"")+")";
         const id=Number(p?.arqon_id);
         const url=Number.isSafeInteger(id)&&id>0?SITE+"/players/profile/?id="+id:SITE+"/players/";
-        return "• "+esc(who)+" — <a href=\\""+url+"\\">"+(Number.isSafeInteger(id)&&id>0?"ARQON #"+id:"Профиль ARQON")+"</a>";
+        return "• "+esc(who)+" — <a href=\""+url+"\">"+(Number.isSafeInteger(id)&&id>0?"ARQON #"+id:"Профиль ARQON")+"</a>";
        });
        const header="👥 <b>ПОДКЛЮЧЁННЫЕ TELEGRAM-ПОЛЬЗОВАТЕЛИ</b>\nВсего: <b>"+rows.length+"</b>\n\n";
        if(!rows.length)await send(bot,callbackChatId,header+"Пока никто не подключил Telegram к ARQON.");
