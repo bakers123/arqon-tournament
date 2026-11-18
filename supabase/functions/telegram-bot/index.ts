@@ -77,21 +77,55 @@ Deno.serve(async(req)=>{
    if(callbackChat){
     const callbackChatId=String(callbackChat);
     if(action==="shoot_help"){
-     await renderPanel(bot,callbackChatId,callback.message.message_id,"🎯 <b>SHOOT / SHIELD В TELEGRAM</b>\\n\\nОтправь команду:\\n<code>/duel @username 50</code>\\n\\nМинимальная ставка — 10 ARQON Coins. Лобби Telegram отдельные от сайта. Соперник должен подключить Telegram к профилю ARQON и открыть бота хотя бы один раз.",{inline_keyboard:[[{text:"↩️ Главное меню",callback_data:"menu"}]]});
+     await renderPanel(bot,callbackChatId,callback.message.message_id,"🎯 <b>SHOOT / SHIELD В TELEGRAM</b>\n\nОтправь команду:\n<code>/duel @username 50</code>\n\nМинимальная ставка — 10 ARQON Coins. Лобби Telegram отдельные от сайта. Соперник должен подключить Telegram к профилю ARQON и открыть бота хотя бы один раз.",{inline_keyboard:[[{text:"💰 Баланс",callback_data:"tgshoot:balance"}],[{text:"↩️ Главное меню",callback_data:"menu"}]]});
+    }else if(action==="tgshoot:balance"){
+     const link=await linkedUser(admin,callbackChatId);
+     if(!link){await send(bot,callbackChatId,"Сначала подключи Telegram к своему профилю ARQON.");}
+     else{
+      const {data:profile}=await admin.from("profiles").select("arqon_id").eq("user_id",link.user_id).maybeSingle();
+      if(!profile?.arqon_id){await send(bot,callbackChatId,"Профиль ARQON не найден.");}
+      else{const {data:wallet}=await admin.from("arqon_coin_wallets").select("balance").eq("arqon_id",profile.arqon_id).maybeSingle();await send(bot,callbackChatId,"💰 <b>ТВОЙ БАЛАНС ARQON COINS</b>\n\nARQON #"+profile.arqon_id+"\nДоступно: <b>"+Number(wallet?.balance??0)+" 🪙</b>");}
+     }
     }else if(action.startsWith("tgshoot:")){
      const parts=action.split(":");
      try{
-      if(parts[1]==="cancel"){const {data:d,error}=await admin.rpc("telegram_shoot_cancel",{p_chat_id:callbackChatId,p_duel_id:parts[2]});if(error)throw error;await send(bot,callbackChatId,"Дуэль отменена, ставка возвращена.");await send(bot,String(d.opponent_chat_id),"Вызов отменён создателем.");}
-      else if(parts[1]==="accept"||parts[1]==="decline"){
+      if(parts[1]==="cancel"){
+       const {data:d,error}=await admin.rpc("telegram_shoot_cancel",{p_chat_id:callbackChatId,p_duel_id:parts[2]});if(error)throw error;
+       await send(bot,callbackChatId,"Дуэль отменена, ставка возвращена.");await send(bot,String(d.opponent_chat_id),"Вызов отменён создателем.");
+      }else if(parts[1]==="rematch"){
+       const opponentArqonId=Number(parts[2]),stake=Number(parts[3]);
+       if(!Number.isSafeInteger(opponentArqonId)||!Number.isSafeInteger(stake)||stake<10)throw new Error("Не удалось создать реванш.");
+       const {data:target}=await admin.from("profiles").select("user_id").eq("arqon_id",opponentArqonId).maybeSingle();if(!target?.user_id)throw new Error("Профиль соперника не найден.");
+       const {data:tg}=await admin.from("telegram_accounts").select("telegram_username").eq("user_id",target.user_id).maybeSingle();if(!tg?.telegram_username)throw new Error("Соперник больше не подключён к Telegram.");
+       const {data:d,error}=await admin.rpc("telegram_shoot_action",{p_chat_id:callbackChatId,p_action:"create",p_stake:stake,p_target_username:tg.telegram_username});if(error)throw error;
+       const challenge="⚔️ <b>ВЫЗОВ НА РЕВАНШ SHOOT / SHIELD!</b>\nСоперник: ARQON #"+d.creator_arqon_id+"\nСтавка: <b>"+stake+" 🪙</b>\nБанк: <b>"+(stake*2)+" 🪙</b>\n\nПринять реванш?";
+       const kb={inline_keyboard:[[{text:"✅ Принять реванш",callback_data:"tgshoot:accept:"+d.id},{text:"❌ Отклонить",callback_data:"tgshoot:decline:"+d.id}]]};
+       try{await send(bot,String(d.target_chat_id),challenge,kb);}catch(e){await admin.rpc("telegram_shoot_cancel",{p_chat_id:callbackChatId,p_duel_id:d.id});throw new Error("Не удалось доставить вызов. Ставка возвращена.");}
+       await send(bot,callbackChatId,"✅ Реванш предложен. Ставка "+stake+" 🪙 зарезервирована до ответа соперника.",{inline_keyboard:[[{text:"Отменить реванш и вернуть ставку",callback_data:"tgshoot:cancel:"+d.id}]]});
+      }else if(parts[1]==="accept"||parts[1]==="decline"){
        const {data:d,error}=await admin.rpc("telegram_shoot_action",{p_chat_id:callbackChatId,p_action:parts[1],p_duel_id:parts[2]});if(error)throw error;
        if(parts[1]==="decline"){await send(bot,callbackChatId,"Вызов отклонён. Ставка создателя возвращена.");await send(bot,String(d.creator_chat_id),"Игрок отклонил дуэль. Ставка возвращена.");}
-       else{const text="🎯 <b>SHOOT / SHIELD — МАТЧ НАЧАЛСЯ</b>\\nСтавка каждого: <b>"+d.stake+" 🪙</b> · Банк: <b>"+(2*d.stake)+" 🪙</b>\\nПервый до 3 очков. Выбирай зону:";const kb={inline_keyboard:[[{text:"🎯 Голова",callback_data:"tgshoot:zone:"+d.id+":1"},{text:"🛡️ Тело",callback_data:"tgshoot:zone:"+d.id+":2"},{text:"👢 Ноги",callback_data:"tgshoot:zone:"+d.id+":3"}]]};await send(bot,String(d.creator_chat_id),text,kb);await send(bot,String(d.opponent_chat_id),text,kb);}
+       else{const text="🎯 <b>SHOOT / SHIELD — МАТЧ НАЧАЛСЯ</b>\nСтавка каждого: <b>"+d.stake+" 🪙</b> · Банк: <b>"+(2*d.stake)+" 🪙</b>\nПервый до 3 очков. Выбирай зону:";const kb={inline_keyboard:[[{text:"🎯 Голова",callback_data:"tgshoot:zone:"+d.id+":1"},{text:"🛡️ Тело",callback_data:"tgshoot:zone:"+d.id+":2"},{text:"👢 Ноги",callback_data:"tgshoot:zone:"+d.id+":3"}],[{text:"💰 Баланс",callback_data:"tgshoot:balance"}]]};await send(bot,String(d.creator_chat_id),text,kb);await send(bot,String(d.opponent_chat_id),text,kb);}
       }else if(parts[1]==="zone"){
        const duelId=parts[2],zone=Number(parts[3]);const {data:d,error}=await admin.rpc("telegram_shoot_action",{p_chat_id:callbackChatId,p_action:"move",p_duel_id:duelId,p_zone:zone});if(error)throw error;
        if(d.status==="waiting")await send(bot,callbackChatId,"✅ Выбор принят и скрыт. Ждём ход соперника.");
-       else{const names=["","Голова","Тело","Ноги"];const result="🎯 <b>РАУНД "+d.round+" ЗАВЕРШЁН</b>\\nВыстрел: "+names[d.shot_zone]+" · Щит: "+names[d.shield_zone]+"\\nСчёт: <b>"+d.creator_score+" : "+d.opponent_score+"</b>";
-        if(d.status==="finished"){const finalText=result+"\\n🏆 Победитель: <b>ARQON #"+d.winner_arqon_id+"</b>\\nВыплата: <b>"+(2*d.stake)+" 🪙</b>";await send(bot,String(d.creator_chat_id),finalText,backMenu);await send(bot,String(d.opponent_chat_id),finalText,backMenu);}
-        else{const nextText=result+"\\nСледующий раунд — выбирай зону:";const kb={inline_keyboard:[[{text:"🎯 Голова",callback_data:"tgshoot:zone:"+duelId+":1"},{text:"🛡️ Тело",callback_data:"tgshoot:zone:"+duelId+":2"},{text:"👢 Ноги",callback_data:"tgshoot:zone:"+duelId+":3"}]]};await send(bot,String(d.creator_chat_id),nextText,kb);await send(bot,String(d.opponent_chat_id),nextText,kb);}
+       else{
+        const names=["","Голова","Тело","Ноги"];
+        const {data:players}=await admin.from("profiles").select("arqon_id,display_name,steam_persona_name").in("arqon_id",[d.creator_arqon_id,d.opponent_arqon_id]);
+        const label=(id:number)=>{const p=(players||[]).find((x:any)=>Number(x.arqon_id)===Number(id));return p?.display_name||p?.steam_persona_name||("ARQON #"+id);};
+        const creatorName=esc(label(d.creator_arqon_id)),opponentName=esc(label(d.opponent_arqon_id));
+        const scoreText=creatorName+": <b>"+d.creator_score+"</b>\n"+opponentName+": <b>"+d.opponent_score+"</b>";
+        const result="🎯 <b>РАУНД "+d.round+" ЗАВЕРШЁН</b>\nВыстрел: "+names[d.shot_zone]+" · Щит: "+names[d.shield_zone]+"\n\n<b>Счёт:</b>\n"+scoreText;
+        if(d.status==="finished"){
+         const winnerName=esc(label(d.winner_arqon_id));
+         const finalText=result+"\n\n🏆 Победитель: <b>"+winnerName+"</b>\nВыплата: <b>"+(2*d.stake)+" 🪙</b>";
+         const rematchKb=(opponentId:number)=>({inline_keyboard:[[{text:"🔁 Реванш ("+d.stake+" 🪙)",callback_data:"tgshoot:rematch:"+opponentId+":"+d.stake}],[{text:"💰 Баланс",callback_data:"tgshoot:balance"},{text:"↩️ Главное меню",callback_data:"menu"}]]});
+         await send(bot,String(d.creator_chat_id),finalText,rematchKb(d.opponent_arqon_id));await send(bot,String(d.opponent_chat_id),finalText,rematchKb(d.creator_arqon_id));
+        }else{
+         const nextText=result+"\n\nСледующий раунд — выбирай зону:";
+         const kb={inline_keyboard:[[{text:"🎯 Голова",callback_data:"tgshoot:zone:"+duelId+":1"},{text:"🛡️ Тело",callback_data:"tgshoot:zone:"+duelId+":2"},{text:"👢 Ноги",callback_data:"tgshoot:zone:"+duelId+":3"}],[{text:"💰 Баланс",callback_data:"tgshoot:balance"}]]};
+         await send(bot,String(d.creator_chat_id),nextText,kb);await send(bot,String(d.opponent_chat_id),nextText,kb);
+        }
        }
       }
      }catch(e){await send(bot,callbackChatId,"⚠️ "+esc((e as Error)?.message||"Не удалось выполнить действие."));}
@@ -300,7 +334,7 @@ Deno.serve(async(req)=>{
    if(!username||!Number.isSafeInteger(stake)||stake<10||stake>1000000){await send(bot,chatId,"Формат: <code>/duel @username 50</code>. Минимальная ставка — 10 койнов.");return json({ok:true});}
    const {data:d,error}=await admin.rpc("telegram_shoot_action",{p_chat_id:chatId,p_action:"create",p_stake:stake,p_target_username:username});
    if(error){await send(bot,chatId,"⚠️ "+esc(error.message));return json({ok:true});}
-   const challenge="⚔️ <b>ТЕБЯ ВЫЗВАЛИ НА SHOOT / SHIELD!</b>\\nСоперник: ARQON #"+d.creator_arqon_id+"\\nСтавка: <b>"+stake+" 🪙</b>\\nБанк: <b>"+(stake*2)+" 🪙</b>\\n\\nПринять вызов?";
+   const challenge="⚔️ <b>ТЕБЯ ВЫЗВАЛИ НА SHOOT / SHIELD!</b>\nСоперник: ARQON #"+d.creator_arqon_id+"\nСтавка: <b>"+stake+" 🪙</b>\nБанк: <b>"+(stake*2)+" 🪙</b>\n\nПринять вызов?";
    const kb={inline_keyboard:[[{text:"✅ Принять дуэль",callback_data:"tgshoot:accept:"+d.id},{text:"❌ Отклонить",callback_data:"tgshoot:decline:"+d.id}]]};
    try{await send(bot,String(d.target_chat_id),challenge,kb);}catch(e){await admin.rpc("telegram_shoot_cancel",{p_chat_id:chatId,p_duel_id:d.id});await send(bot,chatId,"Не удалось доставить вызов игроку. Зарезервированная ставка возвращена. Возможно, игрок заблокировал бота.");return json({ok:true});}await send(bot,chatId,"✅ Вызов отправлен игроку @"+esc(username)+". Твоя ставка "+stake+" 🪙 зарезервирована. Ждём подтверждения.",{inline_keyboard:[[{text:"Отменить вызов и вернуть ставку",callback_data:"tgshoot:cancel:"+d.id}]]});return json({ok:true});
   }
