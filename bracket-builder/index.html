@@ -289,7 +289,7 @@ function fitPublicBracket(){
  world.style.left=Math.max(pad,(shell.clientWidth-bw*scale)/2-minX*scale)+'px';world.style.top=Math.max(pad,(shell.clientHeight-bh*scale)/2-minY*scale)+'px';
 }
 function renderPublic(doc){
- const d=doc?.published_data||{};data={sections:d.sections||[],nodes:d.nodes||[],edges:d.edges||[],teams:d.teams||[],bracketMeta:d.bracketMeta||null};$('public-empty').classList.toggle('hidden',!!doc);if($('public-bracket-placements'))$('public-bracket-placements').classList.add('hidden');$('public-canvas-shell').classList.toggle('hidden',!doc);if(doc){renderWorld('public-world','public-world-content','public-edge-layer','public');requestAnimationFrame(fitPublicBracket)}
+ const d=doc?.published_data||{};data={sections:d.sections||[],nodes:d.nodes||[],edges:d.edges||[],teams:d.teams||[],bracketMeta:d.bracketMeta||null};$('public-empty').classList.toggle('hidden',!!doc);if($('public-bracket-placements'))$('public-bracket-placements').classList.add('hidden');$('public-canvas-shell').classList.toggle('hidden',!doc);if(doc){$('public-world').style.transform='none';$('public-world').style.left='0px';$('public-world').style.top='0px';renderWorld('public-world','public-world-content','public-edge-layer','public');requestAnimationFrame(fitPublicBracket)}
 }
 window.addEventListener('resize',()=>{if(new URLSearchParams(location.search).get('view')==='public')fitPublicBracket()});
 async function loadDocs(){
