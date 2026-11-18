@@ -188,7 +188,7 @@ const SUPABASE_URL='https://uscnaqcvuwjrmkjyuklp.supabase.co';
 const SUPABASE_KEY='sb_publishable_oE2Bc1wPAcDt6HE8bOUj3Q_0-2FfIxB';
 const sb=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
 const $=id=>document.getElementById(id);
-const MAPS=['Ancient','Anubis','Cache','Dust2','Inferno','Mirage','Nuke','Overpass','Train','Vertigo'];
+const MAPS=['Не определена','Ancient','Anubis','Cache','Dust2','Inferno','Mirage','Nuke','Overpass','Train','Vertigo'];
 const BO=['BO1','BO3','BO5'];
 let session=null,role=null,docs=[],current=null,data=null,zoom=1,undoStack=[],redoStack=[],connecting=null,dragState=null,assignments=[],judges=[],availableBracketTeams=[],selectedBracketTeams=[];
 const freshData=()=>({sections:[{id:uid(),title:'Этап 1',x:45,y:35}],nodes:[],edges:[],teams:[]});
@@ -224,7 +224,7 @@ function snapshot(){undoStack.push(JSON.stringify(data));if(undoStack.length>80)
 function refreshUndo(){$('undo-btn').disabled=!undoStack.length;$('redo-btn').disabled=!redoStack.length}
 function mutate(fn){if(!admin())return;snapshot();fn();renderEditor()}
 function addMatch(x,y,sectionId){
- const n={id:uid(),title:'Матч '+(data.nodes.length+1),x,y,sectionId:sectionId||data.sections[0]?.id||null,format:'BO3',team1:'',team2:'',status:'pending',resultType:'normal',winnerSide:null,maps:[{map:'Mirage',score1:'',score2:'',status:'not_started'},{map:'Dust2',score1:'',score2:'',status:'not_started'},{map:'Inferno',score1:'',score2:'',status:'not_started'}]};
+ const n={id:uid(),title:'Матч '+(data.nodes.length+1),x,y,sectionId:sectionId||data.sections[0]?.id||null,format:'BO3',team1:'',team2:'',status:'pending',resultType:'normal',winnerSide:null,maps:[{map:'Не определена',score1:'',score2:'',status:'not_started'},{map:'Не определена',score1:'',score2:'',status:'not_started'},{map:'Не определена',score1:'',score2:'',status:'not_started'}]};
  data.nodes.push(n);return n;
 }
 function mapOptions(value){return MAPS.map(m=>'<option '+(m===value?'selected':'')+'>'+m+'</option>').join('')}
@@ -247,7 +247,7 @@ function renderWorld(worldId,contentId,svgId,mode){
  content.innerHTML=sections.map(s=>'<div class="section-label" style="left:'+Number(s.x||45)+'px;top:'+Number(s.y||35)+'px">'+esc(s.title)+'</div>').join('')+nodes.map(n=>matchCard(n,mode)).join('');
  if(svg){svg.innerHTML='';nodes.forEach(n=>{['winner','loser'].forEach(portName=>{const edge=data.edges.find(e=>e.fromId===n.id&&e.fromPort===portName);if(!edge)return;const target=nodeBy(edge.toId);if(!target)return;const sourceEl=content.querySelector('[data-node-card="'+n.id+'"] .port[data-port="'+portName+'"]');const targetEl=content.querySelector('[data-node-card="'+target.id+'"] .port[data-in="'+edge.toSlot+'"]');if(!sourceEl||!targetEl)return;const a=sourceEl.getBoundingClientRect(),b=targetEl.getBoundingClientRect(),r=world.getBoundingClientRect(),x1=(a.left+a.width/2-r.left)/zoom,y1=(a.top+a.height/2-r.top)/zoom,x2=(b.left+b.width/2-r.left)/zoom,y2=(b.top+b.height/2-r.top)/zoom,dx=Math.max(55,Math.abs(x2-x1)*.45);const p=document.createElementNS('http://www.w3.org/2000/svg','path');p.setAttribute('d','M '+x1+' '+y1+' C '+(x1+dx)+' '+y1+', '+(x2-dx)+' '+y2+', '+x2+' '+y2);p.setAttribute('class','edge-path '+(portName==='loser'?'loser':''));svg.appendChild(p)})})}
 }
-function renderEditor(){if(!data)return;const t=$('doc-title');if(t&&document.activeElement!==t)t.value=current?.title||'';$('doc-format').value=current?.format||'custom';$('teams-input').value=(data.teams||[]).join('\n');$('team-options').innerHTML=(data.teams||[]).map(x=>'<option value="'+esc(x)+'">').join('');renderWorld('world','world-content','edge-layer','admin');$('zoom-label').textContent=Math.round(zoom*100)+'%';refreshUndo();renderBracketPlacements()}
+function renderEditor(){if(!data)return;const t=$('doc-title');if(t&&document.activeElement!==t)t.value=current?.title||'';$('doc-format').value=current?.format||'custom';$('publish-doc').textContent=current?.status==='published'?'Сохранить изменения и обновить публикацию':'Опубликовать';$('editor-status').textContent=current?.status==='published'?'Опубликованную сетку можно редактировать полностью. Черновик не меняет публичную версию; нажми «Сохранить изменения и обновить публикацию», чтобы показать изменения всем.':'Черновик не опубликован. Изменения станут публичными после публикации.';$('teams-input').value=(data.teams||[]).join('\n');$('team-options').innerHTML=(data.teams||[]).map(x=>'<option value="'+esc(x)+'">').join('');renderWorld('world','world-content','edge-layer','admin');$('zoom-label').textContent=Math.round(zoom*100)+'%';refreshUndo();renderBracketPlacements()}
 function renderPublic(doc){
  const d=doc?.published_data||{};data={sections:d.sections||[],nodes:d.nodes||[],edges:d.edges||[],teams:d.teams||[],bracketMeta:d.bracketMeta||null};$('public-empty').classList.toggle('hidden',!!doc);if($('public-bracket-placements'))$('public-bracket-placements').classList.toggle('hidden',!doc||d.bracketMeta?.type!=='double4');renderBracketPlacements();$('canvas-shell').classList.toggle('hidden',!doc);$('editor-panel').querySelector('.admin-tabs')?.classList.add('hidden');
  if(doc){$('editor-panel').classList.remove('hidden');$('editor-panel').querySelector('.panel').classList.add('hidden');$('editor-panel').querySelector('.layout aside')?.classList.add('hidden');$('editor-panel').querySelector('.layout').style.gridTemplateColumns='1fr';renderWorld('world','world-content','edge-layer','public')}
@@ -358,7 +358,7 @@ function generateSelectedBracket(){
    }
   }else if(format==='round_robin'){
    const section={id:uid(),title:'КРУГОВОЙ ЭТАП',x:35,y:35};data.sections=[section];let k=0;
-   for(let i=0;i<teams.length;i++)for(let j=i+1;j<teams.length;j++){const n=createGeneratedMatch('Матч '+(++k),teams[i],teams[j],330+(k%4)*380,130+Math.floor((k-1)/4)*420,section.id);n.format='BO1';n.maps=[{map:'Mirage',score1:'',score2:'',status:'not_started'}]}
+   for(let i=0;i<teams.length;i++)for(let j=i+1;j<teams.length;j++){const n=createGeneratedMatch('Матч '+(++k),teams[i],teams[j],330+(k%4)*380,130+Math.floor((k-1)/4)*420,section.id);n.format='BO1';n.maps=[{map:'Не определена',score1:'',score2:'',status:'not_started'}]}
    data.bracketMeta={type:'round_robin'};
   }
  });
@@ -373,7 +373,7 @@ async function saveDoc(publish){
  const {data:id,error}=await sb.rpc('save_bracket_document',{p_id:current.id,p_title:current.title,p_format:current.format,p_data:data,p_publish:publish});
  if(error){say('editor-status','Ошибка сохранения: '+error.message,'error');return}
  current.id=id;current.status=publish?'published':current.status;current.data=data;
- say('editor-status',publish?'Сетка опубликована. Публичная версия обновлена.':'Черновик сохранён. Публичная версия не менялась.','success');
+ say('editor-status',publish?(current.status==='published'?'Изменения опубликованной сетки сохранены и уже видны всем.':'Сетка опубликована. Публичная версия обновлена.'):'Черновик сохранён. Публичная версия не менялась.','success');
  await loadDocs();
 }
 function undo(){if(!undoStack.length)return;redoStack.push(JSON.stringify(data));data=JSON.parse(undoStack.pop());renderEditor()}
@@ -382,7 +382,7 @@ function addSection(){const title=prompt('Название этапа или р�
 function generateRound(){const raw=prompt('Введи команды — по одной на строку','Команда 1\nКоманда 2\nКоманда 3\nКоманда 4');if(!raw)return;const teams=raw.split(/[\n,;]+/).map(x=>x.trim()).filter(Boolean);if(teams.length<2){alert('Нужно минимум две команды.');return}mutate(()=>{data.teams=teams;data.sections=[{id:uid(),title:'Круговой этап',x:45,y:35}];data.nodes=[];data.edges=[];let k=0;for(let i=0;i<teams.length;i++)for(let j=i+1;j<teams.length;j++){const n=addMatch(380+(k%4)*360,130+Math.floor(k/4)*300,data.sections[0].id);n.title='Матч '+(++k);n.format='BO1';n.maps=[{map:'Mirage',score1:'',score2:'',status:'not_started'}];n.team1=teams[i];n.team2=teams[j]}})}
 function changeField(el){
  const n=nodeBy(el.dataset.node);if(!n)return;
- if(el.dataset.field){const f=el.dataset.field;let v=el.value;if(f==='winnerSide')v=v?Number(v):null;if(f==='format'&&v!==n.format){const count=Number(v.slice(2))||1;n.maps=(n.maps||[]).slice(0,count);while(n.maps.length<count)n.maps.push({map:MAPS[n.maps.length]||'Mirage',score1:'',score2:'',status:'not_started'})}n[f]=v;if(f==='resultType'&&v==='normal')n.winnerSide=null;if(f==='team1'||f==='team2'){if(v&&!data.teams.includes(v))data.teams.push(v)}}
+ if(el.dataset.field){const f=el.dataset.field;let v=el.value;if(f==='winnerSide')v=v?Number(v):null;if(f==='format'&&v!==n.format){const count=Number(v.slice(2))||1;n.maps=(n.maps||[]).slice(0,count);while(n.maps.length<count)n.maps.push({map:'Не определена',score1:'',score2:'',status:'not_started'})}n[f]=v;if(f==='resultType'&&v==='normal')n.winnerSide=null;if(f==='team1'||f==='team2'){if(v&&!data.teams.includes(v))data.teams.push(v)}}
  if(el.dataset.mapField){const i=Number(el.dataset.index),f=el.dataset.mapField;if(n.maps[i])n.maps[i][f]=el.value}
 }
 $('world-content').addEventListener('change',e=>{const el=e.target;if(el.matches('[data-field],[data-map-field]'))mutate(()=>changeField(el))});
