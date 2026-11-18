@@ -8,6 +8,7 @@ const menuMarkup=(isAdmin=false,profileUrl=SITE+"/players/")=>({inline_keyboard:
  [{text:"🔔 Уведомления",callback_data:"notifications"}],
  [{text:"🏆 Киберспортивная лига",callback_data:"league"}],
  [{text:"👥 Команды",callback_data:"teams"},{text:"🎯 Игроки",callback_data:"players"}],
+ [{text:"🧩 Моя команда",callback_data:"myteam"}],
  [{text:"🎯 SHOOT / SHIELD",callback_data:"shoot_help"}],
  [{text:"🛟 Поддержка",callback_data:"support"}],
  ...(isAdmin?[[{text:"🛡 Панель организатора",callback_data:"organizer"}]]:[])
@@ -41,6 +42,46 @@ async function loadTournamentTeams(admin:any){
  if(typeof raw==="string"){try{const parsed=JSON.parse(raw);return Array.isArray(parsed)?parsed:[]}catch{}}
  return [];
 }
+
+async function getMyTeam(admin:any,chatId:string){
+ const link=await linkedUser(admin,chatId);if(!link?.user_id)return {link:null,profile:null,team:null,isCaptain:false,isDeputy:false};
+ const {data:profile}=await admin.from("profiles").select("arqon_id,game_nick,display_name").eq("user_id",link.user_id).maybeSingle();
+ if(!profile?.arqon_id)return {link,profile:null,team:null,isCaptain:false,isDeputy:false};
+ const teams=await loadTournamentTeams(admin);
+ const team=teams.find((t:any)=>(Array.isArray(t.players)&&t.players.some((p:any)=>String(p.account_id)===String(link.user_id)))||String(t.captainArqonId||"")===String(profile.arqon_id))||null;
+ if(!team)return {link,profile,team:null,isCaptain:false,isDeputy:false};
+ const {data:tp}=await admin.from("team_profiles").select("captain_arqon_id").eq("team_id",String(team.id)).maybeSingle();
+ const captainId=tp?.captain_arqon_id||team.captainArqonId;
+ const member=(team.players||[]).find((p:any)=>String(p.account_id)===String(link.user_id));
+ return {link,profile,team,captainId,isCaptain:String(captainId||"")===String(profile.arqon_id),isDeputy:member?.rosterRole==="deputy"};
+}
+async function telegramTeamAction(admin:any,chatId:string,action:string,teamId?:string,teamName?:string,targetArqonId?:number,confirmation?:string){
+ const {data,error}=await admin.rpc("telegram_team_action",{p_chat_id:chatId,p_action:action,p_team_id:teamId||null,p_team_name:teamName||null,p_target_arqon_id:targetArqonId||null,p_role:null,p_confirmation:confirmation||null});
+ if(error)throw new Error(error.message||"team_action_failed");return data;
+}
+async function showMyTeam(token:string,chatId:string,admin:any,messageId?:number){
+ const s=await getMyTeam(admin,chatId),show=(t:string,k:any)=>messageId?renderPanel(token,chatId,messageId,t,k):send(token,chatId,t,k);
+ if(!s.link){await show("👥 <b>МОЯ КОМАНДА</b>\n\nСначала подключи Telegram к своему аккаунту ARQON на сайте.",{inline_keyboard:[[{text:"🔗 Открыть ARQON",url:SITE+"/players/"}],[{text:"↩️ Меню",callback_data:"menu"}]]});return}
+ if(!s.profile){await show("Профиль ARQON не найден. Создай его на сайте.",{inline_keyboard:[[{text:"Открыть игроков",url:SITE+"/players/"}]]});return}
+ if(!s.team){await show("👥 <b>МОЯ КОМАНДА</b>\n\nТы пока не состоишь в команде. Создать её можно командой:\n<code>/team_create Название команды</code>",{inline_keyboard:[[{text:"🌐 Каталог команд",url:SITE+"/teams/"}],[{text:"↻ Обновить",callback_data:"myteam"}],[{text:"↩️ Меню",callback_data:"menu"}]]});return}
+ const t=s.team,roster=Array.isArray(t.players)?t.players:[],lines=roster.map((p:any)=>"• <b>"+esc(p.name||"Игрок")+"</b> · #"+(p.arqonId||"—")+" · "+(String(p.arqonId)===String(s.captainId)?"👑 капитан":p.rosterRole==="deputy"?"🛡 заместитель":p.rosterRole==="reserve"?"запас":"основа"));
+ const text="👥 <b>"+esc(t.name||"Команда")+"</b>\n"+(s.isCaptain?"👑 Ты капитан":s.isDeputy?"🛡 Ты заместитель":"Ты участник")+" · Игроков: "+roster.length+"\n\n<b>Состав:</b>\n"+(lines.join("\n")||"Пока пусто");
+ const kb:any[][]=[];
+ if(s.isCaptain)kb.push([{text:"➕ Пригласить игрока",callback_data:"tm:invitehelp"}]);
+ if(s.isCaptain||s.isDeputy)for(const p of roster.slice(0,8)){
+  const id=Number(p.arqonId);if(!Number.isSafeInteger(id)||id<1||String(id)===String(s.captainId))continue;
+  const row:any[]=[];
+  if(s.isCaptain)row.push({text:p.rosterRole==="deputy"?"Снять зама #"+id:"Назначить замом #"+id,callback_data:"tm:role:"+t.id+":"+id+":"+(p.rosterRole==="deputy"?"main":"deputy")});
+  if(p.rosterRole==="reserve")row.push({text:"В основу #"+id,callback_data:"tm:role:"+t.id+":"+id+":main"});
+  else if(p.rosterRole!=="deputy")row.push({text:"В запас #"+id,callback_data:"tm:role:"+t.id+":"+id+":reserve"});
+  row.push({text:"Убрать #"+id,callback_data:"tm:releaseask:"+t.id+":"+id});kb.push(row);
+ }
+ if(s.isCaptain)for(const p of roster){const id=Number(p.arqonId);if(Number.isSafeInteger(id)&&id>0&&String(id)!==String(s.profile.arqon_id))kb.push([{text:"Передать капитанство #"+id,callback_data:"tm:transferask:"+t.id+":"+id}]);}
+ else if(roster.some((p:any)=>String(p.account_id)===String(s.link.user_id)))kb.push([{text:"🚪 Покинуть команду",callback_data:"tm:leaveask:"+t.id}]);
+ kb.push([{text:"🌐 Страница команды",url:SITE+"/teams/profile/?id="+encodeURIComponent(String(t.id))}],[{text:"↻ Обновить",callback_data:"myteam"},{text:"↩️ Меню",callback_data:"menu"}]]);
+ await show(text,{inline_keyboard:kb});
+}
+
 async function telegram(token:string,method:string,body:Record<string,unknown>){
  const r=await fetch(`https://api.telegram.org/bot${token}/${method}`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});
  const payload=await r.json().catch(()=>({}));
@@ -69,6 +110,10 @@ async function setBotCommands(token:string){
   {command:"start",description:"Открыть главное меню ARQON"},
   {command:"menu",description:"Показать меню"},
   {command:"profile",description:"Открыть мой профиль ARQON"},
+  {command:"team",description:"Управление моей командой"},
+  {command:"team_create",description:"Создать команду"},
+  {command:"team_invite",description:"Пригласить игрока по ARQON ID"},
+  {command:"team_leave",description:"Покинуть команду"},
   {command:"help",description:"Команды и помощь"},
   {command:"duel",description:"Вызвать игрока на SHOOT / SHIELD"}
  ]});
@@ -142,6 +187,27 @@ Deno.serve(async(req)=>{
        }
       }
      }catch(e){await send(bot,callbackChatId,"⚠️ "+esc((e as Error)?.message||"Не удалось выполнить действие."));}
+
+    }else if(action==="myteam"){
+     await showMyTeam(bot,callbackChatId,admin,callback.message.message_id);
+    }else if(action.startsWith("tm:")){
+     const p=action.split(":"),kind=p[1];
+     try{
+      if(kind==="invitehelp")await renderPanel(bot,callbackChatId,callback.message.message_id,"➕ <b>ПРИГЛАСИТЬ ИГРОКА</b>\nОтправь: <code>/team_invite ARQON_ID</code>\nИгрок должен подключить Telegram к ARQON.",{inline_keyboard:[[{text:"↩️ Моя команда",callback_data:"myteam"}]]});
+      else if(kind==="leaveask")await renderPanel(bot,callbackChatId,callback.message.message_id,"Точно покинуть команду? Капитан должен сначала передать капитанство.",{inline_keyboard:[[{text:"Да, выйти",callback_data:"tm:leave:"+p[2]},{text:"Отмена",callback_data:"myteam"}]]});
+      else if(kind==="leave"){await telegramTeamAction(admin,callbackChatId,"leave",p[2]);await renderPanel(bot,callbackChatId,callback.message.message_id,"Ты покинул команду. Состав на сайте обновлён.",{inline_keyboard:[[{text:"🧩 Моя команда",callback_data:"myteam"}]]});}
+      else if(kind==="releaseask")await renderPanel(bot,callbackChatId,callback.message.message_id,"Убрать игрока ARQON #"+esc(p[3])+" из состава?",{inline_keyboard:[[{text:"Убрать",callback_data:"tm:release:"+p[2]+":"+p[3]},{text:"Отмена",callback_data:"myteam"}]]});
+      else if(kind==="release"){await telegramTeamAction(admin,callbackChatId,"release",p[2],undefined,Number(p[3]));await renderPanel(bot,callbackChatId,callback.message.message_id,"Игрок освобождён из состава.",{inline_keyboard:[[{text:"↻ Моя команда",callback_data:"myteam"}]]});}
+      else if(kind==="role"){const a=p[4]==="deputy"?"set_deputy":p[4]==="reserve"?"set_reserve":"set_main";await telegramTeamAction(admin,callbackChatId,a,p[2],undefined,Number(p[3]));await renderPanel(bot,callbackChatId,callback.message.message_id,"Роль игрока обновлена.",{inline_keyboard:[[{text:"↻ Моя команда",callback_data:"myteam"}]]});}
+      else if(kind==="transferask")await renderPanel(bot,callbackChatId,callback.message.message_id,"Передать капитанство игроку ARQON #"+esc(p[3])+"?",{inline_keyboard:[[{text:"Передать",callback_data:"tm:transfer:"+p[2]+":"+p[3]},{text:"Отмена",callback_data:"myteam"}]]});
+      else if(kind==="transfer"){await telegramTeamAction(admin,callbackChatId,"transfer_captain",p[2],undefined,Number(p[3]));await renderPanel(bot,callbackChatId,callback.message.message_id,"Капитанство передано.",{inline_keyboard:[[{text:"↻ Моя команда",callback_data:"myteam"}]]});}
+      else if(kind==="accept"||kind==="decline"){
+       const invId=p[2],{data:inv}=await admin.from("team_invitations").select("team_name,invited_by").eq("id",invId).maybeSingle();if(!inv)throw new Error("Приглашение не найдено.");
+       await telegramTeamAction(admin,callbackChatId,kind==="accept"?"accept_invitation":"decline_invitation",undefined,undefined,undefined,invId);
+       await renderPanel(bot,callbackChatId,callback.message.message_id,kind==="accept"?"✅ Ты вступил в команду «"+esc(inv.team_name)+"».":"Ты отклонил приглашение в команду «"+esc(inv.team_name)+"».",{inline_keyboard:[[{text:"🧩 Моя команда",callback_data:"myteam"}]]});
+       const {data:tg}=await admin.from("telegram_accounts").select("chat_id").eq("user_id",inv.invited_by).order("linked_at",{ascending:false}).limit(1).maybeSingle();if(tg?.chat_id)await send(bot,String(tg.chat_id),"Игрок ответил на приглашение в «"+esc(inv.team_name)+"»: "+(kind==="accept"?"принял.":"отклонил."));
+      }else await showMyTeam(bot,callbackChatId,admin,callback.message.message_id);
+     }catch(e){await renderPanel(bot,callbackChatId,callback.message.message_id,"⚠️ "+esc((e as Error)?.message||"Не удалось выполнить действие."),{inline_keyboard:[[{text:"↻ Моя команда",callback_data:"myteam"}],[{text:"↩️ Меню",callback_data:"menu"}]]});}
     }else if(action==="menu"){
      let isSupportAdmin=false;try{const {data}=await admin.rpc("get_support_admin_telegram_chats");isSupportAdmin=(data||[]).some((x:any)=>String(x.chat_id)===callbackChatId)}catch{}
      const text="<b>ＡＲＱＯＮ  ＥＳＰＯＲＴＳ</b>\n<i>YOUR GAME. YOUR LEGACY.</i>\n\nВыбери нужный раздел 👇";
