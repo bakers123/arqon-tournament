@@ -191,6 +191,29 @@ const $=id=>document.getElementById(id);
 const MAPS=['Не определена','Ancient','Anubis','Cache','Dust2','Inferno','Mirage','Nuke','Overpass','Train','Vertigo'];
 const BO=['BO1','BO3','BO5'];
 let session=null,role=null,docs=[],current=null,data=null,zoom=1,undoStack=[],redoStack=[],connecting=null,dragState=null,assignments=[],judges=[],availableBracketTeams=[],selectedBracketTeams=[];
+const LOCAL_DRAFT_KEY='arqon_bracket_builder_local_draft_v1';
+let localDraftTimer=null;
+function saveLocalDraft(){
+ if(!admin()||!current||!data)return;
+ try{const snapshot={savedAt:Date.now(),current:{id:current.id,title:$('doc-title')?.value?.trim()||current.title||'Новая сетка',format:$('doc-format')?.value||current.format||'custom',status:current.status||'draft'},data};localStorage.setItem(LOCAL_DRAFT_KEY,JSON.stringify(snapshot));}
+ catch(e){console.warn('ARQON local draft save failed',e)}
+}
+function scheduleLocalDraftSave(){if(!admin()||!current||!data)return;clearTimeout(localDraftTimer);localDraftTimer=setTimeout(saveLocalDraft,300)}
+function restoreLocalDraftIfAvailable(){
+ if(!admin())return false;
+ let saved;try{saved=JSON.parse(localStorage.getItem(LOCAL_DRAFT_KEY)||'null')}catch(e){localStorage.removeItem(LOCAL_DRAFT_KEY);return false}
+ if(!saved?.current?.id||!saved?.data||Date.now()-Number(saved.savedAt||0)>30*24*60*60*1000)return false;
+ const loaded=docs.find(d=>d.id===saved.current.id),serverTime=loaded?.updated_at?new Date(loaded.updated_at).getTime():0;
+ if(loaded&&serverTime>=saved.savedAt){localStorage.removeItem(LOCAL_DRAFT_KEY);return false}
+ if(!confirm('Найден несохранённый черновик сетки «'+(saved.current.title||'Новая сетка')+'» от '+new Date(saved.savedAt).toLocaleString('ru-RU')+'. Восстановить его?')){localStorage.removeItem(LOCAL_DRAFT_KEY);return false}
+ current={...saved.current,data:saved.data};data=JSON.parse(JSON.stringify(saved.data));docs=[current,...docs.filter(d=>d.id!==current.id)];
+ const sel=$('doc-select');if(sel){sel.innerHTML=docs.map(d=>'<option value="'+d.id+'">'+esc(d.title)+(d.status==='published'?' · опубликована':' · черновик')+'</option>').join('');sel.value=current.id}
+ undoStack=[];redoStack=[];renderEditor();loadSideData().catch(e=>say('editor-status','Черновик восстановлен, но не удалось загрузить служебные данные: '+e.message,'error'));
+ say('editor-status','Несохранённая сетка восстановлена. Не забудь сохранить её на сервер.','success');return true;
+}
+window.addEventListener('pagehide',saveLocalDraft);
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')saveLocalDraft()});
+
 const freshData=()=>({sections:[{id:uid(),title:'Этап 1',x:45,y:35}],nodes:[],edges:[],teams:[]});
 function uid(){return crypto.randomUUID?crypto.randomUUID():'n'+Math.random().toString(36).slice(2,12)}
 function esc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
@@ -247,7 +270,7 @@ function renderWorld(worldId,contentId,svgId,mode){
  content.innerHTML=sections.map(s=>'<div class="section-label" style="left:'+Number(s.x||45)+'px;top:'+Number(s.y||35)+'px">'+esc(s.title)+'</div>').join('')+nodes.map(n=>matchCard(n,mode)).join('');
  if(svg){svg.innerHTML='';nodes.forEach(n=>{['winner','loser'].forEach(portName=>{const edge=data.edges.find(e=>e.fromId===n.id&&e.fromPort===portName);if(!edge)return;const target=nodeBy(edge.toId);if(!target)return;const sourceEl=content.querySelector('[data-node-card="'+n.id+'"] .port[data-port="'+portName+'"]');const targetEl=content.querySelector('[data-node-card="'+target.id+'"] .port[data-in="'+edge.toSlot+'"]');if(!sourceEl||!targetEl)return;const a=sourceEl.getBoundingClientRect(),b=targetEl.getBoundingClientRect(),r=world.getBoundingClientRect(),x1=(a.left+a.width/2-r.left)/zoom,y1=(a.top+a.height/2-r.top)/zoom,x2=(b.left+b.width/2-r.left)/zoom,y2=(b.top+b.height/2-r.top)/zoom,dx=Math.max(55,Math.abs(x2-x1)*.45);const p=document.createElementNS('http://www.w3.org/2000/svg','path');p.setAttribute('d','M '+x1+' '+y1+' C '+(x1+dx)+' '+y1+', '+(x2-dx)+' '+y2+', '+x2+' '+y2);p.setAttribute('class','edge-path '+(portName==='loser'?'loser':''));svg.appendChild(p)})})}
 }
-function renderEditor(){if(!data)return;const t=$('doc-title');if(t&&document.activeElement!==t)t.value=current?.title||'';$('doc-format').value=current?.format||'custom';$('publish-doc').textContent=current?.status==='published'?'Сохранить изменения и обновить публикацию':'Опубликовать';$('editor-status').textContent=current?.status==='published'?'Опубликованную сетку можно редактировать полностью. Черновик не меняет публичную версию; нажми «Сохранить изменения и обновить публикацию», чтобы показать изменения всем.':'Черновик не опубликован. Изменения станут публичными после публикации.';$('teams-input').value=(data.teams||[]).join('\n');$('team-options').innerHTML=(data.teams||[]).map(x=>'<option value="'+esc(x)+'">').join('');renderWorld('world','world-content','edge-layer','admin');$('zoom-label').textContent=Math.round(zoom*100)+'%';refreshUndo();renderBracketPlacements()}
+function renderEditor(){if(!data)return;const t=$('doc-title');if(t&&document.activeElement!==t)t.value=current?.title||'';$('doc-format').value=current?.format||'custom';$('publish-doc').textContent=current?.status==='published'?'Сохранить изменения и обновить публикацию':'Опубликовать';$('editor-status').textContent=current?.status==='published'?'Опубликованную сетку можно редактировать полностью. Черновик не меняет публичную версию; нажми «Сохранить изменения и обновить публикацию», чтобы показать изменения всем.':'Черновик не опубликован. Изменения станут публичными после публикации.';$('teams-input').value=(data.teams||[]).join('\n');$('team-options').innerHTML=(data.teams||[]).map(x=>'<option value="'+esc(x)+'">').join('');renderWorld('world','world-content','edge-layer','admin');$('zoom-label').textContent=Math.round(zoom*100)+'%';refreshUndo();renderBracketPlacements();scheduleLocalDraftSave()}
 function renderPublic(doc){
  const d=doc?.published_data||{};data={sections:d.sections||[],nodes:d.nodes||[],edges:d.edges||[],teams:d.teams||[],bracketMeta:d.bracketMeta||null};$('public-empty').classList.toggle('hidden',!!doc);if($('public-bracket-placements'))$('public-bracket-placements').classList.toggle('hidden',!doc||d.bracketMeta?.type!=='double4');renderBracketPlacements();$('canvas-shell').classList.toggle('hidden',!doc);$('editor-panel').querySelector('.admin-tabs')?.classList.add('hidden');
  if(doc){$('editor-panel').classList.remove('hidden');$('editor-panel').querySelector('.panel').classList.add('hidden');$('editor-panel').querySelector('.layout aside')?.classList.add('hidden');$('editor-panel').querySelector('.layout').style.gridTemplateColumns='1fr';renderWorld('world','world-content','edge-layer','public')}
@@ -268,7 +291,7 @@ async function loadDocs(){
    const ids=[...new Set(assignments.map(x=>x.bracket_id))];docs=docs.filter(d=>ids.includes(d.id)&&d.status==='published');
    $('judge-doc-select').innerHTML=docs.map(d=>'<option value="'+d.id+'">'+esc(d.title)+'</option>').join('');
  }else{$('public-doc-select').innerHTML=docs.map(d=>'<option value="'+d.id+'">'+esc(d.title)+'</option>').join('');}
- if(admin()&&!docs.length){newDoc();await loadSideData()}else if(admin()&&docs.length){await loadDoc(docs[0].id)}else if(role==='judge'&&docs.length){await loadJudgeDoc(docs[0].id)}else if(!role){const d=docs[0];renderPublic(d||null)}
+ if(admin()&&restoreLocalDraftIfAvailable())return;if(admin()&&!docs.length){newDoc();await loadSideData()}else if(admin()&&docs.length){await loadDoc(docs[0].id)}else if(role==='judge'&&docs.length){await loadJudgeDoc(docs[0].id)}else if(!role){const d=docs[0];renderPublic(d||null)}
 }
 async function loadDoc(id){current=docs.find(d=>d.id===id)||null;if(!current)return;data=JSON.parse(JSON.stringify(current.data||freshData()));undoStack=[];redoStack=[];renderEditor();await loadSideData()}
 async function loadSideData(){
@@ -372,7 +395,7 @@ async function saveDoc(publish){
  say('editor-status',publish?'Публикуем…':'Сохраняем черновик…');
  const {data:id,error}=await sb.rpc('save_bracket_document',{p_id:current.id,p_title:current.title,p_format:current.format,p_data:data,p_publish:publish});
  if(error){say('editor-status','Ошибка сохранения: '+error.message,'error');return}
- current.id=id;current.status=publish?'published':current.status;current.data=data;
+ current.id=id;current.status=publish?'published':current.status;current.data=data;try{localStorage.removeItem(LOCAL_DRAFT_KEY)}catch(e){}
  say('editor-status',publish?(current.status==='published'?'Изменения опубликованной сетки сохранены и уже видны всем.':'Сетка опубликована. Публичная версия обновлена.'):'Черновик сохранён. Публичная версия не менялась.','success');
  await loadDocs();
 }
@@ -397,7 +420,7 @@ window.addEventListener('pointermove',e=>{
  if(dragState){const n=nodeBy(dragState.id);if(!n)return;const dx=(e.clientX-dragState.x)/zoom,dy=(e.clientY-dragState.y)/zoom;if(Math.abs(dx)+Math.abs(dy)>2)dragState.moved=true;n.x=Math.max(0,dragState.ox+dx);n.y=Math.max(0,dragState.oy+dy);const el=$('world-content').querySelector('[data-node-card="'+n.id+'"]');if(el){el.style.left=n.x+'px';el.style.top=n.y+'px'}renderWorld('world','world-content','edge-layer','admin')}
 });
 window.addEventListener('pointerup',e=>{
- if(dragState){if(!dragState.moved){undoStack.pop();refreshUndo()}dragState=null}
+ if(dragState){if(!dragState.moved){undoStack.pop();refreshUndo()}else scheduleLocalDraftSave();dragState=null}
  if(connecting){const target=e.target.closest('.port[data-in]');if(target){const toId=target.dataset.node,toSlot=target.dataset.in,fromId=connecting.fromId,fromPort=connecting.fromPort;const exists=data.edges.some(x=>x.toId===toId&&x.toSlot===toSlot);const duplicate=data.edges.some(x=>x.fromId===fromId&&x.fromPort===fromPort);const reaches=(start,target,seen=new Set())=>{if(start===target)return true;if(seen.has(start))return false;seen.add(start);return data.edges.filter(x=>x.fromId===start).some(x=>reaches(x.toId,target,seen))};const cycle=reaches(toId,fromId);if(!exists&&!duplicate&&!cycle&&fromId!==toId){snapshot();data.edges.push({fromId,fromPort,toId,toSlot});renderEditor()}else say('editor-status',cycle?'Такое соединение создаст цикл.':'Этот вход или выход уже соединён.','error')}connecting=null}
 });
 $('canvas-shell').addEventListener('pointerdown',e=>{if(e.target!==$('canvas-shell')&&e.target!==$('world'))return;if(e.button===1||e.shiftKey){const shell=$('canvas-shell'),sx=e.clientX,sy=e.clientY,sl=shell.scrollLeft,st=shell.scrollTop;const move=ev=>{shell.scrollLeft=sl-(ev.clientX-sx);shell.scrollTop=st-(ev.clientY-sy)};const up=()=>{window.removeEventListener('pointermove',move);window.removeEventListener('pointerup',up)};window.addEventListener('pointermove',move);window.addEventListener('pointerup',up)}});
@@ -405,7 +428,7 @@ function setZoom(v){zoom=Math.max(.45,Math.min(1.5,v));$('world').style.transfor
 $('zoom-in').onclick=()=>setZoom(zoom+.1);$('zoom-out').onclick=()=>setZoom(zoom-.1);$('zoom-reset').onclick=()=>setZoom(1);$('canvas-shell').addEventListener('wheel',e=>{if(e.ctrlKey||e.metaKey){e.preventDefault();setZoom(zoom+(e.deltaY<0?.05:-.05))}},{passive:false});document.addEventListener('keydown',e=>{if(e.target.closest('input,textarea,select'))return;if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='z'){e.preventDefault();e.shiftKey?redo():undo()}if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='y'){e.preventDefault();redo()}});
 $('add-match').onclick=()=>mutate(()=>addMatch(100+(data.nodes.length%4)*360,150+Math.floor(data.nodes.length/4)*300));
 $('add-section').onclick=addSection;$('generate-round').onclick=generateRound;$('undo-btn').onclick=undo;$('redo-btn').onclick=redo;$('new-doc').onclick=()=>{newDoc();loadSideData()};$('save-draft').onclick=()=>saveDoc(false);$('publish-doc').onclick=()=>saveDoc(true);
-$('doc-select').onchange=()=>loadDoc($('doc-select').value);$('doc-title').onchange=()=>{if(current)current.title=$('doc-title').value};$('doc-format').onchange=()=>{if(current)current.format=$('doc-format').value};
+$('doc-select').onchange=()=>loadDoc($('doc-select').value);$('doc-title').oninput=()=>{if(current){current.title=$('doc-title').value;scheduleLocalDraftSave()}};$('doc-format').onchange=()=>{if(current){current.format=$('doc-format').value;scheduleLocalDraftSave()}};
 $('save-teams').onclick=()=>mutate(()=>{data.teams=$('teams-input').value.split(/[\n,;]+/).map(x=>x.trim()).filter(Boolean)});
 $('assign-judge').onclick=async()=>{const uid=$('judge-select').value;if(!uid||!current)return;const match=$('assignment-match').value||null;const {error}=await sb.from('bracket_assignments').insert({bracket_id:current.id,match_id:match,judge_user_id:uid,assigned_by:session.user.id});if(error){say('assignment-list','Не удалось назначить: '+error.message,'error');return}await loadSideData()};
 $('assignment-list').addEventListener('click',async e=>{const b=e.target.closest('[data-remove-assignment]');if(!b)return;const {error}=await sb.from('bracket_assignments').delete().eq('id',b.dataset.removeAssignment);if(error){say('assignment-list',error.message,'error');return}await loadSideData()});
