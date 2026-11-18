@@ -78,7 +78,7 @@ async function showMyTeam(token:string,chatId:string,admin:any,messageId?:number
  }
  if(s.isCaptain)for(const p of roster){const id=Number(p.arqonId);if(Number.isSafeInteger(id)&&id>0&&String(id)!==String(s.profile.arqon_id))kb.push([{text:"Передать капитанство #"+id,callback_data:"tm:transferask:"+t.id+":"+id}]);}
  else if(roster.some((p:any)=>String(p.account_id)===String(s.link.user_id)))kb.push([{text:"🚪 Покинуть команду",callback_data:"tm:leaveask:"+t.id}]);
- kb.push([{text:"🌐 Страница команды",url:SITE+"/teams/profile/?id="+encodeURIComponent(String(t.id))}],[{text:"↻ Обновить",callback_data:"myteam"},{text:"↩️ Меню",callback_data:"menu"}]]);
+ kb.push([{text:"🌐 Страница команды",url:SITE+"/teams/profile/?id="+encodeURIComponent(String(t.id))}],[{text:"↻ Обновить",callback_data:"myteam"},{text:"↩️ Меню",callback_data:"menu"}]);
  await show(text,{inline_keyboard:kb});
 }
 
