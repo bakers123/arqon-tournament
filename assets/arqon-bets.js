@@ -48,7 +48,7 @@ function renderEvents(){
  visible.forEach(event=>{
   const card=el('article','bet-event'),head=el('div','bet-event-head'),info=el('div');
   info.append(el('h3','',event.title),el('p','bet-muted',date(event.starts_at)+(event.description?' · '+event.description:'')));
-  head.append(info,el('span','bet-status',event.status==='open'?'Приём ставок':event.status==='closed'?'Закрыто':event.status==='settled'?'Рассчитано':'Отменено'));card.append(head);
+  head.append(info,el('span','bet-status',event.status==='open'?(new Date(event.starts_at).getTime()>Date.now()?'Приём ставок':'Ставки закрыты по времени'):event.status==='closed'?'Закрыто':event.status==='settled'?'Рассчитано':'Отменено'));card.append(head);
   (event.arqon_bet_markets||[]).forEach(market=>{
    const box=el('section','bet-market');box.append(el('h4','',market.title+' · '+(market.status==='open'?'ОТКРЫТ':market.status==='settled'?'РАССЧИТАН':'ЗАКРЫТ')));
    const selections=(market.arqon_bet_selections||[]).filter(s=>s.is_active!==false);
@@ -94,7 +94,7 @@ function renderHistory(){
 }
 function renderAdmin(){
  const matchSelect=$('bet-event-match'),marketEvent=$('bet-market-event'),oldMatch=matchSelect.value,oldEvent=marketEvent.value;
- matchSelect.replaceChildren(new Option('Без привязки — результат вручную',''));matches.forEach(m=>matchSelect.add(new Option(m.title+' · '+m.team1+' vs '+m.team2,m.id)));if(matches.some(m=>m.id===oldMatch))matchSelect.value=oldMatch;
+ matchSelect.replaceChildren(new Option('Без привязки — результат вручную',''));matches.filter(m=>m.status==='scheduled'&&m.starts_at&&new Date(m.starts_at).getTime()>Date.now()).forEach(m=>matchSelect.add(new Option(m.title+' · '+m.team1+' vs '+m.team2,m.id)));if(matches.some(m=>m.id===oldMatch))matchSelect.value=oldMatch;
  marketEvent.replaceChildren();events.filter(e=>e.status==='open'&&new Date(e.starts_at).getTime()>Date.now()).forEach(e=>marketEvent.add(new Option(e.title, e.id)));if(events.some(e=>e.id===oldEvent))marketEvent.value=oldEvent;
  const host=$('bets-admin-list');host.replaceChildren();
  if(!events.length){host.append(el('p','bet-muted','Событий пока нет.'));return}
