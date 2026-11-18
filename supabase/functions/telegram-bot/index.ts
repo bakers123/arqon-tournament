@@ -85,13 +85,13 @@ Deno.serve(async(req)=>{
       else if(parts[1]==="accept"||parts[1]==="decline"){
        const {data:d,error}=await admin.rpc("telegram_shoot_action",{p_chat_id:callbackChatId,p_action:parts[1],p_duel_id:parts[2]});if(error)throw error;
        if(parts[1]==="decline"){await send(bot,callbackChatId,"Вызов отклонён. Ставка создателя возвращена.");await send(bot,String(d.creator_chat_id),"Игрок отклонил дуэль. Ставка возвращена.");}
-       else{const text="🎯 <b>SHOOT / SHIELD — МАТЧ НАЧАЛСЯ</b>\\nСтавка каждого: <b>"+d.stake+" 🪙</b> · Банк: <b>"+(2*d.stake)+" 🪙</b>\\nПервый до 3 очков. Выбирай зону:";const kb={inline_keyboard:[[{text:"🎯 Голова",callback_data:"tgshoot:zone:"+d.id+":1"},{text:"🦺 Верх",callback_data:"tgshoot:zone:"+d.id+":2"}],[{text:"✚ Центр",callback_data:"tgshoot:zone:"+d.id+":3"},{text:"🛡️ Низ",callback_data:"tgshoot:zone:"+d.id+":4"},{text:"👢 Ноги",callback_data:"tgshoot:zone:"+d.id+":5"}]]};await send(bot,String(d.creator_chat_id),text,kb);await send(bot,String(d.opponent_chat_id),text,kb);}
+       else{const text="🎯 <b>SHOOT / SHIELD — МАТЧ НАЧАЛСЯ</b>\\nСтавка каждого: <b>"+d.stake+" 🪙</b> · Банк: <b>"+(2*d.stake)+" 🪙</b>\\nПервый до 3 очков. Выбирай зону:";const kb={inline_keyboard:[[{text:"🎯 Голова",callback_data:"tgshoot:zone:"+d.id+":1"},{text:"🛡️ Тело",callback_data:"tgshoot:zone:"+d.id+":2"},{text:"👢 Ноги",callback_data:"tgshoot:zone:"+d.id+":3"}]]};await send(bot,String(d.creator_chat_id),text,kb);await send(bot,String(d.opponent_chat_id),text,kb);}
       }else if(parts[1]==="zone"){
        const duelId=parts[2],zone=Number(parts[3]);const {data:d,error}=await admin.rpc("telegram_shoot_action",{p_chat_id:callbackChatId,p_action:"move",p_duel_id:duelId,p_zone:zone});if(error)throw error;
        if(d.status==="waiting")await send(bot,callbackChatId,"✅ Выбор принят и скрыт. Ждём ход соперника.");
-       else{const names=["","Голова","Верх","Центр","Низ","Ноги"];const result="🎯 <b>РАУНД "+d.round+" ЗАВЕРШЁН</b>\\nВыстрел: "+names[d.shot_zone]+" · Щит: "+names[d.shield_zone]+"\\nСчёт: <b>"+d.creator_score+" : "+d.opponent_score+"</b>";
+       else{const names=["","Голова","Тело","Ноги"];const result="🎯 <b>РАУНД "+d.round+" ЗАВЕРШЁН</b>\\nВыстрел: "+names[d.shot_zone]+" · Щит: "+names[d.shield_zone]+"\\nСчёт: <b>"+d.creator_score+" : "+d.opponent_score+"</b>";
         if(d.status==="finished"){const finalText=result+"\\n🏆 Победитель: <b>ARQON #"+d.winner_arqon_id+"</b>\\nВыплата: <b>"+(2*d.stake)+" 🪙</b>";await send(bot,String(d.creator_chat_id),finalText,backMenu);await send(bot,String(d.opponent_chat_id),finalText,backMenu);}
-        else{const nextText=result+"\\nСледующий раунд — выбирай зону:";const kb={inline_keyboard:[[{text:"🎯 Голова",callback_data:"tgshoot:zone:"+duelId+":1"},{text:"🦺 Верх",callback_data:"tgshoot:zone:"+duelId+":2"}],[{text:"✚ Центр",callback_data:"tgshoot:zone:"+duelId+":3"},{text:"🛡️ Низ",callback_data:"tgshoot:zone:"+duelId+":4"},{text:"👢 Ноги",callback_data:"tgshoot:zone:"+duelId+":5"}]]};await send(bot,String(d.creator_chat_id),nextText,kb);await send(bot,String(d.opponent_chat_id),nextText,kb);}
+        else{const nextText=result+"\\nСледующий раунд — выбирай зону:";const kb={inline_keyboard:[[{text:"🎯 Голова",callback_data:"tgshoot:zone:"+duelId+":1"},{text:"🛡️ Тело",callback_data:"tgshoot:zone:"+duelId+":2"},{text:"👢 Ноги",callback_data:"tgshoot:zone:"+duelId+":3"}]]};await send(bot,String(d.creator_chat_id),nextText,kb);await send(bot,String(d.opponent_chat_id),nextText,kb);}
        }
       }
      }catch(e){await send(bot,callbackChatId,"⚠️ "+esc((e as Error)?.message||"Не удалось выполнить действие."));}
@@ -295,8 +295,8 @@ Deno.serve(async(req)=>{
    }
    return json({ok:true});
   }
-  if(txt.toLowerCase().startsWith("/duel")){
-   const duelParts=txt.split(" ").slice(1),rawName=duelParts[0]||"",username=rawName.startsWith("@")?rawName.slice(1):rawName,stake=Number(duelParts[1]);
+  if(/^\/duel(?:@\w+)?(?:\s|$)/i.test(txt)){
+   const duelParts=txt.replace(/^\/duel(?:@\w+)?/i,"").trim().split(/\s+/),rawName=duelParts[0]||"",username=rawName.startsWith("@")?rawName.slice(1):rawName,stake=Number(duelParts[1]);
    if(!username||!Number.isSafeInteger(stake)||stake<10||stake>1000000){await send(bot,chatId,"Формат: <code>/duel @username 50</code>. Минимальная ставка — 10 койнов.");return json({ok:true});}
    const {data:d,error}=await admin.rpc("telegram_shoot_action",{p_chat_id:chatId,p_action:"create",p_stake:stake,p_target_username:username});
    if(error){await send(bot,chatId,"⚠️ "+esc(error.message));return json({ok:true});}
