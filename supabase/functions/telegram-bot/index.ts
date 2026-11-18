@@ -302,7 +302,7 @@ Deno.serve(async(req)=>{
    if(error){await send(bot,chatId,"⚠️ "+esc(error.message));return json({ok:true});}
    const challenge="⚔️ <b>ТЕБЯ ВЫЗВАЛИ НА SHOOT / SHIELD!</b>\\nСоперник: ARQON #"+d.creator_arqon_id+"\\nСтавка: <b>"+stake+" 🪙</b>\\nБанк: <b>"+(stake*2)+" 🪙</b>\\n\\nПринять вызов?";
    const kb={inline_keyboard:[[{text:"✅ Принять дуэль",callback_data:"tgshoot:accept:"+d.id},{text:"❌ Отклонить",callback_data:"tgshoot:decline:"+d.id}]]};
-   await send(bot,String(d.target_chat_id),challenge,kb);await send(bot,chatId,"✅ Вызов отправлен игроку @"+esc(username)+". Твоя ставка "+stake+" 🪙 зарезервирована. Ждём подтверждения.",{inline_keyboard:[[{text:"Отменить вызов и вернуть ставку",callback_data:"tgshoot:cancel:"+d.id}]]});return json({ok:true});
+   try{await send(bot,String(d.target_chat_id),challenge,kb);}catch(e){await admin.rpc("telegram_shoot_cancel",{p_chat_id:chatId,p_duel_id:d.id});await send(bot,chatId,"Не удалось доставить вызов игроку. Зарезервированная ставка возвращена. Возможно, игрок заблокировал бота.");return json({ok:true});}await send(bot,chatId,"✅ Вызов отправлен игроку @"+esc(username)+". Твоя ставка "+stake+" 🪙 зарезервирована. Ждём подтверждения.",{inline_keyboard:[[{text:"Отменить вызов и вернуть ставку",callback_data:"tgshoot:cancel:"+d.id}]]});return json({ok:true});
   }
   const ticketReply=txt.match(/^\/ticket(?:@\w+)?\s+(\d+)\s+([\s\S]+)$/i);
   if(ticketReply){
