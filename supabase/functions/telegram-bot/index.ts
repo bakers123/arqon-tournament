@@ -450,16 +450,16 @@ Deno.serve(async(req)=>{
    return json({ok:true});
   }
 
-   if(/^\/team(?:@\\w+)?$/i.test(txt)){await showMyTeam(bot,chatId,admin);return json({ok:true});}
-   if(/^\/team_create(?:@\\w+)?(?:\\s|$)/i.test(txt)){
-    const name=txt.replace(/^\/team_create(?:@\\w+)?/i,"").trim();
+   if(/^\/team(?:@\w+)?$/i.test(txt)){await showMyTeam(bot,chatId,admin);return json({ok:true});}
+   if(/^\/team_create(?:@\w+)?(?:\s|$)/i.test(txt)){
+    const name=txt.replace(/^\/team_create(?:@\w+)?/i,"").trim();
     if(!name){await send(bot,chatId,"Формат: <code>/team_create Название команды</code>");return json({ok:true});}
     try{const created=await telegramTeamAction(admin,chatId,"create",undefined,name);await send(bot,chatId,"✅ Команда <b>"+esc(created.name)+"</b> создана! Ты капитан.",{inline_keyboard:[[{text:"🧩 Управлять командой",callback_data:"myteam"}],[{text:"🌐 Страница команды",url:SITE+"/teams/profile/?id="+encodeURIComponent(created.id)}]]});}
     catch(e){await send(bot,chatId,"⚠️ "+esc((e as Error)?.message||"Не удалось создать команду."));}
     return json({ok:true});
    }
-   if(/^\/team_invite(?:@\\w+)?(?:\\s|$)/i.test(txt)){
-    const targetId=Number(txt.replace(/^\/team_invite(?:@\\w+)?/i,"").trim());
+   if(/^\/team_invite(?:@\w+)?(?:\s|$)/i.test(txt)){
+    const targetId=Number(txt.replace(/^\/team_invite(?:@\w+)?/i,"").trim());
     if(!Number.isSafeInteger(targetId)||targetId<1){await send(bot,chatId,"Формат: <code>/team_invite ARQON_ID</code>");return json({ok:true});}
     try{
      const state=await getMyTeam(admin,chatId);if(!state.team)throw new Error("Сначала создай команду.");
@@ -473,7 +473,7 @@ Deno.serve(async(req)=>{
     }catch(e){await send(bot,chatId,"⚠️ "+esc((e as Error)?.message||"Не удалось отправить приглашение."));}
     return json({ok:true});
    }
-   if(/^\/team_leave(?:@\\w+)?$/i.test(txt)){
+   if(/^\/team_leave(?:@\w+)?$/i.test(txt)){
     try{const state=await getMyTeam(admin,chatId);if(!state.team)throw new Error("Ты не состоишь в команде.");await telegramTeamAction(admin,chatId,"leave",String(state.team.id));await send(bot,chatId,"Ты покинул команду. Состав на сайте обновлён.");}
     catch(e){await send(bot,chatId,"⚠️ "+esc((e as Error)?.message||"Не удалось выйти из команды."));}
     return json({ok:true});
