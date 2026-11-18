@@ -2,7 +2,7 @@
 'use strict';
 const SUPABASE_URL='https://uscnaqcvuwjrmkjyuklp.supabase.co';
 const SUPABASE_KEY='sb_publishable_oE2Bc1wPAcDt6HE8bOUj3Q_0-2FfIxB';
-const db=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY,{auth:{storageKey:'sb-uscnaqcvuwjrmkjyuklp-auth-token',persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
+const db=window.arqonLiveDb || window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY,{auth:{storageKey:'sb-uscnaqcvuwjrmkjyuklp-auth-token',persistSession:true,autoRefreshToken:false,detectSessionInUrl:false}});
 const $=id=>document.getElementById(id);
 const el=(tag,cls,text)=>{const node=document.createElement(tag);if(cls)node.className=cls;if(text!==undefined)node.textContent=text;return node};
 let user=null,arqonId=null,balance=null,isAdmin=false,events=[],bets=[],matches=[];
