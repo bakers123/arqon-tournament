@@ -5,6 +5,7 @@ const esc=(v:unknown)=>String(v??"").replaceAll("&","&amp;").replaceAll("<","&lt
 const SITE="https://arqon-esports.ru";
 const menuMarkup=(isAdmin=false,profileUrl=SITE+"/players/")=>({inline_keyboard:[
  [{text:"👤 Мой профиль",url:profileUrl}],
+ [{text:"✏️ Изменить ник",callback_data:"editnick"}],
  [{text:"🔔 Уведомления",callback_data:"notifications"}],
  [{text:"🏆 Киберспортивная лига",callback_data:"league"}],
  [{text:"👥 Команды",callback_data:"teams"},{text:"🎯 Игроки",callback_data:"players"}],
@@ -110,6 +111,8 @@ async function setBotCommands(token:string){
   {command:"start",description:"Открыть главное меню ARQON"},
   {command:"menu",description:"Показать меню"},
   {command:"profile",description:"Открыть мой профиль ARQON"},
+  {command:"nick",description:"Изменить имя профиля ARQON"},
+  {command:"gamenick",description:"Изменить игровой ник CS2 / Dota 2"},
   {command:"team",description:"Управление моей командой"},
   {command:"team_create",description:"Создать команду"},
   {command:"team_invite",description:"Пригласить игрока по ARQON ID"},
@@ -188,6 +191,16 @@ Deno.serve(async(req)=>{
       }
      }catch(e){await send(bot,callbackChatId,"⚠️ "+esc((e as Error)?.message||"Не удалось выполнить действие."));}
 
+    }else if(action==="editnick"||action==="editgamenick"){
+     const field=action==="editnick"?"display_name":"game_nick";
+     const command=field==="display_name"?"/nick":" /gamenick";
+     const {data:link}=await linkedUser(admin,callbackChatId);
+     if(!link?.user_id)await renderPanel(bot,callbackChatId,callback.message.message_id,"Сначала подключи Telegram к своему аккаунту ARQON на сайте.",{inline_keyboard:[[{text:"Открыть ARQON",url:SITE+"/"}],[{text:"↩️ Меню",callback_data:"menu"}]]});
+     else{
+      const {data:profile}=await admin.from("profiles").select("arqon_id,display_name,game_nick").eq("user_id",link.user_id).maybeSingle();
+      const current=field==="display_name"?profile?.display_name:profile?.game_nick;
+      await renderPanel(bot,callbackChatId,callback.message.message_id,"✏️ <b>ИЗМЕНЕНИЕ "+(field==="display_name"?"ИМЕНИ ПРОФИЛЯ":"ИГРОВОГО НИКА")+"</b>\n\nСейчас: <b>"+esc(current||"не указано")+"</b>\nОтправь новую команду, например:\n<code>"+(field==="display_name"?"/nick Artur":"/gamenick s1mple")+"</code>\n\nОт 2 до 32 символов.",{inline_keyboard:[[{text:"↗️ Открыть профиль",url:await getTelegramProfileUrl(admin,callbackChatId)}],[{text:"↩️ Меню",callback_data:"menu"}]]});
+     }
     }else if(action==="myteam"){
      await showMyTeam(bot,callbackChatId,admin,callback.message.message_id);
     }else if(action.startsWith("tm:")){
@@ -450,6 +463,31 @@ Deno.serve(async(req)=>{
    return json({ok:true});
   }
 
+
+   if(/^\/(nick|gamenick)(?:@\\w+)?(?:\\s|$)/i.test(txt)){
+    const match=txt.match(/^\/(nick|gamenick)(?:@\\w+)?(?:\\s+([\\s\\S]*))?$/i);
+    const kind=(match?.[1]||"nick").toLowerCase(),value=(match?.[2]||"").trim();
+    const field=kind==="nick"?"display_name":"game_nick";
+    const fieldLabel=kind==="nick"?"имя профиля ARQON":"игровой ник";
+    if(!value){
+     const link=await linkedUser(admin,chatId);
+     if(!link?.user_id){await send(bot,chatId,"Сначала подключи Telegram к аккаунту ARQON на сайте.");return json({ok:true});}
+     const {data:profile}=await admin.from("profiles").select("arqon_id,display_name,game_nick").eq("user_id",link.user_id).maybeSingle();
+     await send(bot,chatId,"✏️ <b>ИЗМЕНЕНИЕ "+(field==="display_name"?"ИМЕНИ ПРОФИЛЯ":"ИГРОВОГО НИКА")+"</b>\n\nСейчас: <b>"+esc((field==="display_name"?profile?.display_name:profile?.game_nick)||"не указано")+"</b>\nОтправь:\n<code>"+(kind==="nick"?"/nick Новое имя":"/gamenick Новый игровой ник")+"</code>\n\nОт 2 до 32 символов.",{inline_keyboard:[[{text:"↗️ Открыть профиль",url:await getTelegramProfileUrl(admin,chatId)}],[{text:"↩️ Меню",callback_data:"menu"}]]});
+     return json({ok:true});
+    }
+    const normalized=value.replace(/\\s+/g," ").trim();
+    if(normalized.length<2||normalized.length>32||/[<>]/.test(normalized)){
+     await send(bot,chatId,"⚠️ Ник должен содержать от 2 до 32 символов. Символы < и > использовать нельзя.");return json({ok:true});
+    }
+    const {data:result,error}=await admin.rpc("telegram_update_profile_nick",{p_chat_id:chatId,p_nick:normalized,p_field:field});
+    if(error){
+     const messages:any={telegram_not_linked:"Сначала подключи Telegram к своему аккаунту ARQON.",profile_required:"Профиль ARQON не найден. Сначала создай его на сайте.",nick_length_invalid:"Ник должен содержать от 2 до 32 символов.",nick_characters_invalid:"Символы < и > использовать нельзя."};
+     await send(bot,chatId,"⚠️ "+esc(messages[error.message]||error.message||"Не удалось изменить ник."));return json({ok:true});
+    }
+    await send(bot,chatId,"✅ "+(field==="display_name"?"Имя профиля":"Игровой ник")+" изменён на <b>"+esc(normalized)+"</b>. Изменения уже сохранены в ARQON.",{inline_keyboard:[[{text:"↗️ Открыть мой профиль",url:SITE+"/players/profile/?id="+result.arqon_id}],[{text:"✏️ Изменить ещё раз",callback_data:field==="display_name"?"editnick":"editgamenick"}],[{text:"↩️ Меню",callback_data:"menu"}]]});
+    return json({ok:true});
+   }
    if(/^\/team(?:@\w+)?$/i.test(txt)){await showMyTeam(bot,chatId,admin);return json({ok:true});}
    if(/^\/team_create(?:@\w+)?(?:\s|$)/i.test(txt)){
     const name=txt.replace(/^\/team_create(?:@\w+)?/i,"").trim();
