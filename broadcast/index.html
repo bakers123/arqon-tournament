@@ -82,7 +82,7 @@ body{font-family:Rajdhani,Arial,sans-serif;color:var(--white)}
  function renderPlayers(m){
   const host=$('players');host.replaceChildren();
   const ctTeam1=params.get('ct')!=='2';
-  const teamDefs=[{name:m.team1,side:ctTeam1?'CT':'T'},{name:m.team2,side:ctTeam1?'T':'CT'}];
+  const teamDefs=[{name:m.team1,side:ctTeam1?'CT':'T',lineup:Array.isArray(m.lineup1)?m.lineup1:[]},{name:m.team2,side:ctTeam1?'T':'CT',lineup:Array.isArray(m.lineup2)?m.lineup2:[]}];
   const livePlayers=gsiState&&Array.isArray(gsiState.players)?gsiState.players:[];
   teamDefs.forEach(team=>{
    const box=document.createElement('section');box.className='player-team';
@@ -103,7 +103,7 @@ body{font-family:Rajdhani,Arial,sans-serif;color:var(--white)}
     });
    }else{
     const rows=stats.filter(s=>s.team_name===team.name).sort((a,b)=>Number(b.kills||0)-Number(a.kills||0)||Number(b.adr||0)-Number(a.adr||0));
-    const names=rows.length?rows.map(s=>({name:s.player_name,k:s.kills,d:s.deaths,a:s.assists,adr:s.adr})): (Array.isArray(team.side==='CT'?m.lineup1:m.lineup2)?(team.side==='CT'?m.lineup1:m.lineup2):[]).map(name=>({name,k:'—',d:'—',a:'—',adr:'—'}));
+    const names=rows.length?rows.map(s=>({name:s.player_name,k:s.kills,d:s.deaths,a:s.assists,adr:s.adr})): team.lineup.map(name=>({name,k:'—',d:'—',a:'—',adr:'—'}));
     if(!names.length){const empty=document.createElement('div');empty.className='empty-player';empty.textContent='Состав не опубликован';box.append(empty)}
     names.slice(0,5).forEach(p=>{
      const row=document.createElement('div');row.className='player-row';
