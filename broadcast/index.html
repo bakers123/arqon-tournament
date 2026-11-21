@@ -44,6 +44,15 @@ body{font-family:Rajdhani,Arial,sans-serif;color:var(--white)}
 .player-head span:not(:first-child){text-align:right}.empty-player{padding:8px 2px 2px;color:#8f8a9e;font:600 11px Rajdhani}
 #message{position:absolute;left:50%;top:48%;transform:translate(-50%,-50%);padding:12px 18px;border:1px solid var(--line);border-radius:6px;background:rgba(8,9,16,.92);font:700 12px Orbitron;letter-spacing:1px;color:#e8ddff;white-space:nowrap;box-shadow:0 10px 35px #0006}
 #message[hidden]{display:none}
+.game-strip{display:flex;align-items:center;justify-content:center;gap:22px;margin-top:7px;padding:7px 12px;border:1px solid rgba(190,165,255,.16);border-radius:5px;background:rgba(8,9,16,.84);box-shadow:0 8px 20px #0003;font:800 9px Orbitron;letter-spacing:1px;color:#d8d1e8;text-transform:uppercase}
+.game-strip span{white-space:nowrap}.game-strip b{color:var(--acid);font-weight:800}.game-strip .source{margin-left:auto;color:#8dffb0}
+.team-score.bump{animation:scoreBump .42s ease}
+.emblem img{width:100%;height:100%;object-fit:contain;border-radius:6px;padding:3px}
+.player-row{grid-template-columns:minmax(0,1fr) 38px 38px minmax(72px,.8fr) 48px}
+.player-head{grid-template-columns:minmax(0,1fr) 38px 38px minmax(72px,.8fr) 48px}
+.hp{font-weight:800;color:#9effa9!important}.hp.low{color:#ff7777!important}.weapon{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#e1d5ff!important}
+@keyframes scoreBump{0%{transform:scale(1);color:#fff}45%{transform:scale(1.16);color:var(--acid);text-shadow:0 0 25px var(--acid)}100%{transform:scale(1);color:#fff}}
+@media(max-width:600px){.game-strip{gap:9px;flex-wrap:wrap;font-size:7px}.game-strip .source{margin-left:0}.player-row,.player-head{grid-template-columns:minmax(0,1fr) 28px 28px minmax(52px,.8fr) 35px;gap:4px}}
 @keyframes enter{from{opacity:0;transform:translateY(-12px)}to{opacity:1;transform:translateY(0)}}@keyframes pulse{50%{opacity:.35}}
 @media(max-width:900px){#hud{padding:16px}.scorebar{grid-template-columns:minmax(0,1fr) 105px minmax(0,1fr)}.team{gap:9px;padding:12px}.emblem{width:40px;height:40px;flex-basis:40px;font-size:14px}.team-score{min-width:38px}.player-row,.player-head{grid-template-columns:minmax(0,1fr) 28px 28px 28px 42px;gap:4px}.player-team{padding:7px}.players{gap:6px}}
 @media(max-width:600px){#hud{padding:10px}.topline{padding:0 3px 6px}.event-name{display:none}.scorebar{grid-template-columns:minmax(0,1fr) 70px minmax(0,1fr);min-height:70px}.team{gap:6px;padding:8px}.emblem{width:30px;height:30px;flex-basis:30px;font-size:11px}.team-label{font-size:7px}.team-name{font-size:12px}.team-score{font-size:29px;min-width:27px}.mid{gap:5px;padding:5px}.mid-kicker,.series{font-size:7px}.map-name{font-size:10px;max-width:65px}.players{grid-template-columns:1fr;gap:5px}.player-team{padding:6px 9px}.player-row,.player-head{grid-template-columns:minmax(0,1fr) 30px 30px 30px 45px}.player-row{min-height:21px;font-size:11px}.player-head{font-size:7px}}
@@ -57,7 +66,7 @@ body{font-family:Rajdhani,Arial,sans-serif;color:var(--white)}
   <div class="team left"><div class="emblem" id="team1-mark">A</div><div class="team-copy"><div class="team-label">TEAM 01</div><div class="team-name" id="team1-name">TEAM ONE</div></div><div class="team-score" id="score1">0</div></div>
   <div class="mid"><div class="mid-kicker">MATCH SCORE</div><div class="map-name" id="map-name">MAP TBD</div><div class="series" id="series">BO3</div></div>
   <div class="team right"><div class="emblem" id="team2-mark">B</div><div class="team-copy"><div class="team-label">TEAM 02</div><div class="team-name" id="team2-name">TEAM TWO</div></div><div class="team-score" id="score2">0</div></div>
- </div><div class="players" id="players"></div>
+ </div><div class="game-strip" id="game-strip"><span>ROUND <b id="game-round">—</b></span><span>TIME <b id="game-timer">—</b></span><span>BOMB <b id="game-bomb">—</b></span><span>PHASE <b id="game-phase">—</b></span><span class="source" id="gsi-source">GSI OFFLINE</span></div><div class="players" id="players"></div>
 </div><div id="message">ARQON BROADCAST · CONNECTING</div></div>
 <script>
 (()=>{
@@ -66,37 +75,91 @@ body{font-family:Rajdhani,Arial,sans-serif;color:var(--white)}
  const db=window.supabase.createClient(URL,KEY,{auth:{persistSession:false,autoRefreshToken:false,detectSessionInUrl:false}});
  const $=id=>document.getElementById(id),params=new URLSearchParams(location.search),requested=params.get('match')||'';
  const validId=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(requested);
- let matchId=validId?requested:null,channel=null,stats=[];
+ let matchId=validId?requested:null,channel=null,stats=[],gsiState=null,currentMatch=null,gsiSocket=null;
  const initials=name=>(String(name||'?').trim().split(/\s+/).slice(0,2).map(x=>x[0]||'').join('').toUpperCase()||'?').slice(0,3);
  const setMessage=value=>{$('message').textContent=value;$('message').hidden=false;$('hud-inner').hidden=true};
  const statusInfo={scheduled:['UPCOMING',''],live:['LIVE','live'],paused:['PAUSED',''],finished:['FINAL','finished'],cancelled:['CANCELLED','']};
  function renderPlayers(m){
   const host=$('players');host.replaceChildren();
-  [{name:m.team1,lineup:Array.isArray(m.lineup1)?m.lineup1:[]},{name:m.team2,lineup:Array.isArray(m.lineup2)?m.lineup2:[]}].forEach(team=>{
+  const ctTeam1=params.get('ct')!=='2';
+  const teamDefs=[{name:m.team1,side:ctTeam1?'CT':'T'},{name:m.team2,side:ctTeam1?'T':'CT'}];
+  const livePlayers=gsiState&&Array.isArray(gsiState.players)?gsiState.players:[];
+  teamDefs.forEach(team=>{
    const box=document.createElement('section');box.className='player-team';
    const head=document.createElement('div');head.className='player-team-head';
    const label=document.createElement('span');label.textContent=team.name||'TEAM';
-   const count=document.createElement('small');count.textContent='PLAYER STATS';head.append(label,count);box.append(head);
+   const count=document.createElement('small');count.textContent=livePlayers.length?team.side+' · LIVE':'PLAYER STATS';
+   head.append(label,count);box.append(head);
    const columns=document.createElement('div');columns.className='player-head';
-   ['PLAYER','K','D','A','ADR'].forEach(v=>{const s=document.createElement('span');s.textContent=v;columns.append(s)});box.append(columns);
-   const rows=stats.filter(s=>s.team_name===team.name).sort((a,b)=>Number(b.kills||0)-Number(a.kills||0)||Number(b.adr||0)-Number(a.adr||0));
-   const names=rows.length?rows.map(s=>({name:s.player_name,k:s.kills,d:s.deaths,a:s.assists,adr:s.adr})):team.lineup.map(name=>({name,k:'—',d:'—',a:'—',adr:'—'}));
-   if(!names.length){const empty=document.createElement('div');empty.className='empty-player';empty.textContent='Состав не опубликован';box.append(empty)}
-   names.slice(0,5).forEach(p=>{
-    const row=document.createElement('div');row.className='player-row';
-    [p.name,p.k,p.d,p.a,p.adr==='—'?'—':Number(p.adr||0).toFixed(1)].forEach((v,i)=>{const span=document.createElement('span');span.className=i===0?'nick':i===4?'num adr':'num';span.textContent=String(v??'—');row.append(span)});
-    box.append(row);
-   });host.append(box);
+   (livePlayers.length?['PLAYER','HP','ARM','WEAPON','K/D']:['PLAYER','K','D','A','ADR']).forEach(v=>{const s=document.createElement('span');s.textContent=v;columns.append(s)});box.append(columns);
+   if(livePlayers.length){
+    const players=livePlayers.filter(p=>p.team===team.side).sort((a,b)=>Number(b.health||0)-Number(a.health||0));
+    if(!players.length){const empty=document.createElement('div');empty.className='empty-player';empty.textContent='Ожидание данных игроков';box.append(empty)}
+    players.slice(0,5).forEach(p=>{
+     const row=document.createElement('div');row.className='player-row';
+     const values=[p.name||'PLAYER',p.alive?String(p.health):'0',String(p.armor||0),p.weapon?(p.weapon+(p.ammo!=null?' · '+p.ammo:'')):'—',String(p.kills||0)+'/'+String(p.deaths||0)];
+     values.forEach((v,i)=>{const span=document.createElement('span');span.className=i===0?'nick':i===1?'num hp'+(Number(p.health)<40?' low':''):i===3?'num weapon':'num';span.textContent=v;row.append(span)});
+     box.append(row);
+    });
+   }else{
+    const rows=stats.filter(s=>s.team_name===team.name).sort((a,b)=>Number(b.kills||0)-Number(a.kills||0)||Number(b.adr||0)-Number(a.adr||0));
+    const names=rows.length?rows.map(s=>({name:s.player_name,k:s.kills,d:s.deaths,a:s.assists,adr:s.adr})): (Array.isArray(team.side==='CT'?m.lineup1:m.lineup2)?(team.side==='CT'?m.lineup1:m.lineup2):[]).map(name=>({name,k:'—',d:'—',a:'—',adr:'—'}));
+    if(!names.length){const empty=document.createElement('div');empty.className='empty-player';empty.textContent='Состав не опубликован';box.append(empty)}
+    names.slice(0,5).forEach(p=>{
+     const row=document.createElement('div');row.className='player-row';
+     [p.name,p.k,p.d,p.a,p.adr==='—'?'—':Number(p.adr||0).toFixed(1)].forEach((v,i)=>{const span=document.createElement('span');span.className=i===0?'nick':i===4?'num adr':'num';span.textContent=String(v??'—');row.append(span)});
+     box.append(row);
+    });
+   }
+   host.append(box);
   });
+ }
+ function setMark(id,url,name){
+  const el=$(id);el.replaceChildren();
+  let safe='';
+  try{const u=new URL(url);if(u.protocol==='https:'&&u.hostname.endsWith('supabase.co')&&u.pathname.includes('/storage/v1/object/public/team-avatars/'))safe=u.href}catch{}
+  if(safe){const img=document.createElement('img');img.src=safe;img.alt='';img.referrerPolicy='no-referrer';el.append(img)}
+  else el.textContent=initials(name);
+ }
+ function updateGameState(state){
+  gsiState=state;
+  const map=state.map||{},ct=map.ct||{},t=map.t||{},ctTeam1=params.get('ct')!=='2';
+  const score1=ctTeam1?ct.score:t.score,score2=ctTeam1?t.score:ct.score;
+  if(currentMatch){
+   if(Number.isFinite(Number(score1)))setScore('score1',score1);
+   if(Number.isFinite(Number(score2)))setScore('score2',score2);
+   if(map.name)$('map-name').textContent=map.name.replace(/^de_/,'').replace(/_/g,' ').toUpperCase();
+   $('game-round').textContent=map.round||'—';
+   $('game-timer').textContent=state.timer?String(state.timer).replace(/\.0+$/,'')+'s':'—';
+   $('game-bomb').textContent=state.round&&state.round.bomb?String(state.round.bomb).toUpperCase():'—';
+   $('game-phase').textContent=(state.round&&state.round.phase||map.phase||'—').toUpperCase();
+   renderPlayers(currentMatch);
+  }
+  $('gsi-source').textContent='GSI LIVE';
+ }
+ function setScore(id,value){
+  const el=$(id),next=String(Number(value)||0);
+  if(el.textContent!==next){el.textContent=next;el.classList.remove('bump');void el.offsetWidth;el.classList.add('bump')}
+ }
+ function connectBridge(){
+  try{gsiSocket=new WebSocket('ws://127.0.0.1:3001/ws')}catch{return}
+  gsiSocket.onopen=()=>{$('gsi-source').textContent='GSI CONNECTED'};
+  gsiSocket.onmessage=event=>{try{const msg=JSON.parse(event.data);if(msg.type==='gsi')updateGameState(msg.state);else if(msg.type==='bridge')$('gsi-source').textContent=msg.hasGameData?'GSI CONNECTED':'WAITING FOR CS2'}catch{}};
+  gsiSocket.onclose=()=>{$('gsi-source').textContent='GSI OFFLINE';setTimeout(connectBridge,2500)};
+  gsiSocket.onerror=()=>{$('gsi-source').textContent='GSI OFFLINE'};
  }
  function render(m){
   if(!m){setMessage('ARQON BROADCAST · NO MATCH SELECTED');return}
+  currentMatch=m;
   $('event-name').textContent=m.title||'ARQON MATCH';$('team1-name').textContent=m.team1||'TEAM ONE';$('team2-name').textContent=m.team2||'TEAM TWO';
-  $('team1-mark').textContent=initials(m.team1);$('team2-mark').textContent=initials(m.team2);
-  $('score1').textContent=String(Number(m.score1)||0);$('score2').textContent=String(Number(m.score2)||0);
+  setMark('team1-mark',params.get('logo1'),m.team1);setMark('team2-mark',params.get('logo2'),m.team2);
+  setScore('score1',m.score1);setScore('score2',m.score2);
   $('map-name').textContent=m.map_name||'MAP TBD';$('series').textContent='BO'+(Number(m.best_of)||3);
   const info=statusInfo[m.status]||['LIVE','live'];$('match-status').textContent=info[0];$('match-status').className='status '+info[1];
-  renderPlayers(m);$('message').hidden=true;$('hud-inner').hidden=false;
+  $('game-round').textContent='—';$('game-timer').textContent='—';$('game-bomb').textContent='—';$('game-phase').textContent='—';
+  const compact=params.get('mode')==='compact';$('players').style.display=compact?'none':'grid';$('game-strip').style.display=compact?'none':'flex';
+  renderPlayers(m);if(gsiState)updateGameState(gsiState);
+  $('message').hidden=true;$('hud-inner').hidden=false;
  }
  async function loadStats(){
   if(!matchId){stats=[];return}
@@ -123,7 +186,7 @@ body{font-family:Rajdhani,Arial,sans-serif;color:var(--white)}
   if(requested&&!validId){setMessage('ARQON BROADCAST · INVALID MATCH ID');return}
   try{await loadMatch();if(!channel)subscribe()}catch(e){setMessage('ARQON BROADCAST · DATA ERROR')}
  }
- boot();window.addEventListener('beforeunload',()=>{if(channel)db.removeChannel(channel)});
+ boot();connectBridge();window.addEventListener('beforeunload',()=>{if(channel)db.removeChannel(channel);if(gsiSocket)gsiSocket.close()});
 })();
 </script>
 </body>
