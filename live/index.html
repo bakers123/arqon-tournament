@@ -96,6 +96,15 @@ a{color:inherit;text-decoration:none}button,input,select,textarea{font:inherit}
 <label class="field"><span>Состав команды 2 · по одному нику в строке</span><textarea id="edit-lineup2"></textarea></label>
 </div>
 <div class="admin-actions"><button class="btn" id="save-match" type="button">Сохранить матч</button><button class="btn secondary" id="delete-match" type="button">Удалить матч</button></div>
+<div id="broadcast-tools" style="margin-top:14px;padding:14px;border:1px solid #a879ff55;border-radius:12px;background:#8b5cf610">
+ <div class="section-title" style="margin:0 0 8px">ARQON BROADCAST · OBS HUD</div>
+ <p class="bet-muted" style="margin:0 0 9px">Ссылка на прозрачный игровой оверлей выбранного матча. Добавь её в OBS как Browser Source, размер 1920 × 1080.</p>
+ <div style="display:flex;gap:8px;flex-wrap:wrap">
+  <input id="broadcast-url" type="url" readonly aria-label="Ссылка OBS Overlay" style="flex:1;min-width:220px;border:1px solid #a879ff44;border-radius:9px;padding:10px;background:#0b0a13;color:#e9ddff">
+  <button class="btn" id="copy-broadcast-url" type="button">Копировать ссылку</button>
+  <a class="btn secondary" id="preview-broadcast" href="/broadcast/" target="_blank" rel="noopener noreferrer" style="display:inline-flex;align-items:center">Предпросмотр</a>
+ </div>
+</div>
 <div class="section-title">ДОБАВИТЬ СОБЫТИЕ МАТЧА</div>
 <form id="event-form"><div class="admin-grid">
 <label class="field"><span>Тип события</span><select id="event-type"><option value="info">Информация</option><option value="round">Раунд</option><option value="kill">Фраг / ключевой момент</option><option value="map">Карта</option><option value="score">Изменение счёта</option><option value="mvp">MVP</option></select></label>
@@ -202,6 +211,8 @@ function renderDetail(){
   $('edit-lineup1').value=(m.lineup1||[]).join('\n');$('edit-lineup2').value=(m.lineup2||[]).join('\n');
   const team=$('event-team');team.replaceChildren(new Option('Без команды',''),new Option(m.team1,m.team1),new Option(m.team2,m.team2));
   const statTeam=$('stats-team');statTeam.replaceChildren(new Option(m.team1,m.team1),new Option(m.team2,m.team2));
+  const overlayUrl=location.origin+'/broadcast/?match='+encodeURIComponent(m.id);
+  $('broadcast-url').value=overlayUrl;$('preview-broadcast').href=overlayUrl;
  }
 }
 async function loadEvents(){
@@ -323,6 +334,15 @@ $('save-match').addEventListener('click',async(e)=>{
  const {error}=await db.from('live_matches').update(payload).eq('id',selected);if(error)throw error;
  await loadMatches();notice('Данные матча обновлены.');}
  catch(err){notice('Не удалось сохранить матч: '+err.message,true)}finally{btn.disabled=false}
+});
+$('copy-broadcast-url').addEventListener('click',async()=>{
+ const value=$('broadcast-url').value;if(!value)return;
+ const btn=$('copy-broadcast-url');
+ try{
+  if(navigator.clipboard&&window.isSecureContext)await navigator.clipboard.writeText(value);
+  else{const temp=document.createElement('textarea');temp.value=value;temp.style.position='fixed';temp.style.opacity='0';document.body.append(temp);temp.select();if(!document.execCommand('copy'))throw new Error('Не удалось скопировать ссылку');temp.remove()}
+  btn.textContent='Ссылка скопирована';setTimeout(()=>btn.textContent='Копировать ссылку',1800);
+ }catch(err){notice('Не удалось скопировать ссылку: '+err.message,true)}
 });
 $('delete-match').addEventListener('click',async()=>{
  if(!isEditor||!selected||!confirm('Удалить матч и его ленту событий?'))return;
