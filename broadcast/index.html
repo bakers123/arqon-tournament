@@ -57,6 +57,52 @@ body{font-family:Rajdhani,Arial,sans-serif;color:var(--white)}
 @media(max-width:900px){#hud{padding:16px}.scorebar{grid-template-columns:minmax(0,1fr) 105px minmax(0,1fr)}.team{gap:9px;padding:12px}.emblem{width:40px;height:40px;flex-basis:40px;font-size:14px}.team-score{min-width:38px}.player-row,.player-head{grid-template-columns:minmax(0,1fr) 28px 28px 28px 42px;gap:4px}.player-team{padding:7px}.players{gap:6px}}
 @media(max-width:600px){#hud{padding:10px}.topline{padding:0 3px 6px}.event-name{display:none}.scorebar{grid-template-columns:minmax(0,1fr) 70px minmax(0,1fr);min-height:70px}.team{gap:6px;padding:8px}.emblem{width:30px;height:30px;flex-basis:30px;font-size:11px}.team-label{font-size:7px}.team-name{font-size:12px}.team-score{font-size:29px;min-width:27px}.mid{gap:5px;padding:5px}.mid-kicker,.series{font-size:7px}.map-name{font-size:10px;max-width:65px}.players{grid-template-columns:1fr;gap:5px}.player-team{padding:6px 9px}.player-row,.player-head{grid-template-columns:minmax(0,1fr) 30px 30px 30px 45px}.player-row{min-height:21px;font-size:11px}.player-head{font-size:7px}}
 @media(prefers-reduced-motion:reduce){*,*:before,*:after{animation:none!important;transition:none!important}}
+
+/* Tournament layout: player rosters stay at the far edges; the crosshair lane remains clear. */
+#players{
+ position:absolute;
+ top:36vh;
+ left:24px;
+ right:24px;
+ display:grid;
+ grid-template-columns:1fr 1fr;
+ gap:0;
+ margin:0;
+ pointer-events:none;
+}
+#players .player-team{
+ position:absolute;
+ top:0;
+ width:clamp(220px,18vw,290px);
+ padding:10px 12px;
+ border-color:rgba(190,165,255,.28);
+ background:rgba(7,8,15,.82);
+ box-shadow:0 8px 28px rgba(0,0,0,.24);
+ backdrop-filter:blur(7px);
+}
+#players .player-team:first-child{left:0}
+#players .player-team:last-child{right:0}
+#players .player-row,#players .player-head{
+ grid-template-columns:minmax(0,1fr) 28px 28px 48px 38px;
+ gap:5px;
+}
+#players .player-row{min-height:27px;font-size:12px}
+#players .player-head{font-size:7px;letter-spacing:.35px}
+#players .player-team-head{font-size:8px;letter-spacing:.8px}
+@media(max-width:900px){
+ #players{top:37vh;left:12px;right:12px}
+ #players .player-team{width:clamp(190px,23vw,230px);padding:8px}
+ #players .player-row,#players .player-head{grid-template-columns:minmax(0,1fr) 24px 24px 38px 32px;gap:3px}
+}
+@media(max-width:600px){
+ #players{top:40vh;left:7px;right:7px}
+ #players .player-team{width:calc(50vw - 14px);padding:6px}
+ #players .player-row,#players .player-head{grid-template-columns:minmax(0,1fr) 20px 20px 30px 27px;gap:2px}
+ #players .player-row{font-size:9px;min-height:20px}
+ #players .player-head{font-size:6px}
+ #players .player-team-head{font-size:7px}
+}
+
 </style>
 </head>
 <body>
