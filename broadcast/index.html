@@ -103,6 +103,22 @@ body{font-family:Rajdhani,Arial,sans-serif;color:var(--white)}
  #players .player-team-head{font-size:7px}
 }
 
+
+/* Explicit display modes */
+body.hud-compact #hud-inner{width:min(1080px,100%)}
+body.hud-compact .scorebar{min-height:78px;grid-template-columns:minmax(0,1fr) 120px minmax(0,1fr)}
+body.hud-compact .team{padding:10px 18px}
+body.hud-compact .emblem{width:42px;height:42px;flex-basis:42px}
+body.hud-compact #players,body.hud-compact #game-strip{display:none!important}
+body.hud-full #players{display:grid}
+body.hud-full #game-strip{display:flex}
+@media(max-width:600px){
+ body.hud-compact #hud-inner{width:100%}
+ body.hud-compact .scorebar{min-height:62px;grid-template-columns:minmax(0,1fr) 62px minmax(0,1fr)}
+ body.hud-compact .team{padding:7px 5px;gap:4px}
+ body.hud-compact .emblem{width:26px;height:26px;flex-basis:26px}
+}
+
 </style>
 </head>
 <body>
@@ -203,7 +219,7 @@ body{font-family:Rajdhani,Arial,sans-serif;color:var(--white)}
   $('map-name').textContent=m.map_name||'MAP TBD';$('series').textContent='BO'+(Number(m.best_of)||3);
   const info=statusInfo[m.status]||['LIVE','live'];$('match-status').textContent=info[0];$('match-status').className='status '+info[1];
   $('game-round').textContent='—';$('game-timer').textContent='—';$('game-bomb').textContent='—';$('game-phase').textContent='—';
-  const compact=params.get('mode')==='compact';$('players').style.display=compact?'none':'grid';$('game-strip').style.display=compact?'none':'flex';
+  const compact=params.get('mode')==='compact';document.body.classList.toggle('hud-compact',compact);document.body.classList.toggle('hud-full',!compact);$('players').style.display=compact?'none':'grid';$('game-strip').style.display=compact?'none':'flex';
   renderPlayers(m);if(gsiState)updateGameState(gsiState);
   $('message').hidden=true;$('hud-inner').hidden=false;
  }
