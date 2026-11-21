@@ -1,0 +1,193 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow"><meta name="theme-color" content="#080910">
+<title>ARQON Broadcast HUD</title><link rel="icon" href="/logo.png">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;600;700;800;900&family=Rajdhani:wght@500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<style>
+:root{color-scheme:dark;--violet:#a879ff;--violet2:#c4a5ff;--acid:#d6ff72;--white:#f8f7ff;--muted:#a6a2b5;--panel:rgba(10,11,19,.91);--line:rgba(190,165,255,.24)}
+*{box-sizing:border-box}html,body{width:100%;height:100%;margin:0;background:transparent;overflow:hidden}
+body{font-family:Rajdhani,Arial,sans-serif;color:var(--white)}
+#hud{position:relative;width:100vw;height:100vh;padding:30px 34px;pointer-events:none}
+#hud-inner{width:min(1420px,100%);margin:0 auto;animation:enter .55s cubic-bezier(.2,.8,.2,1) both}
+.topline{height:27px;display:flex;align-items:center;justify-content:space-between;padding:0 8px 8px}
+.brand{font:900 12px Orbitron;letter-spacing:2.6px;color:#fff;text-shadow:0 2px 14px #000}.brand span{color:var(--violet2)}
+.event-name{font:700 12px Rajdhani;letter-spacing:1.5px;text-transform:uppercase;color:#e5e0f4;text-shadow:0 2px 12px #000;max-width:55%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.status{display:inline-flex;align-items:center;gap:7px;padding:5px 10px;border:1px solid var(--line);border-radius:4px;background:rgba(8,9,16,.88);font:800 9px Orbitron;letter-spacing:1.2px;color:#d8caff}
+.status:before{content:"";width:6px;height:6px;border-radius:50%;background:var(--violet);box-shadow:0 0 10px var(--violet)}
+.status.live{border-color:#ff557766;color:#ff9eaf}.status.live:before{background:#ff5577;box-shadow:0 0 10px #ff5577;animation:pulse 1.2s infinite}
+.status.finished:before{background:var(--acid);box-shadow:0 0 9px var(--acid)}
+.scorebar{display:grid;grid-template-columns:minmax(0,1fr) 150px minmax(0,1fr);align-items:stretch;min-height:94px;border:1px solid var(--line);border-radius:9px;overflow:hidden;background:linear-gradient(110deg,rgba(15,15,25,.97),rgba(8,9,16,.94) 50%,rgba(15,15,25,.97));box-shadow:0 16px 42px rgba(0,0,0,.38),0 0 28px rgba(168,121,255,.12);backdrop-filter:blur(12px)}
+.team{display:flex;align-items:center;gap:17px;min-width:0;padding:15px 24px;position:relative}
+.team.left{border-right:1px solid rgba(255,255,255,.08)}.team.right{flex-direction:row-reverse;text-align:right;border-left:1px solid rgba(255,255,255,.08)}
+.team.left:before,.team.right:before{content:"";position:absolute;top:0;bottom:0;width:3px;background:linear-gradient(180deg,transparent,var(--violet),transparent);opacity:.9}
+.team.left:before{left:0}.team.right:before{right:0}
+.emblem{width:52px;height:52px;flex:0 0 52px;display:grid;place-items:center;border:1px solid rgba(196,165,255,.45);border-radius:7px;background:linear-gradient(145deg,rgba(168,121,255,.2),rgba(255,255,255,.035));font:900 18px Orbitron;color:#fff;letter-spacing:-1px}
+.team-copy{min-width:0;flex:1}.team-label{font:700 9px Orbitron;letter-spacing:1.8px;color:var(--muted);margin-bottom:5px}
+.team-name{font:900 clamp(17px,2vw,25px) Orbitron;letter-spacing:.2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-shadow:0 2px 16px #000}
+.team-score{font:900 clamp(38px,4vw,52px) Orbitron;min-width:52px;text-align:center;color:#fff;text-shadow:0 0 22px rgba(196,165,255,.28);font-variant-numeric:tabular-nums}
+.mid{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;padding:10px;background:linear-gradient(180deg,rgba(168,121,255,.11),rgba(255,255,255,.015))}
+.mid-kicker{font:800 9px Orbitron;letter-spacing:1.7px;color:var(--violet2)}
+.map-name{font:800 13px Rajdhani;letter-spacing:1.4px;text-transform:uppercase;text-align:center;color:#fff;max-width:140px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.series{font:700 9px Orbitron;color:var(--muted);letter-spacing:1px}
+.players{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:9px}
+.player-team{min-width:0;padding:9px 12px 10px;border:1px solid rgba(190,165,255,.18);border-radius:7px;background:var(--panel);box-shadow:0 9px 24px rgba(0,0,0,.28);backdrop-filter:blur(10px)}
+.player-team-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:0 2px 6px;border-bottom:1px solid rgba(255,255,255,.09);font:800 9px Orbitron;letter-spacing:1.3px;color:#d9c8ff;text-transform:uppercase}
+.player-team-head small{font:700 9px Rajdhani;color:var(--muted);letter-spacing:.5px}
+.player-row{display:grid;grid-template-columns:minmax(0,1fr) 42px 42px 42px 58px;gap:8px;align-items:center;min-height:25px;padding:3px 2px;border-bottom:1px solid rgba(255,255,255,.055);font:700 12px Rajdhani;color:#e8e5f2}
+.player-row:last-child{border-bottom:0}.player-row .nick{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#fff}
+.player-row .num{text-align:right;color:#c5bdd6;font-variant-numeric:tabular-nums}.player-row .adr{color:var(--acid)}
+.player-head{display:grid;grid-template-columns:minmax(0,1fr) 42px 42px 42px 58px;gap:8px;padding:5px 2px 2px;color:#8f8a9e;font:700 8px Orbitron;letter-spacing:.6px}
+.player-head span:not(:first-child){text-align:right}.empty-player{padding:8px 2px 2px;color:#8f8a9e;font:600 11px Rajdhani}
+#message{position:absolute;left:50%;top:48%;transform:translate(-50%,-50%);padding:12px 18px;border:1px solid var(--line);border-radius:6px;background:rgba(8,9,16,.92);font:700 12px Orbitron;letter-spacing:1px;color:#e8ddff;white-space:nowrap;box-shadow:0 10px 35px #0006}
+#message[hidden]{display:none}
+.game-strip{display:flex;align-items:center;justify-content:center;gap:22px;margin-top:7px;padding:7px 12px;border:1px solid rgba(190,165,255,.16);border-radius:5px;background:rgba(8,9,16,.84);box-shadow:0 8px 20px #0003;font:800 9px Orbitron;letter-spacing:1px;color:#d8d1e8;text-transform:uppercase}
+.game-strip span{white-space:nowrap}.game-strip b{color:var(--acid);font-weight:800}.game-strip .source{margin-left:auto;color:#8dffb0}
+.team-score.bump{animation:scoreBump .42s ease}
+.emblem img{width:100%;height:100%;object-fit:contain;border-radius:6px;padding:3px}
+.player-row{grid-template-columns:minmax(0,1fr) 38px 38px minmax(72px,.8fr) 48px}
+.player-head{grid-template-columns:minmax(0,1fr) 38px 38px minmax(72px,.8fr) 48px}
+.hp{font-weight:800;color:#9effa9!important}.hp.low{color:#ff7777!important}.weapon{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#e1d5ff!important}
+@keyframes scoreBump{0%{transform:scale(1);color:#fff}45%{transform:scale(1.16);color:var(--acid);text-shadow:0 0 25px var(--acid)}100%{transform:scale(1);color:#fff}}
+@media(max-width:600px){.game-strip{gap:9px;flex-wrap:wrap;font-size:7px}.game-strip .source{margin-left:0}.player-row,.player-head{grid-template-columns:minmax(0,1fr) 28px 28px minmax(52px,.8fr) 35px;gap:4px}}
+@keyframes enter{from{opacity:0;transform:translateY(-12px)}to{opacity:1;transform:translateY(0)}}@keyframes pulse{50%{opacity:.35}}
+@media(max-width:900px){#hud{padding:16px}.scorebar{grid-template-columns:minmax(0,1fr) 105px minmax(0,1fr)}.team{gap:9px;padding:12px}.emblem{width:40px;height:40px;flex-basis:40px;font-size:14px}.team-score{min-width:38px}.player-row,.player-head{grid-template-columns:minmax(0,1fr) 28px 28px 28px 42px;gap:4px}.player-team{padding:7px}.players{gap:6px}}
+@media(max-width:600px){#hud{padding:10px}.topline{padding:0 3px 6px}.event-name{display:none}.scorebar{grid-template-columns:minmax(0,1fr) 70px minmax(0,1fr);min-height:70px}.team{gap:6px;padding:8px}.emblem{width:30px;height:30px;flex-basis:30px;font-size:11px}.team-label{font-size:7px}.team-name{font-size:12px}.team-score{font-size:29px;min-width:27px}.mid{gap:5px;padding:5px}.mid-kicker,.series{font-size:7px}.map-name{font-size:10px;max-width:65px}.players{grid-template-columns:1fr;gap:5px}.player-team{padding:6px 9px}.player-row,.player-head{grid-template-columns:minmax(0,1fr) 30px 30px 30px 45px}.player-row{min-height:21px;font-size:11px}.player-head{font-size:7px}}
+@media(prefers-reduced-motion:reduce){*,*:before,*:after{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div id="hud"><div id="hud-inner" hidden>
+ <div class="topline"><div class="brand">ARQON <span>ESPORTS</span> · BROADCAST</div><div class="event-name" id="event-name"></div><div class="status" id="match-status">UPCOMING</div></div>
+ <div class="scorebar">
+  <div class="team left"><div class="emblem" id="team1-mark">A</div><div class="team-copy"><div class="team-label">TEAM 01</div><div class="team-name" id="team1-name">TEAM ONE</div></div><div class="team-score" id="score1">0</div></div>
+  <div class="mid"><div class="mid-kicker">MATCH SCORE</div><div class="map-name" id="map-name">MAP TBD</div><div class="series" id="series">BO3</div></div>
+  <div class="team right"><div class="emblem" id="team2-mark">B</div><div class="team-copy"><div class="team-label">TEAM 02</div><div class="team-name" id="team2-name">TEAM TWO</div></div><div class="team-score" id="score2">0</div></div>
+ </div><div class="game-strip" id="game-strip"><span>ROUND <b id="game-round">—</b></span><span>TIME <b id="game-timer">—</b></span><span>BOMB <b id="game-bomb">—</b></span><span>PHASE <b id="game-phase">—</b></span><span class="source" id="gsi-source">GSI OFFLINE</span></div><div class="players" id="players"></div>
+</div><div id="message">ARQON BROADCAST · CONNECTING</div></div>
+<script>
+(()=>{
+ 'use strict';
+ const URL='https://uscnaqcvuwjrmkjyuklp.supabase.co',KEY='sb_publishable_oE2Bc1wPAcDt6HE8bOUj3Q_0-2FfIxB';
+ const db=window.supabase.createClient(URL,KEY,{auth:{persistSession:false,autoRefreshToken:false,detectSessionInUrl:false}});
+ const $=id=>document.getElementById(id),params=new URLSearchParams(location.search),requested=params.get('match')||'';
+ const validId=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(requested);
+ let matchId=validId?requested:null,channel=null,stats=[],gsiState=null,currentMatch=null,gsiSocket=null;
+ const initials=name=>(String(name||'?').trim().split(/\s+/).slice(0,2).map(x=>x[0]||'').join('').toUpperCase()||'?').slice(0,3);
+ const setMessage=value=>{$('message').textContent=value;$('message').hidden=false;$('hud-inner').hidden=true};
+ const statusInfo={scheduled:['UPCOMING',''],live:['LIVE','live'],paused:['PAUSED',''],finished:['FINAL','finished'],cancelled:['CANCELLED','']};
+ function renderPlayers(m){
+  const host=$('players');host.replaceChildren();
+  const ctTeam1=params.get('ct')!=='2';
+  const teamDefs=[{name:m.team1,side:ctTeam1?'CT':'T',lineup:Array.isArray(m.lineup1)?m.lineup1:[]},{name:m.team2,side:ctTeam1?'T':'CT',lineup:Array.isArray(m.lineup2)?m.lineup2:[]}];
+  const livePlayers=gsiState&&Array.isArray(gsiState.players)?gsiState.players:[];
+  teamDefs.forEach(team=>{
+   const box=document.createElement('section');box.className='player-team';
+   const head=document.createElement('div');head.className='player-team-head';
+   const label=document.createElement('span');label.textContent=team.name||'TEAM';
+   const count=document.createElement('small');count.textContent=livePlayers.length?team.side+' · LIVE':'PLAYER STATS';
+   head.append(label,count);box.append(head);
+   const columns=document.createElement('div');columns.className='player-head';
+   (livePlayers.length?['PLAYER','HP','ARM','WEAPON','K/D']:['PLAYER','K','D','A','ADR']).forEach(v=>{const s=document.createElement('span');s.textContent=v;columns.append(s)});box.append(columns);
+   if(livePlayers.length){
+    const players=livePlayers.filter(p=>p.team===team.side).sort((a,b)=>Number(b.health||0)-Number(a.health||0));
+    if(!players.length){const empty=document.createElement('div');empty.className='empty-player';empty.textContent='Ожидание данных игроков';box.append(empty)}
+    players.slice(0,5).forEach(p=>{
+     const row=document.createElement('div');row.className='player-row';
+     const values=[p.name||'PLAYER',p.alive?String(p.health):'0',String(p.armor||0),p.weapon?(p.weapon+(p.ammo!=null?' · '+p.ammo:'')):'—',String(p.kills||0)+'/'+String(p.deaths||0)];
+     values.forEach((v,i)=>{const span=document.createElement('span');span.className=i===0?'nick':i===1?'num hp'+(Number(p.health)<40?' low':''):i===3?'num weapon':'num';span.textContent=v;row.append(span)});
+     box.append(row);
+    });
+   }else{
+    const rows=stats.filter(s=>s.team_name===team.name).sort((a,b)=>Number(b.kills||0)-Number(a.kills||0)||Number(b.adr||0)-Number(a.adr||0));
+    const names=rows.length?rows.map(s=>({name:s.player_name,k:s.kills,d:s.deaths,a:s.assists,adr:s.adr})): team.lineup.map(name=>({name,k:'—',d:'—',a:'—',adr:'—'}));
+    if(!names.length){const empty=document.createElement('div');empty.className='empty-player';empty.textContent='Состав не опубликован';box.append(empty)}
+    names.slice(0,5).forEach(p=>{
+     const row=document.createElement('div');row.className='player-row';
+     [p.name,p.k,p.d,p.a,p.adr==='—'?'—':Number(p.adr||0).toFixed(1)].forEach((v,i)=>{const span=document.createElement('span');span.className=i===0?'nick':i===4?'num adr':'num';span.textContent=String(v??'—');row.append(span)});
+     box.append(row);
+    });
+   }
+   host.append(box);
+  });
+ }
+ function setMark(id,url,name){
+  const el=$(id);el.replaceChildren();
+  let safe='';
+  try{const u=new URL(url);if(u.protocol==='https:'&&u.hostname.endsWith('supabase.co')&&u.pathname.includes('/storage/v1/object/public/team-avatars/'))safe=u.href}catch{}
+  if(safe){const img=document.createElement('img');img.src=safe;img.alt='';img.referrerPolicy='no-referrer';el.append(img)}
+  else el.textContent=initials(name);
+ }
+ function updateGameState(state){
+  gsiState=state;
+  const map=state.map||{},ct=map.ct||{},t=map.t||{},ctTeam1=params.get('ct')!=='2';
+  const score1=ctTeam1?ct.score:t.score,score2=ctTeam1?t.score:ct.score;
+  if(currentMatch){
+   if(Number.isFinite(Number(score1)))setScore('score1',score1);
+   if(Number.isFinite(Number(score2)))setScore('score2',score2);
+   if(map.name)$('map-name').textContent=map.name.replace(/^de_/,'').replace(/_/g,' ').toUpperCase();
+   $('game-round').textContent=map.round||'—';
+   $('game-timer').textContent=state.timer?String(state.timer).replace(/\.0+$/,'')+'s':'—';
+   $('game-bomb').textContent=state.round&&state.round.bomb?String(state.round.bomb).toUpperCase():'—';
+   $('game-phase').textContent=(state.round&&state.round.phase||map.phase||'—').toUpperCase();
+   renderPlayers(currentMatch);
+  }
+  $('gsi-source').textContent='GSI LIVE';
+ }
+ function setScore(id,value){
+  const el=$(id),next=String(Number(value)||0);
+  if(el.textContent!==next){el.textContent=next;el.classList.remove('bump');void el.offsetWidth;el.classList.add('bump')}
+ }
+ function connectBridge(){
+  try{gsiSocket=new WebSocket('ws://127.0.0.1:3001/ws')}catch{return}
+  gsiSocket.onopen=()=>{$('gsi-source').textContent='GSI CONNECTED'};
+  gsiSocket.onmessage=event=>{try{const msg=JSON.parse(event.data);if(msg.type==='gsi')updateGameState(msg.state);else if(msg.type==='bridge')$('gsi-source').textContent=msg.hasGameData?'GSI CONNECTED':'WAITING FOR CS2'}catch{}};
+  gsiSocket.onclose=()=>{$('gsi-source').textContent='GSI OFFLINE';setTimeout(connectBridge,2500)};
+  gsiSocket.onerror=()=>{$('gsi-source').textContent='GSI OFFLINE'};
+ }
+ function render(m){
+  if(!m){setMessage('ARQON BROADCAST · NO MATCH SELECTED');return}
+  currentMatch=m;
+  $('event-name').textContent=m.title||'ARQON MATCH';$('team1-name').textContent=m.team1||'TEAM ONE';$('team2-name').textContent=m.team2||'TEAM TWO';
+  setMark('team1-mark',params.get('logo1'),m.team1);setMark('team2-mark',params.get('logo2'),m.team2);
+  setScore('score1',m.score1);setScore('score2',m.score2);
+  $('map-name').textContent=m.map_name||'MAP TBD';$('series').textContent='BO'+(Number(m.best_of)||3);
+  const info=statusInfo[m.status]||['LIVE','live'];$('match-status').textContent=info[0];$('match-status').className='status '+info[1];
+  $('game-round').textContent='—';$('game-timer').textContent='—';$('game-bomb').textContent='—';$('game-phase').textContent='—';
+  const compact=params.get('mode')==='compact';$('players').style.display=compact?'none':'grid';$('game-strip').style.display=compact?'none':'flex';
+  renderPlayers(m);if(gsiState)updateGameState(gsiState);
+  $('message').hidden=true;$('hud-inner').hidden=false;
+ }
+ async function loadStats(){
+  if(!matchId){stats=[];return}
+  const {data,error}=await db.from('live_match_player_stats').select('player_name,team_name,kills,deaths,assists,adr').eq('live_match_id',matchId).order('kills',{ascending:false}).order('adr',{ascending:false});
+  if(error)throw error;stats=data||[];
+ }
+ async function loadMatch(){
+  let query=db.from('live_matches').select('id,title,game,team1,team2,status,starts_at,score1,score2,best_of,map_name,lineup1,lineup2');
+  if(matchId)query=query.eq('id',matchId).limit(1).maybeSingle();
+  else query=query.in('status',['live','paused','scheduled']).order('starts_at',{ascending:true,nullsFirst:false}).limit(1).maybeSingle();
+  const {data,error}=await query;if(error)throw error;
+  if(!data){setMessage('ARQON BROADCAST · MATCH NOT FOUND');return}
+  if(!matchId){matchId=data.id;subscribe()}
+  await loadStats();render(data);
+ }
+ function subscribe(){
+  if(channel)db.removeChannel(channel);
+  let ch=db.channel('arqon-broadcast-hud-'+(matchId||'latest'));
+  ch=ch.on('postgres_changes',{event:'*',schema:'public',table:'live_matches',...(matchId?{filter:'id=eq.'+matchId}:{})},()=>loadMatch().catch(()=>setMessage('ARQON BROADCAST · RECONNECTING')));
+  ch=ch.on('postgres_changes',{event:'*',schema:'public',table:'live_match_player_stats',...(matchId?{filter:'live_match_id=eq.'+matchId}:{})},()=>loadStats().then(()=>loadMatch()).catch(()=>setMessage('ARQON BROADCAST · RECONNECTING')));
+  channel=ch.subscribe(status=>{if(status==='CHANNEL_ERROR'||status==='TIMED_OUT')setMessage('ARQON BROADCAST · CONNECTION LOST')});
+ }
+ async function boot(){
+  if(requested&&!validId){setMessage('ARQON BROADCAST · INVALID MATCH ID');return}
+  try{await loadMatch();if(!channel)subscribe()}catch(e){setMessage('ARQON BROADCAST · DATA ERROR')}
+ }
+ boot();connectBridge();window.addEventListener('beforeunload',()=>{if(channel)db.removeChannel(channel);if(gsiSocket)gsiSocket.close()});
+})();
+</script>
+</body>
+</html>
