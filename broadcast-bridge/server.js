@@ -46,9 +46,10 @@ function safeSnapshot(body) {
       kills: Number(stats.kills || 0),
       deaths: Number(stats.deaths || 0),
       assists: Number(stats.assists || 0),
-      weapon: active ? String(active.name || '').replace(/^weapon_/, '').toUpperCase() : '',
+      weapon: active ? String(active.name || '').replace(/^weapon_/, '').toLowerCase() : '',
       ammo: active && active.ammo_clip != null ? Number(active.ammo_clip) : null,
       reserve: active && active.ammo_reserve != null ? Number(active.ammo_reserve) : null,
+      grenades: weaponList.map(w => String(w && w.name || '').replace(/^weapon_/, '').toLowerCase()).filter(name => ['flashbang','hegrenade','smokegrenade','molotov','incgrenade','decoy','firebomb'].includes(name)),
       hasBomb: Boolean(player.state && player.state.burning)
     };
   });
