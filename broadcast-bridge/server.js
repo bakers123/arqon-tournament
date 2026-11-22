@@ -28,8 +28,14 @@ function safeSnapshot(body) {
     const active = weaponList.find(w => w.state === 'active') || weaponList[0] || null;
     const state = player.state || {};
     const stats = player.match_stats || {};
+    const rawPosition = player.position;
+    const coords = typeof rawPosition === 'string' ? rawPosition.split(',').map(Number) : [];
+    const position = coords.length >= 2 && coords.slice(0, 3).every(Number.isFinite)
+      ? { x: coords[0], y: coords[1], z: Number.isFinite(coords[2]) ? coords[2] : 0 }
+      : null;
     return {
       steamid,
+      position,
       name: String(player.name || 'Unknown').slice(0, 48),
       team: player.team === 'CT' || player.team === 'T' ? player.team : null,
       health: Number.isFinite(Number(state.health)) ? Number(state.health) : 0,
