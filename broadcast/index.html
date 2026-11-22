@@ -226,11 +226,31 @@ body.hud-compact #game-strip{display:none!important}
  body.hud-compact .scorebar{min-height:52px}
 }
 
+
+/* Live tactical radar */
+#radar{position:absolute;z-index:4;top:31px;left:18px;width:clamp(150px,16vw,230px);padding:6px;background:rgba(7,10,18,.88);border:1px solid rgba(255,255,255,.22);border-top:3px solid var(--violet);box-shadow:0 8px 28px #0008;backdrop-filter:blur(8px)}
+.radar-cap{display:flex;justify-content:space-between;align-items:center;padding:0 2px 5px;font:800 8px Orbitron;letter-spacing:1px;color:#fff}
+.radar-cap b{color:var(--violet2);font-size:7px}
+.radar-canvas{position:relative;width:100%;aspect-ratio:1;overflow:hidden;background:#111827}
+#radar-image{display:block;width:100%;height:100%;object-fit:contain;opacity:.92;filter:brightness(.9) saturate(.8)}
+#radar-dots{position:absolute;inset:0}
+.radar-dot{position:absolute;width:8px;height:8px;border:1.5px solid #fff;border-radius:50%;transform:translate(-50%,-50%);box-shadow:0 0 5px #000;background:var(--violet)}
+.radar-dot.t{background:var(--acid);color:var(--acid)}
+.radar-dot.ct{background:var(--violet);color:var(--violet2)}
+.radar-dot.dead{opacity:.3}
+#players .player-cell{display:flex;align-items:center;gap:7px;min-width:0}
+#players .silhouette{width:25px;height:29px;flex:0 0 25px;display:grid;place-items:center;background:linear-gradient(145deg,#737783,#343945);border:1px solid #aeb2c455;border-radius:2px;overflow:hidden}
+#players .silhouette svg{width:22px;height:25px;fill:#c6c9d1;opacity:.92}
+#players .nick{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+@media(max-width:900px){#radar{top:28px;left:10px;width:clamp(130px,18vw,170px)}}
+@media(max-width:600px){#radar{top:24px;left:7px;width:clamp(92px,25vw,125px);padding:4px}.radar-cap{font-size:6px}.radar-cap b{font-size:6px}.radar-dot{width:6px;height:6px}#players .silhouette{width:17px;height:21px;flex-basis:17px}#players .silhouette svg{width:16px;height:18px}}
+
 </style>
 </head>
 <body>
 <div id="hud"><div id="hud-inner" hidden>
  <div class="topline"><div class="brand">ARQON <span>ESPORTS</span> · BROADCAST</div><div class="event-name" id="event-name"></div><div class="status" id="match-status">UPCOMING</div></div>
+ <div id="radar" aria-label="CS2 tactical radar"><div class="radar-cap"><span>ARQON RADAR</span><b id="radar-map">MAP</b></div><div class="radar-canvas"><img id="radar-image" alt=""><div id="radar-dots"></div></div></div>
  <div class="scorebar">
   <div class="team left"><div class="emblem" id="team1-mark">A</div><div class="team-copy"><div class="team-label">TEAM 01</div><div class="team-name" id="team1-name">TEAM ONE</div></div><div class="team-score" id="score1">0</div></div>
   <div class="mid"><div class="mid-kicker">MATCH SCORE</div><div class="map-name" id="map-name">MAP TBD</div><div class="series" id="series">BO3</div></div>
@@ -245,9 +265,36 @@ body.hud-compact #game-strip{display:none!important}
  const $=id=>document.getElementById(id),params=new URLSearchParams(location.search),requested=params.get('match')||'';
  const validId=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(requested);
  let matchId=validId?requested:null,channel=null,stats=[],gsiState=null,currentMatch=null,gsiSocket=null;
+
+ const RADARS={
+ de_mirage:{url:'https://raw.githubusercontent.com/MurkyYT/cs2-map-icons/main/images/radars/de_mirage_radar_psd.png',x:-3230,y:1713,s:5},
+ de_dust2:{url:'https://raw.githubusercontent.com/MurkyYT/cs2-map-icons/main/images/radars/de_dust2_radar_psd.png',x:-2476,y:3239,s:4.4},
+ de_inferno:{url:'https://raw.githubusercontent.com/MurkyYT/cs2-map-icons/main/images/radars/de_inferno_radar_psd.png',x:-2087,y:3870,s:4.9},
+ de_anubis:{url:'https://raw.githubusercontent.com/MurkyYT/cs2-map-icons/main/images/radars/de_anubis_radar_psd.png',x:-2796,y:3328,s:5.22},
+ de_ancient:{url:'https://raw.githubusercontent.com/MurkyYT/cs2-map-icons/main/images/radars/de_ancient_radar_psd.png',x:-2953,y:2164,s:5},
+ de_nuke:{url:'https://raw.githubusercontent.com/MurkyYT/cs2-map-icons/main/images/radars/de_nuke_radar_psd.png',x:-3453,y:2887,s:7},
+ de_overpass:{url:'https://raw.githubusercontent.com/MurkyYT/cs2-map-icons/main/images/radars/de_overpass_radar_psd.png',x:-4831,y:1781,s:5.2},
+ de_vertigo:{url:'https://raw.githubusercontent.com/MurkyYT/cs2-map-icons/main/images/radars/de_vertigo_radar_psd.png',x:-3168,y:1762,s:4},
+ de_train:{url:'https://raw.githubusercontent.com/MurkyYT/cs2-map-icons/main/images/radars/de_train_radar_psd.png',x:-2308,y:2078,s:4.082077}
+ };
+ function mapKey(value){let v=String(value||'').toLowerCase().trim().replace(/^de[_ ]?/,'').replace(/[^a-z0-9]/g,'');const aliases={mirage:'de_mirage',dust2:'de_dust2','dustii':'de_dust2',inferno:'de_inferno',anubis:'de_anubis',ancient:'de_ancient',nuke:'de_nuke',overpass:'de_overpass',vertigo:'de_vertigo',train:'de_train'};return aliases[v]||(/^de_/.test(String(value||''))?String(value).toLowerCase():'de_'+v);}
+ function renderRadar(state){
+  const key=mapKey((state&&state.map&&state.map.name)|| (currentMatch&&currentMatch.map_name));const cfg=RADARS[key];const img=$('radar-image'),dots=$('radar-dots');
+  $('radar-map').textContent=key.replace(/^de_/,'').toUpperCase();
+  if(!cfg){img.removeAttribute('src');dots.replaceChildren();return}
+  if(img.dataset.map!==key){img.src=cfg.url;img.dataset.map=key}
+  dots.replaceChildren();
+  (state&&state.players||[]).forEach(p=>{
+   if(!p.position||!p.team)return;const x=(p.position.x-cfg.x)/cfg.s,y=(cfg.y-p.position.y)/cfg.s;
+   const px=x/1024*100,py=y/1024*100;if(px<0||px>100||py<0||py>100)return;
+   const dot=document.createElement('span');dot.className='radar-dot '+p.team.toLowerCase()+(p.alive?'':' dead');dot.style.left=px+'%';dot.style.top=py+'%';dot.title=p.name||p.team;dots.append(dot);
+  });
+ }
+
  const initials=name=>(String(name||'?').trim().split(/\s+/).slice(0,2).map(x=>x[0]||'').join('').toUpperCase()||'?').slice(0,3);
  const setMessage=value=>{$('message').textContent=value;$('message').hidden=false;$('hud-inner').hidden=true};
  const statusInfo={scheduled:['UPCOMING',''],live:['LIVE','live'],paused:['PAUSED',''],finished:['FINAL','finished'],cancelled:['CANCELLED','']};
+ function makePlayerCell(name){const cell=document.createElement('span');cell.className='player-cell';const avatar=document.createElement('span');avatar.className='silhouette';avatar.innerHTML='<svg viewBox="0 0 24 28" aria-hidden="true"><path d="M12 2.2a5.1 5.1 0 0 0-5.1 5.1 5.1 5.1 0 0 0 5.1 5.1 5.1 5.1 0 0 0 5.1-5.1A5.1 5.1 0 0 0 12 2.2ZM4.2 25.8v-3.1c0-4.2 3.5-7.6 7.8-7.6s7.8 3.4 7.8 7.6v3.1H4.2Z"/></svg>';const nick=document.createElement('span');nick.className='nick';nick.textContent=String(name||'PLAYER');cell.append(avatar,nick);return cell;}
  function renderPlayers(m){
   const host=$('players');host.replaceChildren();
   const ctTeam1=params.get('ct')!=='2';
@@ -266,8 +313,8 @@ body.hud-compact #game-strip{display:none!important}
     if(!players.length){const empty=document.createElement('div');empty.className='empty-player';empty.textContent='Ожидание данных игроков';box.append(empty)}
     players.slice(0,5).forEach(p=>{
      const row=document.createElement('div');row.className='player-row';
-     const values=[p.name||'PLAYER',p.alive?String(p.health):'0',String(p.armor||0),p.weapon?(p.weapon+(p.ammo!=null?' · '+p.ammo:'')):'—',String(p.kills||0)+'/'+String(p.deaths||0)];
-     values.forEach((v,i)=>{const span=document.createElement('span');span.className=i===0?'nick':i===1?'num hp'+(Number(p.health)<40?' low':''):i===3?'num weapon':'num';span.textContent=v;row.append(span)});
+     const values=[p.alive?String(p.health):'0',String(p.armor||0),p.weapon?(p.weapon+(p.ammo!=null?' · '+p.ammo:'')):'—',String(p.kills||0)+'/'+String(p.deaths||0)];row.append(makePlayerCell(p.name||'PLAYER'));
+     values.forEach((v,i)=>{const span=document.createElement('span');span.className=i===0?'num hp'+(Number(p.health)<40?' low':''):i===2?'num weapon':'num';span.textContent=v;row.append(span)});
      box.append(row);
     });
    }else{
@@ -276,7 +323,7 @@ body.hud-compact #game-strip{display:none!important}
     if(!names.length){const empty=document.createElement('div');empty.className='empty-player';empty.textContent='Состав не опубликован';box.append(empty)}
     names.slice(0,5).forEach(p=>{
      const row=document.createElement('div');row.className='player-row';
-     [p.name,p.k,p.d,p.a,p.adr==='—'?'—':Number(p.adr||0).toFixed(1)].forEach((v,i)=>{const span=document.createElement('span');span.className=i===0?'nick':i===4?'num adr':'num';span.textContent=String(v??'—');row.append(span)});
+     row.append(makePlayerCell(p.name));[p.k,p.d,p.a,p.adr==='—'?'—':Number(p.adr||0).toFixed(1)].forEach((v,i)=>{const span=document.createElement('span');span.className=i===3?'num adr':'num';span.textContent=String(v??'—');row.append(span)});
      box.append(row);
     });
    }
@@ -291,7 +338,7 @@ body.hud-compact #game-strip{display:none!important}
   else el.textContent=initials(name);
  }
  function updateGameState(state){
-  gsiState=state;
+  gsiState=state;renderRadar(state);
   const map=state.map||{},ct=map.ct||{},t=map.t||{},ctTeam1=params.get('ct')!=='2';
   const score1=ctTeam1?ct.score:t.score,score2=ctTeam1?t.score:ct.score;
   if(currentMatch){
@@ -327,7 +374,7 @@ body.hud-compact #game-strip{display:none!important}
   const info=statusInfo[m.status]||['LIVE','live'];$('match-status').textContent=info[0];$('match-status').className='status '+info[1];
   $('game-round').textContent='—';$('game-timer').textContent='—';$('game-bomb').textContent='—';$('game-phase').textContent='—';
   const compact=params.get('mode')==='compact';document.body.classList.toggle('hud-compact',compact);document.body.classList.toggle('hud-full',!compact);$('players').style.display=compact?'none':'grid';$('game-strip').style.display=compact?'none':'flex';
-  renderPlayers(m);if(gsiState)updateGameState(gsiState);
+  renderRadar(gsiState);renderPlayers(m);if(gsiState)updateGameState(gsiState);
   $('message').hidden=true;$('hud-inner').hidden=false;
  }
  async function loadStats(){
