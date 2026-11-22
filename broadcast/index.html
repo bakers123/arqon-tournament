@@ -245,6 +245,37 @@ body.hud-compact #game-strip{display:none!important}
 @media(max-width:900px){#radar{top:28px;left:10px;width:clamp(130px,18vw,170px)}}
 @media(max-width:600px){#radar{top:24px;left:7px;width:clamp(92px,25vw,125px);padding:4px}.radar-cap{font-size:6px}.radar-cap b{font-size:6px}.radar-dot{width:6px;height:6px}#players .silhouette{width:17px;height:21px;flex-basis:17px}#players .silhouette svg{width:16px;height:18px}}
 
+
+/* Authentic Counter-Strike 2 equipment artwork */
+#players .player-row .armor-cell{display:flex;align-items:center;justify-content:flex-end;gap:3px;color:#d9e0ec}
+#players .item-icon{display:inline-block;object-fit:contain;flex:0 0 auto;filter:drop-shadow(0 1px 2px #0009)}
+#players .armor-icon{width:17px;height:17px;opacity:.92}
+#players .weapon-cell{display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:1px;min-width:0;overflow:hidden}
+#players .weapon-main{display:flex;align-items:center;gap:4px;min-width:0;max-width:100%}
+#players .weapon-icon{width:58px;height:23px;object-fit:contain;flex:0 0 58px}
+#players .weapon-ammo{font:800 9px Rajdhani;color:#e9e4f5;white-space:nowrap}
+#players .grenade-row{display:flex;align-items:center;gap:2px;min-height:11px;max-width:100%;overflow:hidden}
+#players .grenade-icon{width:16px;height:11px;object-fit:contain;opacity:.95}
+#players .grenade-count{font:700 7px Rajdhani;color:#d4d7e2;margin-right:2px}
+#players .armor-cell .armor-value{font:800 10px Rajdhani}
+#players .player-row .weapon{font-size:9px;color:#e8e2f5!important}
+#players .item-icon.is-missing{display:none}
+@media(max-width:900px){
+ #players .weapon-icon{width:43px;height:19px;flex-basis:43px}
+ #players .armor-icon{width:14px;height:14px}
+ #players .grenade-icon{width:13px;height:10px}
+}
+@media(max-width:600px){
+ #players .weapon-icon{width:28px;height:14px;flex-basis:28px}
+ #players .weapon-ammo{font-size:6px}
+ #players .armor-icon{width:10px;height:10px}
+ #players .armor-cell{gap:1px}
+ #players .armor-cell .armor-value{font-size:7px}
+ #players .grenade-icon{width:9px;height:8px}
+ #players .grenade-row{min-height:8px;gap:1px}
+ #players .grenade-count{font-size:5px}
+}
+
 </style>
 </head>
 <body>
@@ -291,6 +322,58 @@ body.hud-compact #game-strip{display:none!important}
   });
  }
 
+
+ const ITEM_ICON_BASE='https://raw.githubusercontent.com/Juknum/counter-strike-icons/main/cs2/panorama/images/icons/equipment/';
+ const ITEM_ALIASES={
+  ak47:'ak47',aug:'aug',awp:'awp',bizon:'bizon',cz75a:'cz75a',deagle:'deagle',elite:'elite',
+  famas:'famas',fiveseven:'fiveseven',g3sg1:'g3sg1',galilar:'galilar',glock:'glock',
+  hkp2000:'p2000',p2000:'p2000',m249:'m249',m4a1:'m4a1',m4a1_silencer:'m4a1_silencer',
+  mac10:'mac10',mag7:'mag7',mp5sd:'mp5sd',mp7:'mp7',mp9:'mp9',negev:'negev',nova:'nova',
+  p250:'p250',p90:'p90',revolver:'revolver',sawedoff:'sawedoff',scar20:'scar20',
+  sg556:'sg556',ssg08:'ssg08',taser:'taser',tec9:'tec9',ump45:'ump45',
+  usp_silencer:'usp_silencer',xm1014:'xm1014',knife:'knife',
+  flashbang:'flashbang',hegrenade:'hegrenade',smokegrenade:'smokegrenade',
+  molotov:'molotov',incgrenade:'incgrenade',decoy:'decoy',firebomb:'firebomb',
+  kevlar:'kevlar',armor:'armor',armor_helmet:'armor_helmet',assaultsuit:'assaultsuit',
+  defuser:'defuser',c4:'c4'
+ };
+ const GRENADE_KEYS=new Set(['flashbang','hegrenade','smokegrenade','molotov','incgrenade','decoy','firebomb']);
+ function itemKey(value){
+  let key=String(value||'').toLowerCase().replace(/^weapon_/,'').replace(/^item_/,'').replace(/[^a-z0-9_]/g,'');
+  return ITEM_ALIASES[key]||key;
+ }
+ function itemIcon(key,className,alt){
+  const img=document.createElement('img');img.className='item-icon '+(className||'');
+  img.src=ITEM_ICON_BASE+itemKey(key)+'.svg';img.alt=alt||'';img.draggable=false;
+  img.onerror=()=>{img.classList.add('is-missing');img.removeAttribute('src')};
+  return img;
+ }
+ function renderArmorCell(p){
+  const cell=document.createElement('span');cell.className='num armor-cell';
+  if(Number(p.armor)>0){
+   cell.append(itemIcon(p.helmet?'armor_helmet':'armor','armor-icon',p.helmet?'Armor and helmet':'Kevlar armor'));
+   const value=document.createElement('span');value.className='armor-value';value.textContent=String(p.armor);cell.append(value);
+  }else{cell.textContent='—'}
+  return cell;
+ }
+ function renderWeaponCell(p){
+  const cell=document.createElement('span');cell.className='num weapon weapon-cell';
+  const main=document.createElement('span');main.className='weapon-main';
+  if(p.weapon){
+   main.append(itemIcon(p.weapon,'weapon-icon',p.weapon));
+   if(p.ammo!=null){const ammo=document.createElement('span');ammo.className='weapon-ammo';ammo.textContent=String(p.ammo);main.append(ammo)}
+  }else{const dash=document.createElement('span');dash.textContent='—';main.append(dash)}
+  cell.append(main);
+  const grenades=Array.isArray(p.grenades)?p.grenades:[];
+  if(grenades.length){
+   const row=document.createElement('span');row.className='grenade-row';
+   const counts={};grenades.forEach(g=>{const key=itemKey(g);counts[key]=(counts[key]||0)+1});
+   Object.entries(counts).forEach(([key,count])=>{row.append(itemIcon(key,'grenade-icon',key));if(count>1){const n=document.createElement('span');n.className='grenade-count';n.textContent='×'+count;row.append(n)}});
+   cell.append(row);
+  }
+  return cell;
+ }
+
  const initials=name=>(String(name||'?').trim().split(/\s+/).slice(0,2).map(x=>x[0]||'').join('').toUpperCase()||'?').slice(0,3);
  const setMessage=value=>{$('message').textContent=value;$('message').hidden=false;$('hud-inner').hidden=true};
  const statusInfo={scheduled:['UPCOMING',''],live:['LIVE','live'],paused:['PAUSED',''],finished:['FINAL','finished'],cancelled:['CANCELLED','']};
@@ -313,8 +396,9 @@ body.hud-compact #game-strip{display:none!important}
     if(!players.length){const empty=document.createElement('div');empty.className='empty-player';empty.textContent='Ожидание данных игроков';box.append(empty)}
     players.slice(0,5).forEach(p=>{
      const row=document.createElement('div');row.className='player-row';
-     const values=[p.alive?String(p.health):'0',String(p.armor||0),p.weapon?(p.weapon+(p.ammo!=null?' · '+p.ammo:'')):'—',String(p.kills||0)+'/'+String(p.deaths||0)];row.append(makePlayerCell(p.name||'PLAYER'));
-     values.forEach((v,i)=>{const span=document.createElement('span');span.className=i===0?'num hp'+(Number(p.health)<40?' low':''):i===2?'num weapon':'num';span.textContent=v;row.append(span)});
+     const hp=document.createElement('span');hp.className='num hp'+(Number(p.health)<40?' low':'');hp.textContent=p.alive?String(p.health):'0';
+     row.append(makePlayerCell(p.name||'PLAYER'),hp,renderArmorCell(p),renderWeaponCell(p));
+     const kd=document.createElement('span');kd.className='num';kd.textContent=String(p.kills||0)+'/'+String(p.deaths||0);row.append(kd);
      box.append(row);
     });
    }else{
