@@ -145,12 +145,10 @@
         window.location.replace('/?arqon_build=202611151930');
         return;
       }
-      // Do not close the drawer during capture: page modules often handle
-      // tab buttons in the bubbling phase. Closing here hides the target
-      // before its action can complete, especially on desktop.
-      if(event.target.closest('button[data-tab], a[href]')) {
-        window.setTimeout(() => close(), 180);
-      }
+      // Tab controls are handled by the site's own init() click handlers.
+      // Keep the drawer open for tab changes; auto-closing here was swallowing
+      // the navigation interaction on desktop. Real page links navigate normally.
+      if (event.target.closest('a[href]')) close();
     }, true);
     document.addEventListener('keydown',event => { if(event.key==='Escape') close(); });
     const brand = header.querySelector('.brand');
