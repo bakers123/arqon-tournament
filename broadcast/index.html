@@ -227,17 +227,25 @@ body.hud-compact #game-strip{display:none!important}
 }
 
 
-/* Live tactical radar */
-#radar{position:absolute;z-index:4;top:31px;left:18px;width:clamp(150px,16vw,230px);padding:6px;background:rgba(7,10,18,.88);border:1px solid rgba(255,255,255,.22);border-top:3px solid var(--violet);box-shadow:0 8px 28px #0008;backdrop-filter:blur(8px)}
-.radar-cap{display:flex;justify-content:space-between;align-items:center;padding:0 2px 5px;font:800 8px Orbitron;letter-spacing:1px;color:#fff}
-.radar-cap b{color:var(--violet2);font-size:7px}
-.radar-canvas{position:relative;width:100%;aspect-ratio:1;overflow:hidden;background:#111827}
-#radar-image{display:block;width:100%;height:100%;object-fit:contain;opacity:.92;filter:brightness(.9) saturate(.8)}
-#radar-dots{position:absolute;inset:0}
-.radar-dot{position:absolute;width:8px;height:8px;border:1.5px solid #fff;border-radius:50%;transform:translate(-50%,-50%);box-shadow:0 0 5px #000;background:var(--violet)}
-.radar-dot.t{background:var(--acid);color:var(--acid)}
-.radar-dot.ct{background:var(--violet);color:var(--violet2)}
-.radar-dot.dead{opacity:.3}
+/* Broadcast-grade tactical radar */
+#radar{position:absolute;z-index:4;top:31px;left:18px;width:clamp(174px,15.5vw,222px);padding:8px;background:linear-gradient(145deg,rgba(9,13,22,.96),rgba(13,18,30,.91));border:1px solid rgba(177,190,211,.24);border-top:2px solid #a77aff;border-radius:5px;box-shadow:0 10px 34px rgba(0,0,0,.48),inset 0 1px 0 rgba(255,255,255,.045);backdrop-filter:blur(12px)}
+.radar-cap{display:flex;justify-content:space-between;align-items:center;padding:0 2px 7px;font:800 8px Orbitron;letter-spacing:1.25px;color:#e9edf7;text-transform:uppercase}
+.radar-cap span{display:flex;align-items:center;gap:6px}
+.radar-cap span:before{content:"";width:5px;height:5px;border-radius:50%;background:#a77aff;box-shadow:0 0 8px #a77aff}
+.radar-cap b{color:#bba0ff;font-size:8px;letter-spacing:1.5px}
+.radar-canvas{position:relative;width:100%;aspect-ratio:1;overflow:hidden;background:radial-gradient(circle at 50% 45%,#202a38 0,#111925 72%);border:1px solid rgba(255,255,255,.12);border-radius:2px}
+.radar-canvas:after{content:"";position:absolute;inset:0;pointer-events:none;background:linear-gradient(90deg,transparent 49.7%,rgba(190,205,225,.08) 50%,transparent 50.3%),linear-gradient(0deg,transparent 49.7%,rgba(190,205,225,.08) 50%,transparent 50.3%);opacity:.55}
+#radar-image{display:block;width:100%;height:100%;object-fit:contain;padding:3%;opacity:.94;filter:brightness(.82) saturate(.72) contrast(1.12)}
+#radar-dots{position:absolute;inset:0;z-index:1}
+.radar-dot{position:absolute;width:15px;height:15px;display:grid;place-items:center;border:1.5px solid rgba(255,255,255,.96);border-radius:50%;transform:translate(-50%,-50%);font:900 7px Orbitron;color:#111827;background:#f1bd58;box-shadow:0 1px 5px #000,0 0 9px rgba(241,189,88,.5)}
+.radar-dot.t{background:#f1bd58;color:#17130b;box-shadow:0 1px 5px #000,0 0 9px rgba(241,189,88,.48)}
+.radar-dot.ct{background:#68baff;color:#071521;box-shadow:0 1px 5px #000,0 0 9px rgba(104,186,255,.5)}
+.radar-dot.dead{opacity:.38;filter:grayscale(1)}
+.radar-legend{display:flex;align-items:center;justify-content:center;gap:14px;padding:7px 1px 0;font:700 7px Orbitron;letter-spacing:.9px;color:#aeb8c9}
+.radar-legend span{display:flex;align-items:center;gap:5px}
+.radar-legend i{width:7px;height:7px;border-radius:50%;display:inline-block}
+.radar-legend .t-key{background:#f1bd58;box-shadow:0 0 6px #f1bd5866}
+.radar-legend .ct-key{background:#68baff;box-shadow:0 0 6px #68baff66}
 #players .player-cell{display:flex;align-items:center;gap:7px;min-width:0}
 #players .silhouette{width:25px;height:29px;flex:0 0 25px;display:grid;place-items:center;background:linear-gradient(145deg,#737783,#343945);border:1px solid #aeb2c455;border-radius:2px;overflow:hidden}
 #players .silhouette svg{width:22px;height:25px;fill:#c6c9d1;opacity:.92}
@@ -281,7 +289,7 @@ body.hud-compact #game-strip{display:none!important}
 <body>
 <div id="hud"><div id="hud-inner" hidden>
  <div class="topline"><div class="brand">ARQON <span>ESPORTS</span> · BROADCAST</div><div class="event-name" id="event-name"></div><div class="status" id="match-status">UPCOMING</div></div>
- <div id="radar" aria-label="CS2 tactical radar"><div class="radar-cap"><span>ARQON RADAR</span><b id="radar-map">MAP</b></div><div class="radar-canvas"><img id="radar-image" alt=""><div id="radar-dots"></div></div></div>
+ <div id="radar" aria-label="CS2 tactical radar"><div class="radar-cap"><span>TACTICAL RADAR</span><b id="radar-map">MAP</b></div><div class="radar-canvas"><img id="radar-image" alt="Counter-Strike 2 map radar"><div id="radar-dots"></div></div><div class="radar-legend"><span><i class="t-key"></i> TERRORISTS</span><span><i class="ct-key"></i> COUNTER-TERRORISTS</span></div></div>
  <div class="scorebar">
   <div class="team left"><div class="emblem" id="team1-mark">A</div><div class="team-copy"><div class="team-label">TEAM 01</div><div class="team-name" id="team1-name">TEAM ONE</div></div><div class="team-score" id="score1">0</div></div>
   <div class="mid"><div class="mid-kicker">MATCH SCORE</div><div class="map-name" id="map-name">MAP TBD</div><div class="series" id="series">BO3</div></div>
@@ -315,10 +323,12 @@ body.hud-compact #game-strip{display:none!important}
   if(!cfg){img.removeAttribute('src');dots.replaceChildren();return}
   if(img.dataset.map!==key){img.src=cfg.url;img.dataset.map=key}
   dots.replaceChildren();
+  const sideCounts={T:0,CT:0};
   (state&&state.players||[]).forEach(p=>{
    if(!p.position||!p.team)return;const x=(p.position.x-cfg.x)/cfg.s,y=(cfg.y-p.position.y)/cfg.s;
    const px=x/1024*100,py=y/1024*100;if(px<0||px>100||py<0||py>100)return;
-   const dot=document.createElement('span');dot.className='radar-dot '+p.team.toLowerCase()+(p.alive?'':' dead');dot.style.left=px+'%';dot.style.top=py+'%';dot.title=p.name||p.team;dots.append(dot);
+   const side=p.team.toUpperCase();sideCounts[side]=(sideCounts[side]||0)+1;
+   const dot=document.createElement('span');dot.className='radar-dot '+side.toLowerCase()+(p.alive?'':' dead');dot.style.left=px+'%';dot.style.top=py+'%';dot.textContent=String(sideCounts[side]);dot.title=(p.name||side)+(p.alive?'':' · eliminated');dot.setAttribute('aria-label',dot.title);dots.append(dot);
   });
  }
 
