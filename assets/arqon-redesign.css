@@ -669,3 +669,20 @@ header>nav.arqon-nav-open{visibility:visible!important;pointer-events:auto!impor
  header{position:sticky!important;z-index:1000!important}
  .arqon-menu-trigger{width:44px!important;height:44px!important}
 }
+
+
+/* Critical interaction fix: the dim backdrop must never sit on top of
+   the drawer's controls. Close via the drawer X, hamburger, or Escape. */
+.arqon-menu-backdrop,
+.arqon-menu-backdrop.is-open{
+  pointer-events:none!important;
+}
+header>nav,
+header>nav.arqon-nav-open,
+header>nav.arqon-nav-open *{
+  pointer-events:auto!important;
+}
+@media(min-width:901px){
+  header>nav{z-index:1102!important}
+  .arqon-menu-backdrop{z-index:1090!important}
+}
