@@ -88,6 +88,33 @@
     const extraControlsObserver = new MutationObserver(() => moveExtraControls());
     extraControlsObserver.observe(nav, { childList: true });
 
+    // Expandable categories live inside the existing drawer controller.
+    const makeAccordion = (section, titleNode) => {
+      if (!section || !titleNode) return;
+      const toggle = document.createElement('button');
+      toggle.type = 'button';
+      toggle.className = 'arqon-nav-group-toggle';
+      toggle.setAttribute('aria-expanded','false');
+      toggle.innerHTML = '<span></span><span class="arqon-nav-chevron" aria-hidden="true">⌄</span>';
+      toggle.firstElementChild.textContent = titleNode.textContent;
+      const content = document.createElement('div');
+      content.className = 'arqon-nav-group-items';
+      while (titleNode.nextSibling) content.appendChild(titleNode.nextSibling);
+      content.hidden = true;
+      titleNode.replaceWith(toggle);
+      section.appendChild(content);
+      toggle.addEventListener('click', () => {
+        const expanded = content.hidden;
+        content.hidden = !expanded;
+        toggle.setAttribute('aria-expanded',String(expanded));
+        section.classList.toggle('is-expanded',expanded);
+      });
+    };
+    groupRoot.querySelectorAll('.arqon-nav-group').forEach(section =>
+      makeAccordion(section,section.querySelector('.arqon-nav-group-title'))
+    );
+    makeAccordion(extraSection,extraLabel);
+
     const close = () => {
       nav.classList.remove('arqon-nav-open');
       backdrop.classList.remove('is-open');
