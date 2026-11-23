@@ -4864,5 +4864,57 @@ async function startApp() {
   </script>
   <script src="/assets/arqon-awards-admin.js?v=gif-player-cover-admin-1"></script>
   <script src="/assets/arqon-navigation.js?v=9"></script>
-<script src="/assets/arqon-notifications.js?v=3caf09e7" defer></script></body>
+<script src="/assets/arqon-notifications.js?v=3caf09e7" defer></script>
+<script>
+/* ARQON navigation accordion + overflow guard */
+(function(){
+ function buildArqonNav(){
+  const nav=document.querySelector('header nav');
+  if(!nav || nav.dataset.accordionReady==='1') return;
+  nav.dataset.accordionReady='1';
+  const original=[...nav.children].filter(el=>!el.classList.contains('arqon-nav-head'));
+  const groups=[
+   {title:'Главное',key:'main',match:el=>el.matches('[data-tab="home"]')},
+   {title:'Соревнования',key:'events',match:el=>['tournaments','bracket','schedule','results','league','history'].includes(el.getAttribute('data-tab'))},
+   {title:'Сообщество',key:'community',match:el=>['players','teams','news'].includes(el.getAttribute('data-tab'))},
+   {title:'ARQON и сервисы',key:'arqon',match:el=>['admin'].includes(el.getAttribute('data-tab')) || /достижения|магазин|live center|shoot\s*\/\s*shield/i.test(el.textContent)},
+   {title:'Партнёры и поддержка',key:'support',match:el=>el.getAttribute('data-tab')==='partners' || el.classList.contains('nav-social-btn') || /shoot\s*\/\s*shield/i.test(el.textContent)}
+  ];
+  const head=document.createElement('div');head.className='arqon-nav-head';
+  head.innerHTML='<div class="arqon-nav-brand">ARQON <span>ESPORTS</span></div>';
+  const close=document.createElement('button');close.type='button';close.className='arqon-nav-close';close.setAttribute('aria-label','Закрыть меню');close.textContent='×';
+  close.addEventListener('click',()=>{nav.classList.remove('arqon-nav-open');document.body.classList.remove('arqon-menu-open');document.querySelector('.arqon-menu-backdrop')?.classList.remove('is-open')});
+  head.append(close);nav.replaceChildren(head);
+  const assigned=new Set();
+  groups.forEach((group,index)=>{
+   const items=original.filter(el=>!assigned.has(el)&&group.match(el));
+   if(!items.length)return;
+   items.forEach(el=>assigned.add(el));
+   const section=document.createElement('section');section.className='arqon-nav-group';section.dataset.group=group.key;
+   const toggle=document.createElement('button');toggle.type='button';toggle.className='arqon-nav-group-toggle';
+   toggle.setAttribute('aria-expanded','false');toggle.innerHTML='<span>'+group.title+'</span><span class="arqon-nav-chevron" aria-hidden="true">⌄</span>';
+   const body=document.createElement('div');body.className='arqon-nav-group-items';body.hidden=true;
+   items.forEach(el=>body.append(el));
+   toggle.addEventListener('click',()=>{
+    const opening=body.hidden;
+    body.hidden=!opening;toggle.setAttribute('aria-expanded',String(opening));section.classList.toggle('is-expanded',opening);
+   });
+   section.append(toggle,body);nav.append(section);
+  });
+  const leftovers=original.filter(el=>!assigned.has(el));
+  if(leftovers.length){
+   const section=document.createElement('section');section.className='arqon-nav-group';
+   const toggle=document.createElement('button');toggle.type='button';toggle.className='arqon-nav-group-toggle';toggle.setAttribute('aria-expanded','false');toggle.innerHTML='<span>Дополнительно</span><span class="arqon-nav-chevron" aria-hidden="true">⌄</span>';
+   const body=document.createElement('div');body.className='arqon-nav-group-items';body.hidden=true;
+   leftovers.forEach(el=>body.append(el));toggle.addEventListener('click',()=>{const opening=body.hidden;body.hidden=!opening;toggle.setAttribute('aria-expanded',String(opening));section.classList.toggle('is-expanded',opening)});
+   section.append(toggle,body);nav.append(section);
+  }
+ }
+ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',buildArqonNav,{once:true});else buildArqonNav();
+ const observer=new MutationObserver(()=>{const nav=document.querySelector('header nav');if(nav&&nav.dataset.accordionReady!=='1')buildArqonNav()});
+ observer.observe(document.documentElement,{childList:true,subtree:true});
+})();
+</script>
+
+</body>
 </html>
