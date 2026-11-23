@@ -686,3 +686,65 @@ header>nav.arqon-nav-open *{
   header>nav{z-index:1102!important}
   .arqon-menu-backdrop{z-index:1090!important}
 }
+
+
+/* Accordion expansion must grow downward inside the drawer, never sideways. */
+body>header>nav,
+body>header>nav.arqon-nav-open{
+  display:flex!important;
+  flex-direction:column!important;
+  flex-wrap:nowrap!important;
+  align-items:stretch!important;
+  justify-content:flex-start!important;
+  overflow-x:hidden!important;
+  overflow-y:auto!important;
+  overscroll-behavior-y:contain!important;
+  -webkit-overflow-scrolling:touch!important;
+  height:100vh!important;
+  height:100dvh!important;
+  max-height:100dvh!important;
+  padding-bottom:28px!important;
+}
+body>header>nav>.arqon-nav-head,
+body>header>nav>.arqon-nav-groups,
+body>header>nav>.arqon-nav-extra,
+body>header>nav>.arqon-nav-groups>.arqon-nav-group{
+  display:flex!important;
+  flex:0 0 auto!important;
+  flex-direction:column!important;
+  flex-wrap:nowrap!important;
+  align-items:stretch!important;
+  width:100%!important;
+  max-width:100%!important;
+  min-width:0!important;
+}
+body>header>nav .arqon-nav-group-items{
+  display:flex!important;
+  flex:0 0 auto!important;
+  flex-direction:column!important;
+  flex-wrap:nowrap!important;
+  align-items:stretch!important;
+  width:100%!important;
+  max-width:100%!important;
+  min-width:0!important;
+  overflow:visible!important;
+}
+body>header>nav .arqon-nav-group-items[hidden]{display:none!important}
+body>header>nav .arqon-nav-group-items>*{
+  position:relative!important;
+  inset:auto!important;
+  float:none!important;
+  flex:0 0 auto!important;
+  width:100%!important;
+  max-width:100%!important;
+  min-width:0!important;
+  margin-left:0!important;
+  margin-right:0!important;
+  white-space:normal!important;
+  overflow-wrap:anywhere!important;
+}
+body>header>nav .arqon-nav-group-toggle{
+  flex:0 0 auto!important;
+  width:100%!important;
+  max-width:100%!important;
+}
