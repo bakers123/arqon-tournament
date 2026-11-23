@@ -654,3 +654,18 @@ header>nav .arqon-nav-head{width:100%!important;max-width:100%!important;min-wid
 @media(min-width:901px){
  header>nav{width:min(360px,calc(100vw - 24px))!important;max-width:calc(100vw - 24px)!important}
 }
+
+/* Reliable hamburger tap and drawer layering on phones */
+.arqon-menu-trigger{
+ position:relative!important;z-index:1002!important;display:grid!important;
+ visibility:visible!important;opacity:1!important;pointer-events:auto!important;
+ touch-action:manipulation!important;flex:0 0 44px!important;
+}
+.arqon-menu-backdrop{z-index:899!important;pointer-events:none!important}
+.arqon-menu-backdrop.is-open{pointer-events:auto!important}
+header>nav{z-index:900!important;pointer-events:auto!important}
+header>nav.arqon-nav-open{visibility:visible!important;pointer-events:auto!important}
+@media(max-width:900px){
+ header{position:sticky!important;z-index:1000!important}
+ .arqon-menu-trigger{width:44px!important;height:44px!important}
+}
