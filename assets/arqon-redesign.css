@@ -616,3 +616,41 @@ header>nav .arqon-nav-extra>*{align-self:stretch!important;max-width:100%!import
 header>nav .arqon-nav-extra button,
 header>nav .arqon-nav-extra a,
 header>nav .arqon-nav-extra>div{width:100%!important;max-width:100%!important;min-width:0!important;justify-content:flex-start!important;text-align:left!important;white-space:normal!important;overflow-wrap:anywhere!important}
+
+
+/* Desktop + mobile navigation: accordion layout and strict viewport containment */
+header>nav{
+ box-sizing:border-box!important;
+ width:min(360px,calc(100vw - 18px))!important;
+ min-width:0!important;max-width:calc(100vw - 18px)!important;
+ overflow-x:hidden!important;overflow-y:auto!important;
+ padding-left:clamp(12px,3vw,18px)!important;
+ padding-right:clamp(12px,3vw,18px)!important;
+}
+header>nav *{box-sizing:border-box;min-width:0}
+header>nav .arqon-nav-group{display:flex!important;flex-direction:column!important;gap:0!important;width:100%!important;max-width:100%!important;padding:5px 0!important}
+header>nav .arqon-nav-group-toggle{
+ appearance:none!important;display:flex!important;align-items:center!important;justify-content:space-between!important;
+ width:100%!important;max-width:100%!important;min-height:48px!important;padding:12px 13px!important;
+ border:1px solid rgba(196,181,253,.13)!important;border-radius:12px!important;
+ background:linear-gradient(110deg,rgba(139,92,246,.12),rgba(255,255,255,.025))!important;
+ color:#eee8ff!important;text-align:left!important;font:800 12px Rajdhani,sans-serif!important;
+ letter-spacing:1.15px!important;text-transform:uppercase!important;cursor:pointer!important;
+}
+header>nav .arqon-nav-group-toggle:hover,
+header>nav .arqon-nav-group.is-expanded>.arqon-nav-group-toggle{
+ border-color:rgba(167,139,250,.42)!important;background:rgba(139,92,246,.17)!important;
+}
+header>nav .arqon-nav-chevron{font-size:18px!important;color:#bba5f7!important;transition:transform .2s ease!important}
+header>nav .arqon-nav-group.is-expanded .arqon-nav-chevron{transform:rotate(180deg)!important}
+header>nav .arqon-nav-group-items{display:flex;flex-direction:column;gap:4px;width:100%;padding:7px 2px 3px}
+header>nav .arqon-nav-group-items[hidden]{display:none!important}
+header>nav button[data-tab],header>nav a.nav-social-btn{
+ width:100%!important;max-width:100%!important;min-width:0!important;
+ white-space:normal!important;overflow-wrap:anywhere!important;word-break:normal!important;
+}
+header>nav button[data-tab]{justify-content:flex-start!important;text-align:left!important}
+header>nav .arqon-nav-head{width:100%!important;max-width:100%!important;min-width:0!important}
+@media(min-width:901px){
+ header>nav{width:min(360px,calc(100vw - 24px))!important;max-width:calc(100vw - 24px)!important}
+}
