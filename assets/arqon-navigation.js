@@ -145,7 +145,12 @@
         window.location.replace('/?arqon_build=202611151930');
         return;
       }
-      if(event.target.closest('button[data-tab], a[href]')) close();
+      // Do not close the drawer during capture: page modules often handle
+      // tab buttons in the bubbling phase. Closing here hides the target
+      // before its action can complete, especially on desktop.
+      if(event.target.closest('button[data-tab], a[href]')) {
+        window.setTimeout(() => close(), 180);
+      }
     }, true);
     document.addEventListener('keydown',event => { if(event.key==='Escape') close(); });
     const brand = header.querySelector('.brand');
