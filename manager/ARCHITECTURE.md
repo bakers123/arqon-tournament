@@ -6,7 +6,7 @@ Telegram Mini App game: the Telegram bot is the launcher/notification channel; t
 ## Repository layout
 - `/manager/index.html` — responsive Telegram Mini App prototype (vanilla JS, no build step).
 - Future: `/manager/assets/` — icons, portraits, team logos.
-- Future: `/supabase/functions/manager-api/` — trusted game commands and match simulation.
+- Live Supabase Edge Function: `manager-api` — validates Telegram WebApp initData, resolves the linked ARQON user, and runs trusted game commands.
 - Future: `/supabase/migrations/*_esports_manager.sql` — normalized game data.
 
 ## Core modules
@@ -34,6 +34,14 @@ Telegram Mini App game: the Telegram bot is the launcher/notification channel; t
 - manager_wallet_ledger(id, club_id, amount, reason, reference_id, created_at)
 - manager_notifications(id, user_id, type, payload jsonb, read_at, created_at)
 
+## Implemented backend
+- Telegram WebApp HMAC authentication and linked-account lookup.
+- Server-side club creation, player signing, training, match simulation and club rename.
+- Per-contract player progression: rating bonus, form, fatigue and morale.
+- One active contract per pro player; five-player roster limit per discipline.
+- Training cooldown: once per discipline per server day.
+- Server-side wallet ledger and rewards.
+
 ## Security rules
 - All game-changing operations run through trusted Edge Functions or narrowly scoped RPCs.
 - Validate Telegram WebApp initData server-side, including auth_date freshness and HMAC signature.
@@ -43,7 +51,7 @@ Telegram Mini App game: the Telegram bot is the launcher/notification channel; t
 - PvP match result is computed server-side; do not accept a winner or score from the client.
 - Rate-limit club creation, scouting and match simulation.
 
-## Prototype scope (build 0.1)
+## Current prototype scope (build 0.2)
 - Dashboard, four discipline tabs, player market, sign player, roster view, training action, PvE match simulation, facility upgrades.
-- Data persists in browser localStorage only. This is a UI/gameplay prototype, not a live multiplayer backend and not yet connected to Telegram identity or Supabase.
-- Before public launch: move state to Supabase, add verified Telegram auth, server-side economy and match engine, then add bot WebApp launch button.
+- In Telegram, club state, contracts, progression, training, transfers and match outcomes are stored in Supabase. Local browser mode remains only as a non-authoritative preview when opened outside Telegram.
+- Before public launch: finish the full requested team/player catalogue imports, add transfer market detail pages, salary cycles, scouting, facilities, season/tournament brackets, PvP matchmaking and notifications.
