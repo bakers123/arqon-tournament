@@ -216,9 +216,9 @@ async function simulate(matchId){
  if(button)button.disabled=true;
  try{
    const selected=remoteBracketMatches.find(m=>m.id===matchId);
-   const maxMaps=selected?.best_of===5?3:2;
+   const maxMaps=selected?.best_of===5?5:3;
    const decisions=[];
-   const scorelines=['9:8','11:10','12:12'];
+   const scorelines=['9:8','11:10','12:12','10:9','11:11'];
    for(let map=1;map<=maxMaps;map++){
      const choice=await askMatchDecision(map,scorelines[Math.min(map-1,2)]);
      decisions.push({choice});
