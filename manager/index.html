@@ -95,12 +95,14 @@ async function simulate(){
   const team=state.roster.filter(p=>p.disc===tourDisc);
   if(team.length!==5)return;
   if(remoteMode){
-    const resultBox=document.getElementById('matchResult');
+    let resultBox=document.getElementById('matchResult');
     try{
       resultBox.innerHTML='<div class="notice">Матч идёт… генерируем раунды</div>';
       const data=await managerRequest('simulate_match',{discipline_id:tourDisc});
       const r=data.result;
       await refreshRemote();
+      resultBox=document.getElementById('matchResult');
+      if(!resultBox)throw new Error('Не удалось открыть окно результата матча');
       const rosterHtml=(title,items)=>'<div class="card" style="margin-top:10px;text-align:left"><b>'+title+'</b>'+(items||[]).map(p=>'<div class="rowline"><span>'+p.nickname+'</span><span class="muted">'+(p.role||'—')+' · '+(p.rating??'—')+'</span></div>').join('')+'</div>';
       const events=r.rounds||[];
       resultBox.innerHTML='<div class="muted">Соперник: '+r.opponent+' · '+(r.format||'')+'</div>'+rosterHtml('ТВОЙ СОСТАВ',r.home_roster)+rosterHtml('СОСТАВ СОПЕРНИКА · '+r.opponent,r.away_roster)+'<div class="card" style="margin-top:10px;text-align:left"><div style="display:flex;justify-content:space-between"><b>LIVE MATCH</b><b id="liveScore">0:0</b></div><div class="muted">Раунды матча · '+events.length+' событий</div><div id="liveRounds"></div></div>';
