@@ -25,8 +25,8 @@
 ## Current imported coverage (2026-11-24)
 - CS2: 8/100 teams; 40 player records. Current HLTV top 8 snapshot (23 Nov 2026).
 - Dota 2: 10/50 teams; 20 player records. OpenDota Elo/ScoreCyber top 10 (23 Nov 2026); four rosters sourced separately.
-- VALORANT: 8/50 teams; 40 player records. Eight 2026 Champions teams and their event rosters.
-- League of Legends: 30/30 teams; 50 player records. Official LoL Esports GPR top-30 team catalogue; ten Worlds 2026 team rosters captured as historical snapshots.
+- VALORANT: 8/50 teams; 40 player records. Eight 2026 Champions teams and their event rosters; this is an event participant pool, not a complete VLR top-50 ranking.
+- League of Legends: 30/30 teams; 55 player records. Official LoL Esports GPR top-30 snapshot (8 Sep 2026); eleven Worlds 2026 team rosters captured as historical snapshots.
 
 **Important:** ranking imports are intentionally marked partial where the full requested list has not yet been verified. The player OVR/POT fields are ARQON game-balance attributes, not official HLTV/VLR/Riot player ratings. LoL Worlds 2026 rosters are historical snapshots; offseason transfers after Worlds need a separate update. Do not silently present stale roster data as current.
 
