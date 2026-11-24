@@ -334,9 +334,10 @@ async function simulate(matchId){
   const final=document.createElement('div');final.className='match-result';final.style.color=r.won?'var(--green)':'var(--gold)';
   final.textContent=(r.won?'ПОБЕДА В СЕРИИ!':'ПОРАЖЕНИЕ В СЕРИИ')+' · '+r.home_score+':'+r.away_score+' · Награда: +'+money(r.reward)+' · Приз турнира: +'+money(r.prize_awarded||0)+' · Зарплаты: −'+money(r.payroll||0)+' 🪙';
   resultBox.appendChild(final);
+  const savedReport=resultBox.innerHTML;
   await refreshRemote();renderTournaments();
   const updated=document.getElementById('matchResult');
-  if(updated)updated.innerHTML='<div class="match-result" style="color:'+(r.won?'var(--green)':'var(--gold)')+'">'+(r.won?'ПОБЕДА В СЕРИИ':'ПОРАЖЕНИЕ')+' · '+r.home_score+':'+r.away_score+' vs '+opponent+'</div>';
+  if(updated)updated.innerHTML=savedReport;
  }catch(e){
   resultBox.innerHTML='<div class="notice" style="color:var(--red)">'+e.message+'</div>';alert(e.message);if(button)button.disabled=false;
  }
