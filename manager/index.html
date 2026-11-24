@@ -233,7 +233,7 @@ function buildMatchMoments(discipline,bestOf){
   const round=discipline==='cs2'?Math.floor(5+Math.random()*19):discipline==='valorant'?Math.floor(4+Math.random()*20):null;
   moments.push({...item,map,minute,round,uid:i});
  }
- return moments.sort((a,b)=>a.map-b.map||a.uid-b.uid);
+ return moments.sort((a,b)=>a.map-b.map||((a.round??a.minute??a.uid)-(b.round??b.minute??b.uid))||a.uid-b.uid);
 }
 async function askMatchDecision(moment,discipline){
  const resultBox=document.getElementById('matchResult');
