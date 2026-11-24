@@ -95,34 +95,49 @@ async function simulate(){
   const team=state.roster.filter(p=>p.disc===tourDisc);
   if(team.length!==5)return;
   if(remoteMode){
-    let resultBox=document.getElementById('matchResult');
+    const resultBox=document.getElementById('matchResult');
+    if(!resultBox)return;
+    const playButton=document.getElementById('playMatch');
+    if(playButton)playButton.disabled=true;
+    resultBox.innerHTML='<div class="notice">Матч идёт… сервер рассчитывает каждый раунд</div>';
     try{
-      resultBox.innerHTML='<div class="notice">Матч идёт… генерируем раунды</div>';
-      const data=await managerRequest('simulate_match',{discipline_id:tourDisc});
-      const r=data.result;
-      await refreshRemote();
-      resultBox=document.getElementById('matchResult');
-      if(!resultBox)throw new Error('Не удалось открыть окно результата матча');
+      const response=await managerRequest('simulate_match',{discipline_id:tourDisc});
+      const r=response?.result;
+      if(!r||!Array.isArray(r.rounds))throw new Error('Сервер завершил матч, но не вернул список раундов. Матч сохранён; обнови страницу и проверь историю.');
+      const events=r.rounds;
+      const opponent=r.opponent||'Соперник';
       const rosterHtml=(title,items)=>'<div class="card" style="margin-top:10px;text-align:left"><b>'+title+'</b>'+(items||[]).map(p=>'<div class="rowline"><span>'+p.nickname+'</span><span class="muted">'+(p.role||'—')+' · '+(p.rating??'—')+'</span></div>').join('')+'</div>';
-      const events=r.rounds||[];
-      resultBox.innerHTML='<div class="muted">Соперник: '+r.opponent+' · '+(r.format||'')+'</div>'+rosterHtml('ТВОЙ СОСТАВ',r.home_roster)+rosterHtml('СОСТАВ СОПЕРНИКА · '+r.opponent,r.away_roster)+'<div class="card" style="margin-top:10px;text-align:left"><div style="display:flex;justify-content:space-between"><b>LIVE MATCH</b><b id="liveScore">0:0</b></div><div class="muted">Раунды матча · '+events.length+' событий</div><div id="liveRounds"></div></div>';
+      resultBox.innerHTML='<div class="muted">Соперник: <b>'+opponent+'</b> · '+(r.format||'')+'</div>'+rosterHtml('ТВОЙ СОСТАВ',r.home_roster)+rosterHtml('СОСТАВ СОПЕРНИКА · '+opponent,r.away_roster)+'<div class="card" style="margin-top:10px;text-align:left"><div style="display:flex;justify-content:space-between"><b>LIVE MATCH</b><b id="liveScore">0:0</b></div><div class="muted">Раунды матча · '+events.length+' событий</div><div id="liveRounds"></div></div>';
       for(const x of events){
-        await new Promise(resolve=>setTimeout(resolve,850));
         const rounds=document.getElementById('liveRounds');
-        if(!rounds)break;
+        if(!rounds)throw new Error('Блок трансляции раундов был неожиданно закрыт');
         const line=document.createElement('div');
         line.className='rowline';
-        line.innerHTML='<span><b>Раунд '+x.round+'</b><div class="muted">'+x.description+'</div></span><b>'+x.score_home+':'+x.score_away+'</b>';
+        line.innerHTML='<span><b>Раунд '+x.round+'</b><div class="muted">'+(x.description||x.event||'Раунд завершён')+'</div></span><b>'+x.score_home+':'+x.score_away+'</b>';
         rounds.appendChild(line);
         const score=document.getElementById('liveScore');
         if(score)score.textContent=x.score_home+':'+x.score_away;
+        await new Promise(resolve=>setTimeout(resolve,650));
       }
       const final=document.createElement('div');
       final.className='match-result';
       final.style.color=r.won?'var(--green)':'var(--gold)';
       final.textContent=(r.won?'ПОБЕДА!':'ПОРАЖЕНИЕ')+' · '+r.home_score+':'+r.away_score+' · Награда: +'+money(r.reward)+' 🪙';
       resultBox.appendChild(final);
-    }catch(e){resultBox.textContent='';alert(e.message)}
+      state.money=Number(r.balance??(state.money+Number(r.reward||0)));
+      state.rep+=r.won?8:2;
+      if(r.won)state.trophies+=1;
+      state.history.unshift({day:state.day,disc:tourDisc,won:!!r.won,a:Number(r.home_score),b:Number(r.away_score),reward:Number(r.reward||0),opponent,rounds:events});
+      state.day++;
+      localStorage.setItem('arqon_manager_save',JSON.stringify(state));
+      renderHome();
+      renderClub();
+    }catch(e){
+      resultBox.innerHTML='<div class="notice" style="color:var(--red)">'+e.message+'</div>';
+      alert(e.message);
+    }finally{
+      if(playButton)playButton.disabled=false;
+    }
     return;
   }
   const avg=team.reduce((s,p)=>s+p.rating,0)/5;
