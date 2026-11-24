@@ -234,7 +234,14 @@ function buildMatchMoments(discipline,bestOf){
   const round=discipline==='cs2'?Math.floor(5+Math.random()*19):discipline==='valorant'?Math.floor(4+Math.random()*20):null;
   moments.push({...item,map,minute,round,uid:i});
  }
- return moments.sort((a,b)=>a.map-b.map||((a.round??a.minute??a.uid)-(b.round??b.minute??b.uid))||a.uid-b.uid);
+ moments.sort((a,b)=>a.map-b.map||((a.round??a.minute??a.uid)-(b.round??b.minute??b.uid))||a.uid-b.uid);
+ if(discipline==='cs2'||discipline==='valorant'){
+  for(let j=0;j<moments.length;j++){
+   const later=moments.some((x,k)=>k>j&&x.map===moments[j].map);
+   if(!later)moments[j].round=24;
+  }
+ }
+ return moments;
 }
 async function askMatchDecision(moment,discipline){
  const resultBox=document.getElementById('matchResult');
@@ -246,12 +253,14 @@ async function askMatchDecision(moment,discipline){
  ];
  return await new Promise(resolve=>{
   const clock=discipline==='dota2'||discipline==='lol'?'МАТЧ · '+moment.minute+' МИНУТА':discipline==='cs2'||discipline==='valorant'?'РАУНД '+moment.round:'КЛЮЧЕВОЙ МОМЕНТ';
-  resultBox.innerHTML='<div class="card" style="text-align:left;border-color:#8058cf"><div class="eyebrow">ТАКТИЧЕСКАЯ ПАУЗА · '+clock+' · КАРТА '+moment.map+'</div><h3 style="margin:7px 0">'+moment.title+'</h3><p class="muted">'+moment.context+'. Какую команду дать составу?</p><div id="decisionChoices"></div></div>';
-  const holder=document.getElementById('decisionChoices');
+  const decisionCard=document.createElement('div');decisionCard.className='card';decisionCard.style.cssText='text-align:left;border-color:#8058cf;margin-top:12px';
+  decisionCard.innerHTML='<div class="eyebrow">ТАКТИЧЕСКАЯ ПАУЗА · '+clock+' · КАРТА '+moment.map+'</div><h3 style="margin:7px 0">'+moment.title+'</h3><p class="muted">'+moment.context+'. Какую команду дать составу?</p><div id="decisionChoices"></div>';
+  resultBox.appendChild(decisionCard);
+  const holder=decisionCard.querySelector('#decisionChoices');
   options.forEach(option=>{
    const b=document.createElement('button');b.className='card';b.style.cssText='display:block;width:100%;text-align:left;margin-top:9px;background:#201a32;border:1px solid #51416e;padding:13px';
    b.innerHTML='<div style="display:flex;justify-content:space-between;gap:8px"><b>'+option.title+'</b><span class="pill">'+option.tag+'</span></div><div class="muted" style="margin-top:5px">'+option.desc+'</div>';
-   b.addEventListener('click',()=>resolve(option.id),{once:true});holder.appendChild(b);
+   b.addEventListener('click',()=>{decisionCard.remove();resolve(option.id);},{once:true});holder.appendChild(b);
   });
  });
 }
@@ -314,7 +323,7 @@ async function simulate(matchId){
    else if(discipline==='dota2')stat.textContent='Убийства '+(gs.kills_us||0)+':'+(gs.kills_them||0)+' · вышки '+(gs.towers_us||0)+':'+(gs.towers_them||0)+' · Рошаны '+(gs.roshans_us||0);
    else if(discipline==='lol')stat.textContent='Убийства '+(gs.kills_us||0)+':'+(gs.kills_them||0)+' · драконы '+(gs.dragons_us||0)+' · Бароны '+(gs.barons_us||0)+' · золото '+(gs.gold_lead||0);
    recap.appendChild(stat);
-   resultBox.appendChild(recap);
+   timeline.appendChild(recap);
    await new Promise(resolve=>setTimeout(resolve,850));
   }
   const timelineHtml=timeline.innerHTML;
