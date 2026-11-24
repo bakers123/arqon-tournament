@@ -25,7 +25,8 @@ Telegram Mini App game: the Telegram bot is the launcher/notification channel; t
 - manager_clubs(id, owner_user_id, name, tag, logo_url, balance, reputation, level, created_at)
 - manager_club_disciplines(id, club_id, discipline_id, enabled)
 - manager_disciplines(id, slug, title, roster_size, roles jsonb)
-- manager_players(id, discipline_id, nickname, real_name, age, rating, potential, attributes jsonb, form, fatigue, morale, generated_seed)
+- manager_pro_players(id, discipline_id, team_id, nickname, real_name, age, rating, potential, source_url, snapshot_date)
+- manager_player_market(player_id, market_status, is_available, current_team_id, current_team_name, asking_fee, salary_weekly, status_source_url, source_snapshot_date)
 - manager_contracts(id, club_id, player_id, role, salary_weekly, signed_at, expires_at, status)
 - manager_training_sessions(id, club_id, discipline_id, training_type, cost, created_at, result jsonb)
 - manager_matches(id, discipline_id, home_club_id, away_club_id, status, seed, input_snapshot jsonb, result jsonb, played_at)
@@ -52,6 +53,6 @@ Telegram Mini App game: the Telegram bot is the launcher/notification channel; t
 - Rate-limit club creation, scouting and match simulation.
 
 ## Current prototype scope (build 0.2)
-- Dashboard, four discipline tabs, player market, sign player, roster view, training action, PvE match simulation, facility upgrades.
+- Dashboard, four discipline tabs, player market with availability filters (free agents, transfers, benched, academies, prospects and club rosters), sign/buyout action, roster view, training action, PvE match simulation, facility upgrades.
 - In Telegram, club state, contracts, progression, training, transfers and match outcomes are stored in Supabase. Local browser mode remains only as a non-authoritative preview when opened outside Telegram.
 - Before public launch: finish the full requested team/player catalogue imports, add transfer market detail pages, salary cycles, scouting, facilities, season/tournament brackets, PvP matchmaking and notifications.
