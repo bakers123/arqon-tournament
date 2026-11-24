@@ -272,6 +272,7 @@ async function simulate(matchId){
   if(!sessionId)throw new Error('Не удалось создать серверную сессию матча.');
   await new Promise(resolve=>setTimeout(resolve,1200));
   let activeMap=0;
+  const liveRoundFeed=[];
   for(let i=0;i<moments.length;i++){
    const moment=moments[i];
    if(moment.map!==activeMap){
@@ -285,6 +286,14 @@ async function simulate(matchId){
    const resolved=await managerRequest('submit_match_event',{session_id:sessionId,choice});
    const eventResult=resolved?.result?.event;
    if(!eventResult)throw new Error('Сервер не вернул исход тактического события.');
+   (eventResult.round_log||[]).forEach(round=>{
+    liveRoundFeed.push(round);
+   });
+   if(discipline==='cs2'||discipline==='valorant'){
+    const feed=document.createElement('div');feed.className='card';feed.style.cssText='margin-top:10px;text-align:left;padding:12px';
+    feed.innerHTML='<b>ХРОНОЛОГИЯ РАУНДОВ · КАРТА '+moment.map+'</b>'+liveRoundFeed.filter(x=>true).map(x=>'<div class="rowline"><span>Раунд '+x.round+' · '+x.description+'</span><b>'+x.score_us+':'+x.score_them+'</b></div>').join('');
+    resultBox.appendChild(feed);
+   }
    const recap=document.createElement('div');
    recap.className='notice';recap.style.marginTop='8px';
    recap.style.borderColor=eventResult.outcome==='success'?'#367d60':'#80564b';
@@ -309,25 +318,7 @@ async function simulate(matchId){
   resultBox.innerHTML='<div class="muted">Соперник: <b>'+opponent+'</b> · '+(r.format||'')+'</div>'+rosterHtml('ТВОЙ СОСТАВ',r.home_roster)+rosterHtml('СОСТАВ СОПЕРНИКА · '+opponent,r.away_roster)+'<div class="card" style="margin-top:10px;text-align:left"><div style="display:flex;justify-content:space-between"><b>СЕРИЯ '+(r.format||'')+'</b><b id="liveScore">0:0</b></div><div class="muted">Карты серии · '+events.length+' сыграно</div><div id="liveRounds"></div></div>';
   const liveRounds=document.getElementById('liveRounds');
   if(liveRounds){
-   liveRounds.innerHTML='<div class="notice">Команды выходят на сервер · разминка перед первой картой</div>';
-   await new Promise(resolve=>setTimeout(resolve,1200));
-  }
-  for(const x of events){
-   const rounds=document.getElementById('liveRounds');if(!rounds)break;
-   const line=document.createElement('div');line.className='rowline';line.style.display='block';line.style.padding='12px 0';
-   line.innerHTML='<div style="display:flex;justify-content:space-between;gap:8px"><b>Карта '+x.round+'</b><span class="pill" data-map-state>LIVE</span></div><div class="muted" style="margin:5px 0 8px">'+(x.description||x.event||'Матч проходит')+'</div><div class="progress" style="height:7px"><i data-map-progress style="width:0%;transition:width 1s linear"></i></div><div class="muted" data-map-timer style="margin-top:6px">Идёт игра · 5 сек.</div>';
-   rounds.appendChild(line);
-   const timer=line.querySelector('[data-map-timer]'),bar=line.querySelector('[data-map-progress]'),stateTag=line.querySelector('[data-map-state]');
-   for(let second=5;second>0;second--){
-    if(!document.body.contains(line))break;
-    if(timer)timer.textContent='Идёт игра · '+second+' сек.';
-    if(bar)bar.style.width=((6-second)/5*100)+'%';
-    await new Promise(resolve=>setTimeout(resolve,1000));
-   }
-   if(stateTag){stateTag.textContent='ЗАВЕРШЕНА';stateTag.style.color='var(--green)';}
-   if(timer)timer.textContent='Карта завершена · результат зафиксирован';
-   const score=document.getElementById('liveScore');if(score)score.textContent=x.score_home+':'+x.score_away;
-   const mapScore=document.createElement('b');mapScore.textContent=x.score_home+':'+x.score_away;line.querySelector('div').appendChild(mapScore);
+   liveRounds.innerHTML=events.map(x=>'<div class="rowline"><span><b>Карта '+x.round+'</b><br><small class="muted">'+(x.description||x.event||'Серия завершена')+'</small></span><b>'+x.score_home+':'+x.score_away+'</b></div>').join('');
   }
   const decisionSummary=(r.decisions||[]).map(d=>'<div class="rowline"><span>Карта '+d.map+' · '+(d.event||({aggressive:'Агрессивно',balanced:'По плану',safe:'Осторожно'}[d.choice]||d.choice))+'<br><small class="muted">'+(d.outcome==='success'?'УСПЕХ':'НЕУДАЧА')+'</small></span><span class="muted">'+d.effect+'</span></div>').join('');
   if(decisionSummary){const recap=document.createElement('div');recap.className='card';recap.style.marginTop='10px';recap.innerHTML='<b>ТВОИ ТАКТИЧЕСКИЕ РЕШЕНИЯ</b>'+decisionSummary;resultBox.appendChild(recap);}
