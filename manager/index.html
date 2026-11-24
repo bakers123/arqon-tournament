@@ -190,15 +190,41 @@ async function createTournament(){
    renderTournaments();
  }
 }
+async function askMatchDecision(mapNo,scoreline){
+ const resultBox=document.getElementById('matchResult');
+ if(!resultBox)return 'balanced';
+ return await new Promise(resolve=>{
+   const choices=[
+     {id:'aggressive',title:'Рискнуть и сыграть агрессивно',desc:'Больше шансов забрать инициативу, но можно наказать себя за ошибку',tag:'РИСК +'},
+     {id:'balanced',title:'Сыграть по плану капитана',desc:'Сбалансированное решение без бонусов и штрафов',tag:'СТАНДАРТ'},
+     {id:'safe',title:'Сохранить преимущество',desc:'Осторожная игра. Меньше риска, но отдаём часть инициативы',tag:'БЕЗ РИСКА'}
+   ];
+   resultBox.innerHTML='<div class="card" style="text-align:left;border-color:#8058cf"><div class="eyebrow">ТАКТИЧЕСКАЯ ПАУЗА · КАРТА '+mapNo+'</div><h3 style="margin:6px 0">Ключевой момент раунда</h3><div class="score" style="font-size:32px">'+scoreline+'</div><p class="muted">Соперник меняет позиции. Какую команду дать игрокам? Твой выбор повлияет на шанс выиграть эту карту.</p><div id="decisionChoices"></div></div>';
+   const holder=document.getElementById('decisionChoices');
+   choices.forEach(choice=>{
+     const b=document.createElement('button');b.className='card';b.style.cssText='display:block;width:100%;text-align:left;margin-top:9px;background:#201a32;border:1px solid #51416e;padding:13px';
+     b.innerHTML='<div style="display:flex;justify-content:space-between;gap:8px"><b>'+choice.title+'</b><span class="pill">'+choice.tag+'</span></div><div class="muted" style="margin-top:5px">'+choice.desc+'</div>';
+     b.addEventListener('click',()=>resolve(choice.id),{once:true});holder.appendChild(b);
+   });
+ });
+}
 async function simulate(matchId){
  if(!remoteMode||!matchId)return;
  const resultBox=document.getElementById('matchResult');
  if(!resultBox)return;
  const button=document.querySelector('[data-bracket-match="'+matchId+'"]');
  if(button)button.disabled=true;
- resultBox.innerHTML='<div class="notice">Серия идёт… рассчитываем карты</div>';
  try{
-   const response=await managerRequest('play_bracket_match',{match_id:matchId});
+   const selected=remoteBracketMatches.find(m=>m.id===matchId);
+   const maxMaps=selected?.best_of===5?3:2;
+   const decisions=[];
+   const scorelines=['9:8','11:10','12:12'];
+   for(let map=1;map<=maxMaps;map++){
+     const choice=await askMatchDecision(map,scorelines[Math.min(map-1,2)]);
+     decisions.push({choice});
+   }
+   resultBox.innerHTML='<div class="notice">Команды выходят на сервер · разминка перед первой картой</div>';
+   const response=await managerRequest('play_bracket_match',{match_id:matchId,decisions});
    const r=response?.result;
    if(!r||!Array.isArray(r.rounds))throw new Error('Сервер не вернул результат серии.');
    const events=r.rounds,opponent=r.opponent||'Соперник';
@@ -206,20 +232,20 @@ async function simulate(matchId){
    resultBox.innerHTML='<div class="muted">Соперник: <b>'+opponent+'</b> · '+(r.format||'')+'</div>'+rosterHtml('ТВОЙ СОСТАВ',r.home_roster)+rosterHtml('СОСТАВ СОПЕРНИКА · '+opponent,r.away_roster)+'<div class="card" style="margin-top:10px;text-align:left"><div style="display:flex;justify-content:space-between"><b>СЕРИЯ '+(r.format||'')+'</b><b id="liveScore">0:0</b></div><div class="muted">Карты серии · '+events.length+' сыграно</div><div id="liveRounds"></div></div>';
    const liveRounds=document.getElementById('liveRounds');
    if(liveRounds){
-     liveRounds.innerHTML='<div class="notice" id="matchIntro">Команды выходят на сервер · разминка перед первой картой</div>';
+     liveRounds.innerHTML='<div class="notice">Команды выходят на сервер · разминка перед первой картой</div>';
      await new Promise(resolve=>setTimeout(resolve,2500));
    }
    for(const x of events){
      const rounds=document.getElementById('liveRounds');if(!rounds)break;
      const line=document.createElement('div');line.className='rowline';
      line.style.display='block';line.style.padding='12px 0';
-     line.innerHTML='<div style="display:flex;justify-content:space-between;gap:8px"><b>Карта '+x.round+'</b><span class="pill" data-map-state>LIVE</span></div><div class="muted" style="margin:5px 0 8px">'+(x.description||x.event||'Матч проходит')+'</div><div class="progress" style="height:7px"><i data-map-progress style="width:0%;transition:width 1s linear"></i></div><div class="muted" data-map-timer style="margin-top:6px">Идёт игра · 8:00</div>';
+     line.innerHTML='<div style="display:flex;justify-content:space-between;gap:8px"><b>Карта '+x.round+'</b><span class="pill" data-map-state>LIVE</span></div><div class="muted" style="margin:5px 0 8px">'+(x.description||x.event||'Матч проходит')+'</div><div class="progress" style="height:7px"><i data-map-progress style="width:0%;transition:width 1s linear"></i></div><div class="muted" data-map-timer style="margin-top:6px">Идёт игра · 14 сек.</div>';
      rounds.appendChild(line);
      const timer=line.querySelector('[data-map-timer]'),bar=line.querySelector('[data-map-progress]'),stateTag=line.querySelector('[data-map-state]');
-     for(let second=8;second>0;second--){
+     for(let second=14;second>0;second--){
        if(!document.body.contains(line))break;
        if(timer)timer.textContent='Идёт игра · '+second+' сек.';
-       if(bar)bar.style.width=((9-second)/8*100)+'%';
+       if(bar)bar.style.width=((15-second)/14*100)+'%';
        await new Promise(resolve=>setTimeout(resolve,1000));
      }
      if(stateTag){stateTag.textContent='ЗАВЕРШЕНА';stateTag.style.color='var(--green)';}
@@ -227,6 +253,8 @@ async function simulate(matchId){
      const score=document.getElementById('liveScore');if(score)score.textContent=x.score_home+':'+x.score_away;
      const mapScore=document.createElement('b');mapScore.textContent=x.score_home+':'+x.score_away;line.querySelector('div').appendChild(mapScore);
    }
+   const decisionSummary=(r.decisions||[]).map(d=>'<div class="rowline"><span>Карта '+d.map+' · '+({aggressive:'Агрессивно',balanced:'По плану',safe:'Осторожно'}[d.choice]||d.choice)+'</span><span class="muted">'+d.effect+'</span></div>').join('');
+   if(decisionSummary){const recap=document.createElement('div');recap.className='card';recap.style.marginTop='10px';recap.innerHTML='<b>ТВОИ ТАКТИЧЕСКИЕ РЕШЕНИЯ</b>'+decisionSummary;resultBox.appendChild(recap);}
    const final=document.createElement('div');final.className='match-result';final.style.color=r.won?'var(--green)':'var(--gold)';
    final.textContent=(r.won?'ПОБЕДА В СЕРИИ!':'ПОРАЖЕНИЕ В СЕРИИ')+' · '+r.home_score+':'+r.away_score+' · Награда: +'+money(r.reward)+' · Приз турнира: +'+money(r.prize_awarded||0)+' · Зарплаты: −'+money(r.payroll||0)+' 🪙';
    resultBox.appendChild(final);
