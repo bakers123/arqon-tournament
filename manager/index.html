@@ -290,6 +290,13 @@ async function simulate(matchId){
    recap.style.borderColor=eventResult.outcome==='success'?'#367d60':'#80564b';
    const outcomeText=eventResult.outcome==='success'?'УСПЕХ':'НЕУДАЧНЫЙ ИСХОД';
    recap.textContent=outcomeText+' · '+moment.title+' · импульс команды '+(Number(resolved.result.momentum)>0?'+':'')+Number(resolved.result.momentum).toFixed(2);
+   const gs=eventResult.game_state||resolved.result.game_state||{};
+   const stat=document.createElement('div');stat.className='notice';stat.style.marginTop='4px';
+   if(discipline==='cs2')stat.textContent='Счёт раундов '+(gs.rounds_us||0)+':'+(gs.rounds_them||0)+' · экономика '+(gs.economy_us||0)+' / '+(gs.economy_them||0);
+   else if(discipline==='valorant')stat.textContent='Счёт раундов '+(gs.rounds_us||0)+':'+(gs.rounds_them||0)+' · кредиты '+(gs.credits_us||0)+' / '+(gs.credits_them||0);
+   else if(discipline==='dota2')stat.textContent='Убийства '+(gs.kills_us||0)+':'+(gs.kills_them||0)+' · вышки '+(gs.towers_us||0)+':'+(gs.towers_them||0)+' · Рошаны '+(gs.roshans_us||0);
+   else if(discipline==='lol')stat.textContent='Убийства '+(gs.kills_us||0)+':'+(gs.kills_them||0)+' · драконы '+(gs.dragons_us||0)+' · Бароны '+(gs.barons_us||0)+' · золото '+(gs.gold_lead||0);
+   recap.appendChild(stat);
    resultBox.appendChild(recap);
    await new Promise(resolve=>setTimeout(resolve,850));
   }
