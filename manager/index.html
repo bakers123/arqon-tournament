@@ -204,6 +204,7 @@ async function advanceGameDay(days=1){
   let message='Игровое время продвинуто на '+(result.days_advanced||days)+' дн. Текущий день: #'+(result.day||state.day)+'.';
   if(result.new_invites)message+=' Новых приглашений: '+result.new_invites+'.';
   if(result.skipped_events)message+=' Пропущенных событий: '+result.skipped_events+'.';
+  if(result.ai_matches_created)message+=' ИИ-команды сыграли '+result.ai_matches_created+' матчей.';
   alert(message);
  }catch(e){alert(e.message||'Не удалось продвинуть игровое время');buttons.forEach(b=>{b.disabled=false;if(b.dataset.oldText)b.textContent=b.dataset.oldText;});}
 }
