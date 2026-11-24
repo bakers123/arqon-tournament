@@ -52,7 +52,7 @@ begin
   v_seed := floor(extract(epoch from clock_timestamp())*1000)::bigint;
 
   if p_discipline_id='cs2' then
-    while v_home<13 and v_away<13 loop
+    while v_home<13 and v_away<13 and not(v_home=12 and v_away=12) loop
       v_round:=v_round+1;
       v_home_win:=random()<greatest(0.18,least(0.82,0.5+(v_home_rating-v_away_rating)*0.018));
       if v_home_win then v_home:=v_home+1; else v_away:=v_away+1; end if;
