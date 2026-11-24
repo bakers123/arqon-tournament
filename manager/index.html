@@ -91,7 +91,54 @@ function go(tab){document.querySelectorAll('.view').forEach(x=>x.classList.toggl
 async function sign(id){let p=market.find(x=>x.id===id);if(!p||state.money<p.price||activeCount(p.disc)>=5)return;if(remoteMode){try{await managerRequest('sign',{player_id:id});await refreshRemote();go('squad');disc=p.disc;renderSquad()}catch(e){alert(e.message)}return;}state.money-=p.price;state.roster.push({...p,form:75,skill:0});state.day++;save();go('squad');disc=p.disc;renderSquad()}
 async function releasePlayer(id){if(!remoteMode||!id)return;if(!confirm('Расторгнуть контракт с игроком? Игрок покинет состав.'))return;try{await managerRequest('release',{contract_id:id});await refreshRemote();renderSquad()}catch(e){alert(e.message)}}
 async function train(){let team=state.roster.filter(p=>p.disc===trainingDisc);if(!team.length||state.money<15000||state.trainedDay===state.day)return;if(remoteMode){try{await managerRequest('train',{discipline_id:trainingDisc});state.trainedDay=state.day;await refreshRemote()}catch(e){alert(e.message)}return;}state.money-=15000;team.forEach(p=>{p.rating=Math.min(99,p.rating+1);p.form=Math.min(100,(p.form||75)+2);p.skill=(p.skill||0)+1});state.trainedDay=state.day;state.rep+=2;save()}
-async function simulate(){let team=state.roster.filter(p=>p.disc===tourDisc);if(team.length!==5)return;if(remoteMode){try{document.getElementById('matchResult').innerHTML='<div class="notice">Матч идёт… генерируем раунды</div>';const data=await managerRequest('simulate_match',{discipline_id:tourDisc});const r=data.result;await refreshRemote();const roster=(title,items)=>'<div class="card" style="margin-top:10px;text-align:left"><b>'+title+'</b>'+(items||[]).map(p=>'<div class="rowline"><span>'+p.nickname+'</span><span class="muted">'+(p.role||'—')+' · '+(p.rating??'—')+'</span></div>').join('')+'</div>';const events=r.rounds||[];document.getElementById('matchResult').innerHTML='<div class="muted">Соперник: '+r.opponent+' · '+(r.format||'')+'</div>'+roster('ТВОЙ СОСТАВ',r.home_roster)+roster('СОСТАВ СОПЕРНИКА · '+r.opponent,r.away_roster)+'<div class="card" style="margin-top:10px;text-align:left"><div style="display:flex;justify-content:space-between"><b>LIVE MATCH</b><b id="liveScore">0:0</b></div><div class="muted">Раунды матча · '+events.length+' событий</div><div id="liveRounds"></div></div>';for(const x of events){await new Promise(resolve=>setTimeout(resolve,850));const line=document.createElement('div');line.className='rowline';line.innerHTML='<span><b>Раунд '+x.round+'</b><div class="muted">'+x.description+'</div></span><b>'+x.score_home+':'+x.score_away+'</b>';document.getElementById('liveRounds').appendChild(line);document.getElementById('liveScore').textContent=x.score_home+':'+x.score_away;}const final=document.createElement('div');final.className='match-result';final.style.color=r.won?'var(--green)':'var(--gold)';final.textContent=(r.won?'ПОБЕДА!':'ПОРАЖЕНИЕ')+' · '+r.home_score+':'+r.away_score+' · Награда: +'+money(r.reward)+' 🪙';document.getElementById('matchResult').appendChild(final);'}catch(e){document.getElementById('matchResult').textContent='';alert(e.message)}return;}let avg=team.reduce((s,p)=>s+p.rating,0)/5;let chemistry=Math.min(8,team.length*1.2);let fatigue=team.reduce((s,p)=>s+(100-(p.form||75)),0)/5*.08;let power=avg+chemistry-fatigue+(Math.random()*12-6);let rival=71+Math.random()*12;let won=power>=rival;let a=Math.max(5,Math.round(10+(power-rival)*.65+Math.random()*5));let b=Math.max(3,Math.round(10+(rival-power)*.65+Math.random()*5));if(a===b){if(won)a++;else b++}let reward=won?45000:12000;state.money+=reward;state.rep+=won?8:2;if(won)state.trophies+=0;team.forEach(p=>p.form=Math.max(45,(p.form||75)-8));state.history.unshift({day:state.day,disc:tourDisc,won,a,b,reward});state.day++;state.level=Math.max(1,1+Math.floor(state.rep/150));save();document.getElementById('matchResult').innerHTML='<div class="match-result" style="color:'+(won?'var(--green)':'var(--gold)')+'">'+(won?'ПОБЕДА!':'ПОРАЖЕНИЕ')+' · '+a+':'+b+'</div><div class="muted">Награда: +'+money(reward)+' 🪙 · Репутация '+(won?'+8':'+2')+'</div>'}
+async function simulate(){
+  const team=state.roster.filter(p=>p.disc===tourDisc);
+  if(team.length!==5)return;
+  if(remoteMode){
+    const resultBox=document.getElementById('matchResult');
+    try{
+      resultBox.innerHTML='<div class="notice">Матч идёт… генерируем раунды</div>';
+      const data=await managerRequest('simulate_match',{discipline_id:tourDisc});
+      const r=data.result;
+      await refreshRemote();
+      const rosterHtml=(title,items)=>'<div class="card" style="margin-top:10px;text-align:left"><b>'+title+'</b>'+(items||[]).map(p=>'<div class="rowline"><span>'+p.nickname+'</span><span class="muted">'+(p.role||'—')+' · '+(p.rating??'—')+'</span></div>').join('')+'</div>';
+      const events=r.rounds||[];
+      resultBox.innerHTML='<div class="muted">Соперник: '+r.opponent+' · '+(r.format||'')+'</div>'+rosterHtml('ТВОЙ СОСТАВ',r.home_roster)+rosterHtml('СОСТАВ СОПЕРНИКА · '+r.opponent,r.away_roster)+'<div class="card" style="margin-top:10px;text-align:left"><div style="display:flex;justify-content:space-between"><b>LIVE MATCH</b><b id="liveScore">0:0</b></div><div class="muted">Раунды матча · '+events.length+' событий</div><div id="liveRounds"></div></div>';
+      for(const x of events){
+        await new Promise(resolve=>setTimeout(resolve,850));
+        const rounds=document.getElementById('liveRounds');
+        if(!rounds)break;
+        const line=document.createElement('div');
+        line.className='rowline';
+        line.innerHTML='<span><b>Раунд '+x.round+'</b><div class="muted">'+x.description+'</div></span><b>'+x.score_home+':'+x.score_away+'</b>';
+        rounds.appendChild(line);
+        const score=document.getElementById('liveScore');
+        if(score)score.textContent=x.score_home+':'+x.score_away;
+      }
+      const final=document.createElement('div');
+      final.className='match-result';
+      final.style.color=r.won?'var(--green)':'var(--gold)';
+      final.textContent=(r.won?'ПОБЕДА!':'ПОРАЖЕНИЕ')+' · '+r.home_score+':'+r.away_score+' · Награда: +'+money(r.reward)+' 🪙';
+      resultBox.appendChild(final);
+    }catch(e){resultBox.textContent='';alert(e.message)}
+    return;
+  }
+  const avg=team.reduce((s,p)=>s+p.rating,0)/5;
+  const chemistry=Math.min(8,team.length*1.2);
+  const fatigue=team.reduce((s,p)=>s+(100-(p.form||75)),0)/5*.08;
+  const power=avg+chemistry-fatigue+(Math.random()*12-6);
+  const rival=71+Math.random()*12;
+  const won=power>=rival;
+  let a=Math.max(5,Math.round(10+(power-rival)*.65+Math.random()*5));
+  let b=Math.max(3,Math.round(10+(rival-power)*.65+Math.random()*5));
+  if(a===b){if(won)a++;else b++}
+  const reward=won?45000:12000;
+  state.money+=reward;state.rep+=won?8:2;
+  team.forEach(p=>p.form=Math.max(45,(p.form||75)-8));
+  state.history.unshift({day:state.day,disc:tourDisc,won,a,b,reward});
+  state.day++;state.level=Math.max(1,1+Math.floor(state.rep/150));save();
+  document.getElementById('matchResult').innerHTML='<div class="match-result" style="color:'+(won?'var(--green)':'var(--gold)')+'">'+(won?'ПОБЕДА!':'ПОРАЖЕНИЕ')+' · '+a+':'+b+'</div><div class="muted">Награда: +'+money(reward)+' 🪙 · Репутация '+(won?'+8':'+2')+'</div>';
+}
 document.addEventListener('click',e=>{let t=e.target.closest('button');if(!t)return;if(t.dataset.tab)go(t.dataset.tab);if(t.dataset.go)go(t.dataset.go);if(t.dataset.disc){disc=t.dataset.disc;renderHome();renderSquad()}if(t.dataset.market!==undefined){marketDisc=t.dataset.market;renderMarket()}if(t.dataset.marketStatus){marketStatus=t.dataset.marketStatus;renderMarket()}if(t.dataset.sign)sign(t.dataset.sign);if(t.dataset.release)releasePlayer(t.dataset.release);if(t.dataset.training){trainingDisc=t.dataset.training;renderTraining()}if(t.dataset.tour){tourDisc=t.dataset.tour;renderTournaments()}if(t.id==='trainBtn')train();if(t.id==='playMatch')simulate();if(t.dataset.upgrade&&!remoteMode){let id=t.dataset.upgrade,cost=100000*state.facilities[id];if(state.money>=cost){state.money-=cost;state.facilities[id]++;state.rep+=5;save()}}if(t.id==='renameClub')openModal()});
 function openModal(){document.getElementById('modalWrap').classList.add('open');document.getElementById('clubNameInput').value=state.club}
 document.getElementById('modalCancel').onclick=()=>document.getElementById('modalWrap').classList.remove('open');document.getElementById('modalSave').onclick=async()=>{let v=document.getElementById('clubNameInput').value.trim();if(v.length>=3&&v.length<=24){if(remoteMode){try{await managerRequest('rename',{name:v});await refreshRemote()}catch(e){alert(e.message);return}}else{state.club=v;save()}document.getElementById('modalWrap').classList.remove('open')}};document.getElementById('trainBtn').onclick=train;
