@@ -56,10 +56,10 @@ const starter=['Maksim “M4X” Volkov','Ivan “coldzero” Petrov','Daniil �
 const defaultState={club:'ARQON Academy',money:1200000,rep:100,trophies:0,day:1,level:1,roster:starter,facilities:{training:1,scouting:1,office:1},trainedDay:0,history:[]};
 let state;try{state=JSON.parse(localStorage.getItem('arqon_manager_save'))||defaultState}catch{state=defaultState}
 let disc='cs2',marketDisc='all',marketStatus='all',tourDisc='cs2',trainingDisc='cs2';
-let remoteMode=false,remoteTeams=[],rankMeta=[];
+let remoteMode=false,remoteTeams=[],rankMeta=[],remoteTournament=null,remoteFixtures=[];
 const API='https://uscnaqcvuwjrmkjyuklp.supabase.co/functions/v1/manager-api';
 async function managerRequest(action,extra={}){const initData=window.Telegram?.WebApp?.initData||'';const r=await fetch(API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action,initData,...extra})});const data=await r.json().catch(()=>({}));if(!r.ok)throw new Error(data.message||data.error||'Не удалось связаться с игровым сервером');return data;}
-async function refreshRemote(){const data=await managerRequest('bootstrap');remoteMode=true;remoteTeams=data.teams||[];rankMeta=data.rankings||[];const club=data.club;state={...state,club:club.name,money:Number(club.balance),rep:Number(club.reputation),level:Number(club.level),trophies:Number(club.trophies),history:(data.matches||[]).map(m=>({id:m.id,day:new Date(m.played_at).toLocaleDateString('ru-RU'),disc:m.discipline_id,won:m.winner==='home',a:Number(m.home_score),b:Number(m.away_score),opponent:m.result?.opponent||remoteTeams.find(t=>t.id===m.away_team_id)?.name||'Соперник',reward:Number(m.result?.reward||0),rounds:m.result?.rounds||[]})),day:(data.matches||[]).length+1,roster:(data.contracts||[]).map(c=>{const p=Array.isArray(c.manager_pro_players)?c.manager_pro_players[0]:c.manager_pro_players;const prog=Array.isArray(c.manager_player_progress)?c.manager_player_progress[0]:c.manager_player_progress;return {...p,id:p.id,contractId:c.id,name:p.nickname,disc:p.discipline_id,role:c.role||p.role,salary:Number(c.salary_weekly),age:p.age||20,rating:Number(p.rating||70)+Number(prog?.rating_bonus||0),form:Number(prog?.form||75),fatigue:Number(prog?.fatigue||0),morale:Number(prog?.morale||75)};})};const marketById=new Map((data.playerMarket||[]).map(m=>[m.player_id,m]));market=(data.players||[]).map(p=>{const m=marketById.get(p.id)||{};const status=m.market_status||'unverified';const teamName=m.current_team_name||remoteTeams.find(t=>t.id===(m.current_team_id||p.team_id))?.name||'';return {...p,...m,id:p.id,name:p.nickname,disc:p.discipline_id,market_status:status,is_available:m.is_available===true,team_name:teamName||(status==='free_agent'?'Свободный агент':status==='benched'?'Без активного состава':'Статус уточняется'),price:Number(m.asking_fee??Math.max(25000,Number(p.rating||70)*2500)),salary:Number(m.salary_weekly??Math.max(5000,Number(p.rating||70)*250)),age:p.age||20,role:p.role||'Flex'};});localStorage.setItem('arqon_manager_save',JSON.stringify(state));render();}
+async function refreshRemote(){const data=await managerRequest('bootstrap');remoteMode=true;remoteTeams=data.teams||[];rankMeta=data.rankings||[];remoteTournament=data.tournament||null;remoteFixtures=data.fixtures||[];const club=data.club;state={...state,club:club.name,money:Number(club.balance),rep:Number(club.reputation),level:Number(club.level),trophies:Number(club.trophies),history:(data.matches||[]).map(m=>({id:m.id,day:new Date(m.played_at).toLocaleDateString('ru-RU'),disc:m.discipline_id,won:m.winner==='home',a:Number(m.home_score),b:Number(m.away_score),opponent:m.result?.opponent||remoteTeams.find(t=>t.id===m.away_team_id)?.name||'Соперник',reward:Number(m.result?.reward||0),rounds:m.result?.rounds||[]})),day:(data.matches||[]).length+1,roster:(data.contracts||[]).map(c=>{const p=Array.isArray(c.manager_pro_players)?c.manager_pro_players[0]:c.manager_pro_players;const prog=Array.isArray(c.manager_player_progress)?c.manager_player_progress[0]:c.manager_player_progress;return {...p,id:p.id,contractId:c.id,name:p.nickname,disc:p.discipline_id,role:c.role||p.role,salary:Number(c.salary_weekly),remainingWeeks:Number(c.remaining_weeks??12),expiresAt:c.expires_at,age:p.age||20,rating:Number(p.rating||70)+Number(prog?.rating_bonus||0),form:Number(prog?.form||75),fatigue:Number(prog?.fatigue||0),morale:Number(prog?.morale||75)};})};const marketById=new Map((data.playerMarket||[]).map(m=>[m.player_id,m]));market=(data.players||[]).map(p=>{const m=marketById.get(p.id)||{};const status=m.market_status||'unverified';const teamName=m.current_team_name||remoteTeams.find(t=>t.id===(m.current_team_id||p.team_id))?.name||'';return {...p,...m,id:p.id,name:p.nickname,disc:p.discipline_id,market_status:status,is_available:m.is_available===true,team_name:teamName||(status==='free_agent'?'Свободный агент':status==='benched'?'Без активного состава':'Статус уточняется'),price:Number(m.asking_fee??Math.max(25000,Number(p.rating||70)*2500)),salary:Number(m.salary_weekly??Math.max(5000,Number(p.rating||70)*250)),age:p.age||20,role:p.role||'Flex'};});localStorage.setItem('arqon_manager_save',JSON.stringify(state));render();}
 
 const save=()=>{localStorage.setItem('arqon_manager_save',JSON.stringify(state));render()};
 const money=n=>Math.round(n).toLocaleString('ru-RU');
@@ -67,7 +67,7 @@ const activeCount=id=>state.roster.filter(p=>p.disc===id).length;
 const discName=id=>disciplines.find(d=>d.id===id)?.short||id;
 const fullDisc=id=>disciplines.find(d=>d.id===id)?.name||id;
 const ratingColor=n=>n>=80?'#61d6a0':n>=70?'#c6adff':'#f3c76b';
-const playerCard=p=>'<div class="player-card"><div class="avatar">'+p.name.split(/[ “"]/)[0].slice(0,2).toUpperCase()+'</div><div class="player-info"><strong>'+p.name+'</strong><small>'+p.role+' · '+p.age+' лет · потенциал '+p.potential+'</small><div class="player-bottom"><b style="color:'+ratingColor(p.rating)+'">OVR '+p.rating+'</b><span class="muted">🪙 '+money(p.salary)+'/нед.</span></div>'+(remoteMode&&p.contractId?'<div class="player-bottom"><span class="notice">Контракт активен</span><button class="tiny-btn" data-release="'+p.contractId+'">Расторгнуть</button></div>':'')+'</div></div>';
+const playerCard=p=>'<div class="player-card"><div class="avatar">'+p.name.split(/[ “"]/)[0].slice(0,2).toUpperCase()+'</div><div class="player-info"><strong>'+p.name+'</strong><small>'+p.role+' · '+p.age+' лет · потенциал '+p.potential+'</small><div class="player-bottom"><b style="color:'+ratingColor(p.rating)+'">OVR '+p.rating+'</b><span class="muted">🪙 '+money(p.salary)+'/нед.</span></div>'+(remoteMode&&p.contractId?'<div class="notice">Контракт: '+(p.remainingWeeks??12)+' нед. · Форма '+p.form+'/100 · Усталость '+p.fatigue+'/100 · Мораль '+p.morale+'/100</div><div class="player-bottom"><button class="tiny-btn" data-release="'+p.contractId+'">Расторгнуть</button></div>':'')+'</div></div>';
 function renderHome(){document.getElementById('clubTitle').textContent=state.club;document.getElementById('clubLevel').textContent=state.level;document.getElementById('money').textContent=money(state.money);document.getElementById('statBudget').textContent=(state.money/1e6).toFixed(2)+'M';document.getElementById('statRep').textContent=state.rep;document.getElementById('statPlayers').textContent=state.roster.length;document.getElementById('statTrophies').textContent=state.trophies;document.getElementById('discCount').textContent=disciplines.filter(d=>activeCount(d.id)>=5).length+' из 4 готовы';document.getElementById('disciplineGrid').innerHTML=disciplines.map(d=>'<button class="discipline '+(disc===d.id?'active':'')+'" data-disc="'+d.id+'"><div class="disc-icon">'+d.icon+'</div><div class="disc-name">'+d.short+'</div><div class="disc-meta">'+activeCount(d.id)+' / 5 игроков</div><div class="progress"><i style="width:'+Math.min(100,activeCount(d.id)/5*100)+'%"></i></div></button>').join('');document.getElementById('featuredPlayers').innerHTML=state.roster.slice(0,4).map(p=>'<div class="rowline"><div class="player-mini"><div class="avatar">'+p.name.slice(0,2).toUpperCase()+'</div><div><div class="player-name">'+p.name+'</div><div class="player-role">'+discName(p.disc)+' · '+p.role+'</div></div></div><b class="rating">'+p.rating+'</b></div>').join('')||'<div class="empty">Пока нет игроков</div>'}
 function renderSquad(){document.getElementById('squadFilters').innerHTML=disciplines.map(d=>'<button class="chip '+(disc===d.id?'active':'')+'" data-disc="'+d.id+'">'+d.icon+' '+d.short+' · '+activeCount(d.id)+'</button>').join('');let players=state.roster.filter(p=>p.disc===disc);document.getElementById('squadContent').innerHTML='<div class="section-head"><h3>'+fullDisc(disc)+'</h3><span class="muted">'+players.length+'/5 в составе</span></div>'+(players.map(playerCard).join('')||'<div class="empty">В этой дисциплине пока нет игроков. Открой рынок и подпиши первых игроков.</div>')+'<button class="btn" style="width:100%;margin-top:13px" data-go="market">＋ Подписать игрока</button>'}
 function renderMarket(){
@@ -84,79 +84,71 @@ document.getElementById('proTeams').innerHTML='<div class="section-head"><h3>П�
 }else{document.getElementById('rankSources').innerHTML='';document.getElementById('proTeams').innerHTML='';}
 }
 function renderTraining(){document.getElementById('trainingDiscs').innerHTML=disciplines.map(d=>'<button class="discipline '+(trainingDisc===d.id?'active':'')+'" data-training="'+d.id+'"><div class="disc-icon">'+d.icon+'</div><div class="disc-name">'+d.short+'</div><div class="disc-meta">'+activeCount(d.id)+' игроков</div></button>').join('');let team=state.roster.filter(p=>p.disc===trainingDisc);document.getElementById('trainingDetails').innerHTML='<b>'+fullDisc(trainingDisc)+'</b><p class="muted">'+(team.length?team.map(p=>p.name+' · OVR '+p.rating).join('<br>'):'В этой дисциплине ещё нет подписанных игроков.')+'</p><div class="rowline"><span>Игровой день</span><b>#'+state.day+'</b></div><div class="rowline"><span>Стоимость</span><b>15 000 🪙</b></div><div class="rowline"><span>Эффект</span><b style="color:var(--green)">+2 к навыку / форме</b></div>';let btn=document.getElementById('trainBtn');btn.disabled=!team.length||state.money<15000||state.trainedDay===state.day;btn.textContent=state.trainedDay===state.day?'Тренировка уже проведена сегодня':'Начать тренировку · 15 000 🪙'}
-function renderTournaments(){document.getElementById('tournamentFilters').innerHTML=disciplines.map(d=>'<button class="chip '+(tourDisc===d.id?'active':'')+'" data-tour="'+d.id+'">'+d.short+'</button>').join('');let n=activeCount(tourDisc),ready=n===5;document.getElementById('tournamentContent').innerHTML='<div class="match-box"><div class="eyebrow">CS2 · MR12 · BO1 / ДРУГИЕ ДИСЦИПЛИНЫ · BO3</div><div class="versus"><div><div style="font-size:32px">'+(disciplines.find(d=>d.id===tourDisc).icon)+'</div><strong>'+state.club+'</strong><div class="muted">'+n+'/5 игроков</div></div><div class="score">VS</div><div><div style="font-size:32px">🎲</div><strong>Случайный соперник</strong><div class="muted">Выбор из профессионального рейтинга</div></div></div><button class="btn" id="playMatch" '+(!ready?'disabled style="opacity:.4"':'')+'>Начать матч</button><div class="notice">'+(ready?'Состав готов к матчу.':'Для участия необходимо подписать полный состав из 5 игроков.')+'</div><div id="matchResult"></div></div><div class="card" style="margin-top:12px"><div class="card-title">🏆 БУДУЩИЕ ТУРНИРЫ</div><div class="rowline"><div><b>Rookie Open</b><div class="muted">'+discName(tourDisc)+' · Открытый турнир</div></div><span class="pill">Уровень 1+</span></div><div class="rowline"><div><b>Challenger Series</b><div class="muted">'+discName(tourDisc)+' · Призовой фонд 250 000</div></div><span class="pill">Уровень 3+</span></div><div class="rowline"><div><b>Pro League</b><div class="muted">'+discName(tourDisc)+' · Призовой фонд 1 000 000</div></div><span class="pill">Уровень 7+</span></div></div>'}
-function renderClub(){let f=state.facilities;document.getElementById('clubDetails').innerHTML='<div class="card-title">🏢 '+state.club+'</div><p class="muted">Организация уровня '+state.level+'. Развивай инфраструктуру, чтобы получать преимущества на дистанции.</p>'+[['training','Тренировочная база','Улучшает эффективность тренировок'],['scouting','Скаутский отдел','Открывает более сильных игроков'],['office','Офис организации','Увеличивает репутацию и доходы']].map(([id,name,desc])=>'<div class="rowline"><div><b>'+name+' · ур. '+f[id]+'</b><div class="muted">'+desc+'</div></div><button class="tiny-btn" data-upgrade="'+id+'">Улучшить · '+money(100000*f[id])+'</button></div>').join('')+'<div class="rowline"><span>Игровой день</span><b>#'+state.day+'</b></div><button class="btn secondary" style="width:100%;margin-top:12px" id="renameClub">Изменить название клуба</button><p class="notice">Сохранение прототипа хранится в памяти этого браузера. При очистке данных браузера прогресс сбросится.</p>'}
+function renderTournaments(){
+ document.getElementById('tournamentFilters').innerHTML=disciplines.map(d=>'<button class="chip '+(tourDisc===d.id?'active':'')+'" data-tour="'+d.id+'">'+d.short+'</button>').join('');
+ const n=activeCount(tourDisc),ready=n===5;
+ if(!remoteMode){
+   document.getElementById('tournamentContent').innerHTML='<div class="empty">Турниры доступны после подключения к игровому серверу.</div>';
+   return;
+ }
+ if(!remoteTournament||remoteTournament.discipline_id!==tourDisc){
+   document.getElementById('tournamentContent').innerHTML='<div class="match-box"><div class="eyebrow">СЕЗОННЫЙ ТУРНИР · 7 ИГРОВЫХ ДНЕЙ</div><h2>ARQON Open · '+discName(tourDisc)+'</h2><p class="muted">Круговой календарь из семи матчей против разных профессиональных команд. Соперник закрепляется заранее — случайных матчей вне расписания нет.</p><div class="rowline"><span>Твой состав</span><b>'+n+'/5 игроков</b></div><button class="btn" id="createTournament" style="width:100%;margin-top:14px" '+(!ready?'disabled style="opacity:.4"':'')+'>Создать турнир и расписание</button><div class="notice">'+(ready?'После создания откроется календарь из 7 игровых дней.':'Нужно подписать полный состав из пяти игроков.')+'</div></div>';
+   return;
+ }
+ const current=remoteTournament.current_round;
+ const fixtures=remoteFixtures;
+ const next=fixtures.find(f=>Number(f.round_no)===Number(current)&&f.status==='scheduled');
+ const rows=fixtures.map(f=>{
+   const t=Array.isArray(f.manager_pro_teams)?f.manager_pro_teams[0]:f.manager_pro_teams;
+   const isCurrent=Number(f.round_no)===Number(current)&&f.status==='scheduled';
+   const label=f.status==='completed'?'Завершён':isCurrent?'Сегодня':'Ожидает';
+   const score=f.status==='completed'?(f.home_score+':'+f.away_score):'—';
+   return '<div class="rowline"><div><b>День '+f.round_no+' · '+(t?.name||'Соперник')+'</b><div class="muted">'+(t?.rank?'#'+t.rank+' · ':'')+label+'</div></div><div style="display:flex;align-items:center;gap:8px"><b>'+score+'</b>'+(isCurrent?'<button class="tiny-btn" data-fixture="'+f.id+'">Играть</button>':'')+'</div></div>';
+ }).join('');
+ document.getElementById('tournamentContent').innerHTML='<div class="match-box"><div class="eyebrow">'+remoteTournament.name+'</div><h2>Игровой день '+current+' / '+remoteTournament.total_rounds+'</h2><p class="muted">Матчи выдаются только по календарю. Следующий день откроется после завершения текущего.</p><div class="progress"><i style="width:'+Math.round((current-1)/remoteTournament.total_rounds*100)+'%"></i></div><div class="section-head"><h3>РАСПИСАНИЕ МАТЧЕЙ</h3><span class="pill">'+fixtures.filter(f=>f.status==='completed').length+'/'+fixtures.length+' сыграно</span></div>'+rows+(next?'<div class="notice">Сегодня играешь против '+((Array.isArray(next.manager_pro_teams)?next.manager_pro_teams[0]:next.manager_pro_teams)?.name||'соперника')+'.</div>':'<div class="match-result">Турнир завершён!</div>')+'<div id="matchResult"></div></div>';
+}
+function renderClub(){let f=state.facilities;document.getElementById('clubDetails').innerHTML='<div class="card-title">🏢 '+state.club+'</div><p class="muted">Организация уровня '+state.level+'. Развивай инфраструктуру, чтобы получать преимущества на дистанции.</p>'+[['training','Тренировочная база','Улучшает эффективность тренировок'],['scouting','Скаутский отдел','Открывает более сильных игроков'],['office','Офис организации','Увеличивает репутацию и доходы']].map(([id,name,desc])=>'<div class="rowline"><div><b>'+name+' · ур. '+f[id]+'</b><div class="muted">'+desc+'</div></div><button class="tiny-btn" data-upgrade="'+id+'">Улучшить · '+money(100000*f[id])+'</button></div>').join('')+'<div class="rowline"><span>Игровой день</span><b>#'+state.day+'</b></div><button class="btn secondary" style="width:100%;margin-top:12px" id="renameClub">Изменить название клуба</button><p class="notice">Игровой прогресс, контракты и результаты хранятся на сервере ARQON.</p>'}
 function render(){renderHome();renderSquad();renderMarket();renderTraining();renderTournaments();renderClub()}
 function go(tab){document.querySelectorAll('.view').forEach(x=>x.classList.toggle('active',x.id==='view-'+tab));document.querySelectorAll('[data-tab]').forEach(x=>x.classList.toggle('active',x.dataset.tab===tab));window.scrollTo({top:0,behavior:'smooth'})}
 async function sign(id){let p=market.find(x=>x.id===id);if(!p||state.money<p.price||activeCount(p.disc)>=5)return;if(remoteMode){try{await managerRequest('sign',{player_id:id});await refreshRemote();go('squad');disc=p.disc;renderSquad()}catch(e){alert(e.message)}return;}state.money-=p.price;state.roster.push({...p,form:75,skill:0});state.day++;save();go('squad');disc=p.disc;renderSquad()}
 async function releasePlayer(id){if(!remoteMode||!id)return;if(!confirm('Расторгнуть контракт с игроком? Игрок покинет состав.'))return;try{await managerRequest('release',{contract_id:id});await refreshRemote();renderSquad()}catch(e){alert(e.message)}}
 async function train(){let team=state.roster.filter(p=>p.disc===trainingDisc);if(!team.length||state.money<15000||state.trainedDay===state.day)return;if(remoteMode){try{await managerRequest('train',{discipline_id:trainingDisc});state.trainedDay=state.day;await refreshRemote()}catch(e){alert(e.message)}return;}state.money-=15000;team.forEach(p=>{p.rating=Math.min(99,p.rating+1);p.form=Math.min(100,(p.form||75)+2);p.skill=(p.skill||0)+1});state.trainedDay=state.day;state.rep+=2;save()}
-async function simulate(){
-  const team=state.roster.filter(p=>p.disc===tourDisc);
-  if(team.length!==5)return;
-  if(remoteMode){
-    const resultBox=document.getElementById('matchResult');
-    if(!resultBox)return;
-    const playButton=document.getElementById('playMatch');
-    if(playButton)playButton.disabled=true;
-    resultBox.innerHTML='<div class="notice">Матч идёт… сервер рассчитывает каждый раунд</div>';
-    try{
-      const response=await managerRequest('simulate_match',{discipline_id:tourDisc});
-      const r=response?.result;
-      if(!r||!Array.isArray(r.rounds))throw new Error('Сервер завершил матч, но не вернул список раундов. Матч сохранён; обнови страницу и проверь историю.');
-      const events=r.rounds;
-      const opponent=r.opponent||'Соперник';
-      const rosterHtml=(title,items)=>'<div class="card" style="margin-top:10px;text-align:left"><b>'+title+'</b>'+(items||[]).map(p=>'<div class="rowline"><span>'+p.nickname+'</span><span class="muted">'+(p.role||'—')+' · '+(p.rating??'—')+'</span></div>').join('')+'</div>';
-      resultBox.innerHTML='<div class="muted">Соперник: <b>'+opponent+'</b> · '+(r.format||'')+'</div>'+rosterHtml('ТВОЙ СОСТАВ',r.home_roster)+rosterHtml('СОСТАВ СОПЕРНИКА · '+opponent,r.away_roster)+'<div class="card" style="margin-top:10px;text-align:left"><div style="display:flex;justify-content:space-between"><b>LIVE MATCH</b><b id="liveScore">0:0</b></div><div class="muted">Раунды матча · '+events.length+' событий</div><div id="liveRounds"></div></div>';
-      for(const x of events){
-        const rounds=document.getElementById('liveRounds');
-        if(!rounds)throw new Error('Блок трансляции раундов был неожиданно закрыт');
-        const line=document.createElement('div');
-        line.className='rowline';
-        line.innerHTML='<span><b>Раунд '+x.round+'</b><div class="muted">'+(x.description||x.event||'Раунд завершён')+'</div></span><b>'+x.score_home+':'+x.score_away+'</b>';
-        rounds.appendChild(line);
-        const score=document.getElementById('liveScore');
-        if(score)score.textContent=x.score_home+':'+x.score_away;
-        await new Promise(resolve=>setTimeout(resolve,650));
-      }
-      const final=document.createElement('div');
-      final.className='match-result';
-      final.style.color=r.won?'var(--green)':'var(--gold)';
-      final.textContent=(r.won?'ПОБЕДА!':'ПОРАЖЕНИЕ')+' · '+r.home_score+':'+r.away_score+' · Награда: +'+money(r.reward)+' 🪙';
-      resultBox.appendChild(final);
-      state.money=Number(r.balance??(state.money+Number(r.reward||0)));
-      state.rep+=r.won?8:2;
-      if(r.won)state.trophies+=1;
-      state.history.unshift({day:state.day,disc:tourDisc,won:!!r.won,a:Number(r.home_score),b:Number(r.away_score),reward:Number(r.reward||0),opponent,rounds:events});
-      state.day++;
-      localStorage.setItem('arqon_manager_save',JSON.stringify(state));
-      renderHome();
-      renderClub();
-    }catch(e){
-      resultBox.innerHTML='<div class="notice" style="color:var(--red)">'+e.message+'</div>';
-      alert(e.message);
-    }finally{
-      if(playButton)playButton.disabled=false;
-    }
-    return;
-  }
-  const avg=team.reduce((s,p)=>s+p.rating,0)/5;
-  const chemistry=Math.min(8,team.length*1.2);
-  const fatigue=team.reduce((s,p)=>s+(100-(p.form||75)),0)/5*.08;
-  const power=avg+chemistry-fatigue+(Math.random()*12-6);
-  const rival=71+Math.random()*12;
-  const won=power>=rival;
-  let a=Math.max(5,Math.round(10+(power-rival)*.65+Math.random()*5));
-  let b=Math.max(3,Math.round(10+(rival-power)*.65+Math.random()*5));
-  if(a===b){if(won)a++;else b++}
-  const reward=won?45000:12000;
-  state.money+=reward;state.rep+=won?8:2;
-  team.forEach(p=>p.form=Math.max(45,(p.form||75)-8));
-  state.history.unshift({day:state.day,disc:tourDisc,won,a,b,reward});
-  state.day++;state.level=Math.max(1,1+Math.floor(state.rep/150));save();
-  document.getElementById('matchResult').innerHTML='<div class="match-result" style="color:'+(won?'var(--green)':'var(--gold)')+'">'+(won?'ПОБЕДА!':'ПОРАЖЕНИЕ')+' · '+a+':'+b+'</div><div class="muted">Награда: +'+money(reward)+' 🪙 · Репутация '+(won?'+8':'+2')+'</div>';
+async function simulate(fixtureId){
+ if(!remoteMode||!fixtureId)return;
+ const resultBox=document.getElementById('matchResult');
+ if(!resultBox)return;
+ const button=document.querySelector('[data-fixture="'+fixtureId+'"]');
+ if(button)button.disabled=true;
+ resultBox.innerHTML='<div class="notice">Матч идёт… рассчитываем раунды</div>';
+ try{
+   const response=await managerRequest('play_fixture',{fixture_id:fixtureId});
+   const r=response?.result;
+   if(!r||!Array.isArray(r.rounds))throw new Error('Сервер не вернул раунды матча.');
+   const events=r.rounds,opponent=r.opponent||'Соперник';
+   const rosterHtml=(title,items)=>'<div class="card" style="margin-top:10px;text-align:left"><b>'+title+'</b>'+(items||[]).map(p=>'<div class="rowline"><span>'+p.nickname+'</span><span class="muted">'+(p.role||'—')+' · '+(p.rating??'—')+'</span></div>').join('')+'</div>';
+   resultBox.innerHTML='<div class="muted">Соперник: <b>'+opponent+'</b> · '+(r.format||'')+'</div>'+rosterHtml('ТВОЙ СОСТАВ',r.home_roster)+rosterHtml('СОСТАВ СОПЕРНИКА · '+opponent,r.away_roster)+'<div class="card" style="margin-top:10px;text-align:left"><div style="display:flex;justify-content:space-between"><b>LIVE MATCH</b><b id="liveScore">0:0</b></div><div class="muted">Раунды матча · '+events.length+' событий</div><div id="liveRounds"></div></div>';
+   for(const x of events){
+     const rounds=document.getElementById('liveRounds');if(!rounds)break;
+     const line=document.createElement('div');line.className='rowline';
+     line.innerHTML='<span><b>Раунд '+x.round+'</b><div class="muted">'+(x.description||x.event||'Раунд завершён')+'</div></span><b>'+x.score_home+':'+x.score_away+'</b>';
+     rounds.appendChild(line);const score=document.getElementById('liveScore');if(score)score.textContent=x.score_home+':'+x.score_away;
+     await new Promise(resolve=>setTimeout(resolve,450));
+   }
+   const final=document.createElement('div');final.className='match-result';final.style.color=r.won?'var(--green)':'var(--gold)';
+   final.textContent=(r.won?'ПОБЕДА!':'ПОРАЖЕНИЕ')+' · '+r.home_score+':'+r.away_score+' · Приз: +'+money(r.reward)+' · Зарплаты: −'+money(r.payroll||0)+' 🪙';
+   resultBox.appendChild(final);
+   const fx=remoteFixtures.find(f=>f.id===fixtureId);
+   if(fx){fx.status='completed';fx.home_score=r.home_score;fx.away_score=r.away_score;fx.winner=r.won?'home':'away';}
+   if(remoteTournament){
+     remoteTournament.current_round=Math.min(remoteTournament.total_rounds,Number(remoteTournament.current_round)+1);
+     if(remoteTournament.current_round===remoteTournament.total_rounds&&remoteFixtures.every(f=>f.status==='completed'))remoteTournament=null;
+   }
+   await refreshRemote();
+   const updated=document.getElementById('tournamentContent');
+   if(updated){renderTournaments();const box=document.getElementById('matchResult');if(box)box.innerHTML='<div class="match-result" style="color:'+(r.won?'var(--green)':'var(--gold)')+'">'+(r.won?'ПОБЕДА':'ПОРАЖЕНИЕ')+' · '+r.home_score+':'+r.away_score+' vs '+opponent+'</div>';}
+ }catch(e){resultBox.innerHTML='<div class="notice" style="color:var(--red)">'+e.message+'</div>';alert(e.message);}
 }
-document.addEventListener('click',e=>{let t=e.target.closest('button');if(!t)return;if(t.dataset.tab)go(t.dataset.tab);if(t.dataset.go)go(t.dataset.go);if(t.dataset.disc){disc=t.dataset.disc;renderHome();renderSquad()}if(t.dataset.market!==undefined){marketDisc=t.dataset.market;renderMarket()}if(t.dataset.marketStatus){marketStatus=t.dataset.marketStatus;renderMarket()}if(t.dataset.sign)sign(t.dataset.sign);if(t.dataset.release)releasePlayer(t.dataset.release);if(t.dataset.training){trainingDisc=t.dataset.training;renderTraining()}if(t.dataset.tour){tourDisc=t.dataset.tour;renderTournaments()}if(t.id==='trainBtn')train();if(t.id==='playMatch')simulate();if(t.dataset.upgrade&&!remoteMode){let id=t.dataset.upgrade,cost=100000*state.facilities[id];if(state.money>=cost){state.money-=cost;state.facilities[id]++;state.rep+=5;save()}}if(t.id==='renameClub')openModal()});
+document.addEventListener('click',e=>{let t=e.target.closest('button');if(!t)return;if(t.dataset.tab)go(t.dataset.tab);if(t.dataset.go)go(t.dataset.go);if(t.dataset.disc){disc=t.dataset.disc;renderHome();renderSquad()}if(t.dataset.market!==undefined){marketDisc=t.dataset.market;renderMarket()}if(t.dataset.marketStatus){marketStatus=t.dataset.marketStatus;renderMarket()}if(t.dataset.sign)sign(t.dataset.sign);if(t.dataset.release)releasePlayer(t.dataset.release);if(t.dataset.training){trainingDisc=t.dataset.training;renderTraining()}if(t.dataset.tour){tourDisc=t.dataset.tour;renderTournaments()}if(t.id==='trainBtn')train();if(t.id==='playMatch')simulate(t.dataset.fixture);if(t.id==='createTournament')createTournament();if(t.dataset.fixture)simulate(t.dataset.fixture);if(t.dataset.upgrade&&!remoteMode){let id=t.dataset.upgrade,cost=100000*state.facilities[id];if(state.money>=cost){state.money-=cost;state.facilities[id]++;state.rep+=5;save()}}if(t.id==='renameClub')openModal()});
 function openModal(){document.getElementById('modalWrap').classList.add('open');document.getElementById('clubNameInput').value=state.club}
 document.getElementById('modalCancel').onclick=()=>document.getElementById('modalWrap').classList.remove('open');document.getElementById('modalSave').onclick=async()=>{let v=document.getElementById('clubNameInput').value.trim();if(v.length>=3&&v.length<=24){if(remoteMode){try{await managerRequest('rename',{name:v});await refreshRemote()}catch(e){alert(e.message);return}}else{state.club=v;save()}document.getElementById('modalWrap').classList.remove('open')}};document.getElementById('trainBtn').onclick=train;
 render();
