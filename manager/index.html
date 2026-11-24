@@ -317,7 +317,8 @@ async function simulate(matchId){
     const feed=document.createElement('div');feed.className='card';feed.style.cssText='margin:8px 0;padding:11px;text-align:left';
     const perf=eventResult.player_performance||{};
     const title=document.createElement('b');title.textContent=moment.title+' · '+(eventResult.outcome==='success'?'Успешно':'Неудачно');feed.appendChild(title);
-    if(perf.killer){const line=document.createElement('div');line.className='notice';line.style.marginTop='7px';line.textContent=perf.killer+' ('+(perf.role||'игрок')+') совершает ключевое действие против '+(perf.victim||'соперника')+' · ассисты команды: '+(perf.assist_count||0);feed.appendChild(line);}
+    if(perf.killer){const line=document.createElement('div');line.className='notice';line.style.marginTop='7px';line.textContent=perf.killer+' ('+(perf.role||'игрок')+') совершает ключевое действие против '+(perf.victim||'соперника')+(perf.assist_player?' · ассист: '+perf.assist_player:'');feed.appendChild(line);
+     liveRoundFeed.push({killer:perf.killer,victim:perf.victim,assist:perf.assist_player,killer_side:eventResult.outcome==='success'?'us':'them',kill_type:'ключевая драка'});}
     timeline.appendChild(feed);
    }
    const recap=document.createElement('div');
