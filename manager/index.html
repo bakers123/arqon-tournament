@@ -190,22 +190,68 @@ async function createTournament(){
    renderTournaments();
  }
 }
-async function askMatchDecision(mapNo,scoreline){
+function buildMatchMoments(discipline,bestOf){
+ const pools={
+  cs2:[
+   {title:'Пистолетный раунд',context:'Экономика команд и первый контроль карты',aggressive:'Форсировать темп и искать ранний контакт',balanced:'Разыграть стандартный выход по плану',safe:'Сохранить оружие и сыграть от размена'},
+   {title:'Ретейк плента',context:'Соперник закрепился на точке, времени мало',aggressive:'Врываться всей командой сейчас',balanced:'Синхронный ретейк с гранатами',safe:'Сохранить оружие и попробовать перетяжку'},
+   {title:'Ключевой закуп',context:'Экономика на грани, следующий раунд может решить карту',aggressive:'Рискнуть с форс-закупом',balanced:'Собрать сбалансированный закуп',safe:'Уйти в эко ради сильного следующего раунда'},
+   {title:'Клатч-ситуация',context:'Остался один шанс перевернуть раунд',aggressive:'Искать дуэль и давить первым',balanced:'Играть от таймингов и информации',safe:'Тянуть время и заставить соперника ошибиться'},
+   {title:'Смена темпа',context:'Соперник прочитал ваши последние выходы',aggressive:'Резко ускорить атаку',balanced:'Сменить направление после фейка',safe:'Замедлиться и собрать информацию'}
+  ],
+  dota2:[
+   {title:'Борьба за Рошана',context:'Обе команды рядом с логовом, на кону Aegis',aggressive:'Начать драку и забрать Рошана силой',balanced:'Проверить вижен и зайти вместе',safe:'Отдать Рошана, забрав вышку и фарм'},
+   {title:'Защита внешней вышки',context:'Соперник собирается давить линию',aggressive:'Принять драку под вышкой',balanced:'Защитить строение пятёркой',safe:'Разменять вышку на фарм и другую линию'},
+   {title:'Смок-ганг',context:'Есть окно поймать вражеского кора',aggressive:'Идти в глубокий смок прямо сейчас',balanced:'Сначала поставить вижен и выбрать цель',safe:'Не рисковать и забрать ресурсы на карте'},
+   {title:'Выход на хайграунд',context:'У команды преимущество, но одна ошибка может перевернуть игру',aggressive:'Начать штурм хайграунда',balanced:'Подождать ключевые перезарядки и Рошана',safe:'Забрать контроль карты и не форсировать'},
+   {title:'Драка за Терзателя',context:'Обе команды могут успеть к объекту',aggressive:'Забрать Терзателя через драку',balanced:'Занять позиции и начать по таймингу',safe:'Отдать объект и разменять его на башню'}
+  ],
+  lol:[
+   {title:'Контроль дракона',context:'Дракон скоро появится, команды стягиваются к реке',aggressive:'Начать драку за душу/дракона',balanced:'Занять реку заранее через вижен',safe:'Отдать дракона и забрать верхнюю часть карты'},
+   {title:'Подготовка к Барону',context:'Есть окно после выигранной стычки',aggressive:'Начать Барона немедленно',balanced:'Сначала зачистить вижен и проверить позиции',safe:'Не рисковать Бароном, забрать башни'},
+   {title:'Ганк на линии',context:'Союзная линия просит помощи, враг далеко зашёл',aggressive:'Совершить ранний ганк',balanced:'Подготовить волну и зайти с контролем',safe:'Не форсировать, сыграть на фарм'},
+   {title:'Командный файт за объект',context:'Соперник собирает пятерых вокруг важной точки',aggressive:'Принять командный бой',balanced:'Зайти через фланг и контроль',safe:'Разменять объект на вышку и экономику'},
+   {title:'Сплит-пуш',context:'Один из игроков может создать давление на другой линии',aggressive:'Разделить команду и давить сразу',balanced:'Давить линиями с готовой телепортацией',safe:'Собраться вместе и не отдавать игрока'}
+  ],
+  valorant:[
+   {title:'Эко-закуп',context:'Денег мало, но раунд ещё можно зацепить',aggressive:'Сделать форс-закуп и навязать бой',balanced:'Собрать частичный закуп под план',safe:'Сохранить кредиты на следующий раунд'},
+   {title:'Выход на плент',context:'Защита ждёт привычный выход на точку',aggressive:'Ворваться быстро под способности',balanced:'Растянуть защиту фейком и выйти вместе',safe:'Сыграть медленно от информации'},
+   {title:'Ретейк',context:'Бомба установлена, времени на возврат немного',aggressive:'Немедленно идти в ретейк',balanced:'Синхронизировать способности и размены',safe:'Сохранить оружие, если шанс слишком мал'},
+   {title:'Игра от ультимейтов',context:'У обеих команд готовы ключевые способности',aggressive:'Использовать ультимейты для решающего раунда',balanced:'Комбинировать способности по сигналу',safe:'Сохранить ультимейты для следующего раунда'},
+   {title:'Смена темпа',context:'Соперник адаптировался к вашим выходам',aggressive:'Ускорить атаку и застать врасплох',balanced:'Сменить точку после разведки',safe:'Выждать ошибку защиты'}
+  ]
+ };
+ const pool=pools[discipline]||pools.cs2;
+ const isMoba=discipline==='dota2'||discipline==='lol';
+ const count=isMoba?(bestOf===5?6:5):(bestOf===5?5:4);
+ const shuffled=[...pool].sort(()=>Math.random()-.5);
+ const moments=[];
+ for(let i=0;i<count;i++){
+  const item=shuffled[i%shuffled.length];
+  const map=1+Math.floor(Math.random()*bestOf);
+  const minute=isMoba?Math.floor(10+Math.random()*27):null;
+  const round=discipline==='cs2'?Math.floor(5+Math.random()*19):discipline==='valorant'?Math.floor(4+Math.random()*20):null;
+  moments.push({...item,map,minute,round,uid:i});
+ }
+ return moments.sort((a,b)=>a.map-b.map||a.uid-b.uid);
+}
+async function askMatchDecision(moment,discipline){
  const resultBox=document.getElementById('matchResult');
  if(!resultBox)return 'balanced';
+ const options=[
+  {id:'aggressive',title:moment.aggressive,desc:'Выше шанс переломить ситуацию, но риск ошибки больше',tag:'РИСК'},
+  {id:'balanced',title:moment.balanced,desc:'Командный план без сильного перекоса в риск',tag:'БАЛАНС'},
+  {id:'safe',title:moment.safe,desc:'Снижаем риск и стараемся сохранить ресурсы',tag:'ОСТОРОЖНО'}
+ ];
  return await new Promise(resolve=>{
-   const choices=[
-     {id:'aggressive',title:'Рискнуть и сыграть агрессивно',desc:'Больше шансов забрать инициативу, но можно наказать себя за ошибку',tag:'РИСК +'},
-     {id:'balanced',title:'Сыграть по плану капитана',desc:'Сбалансированное решение без бонусов и штрафов',tag:'СТАНДАРТ'},
-     {id:'safe',title:'Сохранить преимущество',desc:'Осторожная игра. Меньше риска, но отдаём часть инициативы',tag:'БЕЗ РИСКА'}
-   ];
-   resultBox.innerHTML='<div class="card" style="text-align:left;border-color:#8058cf"><div class="eyebrow">ТАКТИЧЕСКАЯ ПАУЗА · КАРТА '+mapNo+'</div><h3 style="margin:6px 0">Ключевой момент раунда</h3><div class="score" style="font-size:32px">'+scoreline+'</div><p class="muted">Соперник меняет позиции. Какую команду дать игрокам? Твой выбор повлияет на шанс выиграть эту карту.</p><div id="decisionChoices"></div></div>';
-   const holder=document.getElementById('decisionChoices');
-   choices.forEach(choice=>{
-     const b=document.createElement('button');b.className='card';b.style.cssText='display:block;width:100%;text-align:left;margin-top:9px;background:#201a32;border:1px solid #51416e;padding:13px';
-     b.innerHTML='<div style="display:flex;justify-content:space-between;gap:8px"><b>'+choice.title+'</b><span class="pill">'+choice.tag+'</span></div><div class="muted" style="margin-top:5px">'+choice.desc+'</div>';
-     b.addEventListener('click',()=>resolve(choice.id),{once:true});holder.appendChild(b);
-   });
+  const clock=discipline==='dota2'||discipline==='lol'?'МАТЧ · '+moment.minute+' МИНУТА':discipline==='cs2'||discipline==='valorant'?'РАУНД '+moment.round:'КЛЮЧЕВОЙ МОМЕНТ';
+  resultBox.innerHTML='<div class="card" style="text-align:left;border-color:#8058cf"><div class="eyebrow">ТАКТИЧЕСКАЯ ПАУЗА · '+clock+' · КАРТА '+moment.map+'</div><h3 style="margin:7px 0">'+moment.title+'</h3><p class="muted">'+moment.context+'. Какую команду дать составу?</p><div id="decisionChoices"></div></div>';
+  const holder=document.getElementById('decisionChoices');
+  options.forEach(option=>{
+   const b=document.createElement('button');b.className='card';b.style.cssText='display:block;width:100%;text-align:left;margin-top:9px;background:#201a32;border:1px solid #51416e;padding:13px';
+   b.innerHTML='<div style="display:flex;justify-content:space-between;gap:8px"><b>'+option.title+'</b><span class="pill">'+option.tag+'</span></div><div class="muted" style="margin-top:5px">'+option.desc+'</div>';
+   b.addEventListener('click',()=>resolve(option.id),{once:true});holder.appendChild(b);
+  });
  });
 }
 async function simulate(matchId){
@@ -215,54 +261,70 @@ async function simulate(matchId){
  const button=document.querySelector('[data-bracket-match="'+matchId+'"]');
  if(button)button.disabled=true;
  try{
-   const selected=remoteBracketMatches.find(m=>m.id===matchId);
-   const maxMaps=selected?.best_of===5?5:3;
-   const decisions=[];
-   const scorelines=['9:8','11:10','12:12','10:9','11:11'];
-   for(let map=1;map<=maxMaps;map++){
-     const choice=await askMatchDecision(map,scorelines[Math.min(map-1,2)]);
-     decisions.push({choice});
+  const selected=remoteBracketMatches.find(m=>m.id===matchId);
+  const bestOf=selected?.best_of===5?5:3;
+  const discipline=remoteTournament?.discipline_id||tourDisc||'cs2';
+  const moments=buildMatchMoments(discipline,bestOf);
+  const decisions=[];
+  const disciplineName={cs2:'CS2',dota2:'DOTA 2',lol:'LEAGUE OF LEGENDS',valorant:'VALORANT'}[discipline]||discipline.toUpperCase();
+  resultBox.innerHTML='<div class="notice">Команды выходят на сервер · '+disciplineName+' · разминка</div>';
+  await new Promise(resolve=>setTimeout(resolve,1200));
+  let activeMap=0;
+  for(let i=0;i<moments.length;i++){
+   const moment=moments[i];
+   if(moment.map!==activeMap){
+    activeMap=moment.map;
+    resultBox.innerHTML='<div class="card"><div class="eyebrow">'+disciplineName+' · BO'+bestOf+'</div><h3>Карта '+activeMap+' · LIVE</h3><p class="muted">Команды изучают стиль соперника. Следующий ключевой момент может изменить ход серии.</p><div class="progress"><i style="width:'+Math.round((i/moments.length)*100)+'%"></i></div></div>';
+    await new Promise(resolve=>setTimeout(resolve,900));
    }
-   resultBox.innerHTML='<div class="notice">Команды выходят на сервер · разминка перед первой картой</div>';
-   const response=await managerRequest('play_bracket_match',{match_id:matchId,decisions});
-   const r=response?.result;
-   if(!r||!Array.isArray(r.rounds))throw new Error('Сервер не вернул результат серии.');
-   const events=r.rounds,opponent=r.opponent||'Соперник';
-   const rosterHtml=(title,items)=>'<div class="card" style="margin-top:10px;text-align:left"><b>'+title+'</b>'+(items||[]).map(p=>'<div class="rowline"><span>'+p.nickname+'</span><span class="muted">'+(p.role||'—')+' · '+(p.rating??'—')+'</span></div>').join('')+'</div>';
-   resultBox.innerHTML='<div class="muted">Соперник: <b>'+opponent+'</b> · '+(r.format||'')+'</div>'+rosterHtml('ТВОЙ СОСТАВ',r.home_roster)+rosterHtml('СОСТАВ СОПЕРНИКА · '+opponent,r.away_roster)+'<div class="card" style="margin-top:10px;text-align:left"><div style="display:flex;justify-content:space-between"><b>СЕРИЯ '+(r.format||'')+'</b><b id="liveScore">0:0</b></div><div class="muted">Карты серии · '+events.length+' сыграно</div><div id="liveRounds"></div></div>';
-   const liveRounds=document.getElementById('liveRounds');
-   if(liveRounds){
-     liveRounds.innerHTML='<div class="notice">Команды выходят на сервер · разминка перед первой картой</div>';
-     await new Promise(resolve=>setTimeout(resolve,2500));
+   const choice=await askMatchDecision(moment,discipline);
+   decisions.push({map:moment.map,choice,event:moment.title,context:moment.context});
+   const recap=document.createElement('div');
+   recap.className='notice';recap.style.marginTop='8px';
+   recap.textContent='Решение принято: '+moment.title+' · '+({aggressive:'инициатива',balanced:'план',safe:'осторожная игра'}[choice]);
+   resultBox.appendChild(recap);
+   await new Promise(resolve=>setTimeout(resolve,650));
+  }
+  resultBox.innerHTML='<div class="notice">Тактические решения переданы тренерскому штабу. Серия доигрывается…</div>';
+  const response=await managerRequest('play_bracket_match',{match_id:matchId,decisions});
+  const r=response?.result;
+  if(!r||!Array.isArray(r.rounds))throw new Error('Сервер не вернул результат серии.');
+  const events=r.rounds,opponent=r.opponent||'Соперник';
+  const rosterHtml=(title,items)=>'<div class="card" style="margin-top:10px;text-align:left"><b>'+title+'</b>'+(items||[]).map(p=>'<div class="rowline"><span>'+p.nickname+'</span><span class="muted">'+(p.role||'—')+' · '+(p.rating??'—')+'</span></div>').join('')+'</div>';
+  resultBox.innerHTML='<div class="muted">Соперник: <b>'+opponent+'</b> · '+(r.format||'')+'</div>'+rosterHtml('ТВОЙ СОСТАВ',r.home_roster)+rosterHtml('СОСТАВ СОПЕРНИКА · '+opponent,r.away_roster)+'<div class="card" style="margin-top:10px;text-align:left"><div style="display:flex;justify-content:space-between"><b>СЕРИЯ '+(r.format||'')+'</b><b id="liveScore">0:0</b></div><div class="muted">Карты серии · '+events.length+' сыграно</div><div id="liveRounds"></div></div>';
+  const liveRounds=document.getElementById('liveRounds');
+  if(liveRounds){
+   liveRounds.innerHTML='<div class="notice">Команды выходят на сервер · разминка перед первой картой</div>';
+   await new Promise(resolve=>setTimeout(resolve,1200));
+  }
+  for(const x of events){
+   const rounds=document.getElementById('liveRounds');if(!rounds)break;
+   const line=document.createElement('div');line.className='rowline';line.style.display='block';line.style.padding='12px 0';
+   line.innerHTML='<div style="display:flex;justify-content:space-between;gap:8px"><b>Карта '+x.round+'</b><span class="pill" data-map-state>LIVE</span></div><div class="muted" style="margin:5px 0 8px">'+(x.description||x.event||'Матч проходит')+'</div><div class="progress" style="height:7px"><i data-map-progress style="width:0%;transition:width 1s linear"></i></div><div class="muted" data-map-timer style="margin-top:6px">Идёт игра · 5 сек.</div>';
+   rounds.appendChild(line);
+   const timer=line.querySelector('[data-map-timer]'),bar=line.querySelector('[data-map-progress]'),stateTag=line.querySelector('[data-map-state]');
+   for(let second=5;second>0;second--){
+    if(!document.body.contains(line))break;
+    if(timer)timer.textContent='Идёт игра · '+second+' сек.';
+    if(bar)bar.style.width=((6-second)/5*100)+'%';
+    await new Promise(resolve=>setTimeout(resolve,1000));
    }
-   for(const x of events){
-     const rounds=document.getElementById('liveRounds');if(!rounds)break;
-     const line=document.createElement('div');line.className='rowline';
-     line.style.display='block';line.style.padding='12px 0';
-     line.innerHTML='<div style="display:flex;justify-content:space-between;gap:8px"><b>Карта '+x.round+'</b><span class="pill" data-map-state>LIVE</span></div><div class="muted" style="margin:5px 0 8px">'+(x.description||x.event||'Матч проходит')+'</div><div class="progress" style="height:7px"><i data-map-progress style="width:0%;transition:width 1s linear"></i></div><div class="muted" data-map-timer style="margin-top:6px">Идёт игра · 14 сек.</div>';
-     rounds.appendChild(line);
-     const timer=line.querySelector('[data-map-timer]'),bar=line.querySelector('[data-map-progress]'),stateTag=line.querySelector('[data-map-state]');
-     for(let second=14;second>0;second--){
-       if(!document.body.contains(line))break;
-       if(timer)timer.textContent='Идёт игра · '+second+' сек.';
-       if(bar)bar.style.width=((15-second)/14*100)+'%';
-       await new Promise(resolve=>setTimeout(resolve,1000));
-     }
-     if(stateTag){stateTag.textContent='ЗАВЕРШЕНА';stateTag.style.color='var(--green)';}
-     if(timer)timer.textContent='Карта завершена · результат зафиксирован';
-     const score=document.getElementById('liveScore');if(score)score.textContent=x.score_home+':'+x.score_away;
-     const mapScore=document.createElement('b');mapScore.textContent=x.score_home+':'+x.score_away;line.querySelector('div').appendChild(mapScore);
-   }
-   const decisionSummary=(r.decisions||[]).map(d=>'<div class="rowline"><span>Карта '+d.map+' · '+({aggressive:'Агрессивно',balanced:'По плану',safe:'Осторожно'}[d.choice]||d.choice)+'</span><span class="muted">'+d.effect+'</span></div>').join('');
-   if(decisionSummary){const recap=document.createElement('div');recap.className='card';recap.style.marginTop='10px';recap.innerHTML='<b>ТВОИ ТАКТИЧЕСКИЕ РЕШЕНИЯ</b>'+decisionSummary;resultBox.appendChild(recap);}
-   const final=document.createElement('div');final.className='match-result';final.style.color=r.won?'var(--green)':'var(--gold)';
-   final.textContent=(r.won?'ПОБЕДА В СЕРИИ!':'ПОРАЖЕНИЕ В СЕРИИ')+' · '+r.home_score+':'+r.away_score+' · Награда: +'+money(r.reward)+' · Приз турнира: +'+money(r.prize_awarded||0)+' · Зарплаты: −'+money(r.payroll||0)+' 🪙';
-   resultBox.appendChild(final);
-   await refreshRemote();
-   renderTournaments();
-   const updated=document.getElementById('matchResult');
-   if(updated)updated.innerHTML='<div class="match-result" style="color:'+(r.won?'var(--green)':'var(--gold)')+'">'+(r.won?'ПОБЕДА В СЕРИИ':'ПОРАЖЕНИЕ')+' · '+r.home_score+':'+r.away_score+' vs '+opponent+'</div>';
- }catch(e){resultBox.innerHTML='<div class="notice" style="color:var(--red)">'+e.message+'</div>';alert(e.message);if(button)button.disabled=false;}
+   if(stateTag){stateTag.textContent='ЗАВЕРШЕНА';stateTag.style.color='var(--green)';}
+   if(timer)timer.textContent='Карта завершена · результат зафиксирован';
+   const score=document.getElementById('liveScore');if(score)score.textContent=x.score_home+':'+x.score_away;
+   const mapScore=document.createElement('b');mapScore.textContent=x.score_home+':'+x.score_away;line.querySelector('div').appendChild(mapScore);
+  }
+  const decisionSummary=(r.decisions||[]).map(d=>'<div class="rowline"><span>Карта '+d.map+' · '+(d.event||({aggressive:'Агрессивно',balanced:'По плану',safe:'Осторожно'}[d.choice]||d.choice))+'</span><span class="muted">'+d.effect+'</span></div>').join('');
+  if(decisionSummary){const recap=document.createElement('div');recap.className='card';recap.style.marginTop='10px';recap.innerHTML='<b>ТВОИ ТАКТИЧЕСКИЕ РЕШЕНИЯ</b>'+decisionSummary;resultBox.appendChild(recap);}
+  const final=document.createElement('div');final.className='match-result';final.style.color=r.won?'var(--green)':'var(--gold)';
+  final.textContent=(r.won?'ПОБЕДА В СЕРИИ!':'ПОРАЖЕНИЕ В СЕРИИ')+' · '+r.home_score+':'+r.away_score+' · Награда: +'+money(r.reward)+' · Приз турнира: +'+money(r.prize_awarded||0)+' · Зарплаты: −'+money(r.payroll||0)+' 🪙';
+  resultBox.appendChild(final);
+  await refreshRemote();renderTournaments();
+  const updated=document.getElementById('matchResult');
+  if(updated)updated.innerHTML='<div class="match-result" style="color:'+(r.won?'var(--green)':'var(--gold)')+'">'+(r.won?'ПОБЕДА В СЕРИИ':'ПОРАЖЕНИЕ')+' · '+r.home_score+':'+r.away_score+' vs '+opponent+'</div>';
+ }catch(e){
+  resultBox.innerHTML='<div class="notice" style="color:var(--red)">'+e.message+'</div>';alert(e.message);if(button)button.disabled=false;
+ }
 }
 document.addEventListener('click',e=>{let t=e.target.closest('button');if(!t)return;if(t.dataset.tab)go(t.dataset.tab);if(t.dataset.go)go(t.dataset.go);if(t.dataset.disc){disc=t.dataset.disc;renderHome();renderSquad()}if(t.dataset.market!==undefined){marketDisc=t.dataset.market;renderMarket()}if(t.dataset.marketStatus){marketStatus=t.dataset.marketStatus;renderMarket()}if(t.dataset.sign)sign(t.dataset.sign);if(t.dataset.release)releasePlayer(t.dataset.release);if(t.dataset.respondOffer)respondOffer(t.dataset.respondOffer,t.dataset.acceptOffer==='1');if(t.dataset.counterOffer)counterOffer(t.dataset.counterOffer,Number(t.dataset.counterFee),Number(t.dataset.counterSalary));if(t.dataset.replyCounter)replyCounter(t.dataset.replyCounter,t.dataset.acceptCounter==='1');if(t.dataset.makeOffer)makeOffer(t.dataset.sellerClub,t.dataset.player,Number(t.dataset.offerFee),Number(t.dataset.offerSalary));if(t.dataset.joinEvent)joinCompetition(t.dataset.joinEvent);if(t.dataset.training){trainingDisc=t.dataset.training;renderTraining()}if(t.dataset.tour){tourDisc=t.dataset.tour;renderTournaments()}if(t.id==='trainBtn')train();if(t.id==='playMatch')simulate(t.dataset.fixture);if(t.id==='createTournament')createTournament();if(t.id==='saveTactics')saveTactics();if(t.dataset.fixture)simulate(t.dataset.fixture);if(t.dataset.bracketMatch)simulate(t.dataset.bracketMatch);if(t.dataset.upgrade&&!remoteMode){let id=t.dataset.upgrade,cost=100000*state.facilities[id];if(state.money>=cost){state.money-=cost;state.facilities[id]++;state.rep+=5;save()}}if(t.id==='renameClub')openModal()});
 document.addEventListener('change',e=>{if(e.target.id==='tacticStyle'){const box=document.getElementById('tacticDescription');if(box)box.textContent=tacticDescriptions[disc]?.[e.target.value]||'Выбранный стиль влияет на силу команды в матчах.';}});
