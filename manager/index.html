@@ -204,12 +204,28 @@ async function simulate(matchId){
    const events=r.rounds,opponent=r.opponent||'Соперник';
    const rosterHtml=(title,items)=>'<div class="card" style="margin-top:10px;text-align:left"><b>'+title+'</b>'+(items||[]).map(p=>'<div class="rowline"><span>'+p.nickname+'</span><span class="muted">'+(p.role||'—')+' · '+(p.rating??'—')+'</span></div>').join('')+'</div>';
    resultBox.innerHTML='<div class="muted">Соперник: <b>'+opponent+'</b> · '+(r.format||'')+'</div>'+rosterHtml('ТВОЙ СОСТАВ',r.home_roster)+rosterHtml('СОСТАВ СОПЕРНИКА · '+opponent,r.away_roster)+'<div class="card" style="margin-top:10px;text-align:left"><div style="display:flex;justify-content:space-between"><b>СЕРИЯ '+(r.format||'')+'</b><b id="liveScore">0:0</b></div><div class="muted">Карты серии · '+events.length+' сыграно</div><div id="liveRounds"></div></div>';
+   const liveRounds=document.getElementById('liveRounds');
+   if(liveRounds){
+     liveRounds.innerHTML='<div class="notice" id="matchIntro">Команды выходят на сервер · разминка перед первой картой</div>';
+     await new Promise(resolve=>setTimeout(resolve,2500));
+   }
    for(const x of events){
      const rounds=document.getElementById('liveRounds');if(!rounds)break;
      const line=document.createElement('div');line.className='rowline';
-     line.innerHTML='<span><b>Карта '+x.round+'</b><div class="muted">'+(x.description||x.event||'Карта завершена')+'</div></span><b>'+x.score_home+':'+x.score_away+'</b>';
-     rounds.appendChild(line);const score=document.getElementById('liveScore');if(score)score.textContent=x.score_home+':'+x.score_away;
-     await new Promise(resolve=>setTimeout(resolve,450));
+     line.style.display='block';line.style.padding='12px 0';
+     line.innerHTML='<div style="display:flex;justify-content:space-between;gap:8px"><b>Карта '+x.round+'</b><span class="pill" data-map-state>LIVE</span></div><div class="muted" style="margin:5px 0 8px">'+(x.description||x.event||'Матч проходит')+'</div><div class="progress" style="height:7px"><i data-map-progress style="width:0%;transition:width 1s linear"></i></div><div class="muted" data-map-timer style="margin-top:6px">Идёт игра · 8:00</div>';
+     rounds.appendChild(line);
+     const timer=line.querySelector('[data-map-timer]'),bar=line.querySelector('[data-map-progress]'),stateTag=line.querySelector('[data-map-state]');
+     for(let second=8;second>0;second--){
+       if(!document.body.contains(line))break;
+       if(timer)timer.textContent='Идёт игра · '+second+' сек.';
+       if(bar)bar.style.width=((9-second)/8*100)+'%';
+       await new Promise(resolve=>setTimeout(resolve,1000));
+     }
+     if(stateTag){stateTag.textContent='ЗАВЕРШЕНА';stateTag.style.color='var(--green)';}
+     if(timer)timer.textContent='Карта завершена · результат зафиксирован';
+     const score=document.getElementById('liveScore');if(score)score.textContent=x.score_home+':'+x.score_away;
+     const mapScore=document.createElement('b');mapScore.textContent=x.score_home+':'+x.score_away;line.querySelector('div').appendChild(mapScore);
    }
    const final=document.createElement('div');final.className='match-result';final.style.color=r.won?'var(--green)':'var(--gold)';
    final.textContent=(r.won?'ПОБЕДА В СЕРИИ!':'ПОРАЖЕНИЕ В СЕРИИ')+' · '+r.home_score+':'+r.away_score+' · Награда: +'+money(r.reward)+' · Приз турнира: +'+money(r.prize_awarded||0)+' · Зарплаты: −'+money(r.payroll||0)+' 🪙';
