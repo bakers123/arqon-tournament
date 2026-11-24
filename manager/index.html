@@ -265,9 +265,11 @@ async function simulate(matchId){
   const bestOf=selected?.best_of===5?5:3;
   const discipline=remoteTournament?.discipline_id||tourDisc||'cs2';
   const moments=buildMatchMoments(discipline,bestOf);
-  const decisions=[];
   const disciplineName={cs2:'CS2',dota2:'DOTA 2',lol:'LEAGUE OF LEGENDS',valorant:'VALORANT'}[discipline]||discipline.toUpperCase();
   resultBox.innerHTML='<div class="notice">Команды выходят на сервер · '+disciplineName+' · разминка</div>';
+  const started=await managerRequest('start_match_session',{match_id:matchId,moments:moments.map(m=>({map:m.map,title:m.title,context:m.context,minute:m.minute,round:m.round}))});
+  const sessionId=started?.result?.session_id;
+  if(!sessionId)throw new Error('Не удалось создать серверную сессию матча.');
   await new Promise(resolve=>setTimeout(resolve,1200));
   let activeMap=0;
   for(let i=0;i<moments.length;i++){
@@ -280,15 +282,19 @@ async function simulate(matchId){
    resultBox.innerHTML='<div class="card"><div class="eyebrow">'+disciplineName+' · КАРТА '+moment.map+' · LIVE</div><h3>'+moment.title+'</h3><p class="muted">Матч продолжается. Команды занимают позиции, готовят способности и ищут момент для действия…</p><div class="progress"><i style="width:'+Math.round(((i+1)/moments.length)*100)+'%"></i></div><div class="muted" style="margin-top:8px">Симуляция игрового времени · ключевой момент скоро</div></div>';
    await new Promise(resolve=>setTimeout(resolve,1400));
    const choice=await askMatchDecision(moment,discipline);
-   decisions.push({map:moment.map,choice,event:moment.title,context:moment.context});
+   const resolved=await managerRequest('submit_match_event',{session_id:sessionId,choice});
+   const eventResult=resolved?.result?.event;
+   if(!eventResult)throw new Error('Сервер не вернул исход тактического события.');
    const recap=document.createElement('div');
    recap.className='notice';recap.style.marginTop='8px';
-   recap.textContent='Решение принято: '+moment.title+' · '+({aggressive:'инициатива',balanced:'план',safe:'осторожная игра'}[choice]);
+   recap.style.borderColor=eventResult.outcome==='success'?'#367d60':'#80564b';
+   const outcomeText=eventResult.outcome==='success'?'УСПЕХ':'НЕУДАЧНЫЙ ИСХОД';
+   recap.textContent=outcomeText+' · '+moment.title+' · импульс команды '+(Number(resolved.result.momentum)>0?'+':'')+Number(resolved.result.momentum).toFixed(2);
    resultBox.appendChild(recap);
-   await new Promise(resolve=>setTimeout(resolve,650));
+   await new Promise(resolve=>setTimeout(resolve,850));
   }
-  resultBox.innerHTML='<div class="notice">Тактические решения переданы тренерскому штабу. Серия доигрывается…</div>';
-  const response=await managerRequest('play_bracket_match',{match_id:matchId,decisions});
+  resultBox.innerHTML='<div class="notice">Все ключевые моменты сыграны. Серия доигрывается и фиксируется на сервере…</div>';
+  const response=await managerRequest('finish_match_session',{session_id:sessionId});
   const r=response?.result;
   if(!r||!Array.isArray(r.rounds))throw new Error('Сервер не вернул результат серии.');
   const events=r.rounds,opponent=r.opponent||'Соперник';
