@@ -228,7 +228,7 @@ function buildMatchMoments(discipline,bestOf){
  const moments=[];
  for(let i=0;i<count;i++){
   const item=shuffled[i%shuffled.length];
-  const map=1+Math.floor(Math.random()*bestOf);
+  const map=1+(i%bestOf);
   const minute=isMoba?Math.floor(10+Math.random()*27):null;
   const round=discipline==='cs2'?Math.floor(5+Math.random()*19):discipline==='valorant'?Math.floor(4+Math.random()*20):null;
   moments.push({...item,map,minute,round,uid:i});
