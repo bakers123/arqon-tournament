@@ -119,6 +119,7 @@ function renderTraining(){
  let btn=document.getElementById('trainBtn');btn.disabled=!team.length||state.money<15000||trained;btn.textContent=trained?'Тренировка этой дисциплины уже проведена':'Начать тренировку · 15 000 🪙';
 }
 function renderTournaments(){
+ const eventCards='';
  document.getElementById('tournamentFilters').innerHTML=disciplines.map(d=>'<button class="chip '+(tourDisc===d.id?'active':'')+'" data-tour="'+d.id+'">'+d.short+'</button>').join('');
  const n=activeCount(tourDisc),ready=n===5;
  if(!remoteMode){document.getElementById('tournamentContent').innerHTML='<div class="empty">Турниры доступны после подключения к игровому серверу.</div>';return;}
@@ -143,7 +144,7 @@ function renderTournaments(){
  const rounds=[1,2,3].map(round=>{
    const matches=remoteBracketMatches.filter(m=>Number(m.round_no)===round).sort((a,b)=>a.match_no-b.match_no);
    if(!matches.length)return '';
-   const cards=matches.map(m=>{
+   const matchCardsHtml=matches.map(m=>{
      const mine=(m.home_participant||'').startsWith('club:')||(m.away_participant||'').startsWith('club:');
      const current=remoteTournament.status==='active'&&Number(m.round_no)===Number(remoteTournament.current_round)&&m.status==='scheduled'&&mine;
      const label=m.status==='completed'?'Завершён':m.status==='abandoned'?'Ты выбыл':current?'ТВОЙ МАТЧ':(m.home_participant&&m.away_participant?'Ожидает':'Ожидает победителей');
@@ -153,7 +154,7 @@ function renderTournaments(){
      const awayClass=winner&&winner===m.away_participant?'color:var(--green);':'';
      return '<div class="card" style="margin-top:8px;text-align:left"><div class="rowline"><span class="muted">Матч '+m.match_no+' · '+label+'</span><b class="pill">'+(m.best_of===5?'BO5':'BO3')+'</b></div><div class="rowline"><b style="'+homeClass+'">'+participantName(m.home_participant)+'</b><b>'+(m.status==='completed'&&winner===m.home_participant?'ПОБЕДА':'')+'</b></div><div class="rowline"><b style="'+awayClass+'">'+participantName(m.away_participant)+'</b><b>'+(m.status==='completed'&&winner===m.away_participant?'ПОБЕДА':'')+'</b></div><div class="rowline"><span class="muted">Счёт серии</span><b style="font-size:18px">'+score+'</b></div>'+(current?'<button class="btn" style="width:100%;margin-top:8px" data-bracket-match="'+m.id+'">Играть серию '+(m.best_of===5?'BO5':'BO3')+'</button>':'')+'</div>';
    }).join('');
-   return '<div style="min-width:240px;flex:1"><div class="section-head" style="margin-top:0"><h3 style="white-space:nowrap">'+stageNames[round]+'</h3></div>'+cards+'</div>';
+   return '<div style="min-width:240px;flex:1"><div class="section-head" style="margin-top:0"><h3 style="white-space:nowrap">'+stageNames[round]+'</h3></div>'+matchCardsHtml+'</div>';
  }).join('');
  const active=remoteTournament.status==='active';
  const title=active?'ПЛЕЙ-ОФФ · РАУНД '+remoteTournament.current_round+'/3':(remoteTournament.champion?'🏆 ТЫ ЧЕМПИОН ТУРНИРА':'ТУРНИР ЗАВЕРШЁН');
