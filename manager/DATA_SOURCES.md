@@ -26,15 +26,15 @@
 
 | Discipline | Teams imported | Requested | Player records | Teams with verified rosters | Ranking snapshot |
 |---|---:|---:|---:|---:|---|
-| CS2 | 100 | 100 | 40 | 8 | HLTV, 2026-11-16 |
-| Dota 2 | 40 | 50 | 20 | 4 | E-Rankings, 2026-11-01 |
+| CS2 | 100 | 100 | 74 | 15 | HLTV rosters, 2026-11-16 (selected teams) |
+| Dota 2 | 40 | 50 | 77 | 7 | E-Rankings, 2026-11-01; Liquipedia roster history |
 | VALORANT | 48 | 50 | 40 | 8 | Riot Global Power Rankings, 2026-10-18 |
 | League of Legends | 30 | 30 | 55 | 11 | Riot LoL Esports GPR, 2026-09-08 |
-| **Total** | **218** | **230** | **155** | **31** | |
+| **Total** | **218** | **230** | **246** | **41** | |
 
 **Important data caveats**
-- CS2 top 100 is an HLTV world-ranking snapshot dated Nov 16, 2026. The player roster table is verified only for eight organizations; other teams are imported as organizations without fabricated player names.
-- Dota 2 ranks 1–40 are from the Nov 1, 2026 E-Rankings snapshot. The requested 41–50 are not imported yet. Its methodology counts tournament results over a trailing 12-month period and is not a prediction of current match strength. Only four team rosters are currently verified.
+- CS2 top 100 is an HLTV world-ranking snapshot dated Nov 16, 2026. The player roster table now includes 15 organizations, with lineups cross-checked against HLTV's Nov 16 ranking snapshot and the Nov 9 page for FUT and The MongolZ. Other teams remain organization-only until their individual HLTV roster pages are verified.
+- Dota 2 ranks 1–40 are from the Nov 1, 2026 E-Rankings snapshot. The requested 41–50 are not imported yet. Its methodology counts tournament results over a trailing 12-month period and is not a prediction of current match strength. Seven organization pools now contain players. In addition to current lineups, historical and inactive players from Liquipedia team histories are imported as free-agent candidates; the role label marks former players. This is not a complete archive of every Dota roster.
 - VALORANT includes all 48 entries in the Riot Global Power Rankings snapshot after Champions on Oct 18, 2026. This is a dated official ranking snapshot, not a current Nov 24 ranking. The 50-team target is short by two. Only eight team rosters are currently verified.
 - League of Legends includes the top 30 from Riot's GPR snapshot dated Sep 8, 2026. Eleven Worlds 2026 starting rosters are historical snapshots; offseason transfers after Worlds need a separate update.
 - OVR/POT values in the game are ARQON balance attributes, not official player ratings. No placeholder player records were generated.
@@ -47,5 +47,5 @@
 - League of Legends official Global Power Rankings: https://lolesports.com/en-GB/gpr/2026/current
 - LoL Worlds 2026 roster cross-check: https://www.riftvanta.com/en/teams
 
-## Next import milestone
+## Roster import update (2026-11-24)\n- CS2: 74 player records across 15 teams. HLTV snapshots used: Nov 16 and Nov 9, 2026. The imported roster names include current lineups for FURIA, MOUZ, Spirit, Vitality, Falcons, Aurora, BetBoom, NAVI, PARIVISION, Legacy, 1win, Liquid and MIBR, plus FUT and The MongolZ from Nov 9.\n- Dota 2: 77 player records across seven teams. Liquipedia current and historical roster sections used for Team Liquid, Team Spirit, Aurora Gaming, Team Yandex, BetBoom Team and 1w Team. Former/inactive players are marked in their role string as `Former • Position N`; they are not presented as current starting lineups.\n- The catalogue schema currently has no separate roster-status or join/leave-date fields. Historical status is preserved in the role label and source date, but a dedicated player-history table is a future schema improvement.\n\n## Next import milestone
 Complete Dota ranks 41–50 and the remaining two VALORANT teams, then refresh VALORANT and LoL ranking snapshots. Verify and add player rosters team by team using dated sources; preserve historical roster snapshots rather than overwriting transfer history. After that, add scheduled refreshes and player/team detail pages.
