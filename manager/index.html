@@ -277,6 +277,8 @@ async function simulate(matchId){
     resultBox.innerHTML='<div class="card"><div class="eyebrow">'+disciplineName+' · BO'+bestOf+'</div><h3>Карта '+activeMap+' · LIVE</h3><p class="muted">Команды изучают стиль соперника. Следующий ключевой момент может изменить ход серии.</p><div class="progress"><i style="width:'+Math.round((i/moments.length)*100)+'%"></i></div></div>';
     await new Promise(resolve=>setTimeout(resolve,900));
    }
+   resultBox.innerHTML='<div class="card"><div class="eyebrow">'+disciplineName+' · КАРТА '+moment.map+' · LIVE</div><h3>'+moment.title+'</h3><p class="muted">Матч продолжается. Команды занимают позиции, готовят способности и ищут момент для действия…</p><div class="progress"><i style="width:'+Math.round(((i+1)/moments.length)*100)+'%"></i></div><div class="muted" style="margin-top:8px">Симуляция игрового времени · ключевой момент скоро</div></div>';
+   await new Promise(resolve=>setTimeout(resolve,1400));
    const choice=await askMatchDecision(moment,discipline);
    decisions.push({map:moment.map,choice,event:moment.title,context:moment.context});
    const recap=document.createElement('div');
