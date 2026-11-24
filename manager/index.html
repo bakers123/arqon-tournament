@@ -335,7 +335,7 @@ async function simulate(matchId){
      feed.appendChild(action);
      if(round.players?.length){
       const players=document.createElement('div');players.className='muted';players.style.cssText='font-size:11px;margin-top:6px';
-      players.textContent='Вклад раунда: '+round.players.map(p=>p.nickname+' '+p.kills+'/'+p.deaths+'/'+p.assists).join(' · ');
+      players.textContent='Вклад раунда: '+round.players.map(p=>p.nickname+' '+p.kills+'/'+p.deaths+'/'+p.assists+' · '+p.damage+' урона').join(' · ');
       feed.appendChild(players);
      }
      timeline.appendChild(feed);feed.scrollIntoView({block:'nearest',behavior:'smooth'});
@@ -380,7 +380,8 @@ async function simulate(matchId){
     if(Array.isArray(round.players)&&round.players.length){
      for(const p of round.players){
       if(!p.nickname)continue;
-      stats[p.nickname]??={k:0,d:0,a:0,side:p.side};
+      stats[p.nickname]??={k:0,d:0,a:0,damage:0,utility:0,side:p.side};
+      stats[p.nickname].damage+=Number(p.damage||0);stats[p.nickname].utility+=Number(p.utility_actions||0);
       stats[p.nickname].k+=Number(p.kills||0);
       stats[p.nickname].d+=Number(p.deaths||0);
       stats[p.nickname].a+=Number(p.assists||0);
@@ -394,7 +395,7 @@ async function simulate(matchId){
    else ranked.forEach(([name,s],index)=>{
     const row=document.createElement('div');row.className='rowline';
     const label=document.createElement('span');label.textContent=(index===0?'★ ':'')+name;
-    const numbers=document.createElement('b');numbers.textContent=s.k+' / '+s.d+' / '+s.a;
+    const numbers=document.createElement('b');numbers.textContent=s.k+' / '+s.d+' / '+s.a+(s.damage?' · '+s.damage+' DMG':'');
     numbers.title='Убийства / смерти / ассисты · '+(s.side==='us'?'Твой клуб':'Соперник');
     row.append(label,numbers);statsBox.appendChild(row);
    });
