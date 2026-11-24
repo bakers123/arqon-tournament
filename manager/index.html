@@ -371,7 +371,7 @@ async function simulate(matchId){
   if(!r||!Array.isArray(r.rounds))throw new Error('Сервер не вернул результат серии.');
   const events=r.rounds,opponent=r.opponent||'Соперник';
   const rosterHtml=(title,items)=>'<div class="card" style="margin-top:10px;text-align:left"><b>'+title+'</b>'+(items||[]).map(p=>'<div class="rowline" style="align-items:flex-start"><span><b>'+p.nickname+'</b><br><small class="muted">'+(p.role||'—')+' · рейтинг '+(p.rating??'—')+' · возраст '+(p.age??'—')+' · потенциал '+(p.potential??'—')+' · форма '+(p.form??75)+' · усталость '+(p.fatigue??0)+'</small>'+(p.attributes?'<br><small class="muted">Механика '+p.attributes.mechanics+' · мышление '+p.attributes.game_sense+' · командная игра '+p.attributes.teamplay+' · стабильность '+p.attributes.consistency+' · роль '+p.attributes.role_skill+' · клатч '+p.attributes.clutch+'</small>':'')+'</span></div>').join('')+'</div>';
-  resultBox.innerHTML='<div class="muted">Соперник: <b>'+opponent+'</b> · '+(r.format||'')+'</div>'+rosterHtml('ТВОЙ СОСТАВ',r.home_roster)+rosterHtml('СОСТАВ СОПЕРНИКА · '+opponent,r.away_roster)+'<div class="card" style="margin-top:10px;text-align:left"><div style="display:flex;justify-content:space-between"><b>СЕРИЯ '+(r.format||'')+'</b><b id="liveScore">0:0</b></div><div class="muted">Результаты карт открываются по очереди</div><div id="liveRounds"></div></div><div class="card" style="margin-top:10px;text-align:left"><b>СТАТИСТИКА ИГРОКОВ · K/D/A</b><div id="playerMatchStats"></div></div><div class="card" style="margin-top:10px;text-align:left"><b>ПОЛНАЯ ХРОНОЛОГИЯ МАТЧА</b><div>'+timelineHtml+'</div></div>';
+  resultBox.innerHTML='<div class="muted">Соперник: <b>'+opponent+'</b> · '+(r.format||'')+'</div>'+rosterHtml('ТВОЙ СОСТАВ',r.home_roster)+rosterHtml('СОСТАВ СОПЕРНИКА · '+opponent,r.away_roster)+'<div class="card" style="margin-top:10px;text-align:left"><div style="display:flex;justify-content:space-between"><b>СЕРИЯ '+(r.format||'')+'</b><b id="liveScore">0:0</b></div><div class="muted">Результаты карт открываются по очереди</div><div id="liveRounds"></div></div><div class="card" style="margin-top:10px;text-align:left"><b>СТАТИСТИКА СЕРИИ · K/D/A · DMG</b><div id="playerMatchStats"></div></div><div class="card" style="margin-top:10px;text-align:left"><b>ПОЛНАЯ ХРОНОЛОГИЯ МАТЧА</b><div>'+timelineHtml+'</div></div>';
   const statsBox=document.getElementById('playerMatchStats');
   if(statsBox){
    const stats={};
@@ -394,7 +394,7 @@ async function simulate(matchId){
    if(!ranked.length){statsBox.textContent='Индивидуальная статистика появится после первых игровых эпизодов.';}
    else ranked.forEach(([name,s],index)=>{
     const row=document.createElement('div');row.className='rowline';
-    const label=document.createElement('span');label.textContent=(index===0?'★ ':'')+name;
+    const label=document.createElement('span');label.textContent=(index===0?'★ ':'')+name+' · '+(s.side==='us'?'НАШ':'СОПЕРНИК');
     const numbers=document.createElement('b');numbers.textContent=s.k+' / '+s.d+' / '+s.a+(s.damage?' · '+s.damage+' DMG':'');
     numbers.title='Убийства / смерти / ассисты · '+(s.side==='us'?'Твой клуб':'Соперник');
     row.append(label,numbers);statsBox.appendChild(row);
