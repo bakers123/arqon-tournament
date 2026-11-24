@@ -27,10 +27,10 @@
 | Discipline | Teams imported | Requested | Player records | Teams with verified rosters | Ranking snapshot |
 |---|---:|---:|---:|---:|---|
 | CS2 | 100 | 100 | 88 | 18 | HLTV team pages and ranking snapshots, Nov 2026 (selected teams) |
-| Dota 2 | 40 | 50 | 145 | 15 | E-Rankings, 2026-11-01; Liquipedia roster history |
+| Dota 2 | 40 | 50 | 161 | 15 | E-Rankings, 2026-11-01; Liquipedia roster history |
 | VALORANT | 48 | 50 | 40 | 8 | Riot Global Power Rankings, 2026-10-18 |
 | League of Legends | 30 | 30 | 55 | 11 | Riot LoL Esports GPR, 2026-09-08 |
-| **Total** | **218** | **230** | **328** | **52** | |
+| **Total** | **218** | **230** | **344** | **52** | |
 
 **Important data caveats**
 - CS2 top 100 is an HLTV world-ranking snapshot dated Nov 16, 2026. The player table now contains records for 18 organizations. Sources include HLTV ranking snapshots and individual team pages; the latest additions include G2, Ninjas in Pyjamas and Astralis. Some team rows are partial (e.g. a four-player roster where a fifth starter was not confirmed), and some older team snapshots still need a freshness pass. Other teams remain organization-only until their individual HLTV roster pages are verified.
