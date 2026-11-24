@@ -330,8 +330,14 @@ async function simulate(matchId){
      const summary=document.createElement('span');summary.innerHTML='<b>Раунд '+round.round+'</b><br><small class="muted">'+round.description+'</small>';
      const score=document.createElement('b');score.textContent=round.score_us+':'+round.score_them;head.append(summary,score);feed.appendChild(head);
      const action=document.createElement('div');action.className='notice';action.style.marginTop='7px';
-     action.textContent=(round.killer||'Игрок команды')+' ['+(round.killer_role||'')+'] '+(round.kill_type||'выиграл дуэль')+' → '+(round.victim||'соперник')+(round.assist?' · ассист: '+round.assist:'');
+     const frags=round.kill_feed||[];
+     action.textContent=frags.length?frags.map(x=>x.killer+' → '+x.victim+(x.assist?' (ассист '+x.assist+')':'')).join(' · '):'Раунд завершён';
      feed.appendChild(action);
+     if(round.players?.length){
+      const players=document.createElement('div');players.className='muted';players.style.cssText='font-size:11px;margin-top:6px';
+      players.textContent='Вклад раунда: '+round.players.map(p=>p.nickname+' '+p.kills+'/'+p.deaths+'/'+p.assists).join(' · ');
+      feed.appendChild(players);
+     }
      timeline.appendChild(feed);feed.scrollIntoView({block:'nearest',behavior:'smooth'});
      await new Promise(resolve=>setTimeout(resolve,650));
     }
@@ -371,7 +377,17 @@ async function simulate(matchId){
    const stats={};
    const add=(name,field)=>{if(!name)return;stats[name]??={k:0,d:0,a:0};stats[name][field]++;};
    for(const round of liveRoundFeed){
-    add(round.killer,'k');add(round.victim,'d');add(round.assist,'a');
+    if(Array.isArray(round.players)&&round.players.length){
+     for(const p of round.players){
+      if(!p.nickname)continue;
+      stats[p.nickname]??={k:0,d:0,a:0,side:p.side};
+      stats[p.nickname].k+=Number(p.kills||0);
+      stats[p.nickname].d+=Number(p.deaths||0);
+      stats[p.nickname].a+=Number(p.assists||0);
+     }
+    }else{
+     add(round.killer,'k');add(round.victim,'d');add(round.assist,'a');
+    }
    }
    const ranked=Object.entries(stats).sort((a,b)=>(b[1].k+b[1].a*0.5-b[1].d*0.35)-(a[1].k+a[1].a*0.5-a[1].d*0.35));
    if(!ranked.length){statsBox.textContent='Индивидуальная статистика появится после первых игровых эпизодов.';}
@@ -379,6 +395,7 @@ async function simulate(matchId){
     const row=document.createElement('div');row.className='rowline';
     const label=document.createElement('span');label.textContent=(index===0?'★ ':'')+name;
     const numbers=document.createElement('b');numbers.textContent=s.k+' / '+s.d+' / '+s.a;
+    numbers.title='Убийства / смерти / ассисты · '+(s.side==='us'?'Твой клуб':'Соперник');
     row.append(label,numbers);statsBox.appendChild(row);
    });
   }
